@@ -1,0 +1,26 @@
+name: Sync upstream English
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # 每小時一次，可改每天 "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync_with_upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout english-main
+        uses: actions/checkout@v4
+        with:
+          ref: english-main
+
+      - name: Sync from MystenLabs/move-book
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          upstream_repository: MystenLabs/move-book
+          upstream_branch: main
+          target_branch: english-main
+          github_token: ${{ secrets.GITHUB_TOKEN }}
