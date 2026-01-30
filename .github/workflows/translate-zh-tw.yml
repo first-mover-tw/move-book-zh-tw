@@ -16,15 +16,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch zh-tw-main
+      - name: Fetch all branches
         run: |
-          git fetch origin zh-tw-main:zh-tw-main
+          git fetch --all --prune
 
       - name: Detect changed markdown files
         id: diff
         run: |
-          # 找出從 zh-tw-main 到 english-main 這段，哪些 .md 有變
-          CHANGED=$(git diff --name-only origin/zh-tw-main...HEAD -- 'book/**/*.md' 'reference/**/*.md')
+          # 確保我們有遠端的 english-main 與 zh-tw-main
+          git branch -r
+
+          CHANGED=$(git diff --name-only origin/zh-tw-main...origin/english-main -- 'book/**/*.md' 'reference/**/*.md')
           echo "changed_files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
