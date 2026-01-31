@@ -42,7 +42,7 @@ def translate_markdown(input_path: Path):
     except Exception as e:
         print(f"Warning: Could not list models: {e}")
 
-    model_id = "gemini-1.5-pro"
+    model_id = "gemini-2.5-pro"
     
     try:
         response = client.models.generate_content(
@@ -51,8 +51,8 @@ def translate_markdown(input_path: Path):
         )
     except Exception as e:
         print(f"Model {model_id} failed: {e}")
-        print("Falling back to gemini-1.5-flash...")
-        model_id = "gemini-1.5-flash"
+        print("Falling back to gemini-2.5-flash...")
+        model_id = "gemini-2.5-flash"
         try:
             response = client.models.generate_content(
                 model=model_id, 
@@ -60,7 +60,15 @@ def translate_markdown(input_path: Path):
             )
         except Exception as e2:
              print(f"Model {model_id} also failed: {e2}")
-             raise e2
+             # Last ditch effort: Try experimental/preview models if standard ones fail, 
+             # or just try to find *any* gemini model from the list code above if we were smart,
+             # but hardcoding the next likely candidate is safer for now.
+             print("Falling back to gemini-3.0-flash-preview...")
+             model_id = "gemini-3.0-flash-preview"
+             response = client.models.generate_content(
+                model=model_id, 
+                contents=msg
+             )
         
     return response.text
 
