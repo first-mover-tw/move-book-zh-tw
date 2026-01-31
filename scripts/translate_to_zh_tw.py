@@ -2,10 +2,10 @@ import os
 import sys
 from pathlib import Path
 
-import google.genai as genai  # pip install google-genai[web:137][web:140]
+import google.generativeai as genai  # pip install google-generativeai[web:133][web:140]
 
 
-def translate_markdown(input_path: Path, client: genai.Client):
+def translate_markdown(input_path: Path):
     text = input_path.read_text(encoding="utf-8")
 
     system_prompt = (
@@ -16,21 +16,18 @@ def translate_markdown(input_path: Path, client: genai.Client):
         "Keep Move/Sui related technical terms accurate and natural in zh-TW."
     )
 
-    # 使用新版 client.responses.create[web:133][web:140]
-    resp = client.responses.create(
-        model="gemini-1.5-flash-001",  # 選一個在 v1 API 可用的模型 ID
-        input=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text},
-        ],
+    # 使用官方文件中的可用模型，例如 gemini-1.5-pro（確認在你的 key 下可用）[web:133][web:140]
+    model = genai.GenerativeModel("gemini-1.5-pro")
+
+    prompt = (
+        system_prompt
+        + "\n\nMarkdown to translate:\n\n"
+        + text
+        + "\n\nReturn only the translated Markdown, no explanation."
     )
 
-    # 將多段輸出組合成一個字串
-    parts = []
-    for item in resp.output_candidates[0].content.parts:
-        if item.text:
-            parts.append(item.text)
-    return "\n".join(parts)
+    resp = model.generate_content(prompt)
+    return resp.text
 
 
 def main():
@@ -42,7 +39,7 @@ def main():
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
-    client = genai.Client(api_key=api_key)
+    genai.configure(api_key=api_key)
 
     for path_str in sys.argv[1:]:
         input_path = Path(path_str)
@@ -51,7 +48,7 @@ def main():
             continue
 
         print(f"Translating {input_path} ...")
-        translated = translate_markdown(input_path, client)
+        translated = translate_markdown(input_path)
 
         # 輸出成 xxx.zh-TW.md
         output_path = input_path.with_name(input_path.stem + ".zh-TW.md")
