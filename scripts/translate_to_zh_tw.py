@@ -31,6 +31,17 @@ def translate_markdown(input_path: Path):
 
     # Updated to use the new SDK method and explicitly target gemini-2.0-flash or gemini-1.5-pro
     # Try Pro first, then Flash as fallback
+    # DEBUG: List models to confirm availability
+    try:
+        # Paging through models to find ones that match 'gemini'
+        print("Checking available models...")
+        # Note: client.models.list returns an iterator
+        for m in client.models.list():
+            if "gemini" in m.name:
+                print(f" - {m.name}")
+    except Exception as e:
+        print(f"Warning: Could not list models: {e}")
+
     model_id = "gemini-1.5-pro"
     
     try:
@@ -42,10 +53,14 @@ def translate_markdown(input_path: Path):
         print(f"Model {model_id} failed: {e}")
         print("Falling back to gemini-1.5-flash...")
         model_id = "gemini-1.5-flash"
-        response = client.models.generate_content(
-            model=model_id, 
-            contents=msg
-        )
+        try:
+            response = client.models.generate_content(
+                model=model_id, 
+                contents=msg
+            )
+        except Exception as e2:
+             print(f"Model {model_id} also failed: {e2}")
+             raise e2
         
     return response.text
 
