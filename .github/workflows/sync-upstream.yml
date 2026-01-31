@@ -5,22 +5,30 @@ permissions:
 
 on:
   schedule:
-    - cron: "0 * * * *"   # 每小時一次，可改每天 "0 0 * * *"
+    - cron: "0 0 * * *"   # 每天一次，可依需求調整
   workflow_dispatch:
 
 jobs:
   sync_with_upstream:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout english-main
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          # 這裡用 english-main，代表我們要在 english-main 上做同步
           ref: english-main
 
       - name: Sync from MystenLabs/move-book
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
-          upstream_repository: MystenLabs/move-book
-          upstream_branch: main
-          target_branch: english-main
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 你自己 repo 的 branch = 要被同步的目標分支
+          target_sync_branch: english-main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # 上游官方 repo & branch
+          upstream_sync_repo: MystenLabs/move-book
+          upstream_sync_branch: main
+
+          # （可選）dry run 模式關掉，才會真的 push
+          upstream_fetch_args: "--tags --prune"
