@@ -32,6 +32,7 @@ jobs:
       - name: Translate all markdown files to zh-TW (Gemini)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PYTHONUNBUFFERED: "1"
         run: |
           python scripts/translate_to_zh_tw.py --all
 
