@@ -6,7 +6,7 @@ permissions:
 on:
   push:
     branches:
-      - english-main       # 只要英文分支有更新就觸發
+      - english-main
   workflow_dispatch:
 
 jobs:
@@ -19,30 +19,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch all branches
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
         run: |
-          git fetch --all --prune
-          git branch -r
+          python -m pip install --upgrade pip
+          pip install openai==1.*  # 官方新版 SDK[web:106][web:101]
 
       - name: List markdown files (debug)
+        id: files
         run: |
-          echo "Markdown files under book/:"
-          find book -name "*.md" -print || echo "no book md"
-          echo "Markdown files under reference/:"
-          find reference -name "*.md" -print || echo "no reference md"
+          set -e
+          FILES=$(find book reference -name "*.md" -print || true)
+          echo "Found files:"
+          echo "$FILES"
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: OpenAI continuous translation
-        uses: yunwei37/OpenAI-Continuous-Translator@master
-        with:
-          git_repo_url: https://github.com/${{ github.repository }}
-          api_key: ${{ secrets.OPENAI_API_KEY }}
-          source_language: English
-          target_language: Traditional Chinese
-          file_path_filter: "book/**/*.md,reference/**/*.md"
-          i18n_surfix: ".zh-TW"
-          additional_prompt: |
-            Translate to Traditional Chinese (Taiwan).
-            Keep markdown structure and code blocks unchanged.
+      - name: Stop if no markdown files
+        if: steps.files.outputs.files == ''
+        run: echo "No markdown files found under book/ or reference/."
+
+      - name: Translate markdown files to zh-TW
+        if: steps.files.outputs.files != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          echo "Translating files:"
+          echo "${{ steps.files.outputs.files }}"
+          python scripts/translate_to_zh_tw.py ${{ steps.files.outputs.files }}
+
+      - name: Show git status (debug)
+        run: |
+          git status
+          ls -R book || true
+          ls -R reference || true
 
       - name: Commit to auto branch
         run: |
@@ -50,6 +65,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git checkout -B auto/zh-tw-update
+          # 根據你在 Python 裡的輸出檔名調整這裡的 pattern
           git add book/**/*.zh-TW.md reference/**/*.zh-TW.md || echo "no zh-TW files"
           git status
           git commit -m "Auto update zh-TW translations" || echo "No changes to commit"
@@ -61,7 +77,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: zh-tw-main
           head: auto/zh-tw-update
-          title: "Update zh-TW translations from upstream (full)"
+          title: "Update zh-TW translations (Python script)"
           body: |
-            初次完整翻譯 book/ 與 reference/ 下的 Markdown。
-            之後可以再調整為只翻譯 diff 的檔案。
+            使用自訂 Python 腳本，將 book/ 與 reference/ 的 Markdown 翻譯為繁體中文（臺灣用語）。
+            請檢查術語與翻譯品質後再合併。
