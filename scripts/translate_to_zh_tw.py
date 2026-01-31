@@ -37,41 +37,37 @@ def translate_markdown(input_path: Path):
     # DEBUG: List models to confirm availability
     # (Skipped re-listing to reduce noise, assuming user fixed model per previous step)
 
-    # Optimized Approach: Use Flash specific model for higher key limits and speed.
-    # Pro model usage on free tier is very limited (2 RPM / 32k TPM), whereas Flash is higher (15 RPM / 1M TPM).
-    # To be "efficient", we must use Flash for batch processing.
-    model_id = "gemini-2.5-flash" 
+    # Optimized Approach: Try a sequence of fast models.
+    # If one is exhausted, try another.
+    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro-latest"]
     
-    max_retries = 5
-    base_wait = 20 # seconds
+    max_retries = 3
+    base_wait = 10 
 
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model=model_id, 
-                contents=msg
-            )
-            return response.text
-            
-        except Exception as e:
-            error_str = str(e)
-            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                wait_time = base_wait * (attempt + 1)
-                print(f"Rate limit hit for {model_id}. Waiting {wait_time}s before retry ({attempt+1}/{max_retries})...")
-                time.sleep(wait_time)
-            elif "404" in error_str and model_id == "gemini-2.5-flash":
-                 print("Gemini 2.5 Flash not found, trying 1.5 Flash...")
-                 model_id = "gemini-1.5-flash"
-                 continue
-            else:
-                print(f"Error: {e}")
-                # For non-retriable errors or max retries, we might want to stop or raise
-                if attempt == max_retries - 1:
-                    raise e
-                # General error, maybe temporary? wait briefly
-                time.sleep(5)
+    for model_name in models_to_try:
+        for attempt in range(max_retries):
+            try:
+                # print(f"Trying {model_name} (attempt {attempt+1})...")
+                response = client.models.generate_content(
+                    model=model_name, 
+                    contents=msg
+                )
+                return response.text
+                
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    print(f"Rate limit for {model_name}. Switching/Retrying...")
+                    time.sleep(base_wait * (attempt + 1))
+                    # If this was the last attempt for this model, the outer loop will try the next model
+                elif "404" in error_str:
+                     print(f"Model {model_name} not found.")
+                     break # Try next model immediately
+                else:
+                    print(f"Error with {model_name}: {e}")
+                    time.sleep(5)
     
-    raise RuntimeError(f"Failed to translate after {max_retries} attempts.")
+    raise RuntimeError(f"All models failed after retries.")
 
 
 def main():
@@ -125,8 +121,11 @@ def main():
             print(f"Wrote translated file to {output_path}")
             
             # Rate limit mitigation: 
-            # With Flash model, limits are higher. A small buffer is still good.
-            time.sleep(2)
+            # Google Free Tier (Flash) has ~15 RPM limit. 
+            # Sleeping 10s + processing time ensures we stay well below this.
+            # Slow and steady wins the race.
+            print("Sleeping for 10s to respect rate limits...")
+            time.sleep(10)
             
         except Exception as e:
             print(f"Error translating {input_path}: {e}")
