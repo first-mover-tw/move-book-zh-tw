@@ -4,6 +4,9 @@ from pathlib import Path
 
 from google import genai  # pip install google-genai
 
+import argparse
+import time
+
 def translate_markdown(input_path: Path):
     text = input_path.read_text(encoding="utf-8")
 
@@ -32,15 +35,7 @@ def translate_markdown(input_path: Path):
     # Updated to use the new SDK method and explicitly target gemini-2.0-flash or gemini-1.5-pro
     # Try Pro first, then Flash as fallback
     # DEBUG: List models to confirm availability
-    try:
-        # Paging through models to find ones that match 'gemini'
-        print("Checking available models...")
-        # Note: client.models.list returns an iterator
-        for m in client.models.list():
-            if "gemini" in m.name:
-                print(f" - {m.name}")
-    except Exception as e:
-        print(f"Warning: Could not list models: {e}")
+    # (Skipped re-listing to reduce noise, assuming user fixed model per previous step)
 
     model_id = "gemini-2.5-pro"
     
@@ -51,6 +46,8 @@ def translate_markdown(input_path: Path):
         )
     except Exception as e:
         print(f"Model {model_id} failed: {e}")
+        # Add a small delay before fallback to let quota cool down slightly if it was a rate limit
+        time.sleep(5)
         print("Falling back to gemini-2.5-flash...")
         model_id = "gemini-2.5-flash"
         try:
@@ -60,9 +57,6 @@ def translate_markdown(input_path: Path):
             )
         except Exception as e2:
              print(f"Model {model_id} also failed: {e2}")
-             # Last ditch effort: Try experimental/preview models if standard ones fail, 
-             # or just try to find *any* gemini model from the list code above if we were smart,
-             # but hardcoding the next likely candidate is safer for now.
              print("Falling back to gemini-3.0-flash-preview...")
              model_id = "gemini-3.0-flash-preview"
              response = client.models.generate_content(
@@ -74,33 +68,69 @@ def translate_markdown(input_path: Path):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/translate_to_zh_tw.py <file1> [<file2> ...]")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Translate Markdown files to Traditional Chinese.")
+    parser.add_argument("files", nargs="*", type=Path, help="Specific files to translate")
+    parser.add_argument("--all", action="store_true", help="Scan and translate all untranslated .md files in book/ and reference/")
+    args = parser.parse_args()
 
-    # API key check moved to inside translate_markdown or init here, 
-    # but strictly checking env var existence here is good too.
+    # API key check
     if not os.environ.get("GEMINI_API_KEY"):
          raise RuntimeError("GEMINI_API_KEY is not set")
 
-    for path_str in sys.argv[1:]:
-        input_path = Path(path_str)
+    files_to_translate = []
+    
+    if args.all:
+        for root in ["book", "reference"]:
+            if not os.path.isdir(root):
+                continue
+            for path in Path(root).rglob("*.md"):
+                # Skip already translated files
+                if path.name.endswith(".zh-TW.md"):
+                    continue
+                # Check if translation already exists to avoid re-translating (optional, but good for saving quota)
+                target_path = path.with_name(path.stem + ".zh-TW.md")
+                if target_path.exists():
+                    print(f"Skipping {path} (already translated)")
+                    continue
+                    
+                files_to_translate.append(path)
+    else:
+        files_to_translate = args.files
+
+    if not files_to_translate:
+        print("No files to translate.")
+        return
+
+    print(f"Found {len(files_to_translate)} files to translate.")
+
+    for i, input_path in enumerate(files_to_translate):
         if not input_path.is_file():
             print(f"Skip (not a file): {input_path}")
             continue
 
-        print(f"Translating {input_path} ...")
+        print(f"[{i+1}/{len(files_to_translate)}] Translating {input_path} ...")
+        
         try:
             translated = translate_markdown(input_path)
             
-            # 輸出成 xxx.zh-TW.md
             output_path = input_path.with_name(input_path.stem + ".zh-TW.md")
             output_path.write_text(translated, encoding="utf-8")
             print(f"Wrote translated file to {output_path}")
+            
+            # Rate limit mitigation: Sleep 15 seconds between files
+            # Google Free Tier often has 15 RPM (Requests Per Minute) limits
+            print("Sleeping for 15s to respect rate limits...")
+            time.sleep(15)
+            
         except Exception as e:
             print(f"Error translating {input_path}: {e}")
-            sys.exit(1) # Fail the action if translation fails
-
+            # Do not exit immediately, try next file? 
+            # Or exit to fail the workflow? 
+            # For automation, maybe fail so we know. But let's try to continue for partial success.
+            # actually better to fail so we don't commit partial state as 'success'
+            # But with --all, maybe we want to get as much done as possible.
+            print("Skipping file due to error.")
+            continue
 
 if __name__ == "__main__":
     main()

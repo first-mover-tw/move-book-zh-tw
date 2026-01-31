@@ -29,29 +29,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-genai
 
-      - name: List markdown files (debug)
-        id: files
-        run: |
-          set -e
-          FILES=$(find book reference -name "*.md" ! -name "*.zh-TW.md" -print || true)
-          echo "Found files:"
-          echo "$FILES"
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Stop if no markdown files
-        if: steps.files.outputs.files == ''
-        run: echo "No markdown files found under book/ or reference/."
-
-      - name: Translate markdown files to zh-TW (Gemini)
-        if: steps.files.outputs.files != ''
+      - name: Translate all markdown files to zh-TW (Gemini)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "Translating files:"
-          echo "${{ steps.files.outputs.files }}"
-          python scripts/translate_to_zh_tw.py ${{ steps.files.outputs.files }}
+          python scripts/translate_to_zh_tw.py --all
 
       - name: Show git status (debug)
         run: |
