@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openai==1.*  # 官方新版 SDK[web:106][web:101]
+          pip install google-generativeai
 
       - name: List markdown files (debug)
         id: files
@@ -44,10 +44,10 @@ jobs:
         if: steps.files.outputs.files == ''
         run: echo "No markdown files found under book/ or reference/."
 
-      - name: Translate markdown files to zh-TW
+      - name: Translate markdown files to zh-TW (Gemini)
         if: steps.files.outputs.files != ''
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "Translating files:"
           echo "${{ steps.files.outputs.files }}"
@@ -65,10 +65,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git checkout -B auto/zh-tw-update
-          # 根據你在 Python 裡的輸出檔名調整這裡的 pattern
           git add book/**/*.zh-TW.md reference/**/*.zh-TW.md || echo "no zh-TW files"
           git status
-          git commit -m "Auto update zh-TW translations" || echo "No changes to commit"
+          git commit -m "Auto update zh-TW translations (Gemini)" || echo "No changes to commit"
           git push -f origin auto/zh-tw-update || echo "No changes to push"
 
       - name: Open PR into zh-tw-main
@@ -77,7 +76,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: zh-tw-main
           head: auto/zh-tw-update
-          title: "Update zh-TW translations (Python script)"
+          title: "Update zh-TW translations (Gemini)"
           body: |
-            使用自訂 Python 腳本，將 book/ 與 reference/ 的 Markdown 翻譯為繁體中文（臺灣用語）。
+            使用 Gemini API 將 book/ 與 reference/ 的 Markdown 翻譯為繁體中文（臺灣用語）。
             請檢查術語與翻譯品質後再合併。

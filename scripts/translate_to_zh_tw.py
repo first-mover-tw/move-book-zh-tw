@@ -1,9 +1,11 @@
 import os
 import sys
 from pathlib import Path
-from openai import OpenAI
 
-def translate_markdown(input_path: Path, client: OpenAI):
+import google.generativeai as genai  # pip install google-generativeai
+
+
+def translate_markdown(input_path: Path):
     text = input_path.read_text(encoding="utf-8")
 
     system_prompt = (
@@ -11,18 +13,20 @@ def translate_markdown(input_path: Path, client: OpenAI):
         "Translate the following Markdown content into Traditional Chinese (Taiwan).\n"
         "Preserve all Markdown structure, links, images, and code blocks.\n"
         "Do NOT translate code, but DO translate comments inside code blocks.\n"
-        "Keep technical terms for Move/Sui consistent and natural in zh-TW."
+        "Keep Move/Sui related technical terms accurate and natural in zh-TW."
     )
 
-    # 使用新版 SDK 的 responses API[web:106][web:99]
-    resp = client.responses.create(
-        model="gpt-4.1-mini",  # 或你有權限的其他模型
-        instructions=system_prompt,
-        input=text,
+    model = genai.GenerativeModel("gemini-1.5-flash")  # 有免費額度且價格便宜[web:128][web:140]
+
+    prompt = (
+        system_prompt
+        + "\n\nMarkdown to translate:\n\n"
+        + text
+        + "\n\nReturn only the translated Markdown, no explanation."
     )
 
-    translated = resp.output_text
-    return translated
+    resp = model.generate_content(prompt)
+    return resp.text
 
 
 def main():
@@ -30,11 +34,11 @@ def main():
         print("Usage: python scripts/translate_to_zh_tw.py <file1> [<file2> ...]")
         sys.exit(1)
 
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set")
+        raise RuntimeError("GEMINI_API_KEY is not set")
 
-    client = OpenAI(api_key=api_key)
+    genai.configure(api_key=api_key)
 
     for path_str in sys.argv[1:]:
         input_path = Path(path_str)
@@ -43,13 +47,10 @@ def main():
             continue
 
         print(f"Translating {input_path} ...")
-        translated = translate_markdown(input_path, client)
+        translated = translate_markdown(input_path)
 
-        # output_path = input_path.with_suffix(input_path.suffix + ".zh-TW")
-        # 例如 input: xxx.md -> output: xxx.md.zh-TW，你也可以改成 .zh-TW.md
-        # 如果你想要 .zh-TW.md，可以用：
+        # 輸出檔名：xxx.zh-TW.md
         output_path = input_path.with_name(input_path.stem + ".zh-TW.md")
-
         output_path.write_text(translated, encoding="utf-8")
         print(f"Wrote translated file to {output_path}")
 
