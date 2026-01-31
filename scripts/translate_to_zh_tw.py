@@ -30,14 +30,23 @@ def translate_markdown(input_path: Path):
     )
 
     # Updated to use the new SDK method and explicitly target gemini-2.0-flash or gemini-1.5-pro
-    # Using gemini-2.0-flash as it is often more available and faster, but user asked for Pro originally. 
-    # Let's stick to gemini-1.5-pro but with the new SDK it should resolve the 404 if it was a versioning issue.
-    # If gemini-1.5-pro still fails, we might fallback to gemini-2.0-flash.
-    # For now, let's use "gemini-1.5-pro" as requested.
-    response = client.models.generate_content(
-        model="gemini-1.5-pro", 
-        contents=msg
-    )
+    # Try Pro first, then Flash as fallback
+    model_id = "gemini-1.5-pro"
+    
+    try:
+        response = client.models.generate_content(
+            model=model_id, 
+            contents=msg
+        )
+    except Exception as e:
+        print(f"Model {model_id} failed: {e}")
+        print("Falling back to gemini-1.5-flash...")
+        model_id = "gemini-1.5-flash"
+        response = client.models.generate_content(
+            model=model_id, 
+            contents=msg
+        )
+        
     return response.text
 
 
