@@ -38,11 +38,11 @@ def translate_markdown(input_path: Path):
     # (Skipped re-listing to reduce noise, assuming user fixed model per previous step)
 
     # Optimized Approach: Try a sequence of fast models.
-    # If one is exhausted, try another.
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro-latest"]
+    # Update models based on 2026 availability (User checked screenshot: 2.5 Flash, 3.0 Flash Preview)
+    models_to_try = ["gemini-2.5-flash", "gemini-3.0-flash-preview", "gemini-2.0-flash-exp"]
     
     max_retries = 3
-    base_wait = 10 
+    base_wait = 60 # Aggressive backoff: wait 1 minute if hit rate limit to clear the bucket
 
     for model_name in models_to_try:
         for attempt in range(max_retries):
@@ -57,11 +57,12 @@ def translate_markdown(input_path: Path):
             except Exception as e:
                 error_str = str(e)
                 if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                    print(f"Rate limit for {model_name}. Switching/Retrying...")
-                    time.sleep(base_wait * (attempt + 1))
-                    # If this was the last attempt for this model, the outer loop will try the next model
+                    print(f"Rate limit for {model_name} (Attempt {attempt+1}/{max_retries}). Waiting {base_wait}s...")
+                    # Print details to debug if it's daily limit vs minute limit
+                    # print(f"DEBUG: {error_str}") 
+                    time.sleep(base_wait)
                 elif "404" in error_str:
-                     print(f"Model {model_name} not found.")
+                     print(f"Model {model_name} not found. Skipping.")
                      break # Try next model immediately
                 else:
                     print(f"Error with {model_name}: {e}")
