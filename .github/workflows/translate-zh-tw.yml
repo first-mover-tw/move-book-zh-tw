@@ -1,5 +1,8 @@
 name: Translate docs to zh-TW
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -19,57 +22,46 @@ jobs:
       - name: Fetch all branches
         run: |
           git fetch --all --prune
-
-      - name: Detect changed markdown files
-        id: diff
-        run: |
-          # 確保我們有遠端的 english-main 與 zh-tw-main
           git branch -r
 
-          CHANGED=$(git diff --name-only origin/zh-tw-main...origin/english-main -- 'book/**/*.md' 'reference/**/*.md')
-          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGED" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Stop if nothing changed
-        if: steps.diff.outputs.changed_files == ''
-        run: echo "No docs changed."
+      - name: List markdown files (debug)
+        run: |
+          echo "Markdown files under book/:"
+          find book -name "*.md" -print || echo "no book md"
+          echo "Markdown files under reference/:"
+          find reference -name "*.md" -print || echo "no reference md"
 
       - name: OpenAI continuous translation
-        if: steps.diff.outputs.changed_files != ''
         uses: yunwei37/OpenAI-Continuous-Translator@master
         with:
           git_repo_url: https://github.com/${{ github.repository }}
           api_key: ${{ secrets.OPENAI_API_KEY }}
           source_language: English
           target_language: Traditional Chinese
-          # 只翻譯 book/ 與 reference/ 下的 md
           file_path_filter: "book/**/*.md,reference/**/*.md"
-          # 建議設定 i18n_surfix 為 .zh-TW，避免覆蓋原文
           i18n_surfix: ".zh-TW"
           additional_prompt: |
             Translate to Traditional Chinese (Taiwan).
             Keep markdown structure and code blocks unchanged.
 
       - name: Commit to auto branch
-        if: steps.diff.outputs.changed_files != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git checkout -B auto/zh-tw-update
-          git add book/**/*.zh-TW.md reference/**/*.zh-TW.md
+          git add book/**/*.zh-TW.md reference/**/*.zh-TW.md || echo "no zh-TW files"
+          git status
           git commit -m "Auto update zh-TW translations" || echo "No changes to commit"
-          git push -f origin auto/zh-tw-update
+          git push -f origin auto/zh-tw-update || echo "No changes to push"
 
       - name: Open PR into zh-tw-main
-        if: steps.diff.outputs.changed_files != ''
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: zh-tw-main
           head: auto/zh-tw-update
-          title: "Update zh-TW translations from upstream"
+          title: "Update zh-TW translations from upstream (full)"
           body: |
-            自動更新 MystenLabs/move-book 英文內容的繁體中文翻譯。
-            請檢查術語與語氣後再合併。以臺灣的繁體中文用語為主。
+            初次完整翻譯 book/ 與 reference/ 下的 Markdown。
+            之後可以再調整為只翻譯 diff 的檔案。
