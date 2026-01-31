@@ -80,3 +80,8 @@ jobs:
           body: |
             使用 Gemini API 將 book/ 與 reference/ 的 Markdown 翻譯為繁體中文（臺灣用語）。
             請檢查術語與翻譯品質後再合併。
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai

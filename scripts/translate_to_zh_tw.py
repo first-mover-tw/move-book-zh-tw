@@ -2,10 +2,10 @@ import os
 import sys
 from pathlib import Path
 
-import google.generativeai as genai  # pip install google-generativeai
+import google.genai as genai  # pip install google-genai[web:137][web:140]
 
 
-def translate_markdown(input_path: Path):
+def translate_markdown(input_path: Path, client: genai.Client):
     text = input_path.read_text(encoding="utf-8")
 
     system_prompt = (
@@ -16,17 +16,21 @@ def translate_markdown(input_path: Path):
         "Keep Move/Sui related technical terms accurate and natural in zh-TW."
     )
 
-    model = genai.GenerativeModel("gemini-1.5-flash")  # 有免費額度且價格便宜[web:128][web:140]
-
-    prompt = (
-        system_prompt
-        + "\n\nMarkdown to translate:\n\n"
-        + text
-        + "\n\nReturn only the translated Markdown, no explanation."
+    # 使用新版 client.responses.create[web:133][web:140]
+    resp = client.responses.create(
+        model="gemini-1.5-flash-001",  # 選一個在 v1 API 可用的模型 ID
+        input=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": text},
+        ],
     )
 
-    resp = model.generate_content(prompt)
-    return resp.text
+    # 將多段輸出組合成一個字串
+    parts = []
+    for item in resp.output_candidates[0].content.parts:
+        if item.text:
+            parts.append(item.text)
+    return "\n".join(parts)
 
 
 def main():
@@ -38,7 +42,7 @@ def main():
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     for path_str in sys.argv[1:]:
         input_path = Path(path_str)
@@ -47,9 +51,9 @@ def main():
             continue
 
         print(f"Translating {input_path} ...")
-        translated = translate_markdown(input_path)
+        translated = translate_markdown(input_path, client)
 
-        # 輸出檔名：xxx.zh-TW.md
+        # 輸出成 xxx.zh-TW.md
         output_path = input_path.with_name(input_path.stem + ".zh-TW.md")
         output_path.write_text(translated, encoding="utf-8")
         print(f"Wrote translated file to {output_path}")
