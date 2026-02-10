@@ -1,73 +1,43 @@
-# Struct Methods
+# 結構方法 (Struct Methods)
 
-Move Compiler supports _receiver syntax_ `e.f()`, which allows defining methods which can be called
-on instances of a struct. The term "receiver" specifically refers to the instance that receives the
-method call. This is like the method syntax in other programming languages. It is a convenient way
-to define functions that operate on the fields of a struct, providing direct access to the struct's
-fields and creating cleaner, more intuitive code than passing the struct as a parameter.
+Move 編譯器支援 **接收者語法 (receiver syntax)** `e.f()`，這允許定義可以在結構實例上呼叫的方法。術語「接收者」特別是指接收方法呼叫的實例。這與其他程式語言中的方法語法類似。這是定義操作結構欄位的函式的一種便捷方式，可以直接存取結構欄位，並建立比將結構作為參數傳遞更簡潔、更直觀的程式碼。
 
-## Method syntax
+## 方法語法 (Method syntax)
 
-If the first argument of a function is a struct internal to the module that defines the function,
-then the function can be called using the `.` operator. However, if the type of the first argument
-is defined in another module, then method won't be associated with the struct by default. In this
-case, the `.` operator syntax is not available, and the function must be called using standard
-function call syntax.
+如果函式的第一個參數是在定義該函式的模組內部的結構，那麼可以使用 `.` 運算子呼叫該函式。但是，如果第一個參數的類型是在另一個模組中定義的，則預設情況下該方法不會與該結構相關聯。在這種情況下，`.` 運算子語法不可用，必須使用標準的函式呼叫語法來呼叫該函式。
 
-When a module is imported, its methods are automatically associated with the struct.
+當匯入一個模組時，其方法會自動與該結構相關聯。
 
 ```move file=packages/samples/sources/move-basics/struct-methods.move anchor=hero
 
 ```
 
-## Method Aliases
+## 方法別名 (Method Aliases)
 
-Method aliases help avoid name conflicts when modules define multiple structs and their methods.
-They can also provide more descriptive method names for structs.
+當模組定義了多個結構及其方法時，方法別名有助於避免名稱衝突。它們還可以為結構提供更具描述性的方法名稱。
 
-Here's the syntax:
+語法如下：
 
 ```move
-// for local method association
+// 用於本地方法關聯
 use fun function_path as Type.method_name;
 
-// exported alias
+// 導出的別名
 public use fun function_path as Type.method_name;
 ```
 
-> Public aliases are only allowed for structs defined in the same module. For structs defined in
-> other modules, aliases can still be created but cannot be made public.
+> 僅允許為在同一個模組中定義的結構定義公開別名。對於在其他模組中定義的結構，仍然可以建立別名，但不能設置為公開。
 
-In the example below, we changed the `hero` module and added another type - `Villain`. Both `Hero`
-and `Villain` have similar field names and methods. To avoid name conflicts, we prefixed methods
-with `hero_` and `villain_` respectively. However, using aliases allows these methods to be called
-on struct instances without the prefix:
+在下面的範例中，我們更改了 `hero` 模組並添加了另一個類型 — `Villain`（反派）。`Hero` 和 `Villain` 都有類似的欄位名稱和方法。為了避免名稱衝突，我們分別在方法前加上了 `hero_` 和 `villain_` 前綴。但是，使用別名允許在結構實例上呼叫這些方法而無需前綴：
 
 ```move file=packages/samples/sources/move-basics/struct-methods-2.move anchor=hero_and_villain
 
 ```
 
-In the test function, the `health` method is called directly on the `Hero` and `Villain` instances
-without the prefix, as the compiler automatically associates the methods with their respective
-structs.
+在測試函式中，`health` 方法直接在 `Hero` 和 `Villain` 實例上呼叫而無需前綴，因為編譯器會自動將方法與其各自的結構相關聯。
 
-> Note: In the test function, `hero.health()` is calling the aliased method, not directly accessing
-> the private `health` field. While the `Hero` and `Villain` structs are public, their fields remain
-> private to the module. The method call `hero.health()` uses the public alias defined by
-> `public use fun hero_health as Hero.health`, which provides controlled access to the private
-> field.
+> 注意：在測試函式中，`hero.health()` 是在呼叫別名方法，而不是直接存取私有的 `health` 欄位。雖然 `Hero` 和 `Villain` 結構是公開的，但它們的欄位對模組而言仍然是私有的。方法呼景 `hero.health()` 使用了由 `public use fun hero_health as Hero.health` 定義的公開別名，這提供了對私有欄位的受控存取。
 
-<!-- ## Aliasing an external module's method
+## 延伸閱讀
 
-It is also possible to associate a function defined in another module with a struct from the current
-module. Following the same approach, we can create an alias for the method defined in another
-module. Let's use the `bcs::to_bytes` method from the [Standard Library](./standard-library) and
-associate it with the `Hero` struct. It will allow serializing the `Hero` struct to a vector of
-bytes.
-
-```move file=packages/samples/sources/move-basics/struct-methods-3.move anchor=hero_to_bytes
-``` -->
-
-## Further Reading
-
-- [Method Syntax](./../../reference/method-syntax) in the Move Reference.
+- Move 參考手冊中的 [方法語法](./../../reference/method-syntax)。

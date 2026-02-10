@@ -1,66 +1,52 @@
-# Receiving as Object
+# 接收物件 (Receiving as Object)
 
-[Address owned](./storage-functions.md#transfer) Object state supports two types of owners: an
-account and another Object. If an object was transferred to another object, Sui provides a way to
-_receive_ this object through its owner's [`UID`][uid].
+[地址擁有的](./storage-functions.md#transfer) 物件狀態支援兩種類型的擁有者：帳戶和另一個物件。如果一個物件被轉移到另一個物件，Sui 提供了一種透過其擁有者的 [`UID`][uid] 來「接收 (receive)」此物件的方法。
 
-> This feature is also known as _"Transfer to Object"_ or TTO.
+> 此功能也被稱為「轉移至物件 (Transfer to Object)」或 TTO。
 
-## Definition
+## 定義
 
-Receiving functionality is implemented in the [`sui::transfer`][transfer] module. It consists of a
-special type `Receiving` which is instantiated through a special transaction argument, and the
-`receive` function which takes a [`UID`][uid] of the parent.
+接收功能在 [`sui::transfer`][transfer] 模組中實作。它包含一個特殊的類型 `Receiving`（透過特殊的交易參數實例化），以及接收函式 `receive`（接收父物件的 [`UID`][uid]）。
 
-> Currently, `T` in the `transfer::receive` is a subject to [Internal Constraint][internal]. Public
-> version of `receive` is called `public_receive`, and like other [storage functions][storage-funs]
-> it requires `T` to have [`store`][store].
+> 目前，`transfer::receive` 中的 `T` 受限於 [內部約束 (Internal Constraint)][internal]。`receive` 的公開版本稱為 `public_receive`，與其他 [存儲函式 (storage functions)][storage-funs] 一樣，它要求 `T` 具有 [`store`][store]。
 
 ```move
 module sui::transfer;
 
-// An ephemeral wrapper around `Receiving` argument. Provided as a special input
-// in a Transaction Block.
-// Note: this type should be explicitly imported to be used!
+// 基於 `Receiving` 參數的臨時封裝器。在交易區塊中作為特殊輸入提供。
+// 注意：此類型必須明確匯入才能使用！
 public struct Receiving<phantom T: key> has drop {
     id: ID,
     version: u64,
 }
 
-/// Receive `T` from parent `UID` through special type `Receiving`.
+/// 從父物件 `UID` 透過特殊類型 `Receiving` 接收 `T`。
 public fun receive<T: key>(parent: &mut UID, to_receive: Receiving<T>): T;
 ```
 
-Due to the `UID` type requirement, receiving cannot be performed on an arbitrary object that does
-not provide access or special receiving implementation. This feature should be used be used with
-caution and in a controlled setting.
+由於對 `UID` 類型的要求，接收操作無法在不提供存取權限或特殊接收實作的任意物件上執行。此功能應謹慎使用，並在受控環境下進行。
 
-## Example
+## 範例
 
-As an illustration for _transfer_ and _receive_ consider an example: `PostOffice` allows registering
-Post Boxes and sending to accounts' post boxes.
+作為「轉移」與「接收」的說明，考慮一個範例：`PostOffice` 允許註冊郵政信箱 (Post Box) 並向帳戶的郵政信箱發送物件。
 
 ```move file=packages/samples/sources/storage/transfer-to-object.move anchor=main
 
 ```
 
-## Use Cases
+## 使用場景
 
-Transferring to objects is a powerful feature which allows objects to act as owners of other
-objects. One of the reasons to use it is the extra authorization performed upon receiving, eg the
-`PostOffice` in the example above could charge a receiving fee.
+轉移至物件是一項強大的功能，它允許物件充當其他物件的擁有者。使用它的原因之一是可以在接收時執行額外的授權，例如上述範例中的 `PostOffice` 可以收取接收費用。
 
-- Allows parallel execution of transfers to multiple objects without referencing them in the
-  transaction;
-- Parent objects can also be transferred, acting as a container;
-- PostBox-like applications, where user gets assets only after activating their account;
-- Account abstraction-like applications where an object is mocking an account.
+- 允許並行執行對多個物件的轉移，而無需在交易中引用它們；
+- 父物件也可以被轉移，充當容器；
+- 分類似於郵政信箱的應用程式，使用者只有在啟動帳戶後才能獲得資產；
+- 帳戶抽象 (Account Abstraction) 類的應用程式，其中一個物件在模擬一個帳戶。
 
-## Links
+## 相關連結
 
-- [Transfer to Object](https://docs.sui.io/concepts/transfers/transfer-to-object) in Sui
-  Documentation
-- [`sui::transfer`][transfer] module documentation
+- Sui 文件中的 [轉移至物件 (Transfer to Object)](https://docs.sui.io/concepts/transfers/transfer-to-object)
+- [`sui::transfer`][transfer] 模組文件
 
 [transfer]: https://docs.sui.io/references/framework/sui_sui/transfer
 [key]: ./key-ability.md

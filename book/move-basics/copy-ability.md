@@ -1,61 +1,46 @@
-# Abilities: Copy
+# 能力：複製 (Copy)
 
-In Move, the _copy_ ability on a type indicates that the instance or the value of the type can be
-copied, or duplicated. While this behavior is provided by default when working with numbers or other
-primitive types, it is not the default for custom types. Move is designed to express digital assets
-and resources, and controlling the ability to duplicate resources is a key principle of the resource
-model. However, the Move type system allows you to add the _copy_ ability to custom types:
+在 Move 中，類型上的 **copy** 能力表示該類型的實例或值可以被複製或複製。雖然在使用數字或其他原始類型時預設提供了此行為，但對於自定義類型，這並非預設行為。Move 旨在表達數位資產 and 資源，而控制複製資源的能力是資源模型的一個核心原則。然而，Move 類型系統允許您為自定義類型添加 **copy** 能力：
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copyable
 
 ```
 
-In the example above, we define a custom type `Copyable` with the _copy_ ability. This means that
-instances of `Copyable` can be copied, both implicitly and explicitly.
+在上面的範例中，我們定義了一個具有 **copy** 能力的自定義類型 `Copyable`。這意味著 `Copyable` 的實例可以被隱式或顯式地複製。
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copyable_test
 
 ```
 
-In the example above, `a` is copied to `b` implicitly, and then explicitly copied to `c` using the
-dereference operator. If `Copyable` did not have the _copy_ ability, the code would not compile, and
-the Move compiler would raise an error.
+在上面的範例中，`a` 被隱式複製到 `b`，然後使用解參照 (dereference) 運算子顯式複製到 `c`。如果 `Copyable` 不具備 **copy** 能力，程式碼將無法編譯，且 Move 編譯器會發出錯誤。
 
-> Note: In Move, destructuring with empty brackets is often used to consume unused variables,
-> especially for types without the drop ability. This prevents compiler errors from values going out
-> of scope without explicit use. Also, Move requires the type name in destructuring (e.g.,
-> `Copyable` in `let Copyable {} = a;`) because it enforces strict typing and ownership rules.
+> 注意：在 Move 中，使用空括號進行解構通常用於消耗未使用的變數，特別是對於不具備 drop 能力的類型。這可以防止由於值在沒有明確使用的情況下超出作用域而導致的編譯器錯誤。此外，Move 在解構時需要類型名稱（例如 `let Copyable {} = a;` 中的 `Copyable`），因為它強制執行嚴格的類型和所有權規則。
 
-## Copying and Drop
+## 複製與捨棄 (Copying and Drop)
 
-The `copy` ability is closely related to the [`drop` ability](./drop-ability). If a type has the
-_copy_ ability, it is very likely that it should have `drop` too. This is because the _drop_ ability
-is required to clean up resources when the instance is no longer needed. If a type only has _copy_,
-managing its instances gets more complicated, as the instances must be explicitly used or consumed.
+`copy` 能力與 [`drop` 能力](./drop-ability) 密切相關。如果一個類型具有 **copy** 能力，它很可能也應該具有 `drop` 能力。這是因為當實例不再需要時，需要具備 **drop** 能力來清理資源。如果一個類型僅具備 **copy**，管理其實例會變得更為複雜，因為實例必須被明確使用或消耗。
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copy_drop
 
 ```
 
-All of the primitive types in Move behave as if they have the _copy_ and _drop_ abilities. This
-means that they can be copied and dropped, and the Move compiler will handle the memory management
-for them.
+Move 中的所有原始類型其行為就像它們同時具備 **copy** 和 **drop** 能力。這意味著它們可以被複製和捨棄，且 Move 編譯器會為它們處理記憶體管理。
 
-## Types with the `copy` Ability
+## 具備 `copy` 能力的類型
 
-All native types in Move have the `copy` ability. This includes:
+Move 中的所有原生類型都具備 `copy` 能力。這包括：
 
-- [bool](./../move-basics/primitive-types#booleans)
-- [unsigned integers](./../move-basics/primitive-types#integer-types)
-- [vector](./../move-basics/vector)
-- [address](./../move-basics/address)
+- [布林值 (bool)](./../move-basics/primitive-types#booleans)
+- [無號整數 (unsigned integers)](./../move-basics/primitive-types#integer-types)
+- [向量 (vector)](./../move-basics/vector)
+- [地址 (address)](./../move-basics/address)
 
-All of the types defined in the standard library have the `copy` ability as well. This includes:
+標準庫中定義的所有類型同樣具備 `copy` 能力。這包括：
 
-- [Option](./../move-basics/option)
-- [String](./../move-basics/string)
-- [TypeName](./../move-basics/type-reflection)
+- [選項 (Option)](./../move-basics/option)
+- [字串 (String)](./../move-basics/string)
+- [類型名稱 (TypeName)](./../move-basics/type-reflection)
 
-## Further Reading
+## 延伸閱讀
 
-- [Type Abilities](./../../reference/abilities) in the Move Reference.
+- Move 參考手冊中的 [類型能力 (Type Abilities)](./../../reference/abilities)。

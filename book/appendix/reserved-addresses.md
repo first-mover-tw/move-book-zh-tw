@@ -1,12 +1,11 @@
-# Appendix B: Reserved Addresses
+# 附錄 B：保留位址
 
-Reserved addresses are special addresses that have a specific purpose on Sui. They stay the same
-between environments and are used for specific native operations.
+保留位址是 Sui 上具有特定用途的特殊位址。它們在不同環境之間保持不變，並用於特定的原生操作。
 
-- `0x1` - address of the [Standard Library](./../move-basics/standard-library.md) (alias `std`)
-- `0x2` - address of the [Sui Framework](./../programmability/sui-framework.md) (alias `sui`)
-- `0x5` - address of the `SuiSystem` object
-- `0x6` - address of the system [`Clock` object](./../programmability/epoch-and-time.md)
-- `0x8` - address of the system `Random` object
-- `0xc` - address of the system `CoinRegistry` object
-- `0x403` - address of the `DenyList` system object
+- `0x1` - [標準函式庫](./../move-basics/standard-library.md) 的位址 (別名 `std`)
+- `0x2` - [Sui 框架](./../programmability/sui-framework.md) 的位址 (別名 `sui`)
+- `0x5` - `SuiSystem` 物件的位址
+- `0x6` - 系統 [Clock 物件](./../programmability/epoch-and-time.md) 的位址
+- `0x8` - 系統 `Random` 物件的位址
+- `0xc` - 系統 `CoinRegistry` 物件的位址
+- `0x403` - `DenyList` 系統物件的位址

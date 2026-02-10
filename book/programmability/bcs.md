@@ -1,39 +1,26 @@
-# Binary Canonical Serialization
+# 二進位規範序列化 (Binary Canonical Serialization, BCS)
 
-Binary Canonical Serialization (BCS) is a binary encoding format for structured data. It was
-originally designed in Diem, and became the standard serialization format for Move. BCS is simple,
-efficient, deterministic, and easy to implement in any programming language.
+二進位規範序列化 (BCS) 是一種用於結構化資料的二進位編碼格式。它最初是為 Diem 設計的，後來成為 Move 的標準序列化格式。BCS 簡單、高效、具有確定性，且易於在任何程式語言中實作。
 
-> The full format specification is available in the
-> [BCS repository](https://github.com/zefchain/bcs).
+> 完整的格式規範可在 [BCS 儲存庫](https://github.com/zefchain/bcs) 中找到。
 
-## Format
+## 格式
 
-BCS is a binary format that supports unsigned integers up to 256 bits, options, booleans, unit
-(empty value), fixed and variable-length sequences, and maps. The format is designed to be
-deterministic, meaning that the same data will always be serialized to the same bytes.
+BCS 是一種支援高達 256 位元的無符號整數、選項 (options)、布林值、單元 (unit，空值)、固定和可變長度序列以及映射 (maps) 的二進位格式。該格式旨在具有確定性，這意味著相同的資料將始終被序列化為相同的位元組。
 
-> "BCS is not a self-describing format. As such, in order to deserialize a message, one must know
-> the message type and layout ahead of time" from the [README](https://github.com/zefchain/bcs)
+> 「BCS 不是一種自帶描述 (self-describing) 的格式。因此，為了反序列化訊息，必須提前知道訊息類型和佈局。」 —— 摘自 [README](https://github.com/zefchain/bcs) 
 
-Integers are stored in little-endian format, and variable-length integers are encoded using a
-variable-length encoding scheme. Sequences are prefixed with their length as ULEB128, enumerations
-are stored as the index of the variant followed by the data, and maps are stored as an ordered
-sequence of key-value pairs.
+整數以小端 (little-endian) 格式存儲，可變長度整數使用可變長度編碼方案進行編碼。序列會以 ULEB128 編碼的長度作為前綴，列舉 (enumerations) 存儲為變體的索引後接資料，而映射則存儲為鍵值對的有序序列。
 
-Structs are treated as a sequence of fields, and the fields are serialized in the order they are
-defined in the struct. The fields are serialized using the same rules as the top-level data.
+結構 (Structs) 被視為欄位序列，欄位按其在結構中定義的順序進行序列化。欄位使用與頂層資料相同的規則進行序列化。
 
-## Using BCS
+## 使用 BCS
 
-The [Sui Framework](./sui-framework) includes the [`sui::bcs`][sui-bcs] module for encoding and
-decoding data. Encoding functions are native to the VM, and decoding functions are implemented in
-Move.
+[Sui 框架](./sui-framework) 包含用於編碼和解碼資料的 [`sui::bcs`][sui-bcs] 模組。編碼函式在 VM 中原生實作，解碼函式則是在 Move 中實作。
 
-## Encoding
+## 編碼 (Encoding)
 
-To encode data, use the `bcs::to_bytes` function, which converts data references into byte vectors.
-This function supports encoding any types, including structs.
+若要編碼資料，請使用 `bcs::to_bytes` 函式，它將資料參考轉換為位元組向量。此函式支援編碼任何類型，包括結構。
 
 ```move
 module std::bcs;
@@ -41,103 +28,84 @@ module std::bcs;
 public native fun to_bytes<T>(t: &T): vector<u8>;
 ```
 
-The following example shows how to encode a struct using BCS. The `to_bytes` function can take any
-value and encode it as a vector of bytes.
+以下範例展示了如何使用 BCS 編碼結構。`to_bytes` 函式可以接收任何數值並將其編碼為位元組向量。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=encode
 
 ```
 
-### Encoding a Struct
+### 編碼結構
 
-Structs encode similarly to simple types. Here is how to encode a struct using BCS:
+結構的編碼方式與簡單類型相似。以下是如何使用 BCS 編碼結構：
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=encode_struct
 
 ```
 
-## Decoding
+## 解碼 (Decoding)
 
-Because BCS is not a self-describing format, decoding requires prior knowledge of the data type. The
-[`sui::bcs`][sui-bcs] module provides various functions to assist with this process.
+由於 BCS 不是自帶描述的格式，解碼需要預先知道資料類型。[`sui::bcs`][sui-bcs] 模組提供了多種函式來協助此過程。
 
-### Wrapper API
+### 封裝 API (Wrapper API)
 
-BCS is implemented as a wrapper in Move. The decoder takes the bytes by value, and then allows the
-caller to _peel off_ the data by calling different decoding functions, prefixed with `peel_*`. The
-data is extracted from the bytes, and the remaining bytes are kept in the wrapper until the
-`into_remainder_bytes` function is called.
+BCS 在 Move 中是以封裝器 (wrapper) 的形式實作的。解碼器按值接收位元組，然後允許呼叫者透過呼叫以 `peel_*` 為前綴的不同解碼函式來「剝離 (peel off)」資料。資料從位元組中提取，剩餘的位元組保留在封裝器中，直到呼叫 `into_remainder_bytes` 函式。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode
 
 ```
 
-There is a common practice to use multiple variables in a single `let` statement during decoding. It
-makes code a little bit more readable and helps to avoid unnecessary copying of the data.
+一種常見的實作是在解碼過程中的單個 `let` 語句中使用多個變數。這使得程式碼更具可讀性，並有助於避免不必要的資料複製。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=chain_decode
 
 ```
 
-### Decoding Vectors
+### 解碼向量 (Decoding Vectors)
 
-While most of the primitive types have a dedicated decoding function, vectors need special handling,
-which depends on the type of the elements. For vectors, first you need to decode the length of the
-vector, and then decode each element in a loop.
+雖然大多數原始類型都有專用的解碼函式，但向量需要特殊處理，這取決於元素的類型。對於向量，首先需要解碼向量的長度，然後在迴圈中解碼每個元素。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode_vector
 
 ```
 
-This functionality is provided by the library as a macro `peel_vec!`. It calls the inner expression
-as many times as the vector length and aggregates the result into a single vector.
+此功能由函式庫提供，表現為宏 `peel_vec!`。它根據向量長度重複呼叫內部表達式，並將結果匯總到單個向量中。
 
 ```move
 let u64_vec = bcs.peel_vec!(|bcs| bcs.peel_u64());
 let address_vec = bcs.peel_vec!(|bcs| bcs.peel_address());
 
-// Caution: this is only possible if `MyStruct` is defined in the current module!
+// 注意：僅當 `MyStruct` 定義在目前模組中時才可行！
 let my_struct = bcs.peel_vec!(|bcs| MyStruct {
     user_addr: bcs.peel_address(),
     age: bcs.peel_u8(),
 });
 ```
 
-### Decoding Option
+### 解碼選項 (Decoding Option)
 
-<!--
-> Coincidentally, Option, being a vector in Move, overlaps with the representation of an enum with a
-> single variant in BCS, and makes Option in Rust fully compatible with the one in Move.
--->
-
-[Option](./../move-basics/option) in Move is represented as a vector of either 0 or 1 element. To
-read an option, you would treat it like a vector and check its length (first byte - either 1 or 0).
+Move 中的 [Option](./../move-basics/option) 被表示為具有 0 或 1 個元素的向量。要讀取選項，您可以像處理向量一樣處理它，並檢查其長度（第一個位元組 —— 不是 1 就是 0）。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode_option
 
 ```
 
-Like with [vector](#decoding-vectors), there is a wrapper macro `peel_option!` which checks the
-variant index and evaluates the expression if the underlying value is _some_.
+與 [向量](#decoding-vectors) 類似，這裡也有一個封裝宏 `peel_option!`，它會檢查變體索引，並在底層數值為 _some_ 時評估表達式。
 
 ```move
 let u8_opt = bcs.peel_option!(|bcs| bcs.peel_u8());
 let bool_opt = bcs.peel_option!(|bcs| bcs.peel_bool());
 ```
 
-### Decoding Structs
+### 解碼結構
 
-Structs are decoded field by field, and there is no way to automatically decode bytes into a Move
-struct. To parse bytes into a struct, you need to decode each field and instantiate the type.
+結構是逐個欄位解碼的，目前沒有自動將位元組解碼為 Move 結構的方法。要將位元組解析為結構，您需要解碼每個欄位並實例化該類型。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode_struct
 
 ```
 
-## Summary
+## 總結
 
-Binary Canonical Serialization is an efficient binary format for structured data, ensuring
-consistent serialization across platforms. The Sui Framework provides comprehensive tools for
-working with BCS, allowing extensive functionality through built-in functions.
+二進位規範序列化是一種高效的結構化資料二進位格式，確保了跨平台的一致序列化。Sui 框架提供了全面的工具來處理 BCS，透過內建函式實作廣泛的功能。
 
 [sui-bcs]: https://docs.sui.io/references/framework/sui_sui/bcs

@@ -1,74 +1,65 @@
-# Modes
+# 模式 (Modes)
 
-Modes let you include **unpublishable** code only when you explicitly opt into a named build `mode`.
-Think of them as generalizations of the `#[test_only]` [test annotation](../move-basics/testing) for
-any purpose you choose (e.g. `debug`, `benchmark`, `spec`, or any other feature).
+模式 (Modes) 允許您僅在明確選擇加入具名構建「模式」時，才包含 **不可發佈** 的程式碼。您可以將其視為用於任何目的（例如 `debug`、`benchmark`、`spec` 或任何其他功能）的 `#[test_only]` [測試註解](../move-basics/testing) 的泛化。
 
-Modes at a glance:
+模式概覽：
 
-* Annotate items with `#[mode(name, ...)]` or use the shorthand `#[test_only]` for the built-in
-  `test` mode.
-  * The `#[test_only]` attribute is syntactic sugar for `#[mode(test)]`.
-* Build with `--mode <name>` (or `--test` for unit testing). Items whose mode list contains a name
-  you enabled are compiled in. Items whose mode list does **not** match are compiled **out**.
-* Code compiled with any mode enabled is **not publishable**. This keeps debug/test scaffolding from
-  ever making it on-chain.
-* Items with **no** `#[mode(...)]`/`#[test_only]` annotation are always included.
+* 使用 `#[mode(name, ...)]` 標記項目，或針對內建的 `test` 模式使用縮寫 `#[test_only]`。
+  * `#[test_only]` 屬性是 `#[mode(test)]` 的語法糖。
+* 使用 `--mode <name>`（或針對單元測試使用 `--test`）進行構建。模式清單中包含您所啟用名稱之項目會被編譯 **進來**。模式清單中 **不匹配** 的項目則會被編譯 **掉**。
+* 啟用任何模式後編譯的程式碼都是 **不可發佈** 的。這可以防止偵錯/測試腳手架進入鏈上。
+* **沒有** `#[mode(...)]`/`#[test_only]` 標記的項目始終會被包含。
 
-> Tip: Modes are filters enforced at compile-time—they don’t affect bytecode at runtime. Use them
-> for helpers, simulators, and other mock types and functions that should never be published.
+> 提示：模式是在編譯時期強制執行的過濾器 — 它們不會影響執行時期的位元組碼。將其用於輔助工具、模擬器以及其他永遠不應發佈的模擬 (mock) 類型和函式。
 
-## Syntax
+## 語法
 
-Like `#[test_only]`, You can attach a mode attribute to modules and to individual members:
+就像 `#[test_only]` 一樣，您可以將模式屬性附加到模組和單個成員上：
 
 ```move
-// Entire module is included only when a matching mode is enabled
+// 僅當啟用匹配模式時才包含整個模組
 #[mode(debug)]
 module my_pkg::debug_tools {
     public fun dump_state() { /* ... */ }
 }
 
 module my_pkg::library {
-    // This function exists only in `debug` or `test` builds
+    // 此函式僅存在於 `debug` 或 `test` 構建中
     #[mode(debug, test)]
     public fun assert_invariants() { /* ... */ }
 
-    // Test-only helper; equivalent to #[mode(test)]
+    // 僅限測試的輔助工具；等同於 #[mode(test)]
     #[test_only]
     fun mk_fake() { /* ... */ }
 }
 ```
 
-As we can see here, multiple modes can be listed in a single attribute: `#[mode(name1,name2,...)]`.
-This item will be included during compilation if **any** of the listed names is enabled. In
-addition, any definition without a mode annotation is always included.
+正如我們在這裡看到的，單個屬性中可以列出多個模式：`#[mode(name1,name2,...)]`。如果列出的名稱中有 **任何一個** 被啟用，該項目就會在編譯期間被包含。此外，任何不具備模式標記的定義始終會被包含。
 
-> Tip: The annotation `#[mode(test)]` is equivalent to `#[test_only]`.
+> 提示：註解 `#[mode(test)]` 等同於 `#[test_only]`。
 
-## Building with modes
+## 使用模式進行構建
 
-Use the Sui CLI to opt into a mode when building or testing:
+在構建或測試時，使用 Sui CLI 來選擇加入特定模式：
 
 ```bash
-# Build with a custom mode enabled
+# 在啟用自定義模式的情況下進行構建
 sui move build --mode debug
 
-# Run tests; includes #[test_only] automatically
+# 執行測試；自動包含 #[test_only]
 sui move test --test
 
-# Combine: run unit tests with extra debug helpers
+# 結合使用：執行單元測試並帶有額外的偵錯輔助工具
 sui move test --test --mode debug
 ```
 
-Items annotated with a mode you enabled are compiled **in**; items annotated with a different,
-non-enabled mode are compiled **out**. Unannotated items are always compiled in.
+標記有您所啟用模式的項目會被編譯 **進來**；標記有其他未啟用模式的項目則會被編譯 **掉**。未標記的項目始終會被編譯進來。
 
-> **Publish safety**: Any artifact produced while a mode is enabled (including `--test`) is non-publishable. Always run a clean build **without** `--mode`/`--test` before `sui client publish`.
+> **發佈安全性**：在啟用任何模式（包括 `--test`）期間產生的任何產物都是不可發佈的。在執行 `sui client publish` 之前，請務必運作一次 **不帶** `--mode`/`--test` 的乾淨構建。
 
-### Example — `test` mode (unit tests)
+### 範例 1 — `test` 模式 (單元測試)
 
-`#[test_only]` is the built-in mode for unit testing. It works exactly like a mode named `test`.
+`#[test_only]` 是用於單元測試的內建模式。它的運作方式與名為 `test` 的模式完全相同。
 
 ```move
 #[mode(test)]
@@ -78,106 +69,98 @@ module my_pkg::math_tests {
     #[modetest]
     fun add_basic() { /* ... */ }
 
-    // Private test helper
+    // 私有測試輔助工具
     fun mk_case() { /* ... */ }
 }
 ```
 
-To build and run:
+構建與執行：
 
 ```bash
-# Includes modules and members marked #[test_only]
+# 包含標記為 #[test_only] 的模組和成員
 sui move test --test
 ```
 
-As described in the [testing](../move-basics/testing) documentation, this is a great way to
-keep test helpers and test-only public functions out of published packages.
+正如 [測試](../move-basics/testing) 檔案中所述，這是將測試輔助工具和僅限測試的公開函式排除在已發佈套件之外的好方法。
 
-### Example 2: Debug testing
+### 範例 2: 偵錯測試 (Debug testing)
 
-Suppose you have a `bank` module with a `transfer` function. You want to add debug logging in test
-runs where you can see internal state, but you only want to run that test with those logs during
-development (e.g., not during CI, etc). You can use a `debug` mode for this.
+假設您有一個包含 `transfer` 函式的 `bank` 模組。您想在測試運作中添加偵錯紀錄，以便查看內部狀態，但您只希望在開發期間執行帶有這些紀錄的測試（例如，不在 CI 期間執行等）。您可以為此使用 `debug` 模式。
 
 ```move
 module my_pkg::bank {
     use std::error;
 
     public fun transfer(from: &signer, to: address, amount: u64) {
-        // ... production logic ...
+        // ... 生產環境邏輯 ...
     }
 }
 
-// Debug-only wrappers & helpers
+// 僅限偵錯的封裝器與輔助工具
 #[mode(debug)]
 module my_pkg::bank_debug {
     use std::debug;
     use my_pkg::bank;
 
     public fun transfer_debug(from: &signer, to: address, amount: u64) {
-        // Perform debugging prints before the real call
+        // 在實際呼叫前執行偵錯列印
         debug::print(&b"[DEBUG] transfer begin".to_vector());
         debug::print(&amount);
         debug::print(&to);
-        // Main Call
+        // 主要呼叫
         bank::transfer(from, to, amount);
-        // More debugging prints
+        // 更多偵錯列印
         debug::print(&b"[DEBUG] transfer end".to_vector());
     }
 }
 ```
 
-Here, `bank::transfer` is the **only** production entry point, with not printing. The
-`#[mode(debug)]` exposes `bank_debug::{transfer_debug, dump_account, ...}`, however, which will
-**only** be included in `debug`-mode builds. Now, we can write tests that use this extra visibility
-without affecting production code or other tests:
+這裡，`bank::transfer` 是 **唯一的** 生產環境入口點，不帶有任何列印。然而，`#[mode(debug)]` 公開了 `bank_debug::{transfer_debug, dump_account, ...}`，它們 **僅** 會被包含在 `debug` 模式的構建中。現在，我們可以編寫使用此額外可見性的測試，而不影響生產環境程式碼或其他測試：
 
 ```move
 #[test_only]
 module my_pkg::bank_tests {
     use my_pkg::bank;
 
-    // Runs in all builds (no mode needed)
+    // 在所有構建中執行（不需要模式）
     #[test]
     fun transfer_basic() {
-        // create signers, call bank::transfer(...)
+        // 建立 signer，呼叫 bank::transfer(...)
     }
 
-    // Runs only with `--test --mode debug`
+    // 僅在使用 `--test --mode debug` 時執行
     #[mode(debug)]
     #[test]
     fun transfer_with_logs() {
-        use my_pkg::bank_debug; // only exists in debug builds
-        // create signers, then:
+        use my_pkg::bank_debug; // 僅存在於 debug 構建中
+        // 建立 signer，然後：
         bank_debug::transfer_debug(&signer, @bob, 100);
-        // assertions same as normal test; plus you see prints
+        // 斷言與正常測試相同；此外還能看到列印內容
     }
 }
 ```
 
-Now we can execute this test with extra logging by enabling the `debug` mode:
+現在，藉由啟用 `debug` 模式，我們可以執行帶有額外紀錄的測驗：
 
 ```bash
-# Standard tests (no debug helpers compiled in)
+# 標準測試（未編譯進偵錯輔助工具）
 sui move test
 
-# Debug tests with extra logging
+# 帶有額外紀錄的偵錯測試
 sui move test --mode debug
 ```
 
-This allows us to produce production bytecode, continuous integration tests, and debug logging
-tests, each at different times, without code duplication or complex branching.
+這使我們能夠在不同時間產生生產環境位元組碼、持續整合測試和偵錯紀錄測試，而無需重複程式碼或複雜的分支。
 
-## Publication
+## 發佈
 
-Code built with any mode enabled is non-publishable. Always do a clean build without `--mode` or
-`--test` before publishing:
+啟用任何模式構建的程式碼均為不可發佈。在發佈之前，請務必運作一次不帶 `--mode` 或 `--test` 的乾淨構建：
 
 ```bash
-sui move build   # no --mode, no --test
+sui move build   # 不帶 --mode, 不帶 --test
 ```
 
-## See also
+## 參見 (See also)
 
-* [Testing basics](../move-basics/testing) in the Move Book.
-* [Modes](/reference/modes) in the Move Reference.
+* Move Book 中的 [測試基礎 (Testing basics)](../move-basics/testing)。
+* Move 參考手冊中的 [模式 (Modes)](/reference/modes)。

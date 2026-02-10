@@ -1,17 +1,5 @@
----
-title: 'Control Flow | Reference'
-description: ''
----
+# 控制流程 (Control Flow)
 
-# Control Flow
+Move 提供了多種控制結構來引導程式執行，包括條件分支、迴圈和跳轉。
 
-Move offers multiple constructs for control flow based on
-[boolean expressions](./primitive-types/bool), including common programming constructs such as `if`
-expressions and `while` and `for` loops, along with advanced control flow structures including
-labels for loops and escapable named blocks. It also supports more complex constructs based on
-structural pattern matching.
-
-- [Conditional Expressions](./control-flow/conditionals)
-- [Pattern Matching](./control-flow/pattern-matching)
-- [Loops](./control-flow/loops)
-- [Labeled Control FLow](./control-flow/labeled-control-flow)
+詳細資訊請參閱[控制流程](./../book/move-basics/control-flow.md)章節。

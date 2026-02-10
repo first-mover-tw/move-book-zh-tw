@@ -1,42 +1,33 @@
-# Install MVR
+# 安裝 MVR
 
-[Move Registry (MVR)](https://moveregistry.com) is a package manager for Move. It allows anyone to
-publish and use published packages in new applications written in Move. Local binary allows
-searching packages in the registry as well as installing them as a part of the Sui CLI build
-process.
+[Move Registry (MVR)](https://moveregistry.com) 是 Move 的套件管理員。它允許任何人發佈套件，並在以 Move 編寫的新應用程式中使用已發佈的套件。本地二進位檔案允許在註冊表中搜尋套件，並將其作為 Sui CLI 構建過程的一部分進行安裝。
 
-## Installing via suiup
+## 透過 suiup 安裝
 
-The best way to install MVR is by using [`suiup`](https://github.com/MystenLabs/suiup). Suiup
-provides an easy way to update and manage different versions of binaries.
+安裝 MVR 的最佳方式是使用 [`suiup`](https://github.com/MystenLabs/suiup)。Suiup 提供了一種輕鬆更新和管理不同版本二進位檔案的方法。
 
-Installation instructions for `suiup` can be found
-[in the repository README](https://github.com/MystenLabs/suiup).
+`suiup` 的安裝說明可以在 [其 GitHub 儲存庫的 README](https://github.com/MystenLabs/suiup) 中找到。
 
-To install Move Registry CLI, run the following command:
+要安裝 Move Registry CLI，請執行以下指令：
 
 ```bash
 suiup install mvr
 ```
 
-After installation, Move Registry will be available as `mvr`.
+安裝完成後，Move Registry 將可以透過 `mvr` 指令使用。
 
-## Download Binary
+## 下載二進位檔案
 
-You can download the latest MVR binary from the
-[releases page](https://github.com/MystenLabs/mvr/releases). The binary is available for macOS,
-Linux and Windows. Unlike [Sui](./install-sui.md), the MVR binary is not changing between
-environments and supports both `testnet` and `mainnet`.
+您可以從 [發佈頁面 (releases page)](https://github.com/MystenLabs/mvr/releases) 下載最新的 MVR 二進位檔案。該二進位檔案適用於 macOS、Linux 和 Windows。與 [Sui](./install-sui.md) 不同，MVR 二進位檔案在不同環境之間不會改變，並且同時支援 `testnet` 和 `mainnet`。
 
-## Install Using Cargo
+## 使用 Cargo 安裝
 
-You can install and build MVR locally by using Cargo (requires Rust)
+您可以使用 Cargo（需要 Rust）在本地安裝並編譯 MVR。
 
 ```bash
 cargo install --locked --git https://github.com/mystenlabs/mvr --branch release mvr
 ```
 
-## Troubleshooting
+## 故障排除
 
-For troubleshooting the installation process, please refer to the
-[Install MVR](https://docs.suins.io/move-registry/tooling/mvr-cli#installation) Guide.
+有關安裝過程中的故障排除，請參閱 [安裝 MVR](https://docs.suins.io/move-registry/tooling/mvr-cli#installation) 指南。

@@ -1,188 +1,45 @@
-# Dynamic Collections
+# 動態集合 (Dynamic Collections)
 
-[Sui Framework](./sui-framework) offers a variety of collection types that build on the
-[dynamic fields](./dynamic-fields) and [dynamic object fields](./dynamic-object-fields) concepts.
-These collections are designed to be a safer and more understandable way to store and manage dynamic
-fields and objects.
+[Sui 框架](./sui-framework)基於[動態欄位](./dynamic-fields)和[動態物件欄位](./dynamic-object-fields)概念，提供了多種集合類型。這些集合被設計為一種更安全、更易於理解的方式來儲存和管理動態欄位和物件。
 
-For each collection type we will specify the primitive they use, and the specific features they
-offer.
+## 共同概念
 
-> Unlike dynamic (object) fields which operate on UID, collection types have their own type and
-> allow calling [associated functions](./../move-basics/struct-methods).
+所有的集合類型都共享以下方法：
 
-## Common Concepts
+- `add` - 向集合中新增欄位。
+- `remove` - 從集合中移除欄位。
+- `borrow` - 從集合中借用欄位。
+- `borrow_mut` - 從集合中借用對欄位的可變引用。
+- `contains` - 檢查集合中是否存在該欄位。
+- `length` - 返回集合中的欄位數量。
+- `is_empty` - 檢查長度是否為 0。
 
-All of the collection types share the same set of methods, which are:
-
-- `add` - adds a field to the collection
-- `remove` - removes a field from the collection
-- `borrow` - borrows a field from the collection
-- `borrow_mut` - borrows a mutable reference to a field from the collection
-- `contains` - checks if a field exists in the collection
-- `length` - returns the number of fields in the collection
-- `is_empty` - checks if the `length` is 0
-
-All collection types support index syntax for `borrow` and `borrow_mut` methods. If you see square
-brackets in the examples, they are translated into `borrow` and `borrow_mut` calls.
-
-```move
-let hat: &Hat = &bag[b"key"];
-let hat_mut: &mut Hat = &mut bag[b"key"];
-
-// is equivalent to
-let hat: &Hat = bag.borrow(b"key");
-let hat_mut: &mut Hat = bag.borrow_mut(b"key");
-```
-
-In the examples we won't focus on these functions, but rather on the differences between the
-collection types.
+所有集合類型都支援 `borrow` 和 `borrow_mut` 方法的索引語法（方括號 `[]`）。
 
 ## Bag
 
-Bag, as the name suggests, acts as a "bag" of heterogeneous values. It is a simple, non-generic type
-that can store any data. Bag will never allow orphaned fields, as it tracks the number of fields and
-can't be destroyed if it's not empty.
-
-```move
-module sui::bag;
-
-public struct Bag has key, store {
-    /// the ID of this bag
-    id: UID,
-    /// the number of key-value pairs in the bag
-    size: u64,
-}
-```
-
-_See [full documentation for sui::bag][bag-framework] module._
-
-Due to Bag storing any types, the extra methods it offers is:
-
-- `contains_with_type` - checks if a field exists with a specific type
-
-Used as a struct field:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=bag_struct
-
-```
-
-Using the Bag:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=bag_usage
-
-```
+`Bag` 就像其名稱所暗示的，作為一個異構值 (heterogeneous values) 的「袋子」。它是一種簡單、非泛型的類型，可以儲存任何數據。`Bag` 追蹤欄位數量，如果不為空則無法被銷毀，因此不會有「孤兒欄位」。
 
 ## ObjectBag
 
-Defined in the `sui::object_bag` module. Identical to [Bag](#bag), but uses
-[dynamic object fields](./dynamic-object-fields) internally. Can only store objects as values.
-
-_See [full documentation for sui::object_bag][object-bag-framework] module._
+定義在 `sui::object_bag` 模組中。與 `Bag` 相同，但內部使用動態物件欄位，只能儲存物件作為值。
 
 ## Table
 
-Table is a typed dynamic collection that has a fixed type for keys and values. It is defined in the
-`sui::table` module.
-
-```move
-module sui::table;
-
-public struct Table<phantom K: copy + drop + store, phantom V: store> has key, store {
-    /// the ID of this table
-    id: UID,
-    /// the number of key-value pairs in the table
-    size: u64,
-}
-```
-
-_See [full documentation for sui::table][table-framework] module._
-
-Used as a struct field:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=table_struct
-
-```
-
-Using the Table:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=table_usage
-
-```
+`Table` 是一種有類型的動態集合，具有固定的鍵 (Key) 和值 (Value) 類型。定義在 `sui::table` 模組中。
 
 ## ObjectTable
 
-Defined in the `sui::object_table` module. Identical to [Table](#table), but uses
-[dynamic object fields](./dynamic-object-fields) internally. Can only store objects as values.
-
-_See [full documentation for sui::object_table][object-table-framework] module._
+定義在 `sui::object_table` 模組中。與 `Table` 相同，但內部使用動態物件欄位，只能儲存物件作為值。
 
 ## LinkedTable
 
-It is defined in the `sui::linked_table` module, similar to [Table](#table) but the values are linked together,
-allowing for ordered insertion and removal.
+定義在 `sui::linked_table` 模組中。與 `Table` 類似，但值是鏈接在一起的，允許按順序插入和移除。
 
-```move
-module sui::linked_table;
+## 總結
 
-public struct LinkedTable<K: copy + drop + store, phantom V: store> has key, store {
-    /// the ID of this table
-    id: UID,
-    /// the number of key-value pairs in the table
-    size: u64,
-    /// the front of the table, i.e. the key of the first entry
-    head: Option<K>,
-    /// the back of the table, i.e. the key of the last entry
-    tail: Option<K>,
-}
-```
-
-_See [full documentation for sui::linked_table][linked-table-framework] module._
-
-Since the values stored in LinkedTable are linked together, it has unique methods for adding and deleting.
-
-- `push_front` - inserts a key-value pair at the front of the table
-- `push_back` - inserts a key-value pair at the back of the table
-- `remove` - removes a key-value pair by key and returns the value
-- `pop_front` - removes the front of the table, returns the key and value
-- `pop_back` - removes the back of the table, returns the key and value
-
-Used as a struct field:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=linked_table_struct
-
-```
-
-Using the LinkedTable:
-
-```move file=packages/samples/sources/programmability/dynamic-collections.move anchor=linked_table_usage
-
-```
-
-## Summary
-
-- [Bag](#bag) - a simple collection that can store any type of data.
-- [ObjectBag](#objectbag) - a collection that can store only objects.
-- [Table](#table) - a typed dynamic collection that has a fixed type for keys and values.
-- [ObjectTable](#objecttable) - same as Table, but can only store objects.
-- [LinkedTable](#linkedtable) - similar to Table but the values are linked together.
-
-## Further Reading
-
-- [sui::table][table-framework] module documentation.
-- [sui::object_table][object-table-framework] module documentation.
-- [sui::linked_table][linked-table-framework] module documentation.
-- [sui::bag][bag-framework] module documentation.
-- [sui::object_bag][object-bag-framework] module documentation.
-
-[table-framework]: https://docs.sui.io/references/framework/sui/table
-[object-table-framework]: https://docs.sui.io/references/framework/sui/object_table
-[linked-table-framework]: https://docs.sui.io/references/framework/sui/linked_table
-[bag-framework]: https://docs.sui.io/references/framework/sui/bag
-[object-bag-framework]: https://docs.sui.io/references/framework/sui/object_bag
-
-<!-- TODO! -->
-
-<!-- ## Choosing a Collection Type
-
-Depending on the needs of your project, you may choose to -->
+- **Bag**: 可儲存任何類型數據的簡單集合。
+- **ObjectBag**: 只能儲存物件的集合。
+- **Table**: 具有固定鍵值類型的動態集合。
+- **ObjectTable**: 只能儲存物件的有類型集合。
+- **LinkedTable**: 具有鏈接功能且支援順序操作的 Table。

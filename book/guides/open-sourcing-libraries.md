@@ -1,45 +1,12 @@
-# Open Sourcing Libraries
+# 開源庫 (Open Sourcing Libraries)
 
-Open sourcing libraries is a great way to contribute to the Move ecosystem. This guide will help you
-understand how to open source a library, how to write tests, and how to document your library.
+開源庫是為 Move 生態系統做出貢獻的好方法。本指南將幫助您了解如何開源庫、編寫測試以及撰寫文檔。
 
-## README
+## 常見實踐
 
-TODO: readme
+- 撰寫 README
+- 使用具名地址
+- 生成文檔 (docgen)
+- 添加範例程式碼 (Examples)
 
-## Named Addresses
-
-TODO: named address
-
-## Generating Documentation
-
-TODO: docgen
-
-## Adding Examples
-
-When publishing a package that is intended to be used (an NFT protocol or a library), it is
-important to showcase how this package can be used. This is where examples come in handy. There's no
-special functionality for examples in Move, however, there are some conventions that are used to
-mark examples. First of all, only sources are included into the package bytecode, so any code placed
-in a different directory will not be included, but will be tested!
-
-This is why placing examples into a separate `examples/` directory is a good idea.
-
-```bash
-sources/
-    protocol.move
-    library.move
-tests/
-    protocol_test.move
-examples/
-    my_example.move
-Move.toml
-```
-
-## Tags and Releases (Git)
-
-TODO: tags and releases
-
-## Tricks to allow compatibility with closed source
-
-TODO: compatibility via empty functions with signatures
+（詳細內容請參閱英文原始版本的說明）

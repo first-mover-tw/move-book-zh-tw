@@ -1,5 +1,3 @@
-# Advanced Move Usage
+# 進階 Move 用法
 
-This chapter covers advanced features of the Move language, including various extended behaviors for
-advanced programming. This includes advanced usage of the language itself, plus the package and
-build system.
+本章介紹 Move 語言的進階功能，包含適用於進階程式設計的各種延伸行為。這包含語言本身的進階用法，以及套件與建置系統。

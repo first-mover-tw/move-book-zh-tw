@@ -1,3 +1,3 @@
-# Object Capability
+# 物件能力 (Object Capability)
 
-<!-- TBD -->
+<!-- 待補充 -->

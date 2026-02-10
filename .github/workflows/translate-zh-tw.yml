@@ -17,64 +17,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout zh-tw-main
         uses: actions/checkout@v4
         with:
-          ref: english-main
+          ref: zh-tw-main
           fetch-depth: 0
 
-      - name: Fetch zh-tw-main for diff
-        run: git fetch origin zh-tw-main || echo "zh-tw-main not found, will translate all"
+      - name: Fetch english-main
+        run: git fetch origin english-main
 
-      - name: Restore scripts from zh-tw-main
-        run: git checkout origin/zh-tw-main -- scripts/
-
-      - name: Find changed files
-        id: diff
+      - name: Detect files needing translation
+        id: detect
         run: |
-          CHANGED=$(git diff --name-only --diff-filter=AM origin/zh-tw-main...HEAD -- '*.md' | grep -v '\.zh-TW\.md$' || true)
+          CHANGED=$(python scripts/translate_to_zh_tw.py --detect --english-ref origin/english-main 2>/dev/null || true)
           echo "Changed files:"
           echo "$CHANGED"
           COUNT=$(echo "$CHANGED" | grep -c . || true)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          # Write file list to a temp file for safe passing
           echo "$CHANGED" > /tmp/changed_files.txt
 
+      - name: Checkout english source files
+        if: steps.detect.outputs.count != '0'
+        run: |
+          # Checkout the english versions of files that need translation
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            git checkout origin/english-main -- "$file" 2>/dev/null || true
+          done < /tmp/changed_files.txt
+
       - name: Skip if no changes
-        if: steps.diff.outputs.count == '0'
+        if: steps.detect.outputs.count == '0'
         run: echo "No changed .md files, skipping translation."
 
       - name: Setup Python
-        if: steps.diff.outputs.count != '0'
+        if: steps.detect.outputs.count != '0'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
-        if: steps.diff.outputs.count != '0'
+        if: steps.detect.outputs.count != '0'
         run: pip install google-genai
 
       - name: Translate changed files
-        if: steps.diff.outputs.count != '0'
+        if: steps.detect.outputs.count != '0'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          head -5 /tmp/changed_files.txt | xargs python scripts/translate_to_zh_tw.py --batch-size 5 --sleep 20
+          cat /tmp/changed_files.txt | head -5 | xargs python scripts/translate_to_zh_tw.py --batch-size 5 --sleep 20
 
       - name: Commit and push
-        if: steps.diff.outputs.count != '0'
+        if: steps.detect.outputs.count != '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B auto/zh-tw-update
-          git add '*.zh-TW.md'
+          git add scripts/translation-manifest.json
+          git add $(cat /tmp/changed_files.txt | head -5)
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Auto update zh-TW translations (Gemini)"
           git push -f origin auto/zh-tw-update
 
       - name: Open PR into zh-tw-main
-        if: steps.diff.outputs.count != '0'
+        if: steps.detect.outputs.count != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

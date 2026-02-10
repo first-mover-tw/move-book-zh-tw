@@ -1,64 +1,50 @@
-# Expression
+# 表達式 (Expression)
 
-In programming languages, an expression is a unit of code that returns a value. In Move, almost
-everything is an expression, with the sole exception of the `let` statement, which is a declaration.
-In this section, we cover the types of expressions and introduce the concept of scope.
+在程式語言中，表達式是傳回一個值的程式碼單位。在 Move 中，幾乎所有內容都是表達式，唯一的例外是 `let` 語句，它是一個宣告。在本節中，我們將介紹表達式的類型並引入作用域 (scope) 的概念。
 
-> Expressions are sequenced with semicolons `;`. If there's "no expression" after the semicolon, the
-> compiler will insert a `unit ()`, which represents an empty expression.
+> 表達式以分號 `;` 序列化。如果分號後「沒有表達式」，編譯器將插入一個 `unit ()`，它代表一個空的表達式。
 
-## Literals
+## 常數值 (Literals)
 
-In the [Primitive types](./primitive-types) section, we introduced the basic types of Move. And to
-illustrate them, we used literals. A literal is a notation for representing a fixed value in source
-code. Literals can be used to initialize variables or directly pass fixed values as arguments to
-functions. Move has the following literals:
+在 [原始類型](./primitive-types) 章節中，我們介紹了 Move 的基本類型。為了說明這些類型，我們使用了常數值 (literal)。常數值是程式原始碼中表示固定值的記法。常數值可用於初始化變數，或直接作為參數傳遞給函式。Move 具有以下常數值：
 
-- Boolean values: `true` and `false`
-- Integer values: `0`, `1`, `123123`
-- Hexadecimal values: Numbers prefixed with 0x to represent integers, such as `0x0`, `0x1`, `0x123`
-- Byte vector values: Prefixed with `b`, such as `b"bytes_vector"`
-- Byte values: Hexadecimal literals prefixed with `x`, such as `x"0A"`
+- 布林值：`true` 和 `false`
+- 整數值：`0`, `1`, `123123`
+- 十六進位值：以 0x 開頭的數字表示整數，例如 `0x0`, `0x1`, `0x123`
+- 位元組向量值：以 `b` 開頭，例如 `b"bytes_vector"`
+- 位元組值：以 `x` 開頭的十六進位常數值，例如 `x"0A"`
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=literals
 
 ```
 
-## Operators
+## 運算子 (Operators)
 
-Arithmetic, logical, and bitwise operators are used to perform operations on values. Since these
-operations produce values, they are considered expressions.
+算術、邏輯和位元運算子用於對值執行運算。由於這些運算會產生值，因此它們被視為表達式。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=operators
 
 ```
 
-## Blocks
+## 區塊 (Blocks)
 
-A block is a sequence of statements and expressions enclosed in curly braces `{}`. It returns the
-value of the last expression in the block (note that this final expression must not have an ending
-semicolon). A block is an expression, so it can be used anywhere an expression is expected.
+區塊是封裝在大括號 `{}` 中的一系列語句 and 表達式。它傳回區塊中最後一個表達式的值（注意，這個最後的表達式不能以分號結尾）。區塊本身就是一個表達式，因此可以用在任何預期出現表達式的地方。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=block
 
 ```
 
-## Function Calls
+## 函式呼叫 (Function Calls)
 
-We go into detail about functions in the [Functions](./function) section. However, we have already
-used function calls in previous sections, so it's worth mentioning them here. A function call is an
-expression that calls a function and returns the value of the last expression in the function body,
-provided the last expression does not have a terminating semi-colon.
+我們在 [函式](./function) 章節中詳細介紹了函式。然而，我們在之前的章節中已經使用過函式呼叫，因此在這裡值得提一下。函式呼叫是一個呼叫函式並傳回函式主體中最後一個表達式值的表達式，前提是最後一個表達式沒有終止分號。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=fun_call
 
 ```
 
-## Control Flow Expressions
+## 流程控制表達式 (Control Flow Expressions)
 
-Control flow expressions are used to control the flow of the program. They are also expressions, so
-they return a value. We cover control flow expressions in the [Control Flow](./control-flow)
-section. Here's a very brief overview:
+流程控制表達式用於控制程式的流程。它們也是表達式，因此會傳回一個值。我們在 [流程控制](./control-flow) 章節中介紹了流程控制表達式。以下是一個非常簡要的概述：
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=control_flow
 

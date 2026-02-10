@@ -1,79 +1,28 @@
-# Collections
+# 集合 (Collections)
 
-Collection types are a fundamental part of any programming language. They are used to store a
-collection of data, such as a list of items. The `vector` type has already been covered in the
-[vector section](./../move-basics/vector), and in this chapter we will cover the vector-based
-collection types offered by the [Sui Framework](./sui-framework).
+集合類型是任何程式語言的基本組成部分。它們用於儲存一組數據。我們已經在[向量 (Vector)](./../move-basics/vector) 部分介紹過 `vector` 類型，本章我們將介紹 [Sui 框架](./sui-framework) 提供的基於向量的集合類型。
 
-## Vector
+## Vector (向量)
 
-While we have previously covered the `vector` type in the [vector section](./../move-basics/vector),
-it is worth going over it again in a new context. This time we will cover the usage of the `vector`
-type in objects and how it can be used in an application.
-
-```move file=packages/samples/sources/programmability/collections.move anchor=vector
-
-```
+雖然之前介紹過 `vector`，但在物件的上下文中值得再次回顧。它常用於物件內部儲存簡單列表。
 
 ## VecSet
 
-`VecSet` is a collection type that stores a set of unique items. It is similar to a `vector`, but it
-does not allow duplicate items. This property makes it useful for storing a collection of unique
-items, such as a list of IDs or addresses.
-
-```move file=packages/samples/sources/programmability/collections-2.move anchor=vec_set
-
-```
-
-VecSet will fail on attempt to insert an item that already exists in the set.
+`VecSet` 是一種儲存唯一項 (unique items) 的集合。它與 `vector` 類似，但不允許重複項。這對於儲存唯一 ID 或地址列表非常有用。如果嘗試插入已存在的項，操作將失敗。
 
 ## VecMap
 
-`VecMap` is a collection type that stores a map of key-value pairs. It is similar to a `VecSet`, but
-it allows you to associate a value with each item in the set. This makes it useful for storing a
-collection of key-value pairs, such as a list of addresses and their balances, or a list of user IDs
-and their associated data.
+`VecMap` 是一種儲存鍵值對 (key-value pairs) 的集合。它類似於映射 (Map)，您可以將一個值與集合中的每個項關聯。`VecMap` 中的鍵是唯一的，每個鍵只能關聯一個值。
 
-Keys in a `VecMap` are unique, and each key can only be associated with a single value. If you try
-to insert a key-value pair with a key that already exists in the map, the old value will be replaced
-with the new value.
+## 限制 (Limitations)
 
-```move file=packages/samples/sources/programmability/collections-3.move anchor=vec_map
+- **類型限制**: 嚴格的類型檢查。
+- **大小限制**: 受到物件大小限制 (256KB)，適用於較小規模的列表或集合。
+- **比較限制**: 由於插入順序不固定，嘗試比較兩個 `VecSet` 可能會產生非預期結果（Linter 會發出警告）。
 
-```
+## 總結
 
-## Limitations
-
-Standard collection types are a great way to store typed data with guaranteed safety and
-consistency. However, they are limited by the type of data they can store - the type system won't
-allow you to store a wrong type in a collection; and they're limited in size - by the object size
-limit. They will work for relatively small-sized sets and lists, but for larger collections you may
-need to use a different approach.
-
-Another limitations on collection types is inability to compare them. Because the order of insertion
-is not guaranteed, an attempt to compare a `VecSet` to another `VecSet` may not yield the expected
-results.
-
-> This behavior is caught by the linter and will emit a warning: _Comparing collections of type
-> 'sui::vec_set::VecSet' may yield unexpected result_
-
-```move file=packages/samples/sources/programmability/collections-4.move anchor=vec_set_comparison
-
-```
-
-In the example above, the comparison will fail because the order of insertion is not guaranteed, and
-the two `VecSet` instances may have different orders of elements. And the comparison will fail even
-if the two `VecSet` instances contain the same elements.
-
-## Summary
-
-- Vector is a native type that allows storing a list of items.
-- VecSet is built on top of vector and allows storing sets of unique items.
-- VecMap is used to store key-value pairs in a map-like structure.
-- Vector-based collections are strictly typed and limited by the object size limit and are best
-  suited for small-sized sets and lists.
-
-## Next Steps
-
-In the next section we will cover the [Wrapper Type Pattern](./wrapper-type-pattern) - a design
-pattern often used with collection types to extend or restrict their behavior.
+- **Vector**: 原生類型，儲存列表。
+- **VecSet**: 基於 Vector，儲存唯一項集合。
+- **VecMap**: 儲存鍵值對結構。
+- **基於向量的集合**: 適用於小規模、有類型的數據儲存。

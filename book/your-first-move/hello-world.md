@@ -1,43 +1,34 @@
-# Hello, World!
+# 哈囉，世界！
 
-In this chapter, you will learn how to create a new package, write a simple module, compile it, and
-run tests with the Move CLI. Make sure you have [installed Sui](./../before-we-begin/install-sui.md)
-and set up your [IDE environment](./../before-we-begin/ide-support.md). Run the command below to test
-if Sui has been installed correctly.
+在本章中，您將學習如何建立一個新的 Move 套件、編寫一個簡單的模組、編譯它，並使用 Move CLI 執行測試。請確保您已[安裝 Sui](./../before-we-begin/install-sui.md) 並設定好您的 [IDE 環境](./../before-we-begin/ide-support.md)。執行以下指令來測試 Sui 是否已正確安裝。
 
 ```bash
-# It should print the client version. E.g. sui-client 1.22.0-036299745.
+# 它應該會印出客戶端版本。例如：sui-client 1.22.0-036299745。
 sui client --version
 ```
 
-> Move CLI is a command-line interface for the Move language; it is built into the Sui binary and
-> provides a set of commands to manage packages, compile and test code.
+> Move CLI 是 Move 語言的命令列介面；它內建於 Sui 二進位檔中，並提供一組指令來管理套件、編譯和測試程式碼。
 
-The structure of the chapter is as follows:
+本章的結構如下：
 
-- [Create a New Package](#create-a-new-package)
-- [Directory Structure](#directory-structure)
-- [Compiling the Package](#compiling-the-package)
-- [Running Tests](#running-tests)
+- [建立新套件](#建立新套件)
+- [目錄結構](#目錄結構)
+- [編譯套件](#編譯套件)
+- [執行測試](#執行測試)
 
-## Create a New Package
+## 建立新套件
 
-To create a new program, we will use the `sui move new` command followed by the name of the
-application. Our first program will be called `hello_world`.
+為了建立一個新程式，我們將使用 `sui move new` 指令，後面接著應用程式的名稱。我們的第一個程式將命名為 `hello_world`。
 
-> Note: In this and other chapters, if you see code blocks with lines starting with `$` (dollar
-> sign), it means that the following command should be run in a terminal. The sign should not be
-> included. It's a common way of showing commands in terminal environments.
+> 注意：在本章及其他章節中，如果您看到程式碼區塊中的行以 `$` (錢字號) 開頭，表示後續的指令應在終端機中執行。錢字號不應被包含在內。這是終端機環境中顯示指令的常見方式。
 
 ```bash
 $ sui move new hello_world
 ```
 
-The `sui move` command gives access to the Move CLI - a built-in compiler, test runner and a utility
-for all things Move. The `new` command followed by the name of the package will create a new package
-in a new folder. In our case, the folder name is "hello_world".
+`sui move` 指令提供 Move CLI 的存取權限——這是一個內建的編譯器、測試執行器和 Move 相關的實用工具。 `new` 指令後面接著套件名稱，將在一個新資料夾中建立一個新套件。在我們的例子中，資料夾名稱是 "hello_world"。
 
-We can view the contents of the folder to see that the package was created successfully.
+我們可以查看該資料夾的內容，以確認套件已成功建立。
 
 ```bash
 $ ls -l hello_world
@@ -46,10 +37,9 @@ sources
 tests
 ```
 
-## Directory Structure
+## 目錄結構
 
-Move CLI will create a scaffold of the application and pre-create the directory structure and all
-necessary files. Let's see what's inside.
+Move CLI 將建立應用程式的鷹架，並預先建立目錄結構和所有必要檔案。讓我們看看裡面有什麼。
 
 ```plaintext
 hello_world
@@ -60,69 +50,54 @@ hello_world
     └── hello_world_tests.move
 ```
 
-### Manifest
+### 清單文件 (Manifest)
 
-The `Move.toml` file, known as the [package manifest](./../concepts/manifest.md), contains definitions
-and configuration settings for the package. It is used by the Move Compiler to manage package
-metadata, fetch dependencies, and register named addresses. We will explain it in detail in the
-[Concepts](./../concepts/index.md) chapter.
+`Move.toml` 檔案，又稱為[套件清單文件](./../concepts/manifest.md)，包含套件的定義和配置設定。Move 編譯器使用它來管理套件中繼資料、獲取依賴項並註冊具名位址。我們將在[概念](./../concepts/index.md)章節中詳細解釋它。
 
-> By default, the package features one named address - the name of the package.
+> 預設情況下，該套件有一個具名位址——套件的名稱。
 
 ```toml
 [addresses]
 hello_world = "0x0"
 ```
 
-### Sources
+### 原始碼
 
-The `sources/` directory contains the source files. Move source files have _.move_ extension, and
-are typically named after the module defined in the file. For example, in our case, the file name is
-_hello_world.move_ and the Move CLI has already placed commented out code inside:
+`sources/` 目錄包含原始碼檔案。Move 原始碼檔案具有 _.move_ 副檔名，通常以檔案中定義的模組命名。例如，在我們的案例中，檔案名稱是 _hello_world.move_，並且 Move CLI 已經在裡面放置了註解掉的程式碼：
 
 ```move
 /*
-/// Module: hello_world
+/// 模組：hello_world
 module hello_world::hello_world;
 */
 ```
 
-> The `/*` and `*/` are the comment delimiters in Move. Everything in between is ignored by the
-> compiler and can be used for documentation or notes. We explain all ways to comment the code in
-> the [Basic Syntax](./../move-basics/comments.md).
+> `/*` 和 `*/` 是 Move 中的註解分隔符號。它們之間的所有內容都會被編譯器忽略，可用於文件或備註。我們在[基本語法](./../move-basics/comments.md)中解釋了所有註解程式碼的方法。
 
-The commented out code is a module definition, it starts with the keyword `module` followed by a
-named address (or an address literal), and the module name. The module name is a unique identifier
-for the module and has to be unique within the package. The module name is used to reference the
-module from other modules or transactions.
+註解掉的程式碼是一個模組定義，它以關鍵字 `module` 開頭，後面跟著一個具名位址（或位址文字），以及模組名稱。模組名稱是模組的唯一識別符號，並且在套件內必須是唯一的。模組名稱用於從其他模組或交易中引用該模組。
 
 <!-- And the module name has to be a valid Move identifier: alphanumeric with underscores to separate words. A common convention is to call modules (and functions) in snake_case - all lowercase, with underscores. Coding conventions are important for readability and maintainability of the code, we summarize them in the Coding Conventions section. -->
 
-### Tests
+### 測試
 
-The `tests/` directory contains package tests. The compiler excludes these files in the regular
-build process but uses them in _test_ and _dev_ modes. The tests are written in Move and are marked
-with the `#[test]` attribute. Tests can be grouped in a separate module (then it's usually called
-_module_name_tests.move_), or inside the module they're testing.
+`tests/` 目錄包含套件測試。編譯器在常規建置過程中會排除這些檔案，但在 _test_ 和 _dev_ 模式下會使用它們。測試是用 Move 編寫的，並標記有 `#[test]` 屬性。測試可以分組在單獨的模組中（通常稱為 _module_name_tests.move_），或在它們所測試的模組內部。
 
-Modules, imports, constants and functions can be annotated with `#[test_only]`. This attribute is
-used to exclude modules, functions or imports from the build process. This is useful when you want
-to add helpers for your tests without including them in the code that will be published on chain.
+模組、匯入、常數和函數可以用 `#[test_only]` 進行註解。此屬性用於將模組、函數或匯入從建置過程中排除。當您想為測試添加輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
 
-The _hello_world_tests.move_ file contains a commented out test module template:
+_hello_world_tests.move_ 檔案包含一個註解掉的測試模組模板：
 
 ```move
 /*
 #[test_only]
 module hello_world::hello_world_tests;
-// uncomment this line to import the module
+// 取消註解此行以匯入模組
 // use hello_world::hello_world;
 
 const ENotImplemented: u64 = 0;
 
 #[test]
 fun test_hello_world() {
-    // pass
+    // 成功
 }
 
 #[test, expected_failure(abort_code = hello_world::hello_world_tests::ENotImplemented)]
@@ -132,38 +107,30 @@ fun test_hello_world_fail() {
 */
 ```
 
-### Other Folders
+### 其他資料夾
 
-Additionally, Move CLI supports the `examples/` folder. The files there are treated similarly to the
-ones placed under the `tests/` folder - they're only built in the _test_ and _dev_ modes. They are
-to be examples of how to use the package or how to integrate it with other packages. The most
-popular use case is for documentation purposes and library packages.
+此外，Move CLI 支援 `examples/` 資料夾。其中的檔案處理方式與放在 `tests/` 資料夾下的檔案類似——它們只在 _test_ 和 _dev_ 模式下建置。它們是用來展示如何使用套件或如何將其與其他套件整合的範例。最常見的用途是出於文件目的和函式庫套件。
 
-## Compiling the Package
+## 編譯套件
 
-Move is a compiled language, and as such, it requires the compilation of source files into Move
-Bytecode. It contains only necessary information about the module, its members, and types, and
-excludes comments and some identifiers (for example, for constants).
+Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 位元組碼。它僅包含有關模組、其成員和類型所需的資訊，並排除註解和一些識別符（例如，常數的識別符）。
 
-To demonstrate these features, let's replace the contents of the _sources/hello_world.move_ file
-with the following:
+為了展示這些功能，讓我們將 _sources/hello_world.move_ 檔案的內容替換為以下內容：
 
 ```move file=packages/hello_world/sources/hello_world.move anchor=source
 ```
 
-During compilation, the code is built, but not run. A compiled package only includes functions that
-can be called by other modules or in a transaction. We will explain these concepts in the
-[Concepts](./../concepts/index.md) chapter. But now, let's see what happens when we run the _sui move build_.
+在編譯期間，程式碼被建置，但不會執行。編譯後的套件只包含可以由其他模組或在交易中呼叫的函數。我們將在[概念](./../concepts/index.md)章節中解釋這些概念。但現在，讓我們看看當我們執行 _sui move build_ 時會發生什麼。
 
 ```bash
-# run from the `hello_world` folder
+# 從 `hello_world` 資料夾執行
 $ sui move build
 
-# alternatively, if you didn't `cd` into it
+# 或者，如果您沒有 `cd` 進入該資料夾
 $ sui move build --path hello_world
 ```
 
-It should output the following message on your console.
+它應該在您的控制台輸出以下訊息。
 
 ```plaintext
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
@@ -175,33 +142,26 @@ INCLUDING DEPENDENCY MoveStdlib
 BUILDING hello_world
 ```
 
-During the compilation, Move Compiler automatically creates a build folder where it places all
-fetched and compiled dependencies as well as the bytecode for the modules of the current package.
+在編譯期間，Move 編譯器會自動建立一個建置資料夾，其中放置所有已獲取和編譯的依賴項，以及當前套件模組的位元組碼。
 
-> If you're using a versioning system, such as Git, build folder should be ignored. For example, you
-> should use a `.gitignore` file and add `build` to it.
+> 如果您使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，您應該使用 `.gitignore` 檔案並將 `build` 添加到其中。
 
-## Running Tests
+## 執行測試
 
-Before we get to testing, we should add a test. Move Compiler supports tests written in Move and
-provides the execution environment. The tests can be placed in both the source files and in the
-`tests/` folder. Tests are marked with the `#[test]` attribute and are automatically discovered by
-the compiler. We explain tests in depth in the [Testing](./../move-basics/testing.md) section.
+在我們進行測試之前，我們應該添加一個測試。Move 編譯器支援用 Move 編寫的測試並提供執行環境。測試可以放在原始碼檔案和 `tests/` 資料夾中。測試標記有 `#[test]` 屬性，並會被編譯器自動發現。我們在[測試](./../move-basics/testing.md)部分深入解釋測試。
 
-Replace the contents of the `tests/hello_world_tests.move` with the following content:
+將 `tests/hello_world_tests.move` 的內容替換為以下內容：
 
 ```move file=packages/hello_world/tests/hello_world_tests.move anchor=test
 ```
 
-Here we import the `hello_world` module, and call its `hello_world` function to test that the output
-is indeed the string "Hello, World!". Now, that we have tests in place, let's compile the package in
-the test mode and run tests. Move CLI has the `test` command for this:
+這裡我們匯入了 `hello_world` 模組，並呼叫其 `hello_world` 函數來測試輸出確實是字串 "Hello, World!"。現在，既然我們已經準備好測試，就讓我們以測試模式編譯套件並執行測試。Move CLI 為此提供了 `test` 指令：
 
 ```bash
 $ sui move test
 ```
 
-The output should be similar to the following:
+輸出應該與以下內容相似：
 
 ```plaintext
 INCLUDING DEPENDENCY Bridge
@@ -215,26 +175,23 @@ Running Move unit tests
 Test result: OK. Total tests: 1; passed: 1; failed: 0
 ```
 
-If you're running the tests outside of the package folder, you can specify the path to the package:
+如果您在套件資料夾外執行測試，您可以指定套件的路徑：
 
 ```bash
 $ sui move test --path hello_world
 ```
 
-You can also run a single or multiple tests at once by specifying a string. All the tests names
-containing the string will be run:
+您也可以透過指定字串來一次執行一個或多個測試。所有包含該字串的測試名稱都將被執行：
 
 ```bash
 $ sui move test test_hello
 ```
 
-## Next Steps
+## 後續步驟
 
-In this section, we explained the basics of a Move package: its structure, the manifest, the build,
-and test flows. [On the next page](./hello-sui), we will write an application and see how the code
-is structured and what the language can do.
+在本節中，我們解釋了 Move 套件的基礎知識：其結構、清單文件、建置和測試流程。[在下一頁](./hello-sui)，我們將編寫一個應用程式，並了解程式碼的結構以及該語言能做什麼。
 
-## Further Reading
+## 延伸閱讀
 
-- [Package Manifest](./../concepts/manifest.md) section
-- Package in [The Move Reference](./../../reference/packages)
+- [套件清單文件](./../concepts/manifest.md)部分
+- [Move 參考文件](./../../reference/packages)中的套件

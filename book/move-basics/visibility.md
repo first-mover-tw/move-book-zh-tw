@@ -1,78 +1,69 @@
-# Visibility Modifiers
+# 可見性修飾符
 
-Every module member has a visibility. By default, all module members are _private_ - meaning they
-are only accessible within the module they are defined in. However, you can add a visibility
-modifier to make a module member _public_ - visible outside the module, or _public(package)_ -
-visible in the modules within the same package, or _entry_ - can be called from a transaction but
-can't be called from other modules.
+每個模組成員都有其可見性。預設情況下，所有模組成員都是 _私有的 (private)_ — 這意味著它們僅能在定義它們的模組內被存取。但是，您可以添加可見性修飾符來使模組成員變為 _公開的 (public)_ — 模組外部可見；或 _公開的（套件）(public(package))_ — 對同一個套件內的模組可見；或 _進入 (entry)_ — 可以從交易中呼叫，但不能從其他模組中呼叫。
 
-## Internal Visibility
+## 內部可見性
 
-A function or a struct defined in a module which has no visibility modifier is _private_ to the
-module. It can't be called from other modules.
+在模組中定義且沒有可見性修飾符的函式或結構，對該模組而言是 _私有的_。它不能被其他模組呼叫。
 
 ```move
 module book::internal_visibility;
 
-// This function can be called from other functions in the same module
+// 此函式可以由同一個模組中的其他函式呼叫
 fun internal() { /* ... */ }
 
-// Same module -> can call internal()
+// 同一個模組 -> 可以呼叫 internal()
 fun call_internal() {
     internal();
 }
 ```
 
-The following code will not compile:
+以下程式碼將無法編譯：
 
-<!-- TODO: add failure flag to example -->
+<!-- TODO: 為範例添加失敗旗標 -->
 
 ```move
 module book::try_calling_internal;
 
 use book::internal_visibility;
 
-// Different module -> can't call internal()
+// 不同的模組 -> 無法呼叫 internal()
 fun try_calling_internal() {
     internal_visibility::internal();
 }
 ```
 
-Note that just because a struct field is not visible from Move does not mean that its value is kept
-confidential &mdash; it is always possible to read the contents of an on-chain object from outside
-of Move. You should never store unencrypted secrets inside of objects.
+請注意，僅僅是因為結構欄位從 Move 中不可見，並不意味著其值是保密的 — 始終可以從 Move 之外讀取鏈上物件的內容。您絕不應該在物件內部儲存未加密的秘密。
 
-## Public Visibility
+## 公開可見性
 
-A struct or a function can be made _public_ by adding the `public` keyword before the `fun` or
-`struct` keyword.
+結構或函式可以透過在 `fun` 或 `struct` 關鍵字之前添加 `public` 關鍵字來變為 _公開的_。
 
 ```move
 module book::public_visibility;
 
-// This function can be called from other modules
+// 此函式可以從其他模組呼叫
 public fun public_fun() { /* ... */ }
 ```
 
-A public function can be imported and called from other modules. The following code will compile:
+公開函式可以被匯入並從其他模組呼叫。以下程式碼將可以編譯：
 
 ```move
 module book::try_calling_public;
 
 use book::public_visibility;
 
-// Different module -> can call public_fun()
+// 不同的模組 -> 可以呼叫 public_fun()
 fun try_calling_public() {
     public_visibility::public_fun();
 }
 ```
 
-Unlike some languages, struct fields cannot be made public.
+與某些語言不同，結構欄位不能設置為公開的。
 
-## Package Visibility
+## 套件可見性
 
-A function with _package_ visibility can be called from any module within the same package, but not
-from modules in other packages. In other words, it is _internal_ to the package.
+具有 _套件_ 可見性的函式可以從同一個套件內的任何模組呼叫，但不能從其他套件中的模組呼叫。換句話說，它對該套件而言是 _內部的_。
 
 ```move
 module book::package_visibility;
@@ -80,26 +71,22 @@ module book::package_visibility;
 public(package) fun package_only() { /* ... */ }
 ```
 
-A package function can be called from any module within the same package:
+套件函式可以從同一個套件內的任何模組呼叫：
 
 ```move
 module book::try_calling_package;
 
 use book::package_visibility;
 
-// Same package `book` -> can call package_only()
+// 同一個套件 `book` -> 可以呼叫 package_only()
 fun try_calling_package() {
     package_visibility::package_only();
 }
 ```
 
-## Native Functions
+## 原生函式
 
-Some functions in the [framework](./../programmability/sui-framework) and
-[standard library](./standard-library) are marked with the `native` modifier. These functions are
-natively provided by the Move VM and do not have a body in Move source code. To learn more about the
-native modifier, refer to the
-[Move Reference](./../../reference/functions?highlight=native#native-functions).
+[框架](./../programmability/sui-framework) 和 [標準庫](./standard-library) 中的某些函式標有 `native` 修飾符。這些函式由 Move 虛擬機 (VM) 原生提供，在 Move 原始碼中沒有主體。要瞭解更多關於 `native` 修飾符的資訊，請參考 [Move 參考手冊](./../../reference/functions?highlight=native#native-functions)。
 
 ```move
 module std::type_name;
@@ -107,9 +94,8 @@ module std::type_name;
 public native fun get<T>(): TypeName;
 ```
 
-This is an example from `std::type_name`, learn more about this module in the
-[reflection chapter](./type-reflection).
+這是來自 `std::type_name` 的一個例子，在 [反射章節](./type-reflection) 中可以瞭解更多關於此模組的資訊。
 
-## Further Reading
+## 延伸閱讀
 
-- [Visibility](./../../reference/functions#visibility) in the Move Reference.
+- Move 參考手冊中的 [可見性](./../../reference/functions#visibility)。

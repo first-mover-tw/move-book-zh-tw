@@ -1,4 +1,4 @@
-# Comments
+# 註解 (Comments)
 
 <!--
 
@@ -12,45 +12,36 @@ Notes:
     - give an example of how doc comments are translated
  -->
 
-Comments are a way to add notes or document your code. They are ignored by the compiler and don't
-result in Move bytecode. You can use comments to explain what your code does, add notes to yourself
-or other developers, temporarily remove a part of your code, or generate documentation. There are
-three types of comments in Move: line comments, block comments, and doc comments.
+註解是用於添加筆記或記錄程式碼的一種方式。它們會被編譯器忽略，不會產生 Move 位元組碼。您可以使用註解來解釋程式碼的功能、為自己或其他開發人員留註記、暫時移除部分程式碼或生成文檔。Move 中有三種類型的註解：行註解、區塊註解和文檔註解。
 
-## Line Comment
+## 行註解 (Line Comment)
 
-You can use a double slash `//` to comment out the rest of the line. Everything after `//` will be
-ignored by the compiler.
+您可以使用雙斜線 `//` 來註解掉該行的其餘部分。編譯器將忽略 `//` 之後的所有內容。
 
 ```move file=packages/samples/sources/move-basics/comments-line.move anchor=main
 
 ```
 
-## Block Comment
+## 區塊註解 (Block Comment)
 
-Block comments are used to comment out a block of code. They start with `/*` and end with `*/`.
-Everything between `/*` and `*/` will be ignored by the compiler. You can use block comments to
-comment out a single line or multiple lines. You can even use them to comment out a part of a line.
+區塊註解用於註解掉一段程式碼。它們以 `/*` 開頭並以 `*/` 結尾。編譯器將忽略 `/*` 和 `*/` 之間的所有內容。您可以在使用區塊註解來註解掉單行或多行內容，甚至可以用它們來註解掉行內的一部份。
 
 ```move file=packages/samples/sources/move-basics/comments-block.move anchor=main
 
 ```
 
-This example is a bit extreme, but it shows all the ways that you can use block comments.
+這個範例有點極端，但它展示了所有可以使用區塊註解的方式。
 
-## Doc Comment
+## 文檔註解 (Doc Comment)
 
-Documentation comments are special comments that are used to generate documentation for your code.
-They are similar to block comments but start with three slashes `///` and are placed before the
-definition of the item they document.
+文檔註解是用於為您的程式碼生成文檔的特殊註解。它們與行註解類似，但以三個斜線 `///` 開頭，並放置在它們所說明的項目定義之前。
 
 ```move file=packages/samples/sources/move-basics/comments-doc.move anchor=main
 
 ```
 
-## Whitespace
+## 空白 (Whitespace)
 
-Unlike some languages, whitespace (spaces, tabs, and newlines) have no impact on the meaning of the
-program.
+與某些語言不同，空白（空格、Tab 和換行）對程式的含義沒有影響。
 
 <!-- TODO: docgen, which members are in the documentation -->

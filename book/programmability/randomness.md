@@ -1,51 +1,41 @@
-# Randomness
+# 隨機性 (Randomness)
 
 <!--
+- 每個共識提交都會生成一個新的隨機值。
+- 在 Epoch 開始時，驗證者會建立一個全局隨機值。
+- 使用一個值來為每筆交易衍生出唯一的隨機值。
+- 從每個 Epoch 建立一次的種子中生成偽隨機數。
 
-- Every consensus commit a new random value is generated.
-- Beginning of an epoch, validators create a global random value.
-- One value is used to derive unique random value per transaction.
-- Pseudo-random generator from a seed that is created once per epoch.
-
-Qs:
-
-- How does it work with consensus / parallel execution / fast path? works like a Clock
-- Does it lose its unpredictability closer to the end of the epoch. no
-- What is the UID of the Random object? 0x8
-- 0x8 - Random - 8 is a lucky number
-- Do we protect &mut access to 0x8
+問答：
+- 它如何與共識 / 並行執行 / 快路徑協作？行為類似於時鐘 (Clock)。
+- 它會在 Epoch 結束前失去不可預測性嗎？不會。
+- Random 物件的 UID 是什麼？0x8。
+- 0x8 - Random - 8 是一個幸運數字。
+- 我們是否保護對 0x8 的 &mut 訪問？
 
 ---
-
-- RandomInner is updated.
-- Every consensus commit the value inside is updated
-
----
-
-- Developers call `new_generator` and pass in the global random object.
-- ...which creates the RandomGenerator from the global seed with a fresh object ID.
-- The RandomGenerator uses unknown unpredictable random bytes + fresh object UID from a transaction.
-
-- then they use `generate_bytes` or `generate_u64` or any other integer. Or a value in a range.
-- random shuffle of a vector.
-
-Notes: pretty dope utility!
+- RandomInner 被更新。
+- 每個共識提交都會更新其中的值。
 
 ---
+- 開發者調用 `new_generator` 並傳入全局隨機物件。
+- ...這會從具有新鮮物件 ID 的全局種子建立 RandomGenerator。
+- RandomGenerator 使用未知且不可預測的隨機字節 + 交易中的新鮮物件 UID。
+- 然後他們使用 `generate_bytes` 或 `generate_u64` 或任何其他整數，或者範圍內的值。
+- 或者對向量進行隨機洗牌 (Random shuffle)。
 
-- 8 ball is a random number generator.
+註記：非常酷的工具！
 
+---
+- 8 號球 (8 ball) 是一個隨機數生成器。
 
-Difficulties:
+困難點：
+- 如果您知道種子，那麼您就可以預測隨機數。
+- Random 不應在公共函數中使用 —— 它是可預測的。
+- 隨機失敗比成功場景更昂貴。
+- 一種解決方案是先計算隨機性，然後執行單獨的昂貴操作。
+- 他們可以為失敗場景設置 Gas 限制，這樣失敗就不會發生。
 
-- If you know the seed, then you can predict the random number.
-- Random should not be used in a public function - predictable.
-- Random failure is more expensive than a success scenario.
-    - one way out is to first calculate randomness and then do a separate expensive operation.
-    - they can set a limit to gas for failure scenarios, so the failure never happens.
-    -
-
-> `public entry` -> `entry` call
-> there is a PTB attack on the Random object.
-
+> `public entry` -> `entry` 調用
+> Random 物件存在 PTB 攻擊風險。
  -->

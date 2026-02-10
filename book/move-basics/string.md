@@ -1,131 +1,95 @@
-# String
+# 字串 (String)
 
-While Move does not have a built-in type to represent strings, it does have two standard
-implementations for strings in the [Standard Library](./standard-library). The `std::string` module
-defines a `String` type and methods for UTF-8 encoded strings, and the second module, `std::ascii`,
-provides an ASCII `String` type and its methods.
+雖然 Move 沒有內建的類型來表示字串，但在 [標準庫](./standard-library) 中有兩種字串的標準實作。`std::string` 模組定義了 `String` 類型以及適用於 UTF-8 編碼字串的方法；第二個模組 `std::ascii` 則提供了 ASCII `String` 類型及其方法。
 
-> The Sui execution environment automatically converts bytevector into `String` in transaction
-> inputs. As a result, in many cases, constructing a String directly within the
-> [Transaction Block](./../concepts/what-is-a-transaction) is unnecessary.
+> Sui 執行環境會在交易輸入中自動將位元組向量 (bytevector) 轉換為 `String`。因此，在許多情況下，沒有必要直接在 [交易區塊 (Transaction Block)](./../concepts/what-is-a-transaction) 中建構 String。
 
-<!--
+## 字串即位元組
 
-## Bytestring Literal
-
-TODO:
-
-- reference vector
-- reference literals - [Expression](./expression#literals)
-
--->
-
-## Strings are bytes
-
-No matter which type of string you use, it is important to know that strings are just bytes. The
-wrappers provided by the `string` and `ascii` modules are just that: wrappers. They do provide
-safety checks and methods to work with strings, but at the end of the day, they are just vectors of
-bytes.
+無論您使用哪種類型的字串，重要的是要知道字串本質上就是位元組。`string` 和 `ascii` 模組提供的封裝器僅僅是：封裝器。它們確實提供了安全檢查和處理字串的方法，但歸根結底，它們就是位元組向量。
 
 ```move file=packages/samples/sources/move-basics/string.move anchor=custom
 
 ```
 
-## Working with UTF-8 Strings
+## 使用 UTF-8 字串
 
-While there are two types of strings (`string` and `ascii`) in the standard library, the `string`
-module should be considered the default. It has native implementations of many common operations,
-leveraging low-level, optimized runtime code for superior performance. In contrast, the `ascii`
-module is fully implemented in Move, relying on higher-level abstractions and making it less
-suitable for performance-critical tasks.
+雖然標準庫中有兩種類型的字串（`string` 和 `ascii`），但應將 `string` 模組視為預設。它對許多常見操作具有原生實作，利用低階、優化的執行時期程式碼來獲得卓越的效能。相比之下，`ascii` 模組完全由 Move 實作，依賴於高階抽象，這使其不太適合效能關鍵型的任務。
 
-### Definition
+### 定義
 
-The `String` type in the `std::string` module is defined as follows:
+`std::string` 模組中的 `String` 類型定義如下：
 
 ```move
 module std::string;
 
-/// A `String` holds a sequence of bytes which is guaranteed to be in utf8 format.
+/// `String` 持有一系列保證為 utf8 格式的位元組。
 public struct String has copy, drop, store {
     bytes: vector<u8>,
 }
 ```
 
-_See [full documentation for std::string][string-stdlib] module._
+_參閱 [std::string 模組完整文件][string-stdlib]。_
 
-### Creating a String
+### 建立字串
 
-To create a new UTF-8 `String` instance, you can use the `string::utf8` method. The
-[Standard Library](./standard-library) provides an alias `.to_string()` on the `vector<u8>` for
-convenience.
+要建立新的 UTF-8 `String` 實例，您可以使用 `string::utf8` 方法。[標準庫](./standard-library) 為 `vector<u8>` 提供了一個別名 `.to_string()` 以方便使用。
 
 ```move file=packages/samples/sources/move-basics/string.move anchor=utf8
 
 ```
 
-### Common Operations
+### 常見操作
 
-UTF8 String provides a number of methods to work with strings. The most common operations on strings
-are: concatenation, slicing, and getting the length. Additionally, for custom string operations, the
-`bytes()` method can be used to get the underlying byte vector.
+UTF-8 字串提供了許多處理字串的方法。最常見的操作包括：串接 (concatenation)、切片 (slicing) 和獲取長度。此外，對於自定義字串操作，可以使用 `bytes()` 方法來獲取底層的位元組向量。
 
 ```move
 let mut str = b"Hello,".to_string();
 let another = b" World!".to_string();
 
-// append(String) adds the content to the end of the string
+// append(String) 將內容添加到字串末尾
 str.append(another);
 
-// `sub_string(start, end)` copies a slice of the string
+// `sub_string(start, end)` 複製字串的切片
 str.sub_string(0, 5); // "Hello"
 
-// `length()` returns the number of bytes in the string
-str.length(); // 12 (bytes)
+// `length()` 傳回字串中的位元組數
+str.length(); // 12 (位元組)
 
-// methods can also be chained! Get a length of a substring
-str.sub_string(0, 5).length(); // 5 (bytes)
+// 方法也可以連寫！獲取子字串的長度
+str.sub_string(0, 5).length(); // 5 (位元組)
 
-// whether the string is empty
+// 字串是否為空
 str.is_empty(); // false
 
-// get the underlying byte vector for custom operations
+// 獲取底層位元組向量以進行自定義操作
 let bytes: &vector<u8> = str.bytes();
 ```
 
-### Safe UTF-8 Operations
+### 安全的 UTF-8 操作
 
-The default `utf8` method may abort if the bytes passed into it are not valid UTF-8. If you are not
-sure that the bytes you are passing are valid, you should use the `try_utf8` method instead. It
-returns an `Option<String>`, which contains no value if the bytes are not valid UTF-8, and a string
-otherwise.
+如果傳入的位元組不是有效的 UTF-8，則預設的 `utf8` 方法可能會中斷。如果您不確定所傳遞的位元組是否有效，則應改用 `try_utf8` 方法。它會傳回一個 `Option<String>`，如果位元組不是有效的 UTF-8，則不包含任何值 (None)，否則傳回字串。
 
-> Hint: Functions with names starting with `try_*` typically return an `Option`. If the operation
-> succeeds, the result is wrapped in `Some`. If it fails, the function returns `None`. This naming
-> convention, commonly used in Move, is inspired by Rust.
+> 提示：名稱以 `try_*` 開頭的函式通常傳回 `Option`。如果操作成功，結果將封裝在 `Some` 中。如果失敗，函式將傳回 `None`。這種命名約定在 Move 中很常見，其靈感源自 Rust。
 
 ```move file=packages/samples/sources/move-basics/string.move anchor=safe_utf8
 
 ```
 
-### UTF-8 Limitations
+### UTF-8 的限制
 
-The `string` module does not provide a way to access individual characters in a string. This is
-because UTF-8 is a variable-length encoding, and the length of a character can be anywhere from 1 to
-4 bytes. Similarly, the `length()` method returns the number of bytes in the string, not the number
-of characters.
+`string` 模組不提供存取字串中單個字元的方法。這是因為 UTF-8 是一種變長編碼，一個字元的長度可以在 1 到 4 個位元組之間。同樣地，`length()` 方法傳回的是字串中的位元組數，而不是字元數。
 
-However, methods like `sub_string` and `insert` validate character boundaries and abort if the
-specified index falls within the middle of a character.
+然而，諸如 `sub_string` 和 `insert` 之類的方法會驗證字元邊界，如果指定的索引落在字元中間，則會中斷執行。
 
-## ASCII Strings
+## ASCII 字串
 
-This section is coming soon!
+此部分即將推出！
 
-## Further Reading
+## 延伸閱讀
 
-- [std::string][string-stdlib] module documentation.
-- [std::ascii][ascii-stdlib] module documentation.
+- [`std::string`][string-stdlib] 模組文件。
+- [`std::ascii`][ascii-stdlib] 模組文件。
 
 [enum-reference]: /reference/enums.html
 [string-stdlib]: https://docs.sui.io/references/framework/std/string

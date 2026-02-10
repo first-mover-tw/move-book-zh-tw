@@ -1,17 +1,13 @@
-# The Move Book
+# Move 寶典
 
 <!-- TODO: insert author(s) -->
 
-This is The Move Book - a comprehensive guide to the Move programming language and the Sui
-blockchain. The book is intended for developers who are interested in learning about Move and
-building on Sui.
+這是 Move 寶典 — 一本關於 Move 程式語言和 Sui 區塊鏈的綜合指南。本書旨在為有興趣學習 Move 並在 Sui 上進行開發的開發者而撰寫。
 
 <div class="warning">
 
-The book is in active development and a work in progress. If you have any feedback or suggestions,
-feel free to open an issue or a pull request on the
-[GitHub repository](https://github.com/MystenLabs/move-book).
+本書正在積極開發中，內容尚不完整。如果您有任何意見回饋或建議，請隨時在 [GitHub 儲存庫](https://github.com/MystenLabs/move-book) 開啟一個 Issue 或發送 Pull Request。
 
 </div>
 
-> If you're looking for The Move Reference, you can find it [here](/reference).
+> 如果您正在尋找 Move 參考手冊，您可以在 [此處](/reference) 找到它。

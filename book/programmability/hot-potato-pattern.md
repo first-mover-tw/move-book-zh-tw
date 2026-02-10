@@ -1,127 +1,42 @@
-# Pattern: Hot Potato
+# 模式：Hot Potato (熱山芋)
 
-A case in the abilities system - a struct without any abilities - is called _hot potato_. It cannot
-be stored (not as [an object](./../storage/key-ability) nor as
-[a field in another struct](./../storage/store-ability)), it cannot be
-[copied](./../move-basics/copy-ability) or [discarded](./../move-basics/drop-ability). Hence, once
-constructed, it must be gracefully [unpacked by its module](./../move-basics/struct), or the
-transaction will abort due to unused value without drop.
+在能力系統中有一種特殊情況 —— 沒有任何能力的結構體，被稱為 _Hot Potato_。它不能被儲存（既不能作為[物件](./../storage/key-ability)，也不能作為[另一個結構體的欄位](./../storage/store-ability)），不能被[複製](./../move-basics/copy-ability)或[捨棄](./../move-basics/drop-ability)。因此，一旦建構，它必須優雅地被[其模組拆解](./../move-basics/struct)，否則交易會因為存在未被捨棄的未使用值而中止 (abort)。
 
-> If you're familiar with languages that support _callbacks_, you can think of a hot potato as an
-> obligation to call a callback function. If you don't call it, the transaction will abort.
+> 如果您熟悉支援「回呼」(callbacks) 的語言，您可以將 Hot Potato 視為呼叫回呼函式的義務。如果您不呼叫它，交易將會中止。
 
-The name comes from the children's game where a ball is passed quickly between players, and none of
-the players want to be the last one holding it when the music stops, or they are out of the game.
-This is the best illustration of the pattern - the instance of a hot-potato struct is passed between
-calls, and none of the modules can keep it.
+這個名稱源於孩子們的遊戲，球在玩家之間快速傳遞，音樂停止時，沒有人想成為最後一個拿著球的人，否則就出局了。這是對該模式最好的詮釋 —— Hot Potato 結構體的實例在呼叫之間傳遞，沒有模組可以保留它。
 
-## Defining a Hot Potato
+## 定義 Hot Potato
 
-A hot potato can be any struct with no abilities. For example, the following struct is a hot potato:
-
-```move file=packages/samples/sources/programmability/hot-potato-pattern.move anchor=definition
-
-```
-
-Because the `Request` has no abilities and cannot be stored or ignored, the module must provide a
-function to unpack it. For example:
-
-```move file=packages/samples/sources/programmability/hot-potato-pattern.move anchor=new_request
-
-```
-
-## Example Usage
-
-In the following example, the `Promise` hot potato is used to ensure that the borrowed value, when
-taken from the container, is returned back to it. The `Promise` struct contains the ID of the
-borrowed object, and the ID of the container, ensuring that the borrowed value was not swapped for
-another and is returned to the correct container.
-
-```move file=packages/samples/sources/programmability/hot-potato-pattern.move anchor=container_borrow
-
-```
-
-## Applications
-
-Below we list some of the common use cases for the hot potato pattern.
-
-### Borrowing
-
-As shown in the [example above](#example-usage), the hot potato is very effective for borrowing with
-a guarantee that the borrowed value is returned to the correct container. While the example focuses
-on a value stored inside an `Option`, the same pattern can be applied to any other storage type, say
-a [dynamic field](./dynamic-fields).
-
-### Flash Loans
-
-Canonical example of the hot potato pattern is flash loans. A flash loan is a loan that is borrowed
-and repaid in the same transaction. The borrowed funds are used to perform some operations, and the
-repaid funds are returned to the lender. The hot potato pattern ensures that the borrowed funds are
-returned to the lender.
-
-An example usage of this pattern may look like this:
+Hot Potato 可以是任何沒有能力的結構體。例如：
 
 ```move
-// Borrow the funds from the lender.
-let (asset_a, potato) = lender.borrow(amount);
-
-// Perform some operations with the borrowed funds.
-let asset_b = dex.trade(loan);
-let proceeds = another_contract::do_something(asset_b);
-
-// Keep the commission and return the rest to the lender.
-let pay_back = proceeds.split(amount, ctx);
-lender.repay(pay_back, potato);
-transfer::public_transfer(proceeds, ctx.sender());
+public struct Request {
+    /* 欄位 */
+}
 ```
 
-### Variable-path Execution
+由於 `Request` 沒有能力，不能儲存或忽略，模組必須提供一個函式來拆解 (unpack) 它。
 
-The hot potato pattern can be used to introduce variation in the execution path. For example, if
-there is a module which allows purchasing a `Phone` for some "Bonus Points" or for USD, the hot
-potato can be used to decouple the purchase from the payment. The approach is very similar to how
-some shops work - you take the item from the shelf, and then you go to the cashier to pay for it.
+## 範例用法：借用 (Borrowing)
 
-```move file=packages/samples/sources/programmability/hot-potato-pattern.move anchor=phone_shop
+在容器借用的情境中，Hot Potato 可以確保借出的值必須歸還到正確的容器中。`Promise` 結構體包含借出物件的 ID 和容器的 ID，確保歸還時不會被偷換。
 
-```
+## 應用場景
 
-This decoupling technique allows separating the purchase logic from the payment logic, making the
-code more modular and easier to maintain. The `Ticket` could be split into its own module, providing
-a basic interface for the payment, and the shop implementation could be extended to support other
-goods without changing the payment logic.
+- **借用 (Borrowing)：** 如上所述，保證值會歸還。
+- **閃電貸 (Flash Loans)：** 確保借出的資金在同一次交易中歸還。
+- **可變路徑執行 (Variable-path Execution)：** 解耦購買與付款邏輯（例如「先拿貨，後付款」）。
+- **組合模式 (Compositional Patterns)：** 在不同模組甚至套件之間傳遞執行狀態。
 
-### Compositional Patterns
+## 在 Sui 框架中的使用
 
-Hot potato can be used to link together different modules in a compositional way. Its module may
-define ways to interact with the hot potato, for example, stamp it with a type signature, or to
-extract some information from it. This way, the hot potato can be passed between different modules,
-and even different packages within the same transaction.
+- `sui::borrow`
+- `sui::transfer_policy` (TransferRequest)
+- `sui::token` (ActionRequest)
 
-<!-- TODO: add [Request Pattern](./request-pattern)
+## 總結
 
-The most important compositional pattern is the Request Pattern, which we will cover in the next
-section. -->
-
-### Usage in the Sui Framework
-
-The pattern is used in various forms in the Sui Framework. Here are some examples:
-
-- [sui::borrow][borrow-framework] - uses hot potato to ensure that the borrowed value is returned to
-  the correct container.
-- [sui::transfer_policy][transfer-policy-framework] - defines a `TransferRequest` - a hot potato
-  which can only be consumed if all conditions are met.
-- [sui::token][token-framework] - in the Closed Loop Token system, an `ActionRequest` carries the
-  information about the performed action and collects approvals similarly to `TransferRequest`.
-
-[borrow-framework]: https://docs.sui.io/references/framework/sui-framework/borrow
-[transfer-policy-framework]: https://docs.sui.io/references/framework/sui-framework/transfer_policy
-[token-framework]: https://docs.sui.io/references/framework/sui-framework/token
-
-## Summary
-
-- A hot potato is a struct without abilities, it must come with a way to create and destroy it.
-- Hot potatoes are used to ensure that some action is taken before the transaction ends, similar to
-  a callback.
-- Most common use cases for hot potato are borrowing, flash loans, variable-path execution, and
-  compositional patterns.
+- Hot Potato 是沒有任何能力的結構體，必須配套提供建立和銷毀的方法。
+- 用於確保交易結束前必須採取某些行動（類似回呼）。
+- 常見用途包括借用、閃電貸、解耦預期行為等。

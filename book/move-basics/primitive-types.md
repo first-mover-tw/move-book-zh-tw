@@ -1,144 +1,124 @@
-# Primitive Types
+# 原生類型 (Primitive Types)
 
-<!-- TODO: Shall we split this into two pages? Maybe give an overview and focus more on specifics? -->
+對於簡單的值，Move 有許多內建的原生類型。它們是所有其他類型的基礎。原生類型包括：
 
-For simple values, Move has a number of built-in primitive types. They're the foundation for all
-other types. The primitive types are:
+- [布林值 (Booleans)](#booleans)
+- [無號整數 (Unsigned Integers)](#integer-types)
+- [地址 (Addresses)](./address) — 在下一節中介紹
 
-- [Booleans](#booleans)
-- [Unsigned Integers](#integer-types)
-- [Addresses](./address) - covered in the next section
+在我們深入瞭解原生類型之前，讓我們先看看如何在 Move 中宣告和指派變數。
 
-Before we get to the primitive types, let's first take a look at how to declare and assign variables
-in Move.
+## 變數與指派 (Variables and Assignment)
 
-## Variables and Assignment
-
-Variables are declared using the `let` keyword. They are immutable by default, but can be made
-mutable by adding the `mut` keyword:
+變數使用 `let` 關鍵字宣告。它們預設是不可變的 (immutable)，但可以透過添加 `mut` 關鍵字使其變為可變的 (mutable)：
 
 ```
-let <variable_name>[: <type>]  = <expression>;
-let mut <variable_name>[: <type>] = <expression>;
+let <變數名稱>[: <類型>]  = <表達式>;
+let mut <變數名稱>[: <類型>] = <表達式>;
 ```
 
-Where:
+其中：
 
-- `<variable_name>` - the name of the variable
-- `<type>` - the type of the variable, optional
-- `<expression>` - the value to be assigned to the variable
+- `<變數名稱>` — 變數的名稱
+- `<類型>` — 變數的類型，選填
+- `<表達式>` — 要指派給變數的值
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=variables_and_assignment
 
 ```
 
-A mutable variable can be reassigned using the `=` operator.
+可變變數可以使用 `=` 運算子重新指派。
 
 ```move
 y = 43;
 ```
 
-Variables can also be shadowed by re-declaring them.
+變數也可以透過重新宣告來進行遮蔽 (shadowing)。
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=shadowing
 
 ```
 
-## Booleans
+## 布林值 (Booleans)
 
-The `bool` type represents a boolean value - yes or no, true or false. It has two possible values:
-`true` and `false`, which are keywords in Move. For booleans, the compiler can always infer the type
-from the value, so there is no need to explicitly specify it.
+`bool` 類型表示布林值 — 是或否，真或假。它有兩個可能的值：`true` 和 `false`，它們是 Move 中的關鍵字。對於布林值，編譯器始終可以從值推斷類型，因此無需明確指定。
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=boolean
 
 ```
 
-Booleans are often used to store flags and to control the flow of the program. Please refer to the
-[Control Flow](./control-flow) section for more information.
+布林值通常用於儲存旗標和控制程式流程。請參考 [流程控制](./control-flow) 章節瞭解更多資訊。
 
-## Integer Types
+## 整數類型 (Integer Types)
 
-Move supports unsigned integers of various sizes, from 8-bit to 256-bit. The integer types are:
+Move 支援各種大小的無號整數，從 8 位元到 256 位元。整數類型有：
 
-- `u8` - 8-bit
-- `u16` - 16-bit
-- `u32` - 32-bit
-- `u64` - 64-bit
-- `u128` - 128-bit
-- `u256` - 256-bit
+- `u8` — 8 位元
+- `u16` — 16 位元
+- `u32` — 32 位元
+- `u64` — 64 位元
+- `u128` — 128 位元
+- `u256` — 256 位元
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=integers
 
 ```
 
-While boolean literals like `true` and `false` are clearly booleans, an integer literal like `42`
-could be any of the integer types. In most of the cases, the compiler will infer the type from the
-value, usually defaulting to `u64`. However, sometimes the compiler is unable to infer the type and
-will require an explicit type annotation. It can either be provided during assignment or by using a
-type suffix.
+布林常值如 `true` 和 `false` 顯然是布林值，但整數常值如 `42` 可以是任何整數類型。在大多數情況下，編譯器會從值中推斷類型，通常預設為 `u64`。然而，有時編譯器無法推斷類型，將需要明確的類型註解。這可以在指派期間提供，或透過使用類型後綴來提供。
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=integer_explicit_type
 
 ```
 
-### Operations
+### 運算
 
-Move supports the standard arithmetic operations for integers: addition, subtraction,
-multiplication, division, and modulus (remainder). The syntax for these operations is:
+Move 支援整數的標準算術運算：加法、減法、乘法、除法和取模（餘數）。這些運算的語法如下：
 
-| Syntax | Operation           | Aborts If                                |
-| ------ | ------------------- | ---------------------------------------- |
-| +      | addition            | Result is too large for the integer type |
-| -      | subtraction         | Result is less than zero                 |
-| \*     | multiplication      | Result is too large for the integer type |
-| %      | modulus (remainder) | The divisor is 0                         |
-| /      | truncating division | The divisor is 0                         |
+| 語法 | 運算                | 在以下情況中斷                         |
+| ---- | ------------------- | -------------------------------------- |
+| +    | 加法                | 結果對於該整數類型而言太大             |
+| -    | 減法                | 結果小於零                             |
+| \*   | 乘法                | 結果對於該整數類型而言太大             |
+| %    | 取模 (餘數)         | 除數為 0                               |
+| /    | 截斷除法 (整除)     | 除數為 0                               |
 
-> For more operations, including bitwise operations, please refer to the
-> [Move Reference](./../../reference/primitive-types/integers#bitwise).
+> 更多運算（包含位元運算），請參考 [Move 參考手冊](./../../reference/primitive-types/integers#bitwise)。
 
-The types of the operands _must match_, or the compiler will raise an error. The result of the
-operation will be of the same type as the operands. To perform operations on different types, the
-operands need to be cast to the same type.
+運算元的類型 **必須匹配**，否則編譯器將報錯。運算結果將與運算元具有相同的類型。若要對不同類型執行運算，運算元需要轉型為相同的類型。
 
-<!-- TODO: add examples + parentheses for arithmetic operations -->
-<!-- TODO: add bitwise operators -->
+### 使用 `as` 進行轉型 (Casting)
 
-### Casting with `as`
-
-Move supports explicit casting between integer types. The syntax is as follows:
+Move 支援在整數類型之間進行明確轉型。語法如下：
 
 ```move
-<expression> as <type>
+<表達式> as <類型>
 ```
 
-Note that parentheses around the expression may be required to prevent ambiguity:
+請注意，表達式周圍可能需要括號以防止歧義：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=cast_as
 
 ```
 
-A more complex example, preventing overflow:
+一個更複雜的例子，防止溢位：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=overflow
 
 ```
 
-### Overflow
+### 溢位 (Overflow)
 
-Move does not support overflow / underflow; an operation that results in a value outside the range
-of the type will raise a runtime error. This is a safety feature to prevent unexpected behavior.
+Move 不支援溢位 / 負溢位 (underflow)；導致值超出類型範圍的運算將引發執行時期錯誤。這是一項安全功能，可防止非預期的行為。
 
 ```move
 let x = 255u8;
 let y = 1u8;
 
-// This will raise an error
+// 這將引發錯誤
 let z = x + y;
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [Bool](./../../reference/primitive-types/bool) in the Move Reference.
-- [Integer](./../../reference/primitive-types/integers) in the Move Reference.
+- Move 參考手冊中的 [布林值 (Bool)](./../../reference/primitive-types/bool)。
+- Move 參考手冊中的 [整數 (Integer)](./../../reference/primitive-types/integers)。

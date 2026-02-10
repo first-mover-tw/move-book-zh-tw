@@ -1,199 +1,135 @@
-# Control Flow
+# 流程控制 (Control Flow)
 
-<!--
+流程控制語句用於控制程式中執行的流向。它們可用於做出決策、重複執行一段程式碼，或提早退出一段程式碼。Move 包含以下流程控制語句（下文將詳細說明）：
 
-Chapter: Basic Syntax
-Goal: Introduce control flow statements.
-Notes:
-    - if/else is an expression
-    - while () {} loop
-    - continue and break
-    - loop {}
-    - infinite loop is possible but will lead to gas exhaustion
-    - return keyword
-    - if is an expression and as such requires a semicolon (!!!)
+- [`if` 和 `if-else`](#conditional-statements) — 決定是否執行一段程式碼
+- [`loop` 和 `while` 迴圈](#repeating-statements-with-loops) — 重複執行一段程式碼
+- [`break` 和 `continue` 語句](#exiting-a-loop-early) — 提早退出迴圈
+- [`return`](#early-return) 語句 — 提早退出函式
 
-Links:
-    - reference (control flow)
-    - coding conventions (control flow)
+## 條件語句 (Conditional Statements)
 
- -->
+`if` 表達式用於在程式中做出決策。它會評估一個 [布林表達式](./expression#literals)，如果表達式為 true，則執行一段程式碼。與 `else` 配合使用時，如果表達式為 false，它可以執行另一段不同的程式碼。
 
-Control flow statements are used to control the flow of execution in a program. They are used to
-make decisions, repeat a block of code, or exit a block of code early. Move includes the following
-control flow statements (explained in detail below):
-
-- [`if` and `if-else`](#conditional-statements) - making decisions on whether to execute a block of
-  code
-- [`loop` and `while` loops](#repeating-statements-with-loops) - repeating a block of code
-- [`break` and `continue` statements](#exiting-a-loop-early) - exiting a loop early
-- [`return`](#early-return) statement - exiting a function early
-
-## Conditional Statements
-
-The `if` expression is used to make decisions in a program. It evaluates a
-[boolean expression](./expression#literals) and executes a block of code if the expression is true.
-Paired with `else`, it can execute a different block of code if the expression is false.
-
-The syntax for an `if` expression is:
+`if` 表達式的語法為：
 
 ```move
-if (<bool_expression>) <expression>;
-if (<bool_expression>) <expression> else <expression>;
+if (<布林表達式>) <表達式>;
+if (<布林表達式>) <表達式> else <表達式>;
 ```
 
-Just like any other expression, `if` requires a semicolon if there are other expressions following
-it. The `else` keyword is optional, except when the resulting value is assigned to a variable, as
-all branches must return a value to ensure type safety. Let’s examine how an `if` expression works
-in Move with the following example:
+就像任何其他表達式一樣，如果 `if` 後面還有其他表達式，則需要分號。`else` 關鍵字是選填的，除非將產生的值指派給變數，因為所有分支都必須傳回一個值以確保類型安全。讓我們透過以下範例看看 `if` 表達式在 Move 中是如何運作的：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=if_condition
 
 ```
 
-Let's see how we can use `if` and `else` to assign a value to a variable:
+讓我們看看如何使用 `if` 和 `else` 來為變數指派值：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=if_else
 
 ```
 
-In this example, the value of the `if` expression is assigned to the variable `y`. If `x` is greater
-than 0, `y` is assigned the value 1; otherwise, it is assigned 0. The `else` block is required
-because both branches of the `if` expression must return a value of the same type. Omitting the
-`else` block would result in a compiler error, as it ensures all possible branches are accounted for
-and type safety is maintained.
+在此範例中，`if` 表達式的值被指派給變數 `y`。如果 `x` 大於 0，`y` 被指派為 1；否則，被指派為 0。`else` 區塊是必要的，因為 `if` 表達式的兩個分支都必須傳回相同類型的值。省略 `else` 區塊會導致編譯錯誤，因為它確保考慮了所有可能的分支並維持了類型安全。
 
-<!-- TODO: add an error -->
+條件表達式是 Move 中最重要的流程控制語句之一。它們評估使用者提供的輸入或儲存的資料以做出決策。一個關鍵的使用案例是 [`assert!` 巨集](./assert-and-abort)，它檢查條件是否為 true，如果不是則中斷執行。我們稍後將詳細探討這一點。
 
-Conditional expressions are among the most important control flow statements in Move. They evaluate
-user-provided input or stored data to make decisions. One key use case is in the
-[`assert!` macro](./assert-and-abort), which checks if a condition is true and aborts execution if
-it is not. We’ll explore this in detail shortly.
+## 使用迴圈重複語句 (Repeating Statements with Loops)
 
-## Repeating Statements with Loops
+迴圈用於多次執行一段程式碼。Move 有兩種內建的迴圈類型：`loop` 和 `while`。在許多情況下它們可以互換使用，但通常 `while` 用於預先知道迭代次數的情況，而 `loop` 用於預先不知道迭代次數或有多個退出點的情況。
 
-Loops are used to execute a block of code multiple times. Move has two built-in types of loops:
-`loop` and `while`. In many cases they can be used interchangeably, but usually `while` is used when
-the number of iterations is known in advance, and `loop` is used when the number of iterations is
-not known in advance or there are multiple exit points.
+迴圈對於處理集合（如向量）或重複執行程式碼直到滿足特定條件非常有用。但是，請務必小心避免無限迴圈，這會耗盡 Gas 限制並導致交易中斷。
 
-Loops are useful for working with collections, such as vectors, or for repeating a block of code
-until a specific condition is met. However, take care to avoid infinite loops, which can exhaust gas
-limits and cause the transaction to abort.
+## while 迴圈
 
-## The `while` Loop
+只要相關的布林表達式評估為 true，`while` 語句就會重複執行一段程式碼。正如我們在 `if` 中看到的，布林表達式在每次迴圈迭代之前都會被評估。此外，與條件語句一樣，`while` 迴圈也是一個表達式，如果後面還有其他表達式，則需要分號。
 
-The `while` statement executes a block of code repeatedly as long as the associated boolean
-expression evaluates to true. Just like we've seen with `if`, the boolean expression is evaluated
-before each iteration of the loop. Additionally, like conditional statements, the `while` loop is an
-expression and requires a semicolon if there are other expressions following it.
-
-The syntax for the `while` loop is:
+`while` 迴圈的語法為：
 
 ```move
-while (<bool_expression>) { <expressions>; };
+while (<布林表達式>) { <多個表達式>; };
 ```
 
-Here is an example of a `while` loop with a very simple condition:
+這是一個具有非常簡單條件的 `while` 迴圈範例：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=while_loop
 
 ```
 
-## Infinite `loop`
+## 無限 loop
 
-Now let's imagine a scenario where the boolean expression is always `true`. For example, if we
-literally passed `true` to the `while` condition. This is similar to how the `loop` statement
-functions, except that `while` evaluates a condition.
+現在讓我們想像一種布林表達式始終為 `true` 的情況。例如，如果我們直接將 `true` 傳遞給 `while` 條件。這與 `loop` 語句的功能類似，不同之處在於 `while` 會評估一個條件。
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=infinite_while
 
 ```
 
-An infinite `while` loop, or a `while` loop with an always `true` condition, is equivalent to a
-`loop`. The syntax for creating a `loop` is straightforward:
+無限 `while` 迴圈（或條件始終為 `true` 的 `while` 迴圈）等同於 `loop`。建立 `loop` 的語法非常直觀：
 
 ```move
-loop { <expressions>; };
+loop { <多個表達式>; };
 ```
 
-Let's rewrite the previous example using `loop` instead of `while`:
+讓我們使用 `loop` 代替 `while` 來重寫前面的範例：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=infinite_loop
 
 ```
 
-Infinite loops are rarely practical in Move, as every operation consumes gas, and an infinite loop
-will inevitably lead to gas exhaustion. If you find yourself using a loop, consider whether there
-might be a better approach, as many use cases can be handled more efficiently with other control
-flow structures. That said, `loop` might be useful when combined with `break` and `continue`
-statements to create controlled and flexible looping behavior.
+無限迴圈在 Move 中很少具有實用性，因為每項運算都會消耗 Gas，無限迴圈必然會導致 Gas 耗盡。如果您發現自己在運用迴圈，請考慮是否有更好的方法，因為許多使用案例可以使用其他流程控制結構更有效地處理。儘管如此，當 `loop` 與 `break` 和 `continue` 語句結合使用時，對於建立受控且靈活的循環行為可能非常有用。
 
-## Exiting a Loop Early
+## 提早退出迴圈 (Exiting a Loop Early)
 
-As we already mentioned, infinite loops are rather useless on their own. And that's where we
-introduce the `break` and `continue` statements. They are used to exit a loop early, and to skip the
-rest of the current iteration, respectively.
+正如我們已經提到的，無限迴圈本身是沒什麼用處的。這就是我們引入 `break` 和 `continue` 語句的原因。它們分別用於提早退出迴圈和跳過當前迭代的剩餘部分。
 
-Syntax for the `break` statement is (without a semicolon):
+`break` 語句的語法如下（不含分號）：
 
 ```move
 break
 ```
 
-The `break` statement is used to stop the execution of a loop and exit it early. It is often used in
-combination with a conditional statement to exit the loop when a certain condition is met. To
-illustrate this point, let's turn the infinite `loop` from the previous example into something that
-looks and behaves more like a `while` loop:
+`break` 語句用於停止迴圈的執行並提早退出。它通常與條件語句結合使用，以便在滿足特定條件時退出迴圈。為了說明這一點，讓我們將前面範例中的無限 `loop` 轉換為外觀和行為更像 `while` 迴圈的結構：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=break_loop
 
 ```
 
-Almost identical to the `while` loop, right? The `break` statement is used to exit the loop when `x`
-is 5. If we remove the `break` statement, the loop will run forever, just like in the previous
-example.
+與 `while` 迴圈幾乎一模一樣，對吧？當 `x` 為 5 時，使用 `break` 語句退出迴圈。如果我們移除 `break` 語句，迴圈將永遠執行下去，就像前面的範例一樣。
 
-## Skipping an Iteration
+## 跳過迭代 (Skipping an Iteration)
 
-The `continue` statement is used to skip the rest of the current iteration and start the next one.
-Similarly to `break`, it is used in combination with a conditional statement to skip the rest of an
-iteration when a certain condition is met.
+`continue` 語句用於跳過當前迭代的剩餘部分並開始下一次迭代。與 `break` 類似，它常與條件語句結合使用，以便在滿足特定條件時跳過迭代的其餘部分。
 
-Syntax for the `continue` statement is (without a semicolon):
+`continue` 語句的語法如下（不含分號）：
 
 ```move
 continue
 ```
 
-The example below skips odd numbers and prints only even numbers from 0 to 10:
+下面的範例跳過奇數，僅列印 0 到 10 之間的偶數：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=continue_loop
 
 ```
 
-`break` and `continue` statements can be used in both `while` and `loop` loops.
+`break` 和 `continue` 語句在 `while` 和 `loop` 迴圈中都可以使用。
 
-## Early Return
+## 提早傳回 (Early Return)
 
-The `return` statement is used to exit a [function](./function) early and return a value. It is
-often used in combination with a conditional statement to exit the function when a certain condition
-is met. The syntax for the `return` statement is:
+`return` 語句用於提早退出 [函式](./function) 並傳回一個值。它通常與條件語句結合使用，以便在滿足特定條件時退出函式。`return` 語句的語法為：
 
 ```move
-return <expression>
+return <表達式>
 ```
 
-Here is an example of a function that returns a value when a certain condition is met:
+這是一個在滿足特定條件時傳回值的函式範例：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=return_statement
 
 ```
 
-Unlike in many other languages, the `return` statement is not required for the last expression in a
-function. The last expression in a function block is automatically returned. However, the `return`
-statement is useful when we want to exit a function early if a certain condition is met.
+與許多其他語言不同，函式中的最後一個表達式不需要 `return` 語句。函式區塊中的最後一個表達式會自動傳回。但是，當我們想在滿足特定條件時提早退出函式時，`return` 語句非常有用。
 
-## Further Reading
+## 延伸閱讀
 
-- [Control Flow](./../../reference/control-flow) chapter in the Move Reference.
+- Move 參考手冊中的 [流程控制 (Control Flow)](./../../reference/control-flow) 章節。

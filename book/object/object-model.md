@@ -1,49 +1,30 @@
-# What is an Object?
+# 什麼是物件？ (What is an Object?)
 
-The Object Model in Sui can be viewed as a high-level abstraction representing digital assets as
-_objects_. These objects have their own type and associated behaviors, a unique identifier, and
-support native storage operations like _transfer_ and _share_. Designed to be intuitive and easy to
-use, the Object Model enables a wide range of use cases to be implemented with ease.
+Sui 中的物件模型 (Object Model) 可以視為將數位資產表示為 **物件 (objects)** 的高階抽象。這些物件具有自己的類型和相關行為、唯一的識別碼，並支援原生存儲操作，例如 **轉移 (transfer)** 和 **共享 (share)**。物件模型旨在直觀且易於使用，使開發人員能夠輕鬆實現廣泛的使用案例。
 
-Objects in Sui have the following properties:
+Sui 中的物件具有以下屬性：
 
-- **Type:** Every object has a type, defining the structure and behavior of the object. Objects of
-  different types cannot be mixed or used interchangeably, ensuring objects are used correctly
-  according to their type system.
+- **類型 (Type):** 每個物件都有一個類型，定義了物件的結構和行為。不同類型的物件不能混用或互換，確保物件根據其類型系統被正確使用。
 
-- **Unique ID:** Each object has a unique identifier, distinguishing it from other objects. This ID
-  is generated upon the object's creation and is immutable. It's used to track and identify objects
-  within the system.
+- **唯一 ID (Unique ID):** 每個物件都有一個唯一的識別碼，使其區別於其他物件。此 ID 在物件建立時產生且不可變。它用於在系統內追蹤和識別物件。
 
 <!-- Note: consider "shared across many entities" -->
+- **所有者 (Owner):** 每個物件都與一個所有者相關聯，所有者控制著對物件的變更。Sui 上的所有權可以是某個帳戶專有、全網共享或凍結（僅允許唯讀存取，不能修改或轉移）。我們將在後續部分詳細討論所有權。
 
-- **Owner:** Every object is associated with an owner, who has control over changes to the object.
-  Ownership on Sui can be exclusive to an account, shared across the network, or frozen, allowing
-  read-only access without modification or transfer capabilities. We will discuss ownership in more
-  detail in the following sections.
+  請注意，所有權並不控制物件的機密性 — 始終可以從 Move 外部讀取鏈上物件的內容。您絕不應在物件內部存儲未加密的私密資訊。
 
-  Note that ownership does not control the confidentiality of an object &mdash; it is always
-  possible to read the contents of an on-chain object from outside of Move. You should never store
-  unencrypted secrets inside of objects.
+- **資料 (Data):** 物件封裝了它們的資料，簡化了管理和操作。資料結構和操作由物件的類型定義。
 
-- **Data:** Objects encapsulate their data, simplifying management and manipulation. The data
-  structure and operations are defined by the object's type.
+- **版本 (Version):** 從帳戶到物件的過渡是透過物件版本控制來實現的。傳統上，區塊鏈使用 **nonce** 來防止重放攻擊。在 Sui 中，物件的版本充納了 nonce 的角色，為每個物件防止重放攻擊。
 
-- **Version:** The transition from accounts to objects is facilitated by object versioning.
-  Traditionally, blockchains use a _nonce_ to prevent replay attacks. In Sui, the object's version
-  acts as a nonce, preventing replay attacks for each object.
+- **摘要 (Digest):** 每個物件都有一個摘要，它是物件資料的雜湊值。摘要用於以密碼學方式驗證物件資料的完整性，並確保其未被篡改。摘要在物件建立時計算，並在物件資料更改時更新。
 
-- **Digest:** Every object has a digest, which is a hash of the object's data. The digest is used to
-  cryptographically verify the integrity of the object's data and ensures that it has not been
-  tampered with. The digest is calculated when the object is created and is updated whenever the
-  object's data changes.
+## 總結 (Summary)
 
-## Summary
+- Sui 中的物件是代表數位資產的高階抽象。
+- 物件具有類型、唯一 ID、所有者、資料、版本和摘要。
+- 物件模型簡化了資產管理並實現了廣泛的使用案例。
 
-- Objects in Sui are high-level abstractions representing digital assets.
-- Objects have a type, unique ID, owner, data, version, and digest.
-- The Object Model simplifies asset management and enables a wide range of use cases.
+## 延伸閱讀
 
-## Further Reading
-
-- [Object Model](https://docs.sui.io/concepts/object-model) in Sui Documentation.
+- Sui 文檔中的 [物件模型 (Object Model)](https://docs.sui.io/concepts/object-model)。

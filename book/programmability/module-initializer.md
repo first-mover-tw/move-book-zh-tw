@@ -1,12 +1,8 @@
-# Module Initializer
+# 模組初始化器 (Module Initializer)
 
-A common use case in many applications is to run certain code just once when the package is
-published. Imagine a simple store module that needs to create the main Store object upon its
-publication. In Sui, this is achieved by defining an `init` function within the module. This
-function will automatically be called when the module is published.
+許多應用程式中一個常見的使用案例是在套件發佈時僅執行一次某些程式碼。想像一個簡單的商店模組，它需要在發佈時建立主要的「商店 (Store)」物件。在 Sui 中，這是透過在模組內定義 `init` 函式來實現的。該函式將在模組發佈時自動被呼叫。
 
-> All of the modules' `init` functions are called during the publishing process. Currently, this
-> behavior is limited to the publish command and does not extend to package upgrades.
+> 所有模組的 `init` 函式都會在發佈過程中被呼叫。目前，此行為僅限於發佈 (publish) 指令，並不延伸到套件升級。
 >
 > <!-- [package upgrades]() -->
 
@@ -14,52 +10,39 @@ function will automatically be called when the module is published.
 
 ```
 
-In the same package, another module can have its own `init` function, encapsulating distinct logic.
+在同一個套件中，另一個模組也可以有自己的 `init` 函式，封裝不同的邏輯。
 
 ```move file=packages/samples/sources/programmability/module-initializer-2.move anchor=other
 
 ```
 
-## `init` Features
+## `init` 的特性
 
-The function is called on publish, if it is present in the module and follows the rules:
+如果模組中存在該函式並遵循以下規則，則會在發佈時被呼叫：
 
-- The function has to be named `init`, be private and have no return values.
-- Takes one or two arguments: [One Time Witness](./one-time-witness) (optional) and
-  [TxContext](./transaction-context). With `TxContext` always being the last argument.
+- 函式名稱必須為 `init`，為私有 (private) 且沒有傳回值。
+- 接收一或二個參數：[一次性見證 One Time Witness](./one-time-witness)（選填）以及 [TxContext](./transaction-context)。`TxContext` 始終作為最後一個參數。
 
 ```move
 fun init(ctx: &mut TxContext) { /* ... */}
 fun init(otw: OTW, ctx: &mut TxContext) { /* ... */ }
 ```
 
-TxContext can also be passed as immutable reference: `&TxContext`. However, practically speaking, it
-should always be `&mut TxContext` since the `init` function can't access the on-chain state and to
-create new objects it requires the mutable reference to the context.
+TxContext 也可以作為不可變參考傳遞：`&TxContext`。然而，從實際操作來看，它應該始終是 `&mut TxContext`，因為 `init` 函式無法存取鏈上狀態，且建立新物件需要對上下文的可變參考。
 
 ```move
 fun init(ctx: &TxContext) { /* ... */}
 fun init(otw: OTW, ctx: &TxContext) { /* ... */ }
 ```
 
-## Trust and Security
+## 信任與安全 (Trust and Security)
 
-While `init` function can be used to create sensitive objects once, it is important to know that the
-same object (e.g. `StoreOwnerCap` from the first example) can still be created in another function.
-Especially given that new functions can be added to the module during an upgrade. So the `init`
-function is a good place to set up the initial state of the module, but it is not a security measure
-on its own.
+雖然 `init` 函式可以用於一次性建立敏感物件，但重要的是要了解同一個物件（例如第一個範例中的 `StoreOwnerCap`）仍然可以在另一個函式中建立。特別是考慮到在升級期間可以向模組添加新函式。因此，`init` 函式是設置模組初始狀態的好地方，但它本身並非一種安全措施。
 
-There are ways to guarantee that the object was created only once, such as the
-[One Time Witness](./one-time-witness). And there are ways to limit or disable the upgrade of the
-module, which we will cover in the Package Upgrades chapter.
+有一些方法可以保證物件僅被建立一次，例如 [一次性見證 (One Time Witness)](./one-time-witness)。此外，也有一些方法可以限制或停用模組的升級，我們將在「套件升級 (Package Upgrades)」章節中討論。
 
-## Next Steps
+## 下一步 (Next Steps)
 
-As follows from the definition, the `init` function is guaranteed to be called only once when the
-module is published. So it is a good place to put the code that initializes module's objects and
-sets up the environment and configuration.
+根據定義，`init` 函式保證在模組發佈時僅被呼叫一次。因此，它是放置初始化模組物件、設置環境和配置的程式碼的好地方。
 
-For example, if there's a [Capability](./capability) which is required for certain actions, it
-should be created in the `init` function. In the next chapter we will talk about the `Capability`
-pattern in more detail.
+例如，如果某個操作需要 [能力 (Capability)](./capability)，則應在 `init` 函式中建立它。在下一章中，我們將詳細討論 `Capability` 模式。

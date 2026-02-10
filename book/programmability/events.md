@@ -1,46 +1,31 @@
-# Events
+# 事件 (Events)
 
-Events are a way to notify off-chain listeners about on-chain events. They are used to emit
-additional information about the transaction that is not stored - and, hence, can't be accessed -
-on-chain. Events are emitted by the `sui::event` module located in the
-[Sui Framework](./sui-framework).
+事件是用於通知鏈外監聽器關於鏈上事件的一種方式。它們用於發送有關交易的附加資訊，這些資訊不存儲在鏈上，因此無法在鏈上存取。事件由位於 [Sui 框架](./sui-framework) 中的 `sui::event` 模組發送。
 
-> Any custom type with the [copy](./../move-basics/copy-ability) and
-> [drop](./../move-basics/drop-ability) abilities can be emitted as an event. Sui Verifier requires
-> the type to be internal to the module.
+> 任何具有 [copy](./../move-basics/copy-ability) 和 [drop](./../move-basics/drop-ability) 能力的自定義類型都可以作為事件發送。Sui 校驗器 (Verifier) 要求該類型必須是模組內部的。
 
 ```move
 module sui::event;
 
-/// Emit a custom Move event, sending the data off-chain.
-///
-/// Used for creating custom indexes and tracking on-chain
-/// activity in a way that suits a specific application the most.
-///
-/// The type `T` is the main way to index the event, and can contain
-/// phantom parameters, eg `emit(MyEvent<phantom T>)`.
+/// 發送一個自定義 Move 事件，將資料傳送到鏈外。
+/// 用於建立自定義索引並以最適合特定應用程式的方式追蹤鏈上活動。
+/// 類型 `T` 是索引事件的主要方式，可以包含 phantom 參數，
+/// 例如 `emit(MyEvent<phantom T>)`。
 public native fun emit<T: copy + drop>(event: T);
 ```
 
-## Emitting Events
+## 發送事件 (Emitting Events)
 
-Events are emitted using the `emit` function in the `sui::event` module. The function takes a single
-argument - the event to be emitted. The event data is passed by value,
+事件使用 `sui::event` 模組中的 `emit` 函式發送。該函式接收一個參數 — 要發送的事件。事件資料按值傳遞。
 
 ```move file=packages/samples/sources/programmability/events.move anchor=emit
 
 ```
 
-The Sui Verifier requires the type passed to the `emit` function to be _internal to the module_. So
-emitting a type from another module will result in a compilation error. Primitive types, although
-they match the _copy_ and _drop_ requirement, are not allowed to be emitted as events.
+Sui 校驗器要求傳遞給 `emit` 函式的類型必須是 **模組內部的 (internal to the module)**。因此，發送來自另一個模組的類型將導致編譯錯誤。原始類型雖然符合 `copy` 和 `drop` 的要求，但不允許作為事件發送。
 
-## Event Structure
+## 事件結構 (Event Structure)
 
-Events are a part of the transaction result and are stored in the _transaction effects_. As such,
-they natively have the `sender` field which is the address which sent the transaction. So adding a
-"sender" field to the event is not necessary. Similarly, event metadata contains the timestamp. But
-it is important to note that the timestamp is relative to the node and may vary a little from node
-to node.
+事件是交易結果的一部分，存儲在 **交易效果 (transaction effects)** 中。因此，它們原生具有 `sender` 欄位，即發送交易的地址。因此，無需在事件中添加「sender」欄位。同樣地，事件元資料包含時間戳。但請注意，時間戳是相對於節點的，在不同節點之間可能會略有不同。
 
 <!-- ## Reliability -->

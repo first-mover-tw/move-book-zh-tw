@@ -1,110 +1,75 @@
-# Object Display
+# 物件顯示 (Object Display)
 
-Objects on Sui are explicit in their structure and behavior and can be displayed in an
-understandable way. However, to support richer metadata for clients, there's a standard and
-efficient way of "describing" them to the client - the `Display` object defined in the
-[Sui Framework](./sui-framework).
+Sui 上的物件在結構和行為上都是顯性的，並且可以以易於理解的方式顯示。然而，為了支援客戶端更豐富的元資料，有一種標準且高效的方式來向客戶端「描述」它們 —— 即 [Sui 框架](./sui-framework) 中定義的 `Display` 物件。
 
-## Background
+## 背景
 
-Historically, there were different attempts to agree on a standard structure of an object so it can
-be displayed in a user interface. One of the approaches was to define certain fields in the object
-struct which, when present, would be used in the UI. This approach was not flexible enough and
-required developers to define the same fields in every object, and sometimes the fields did not make
-sense for the object.
+在歷史上，人們曾有過不同的嘗試，試圖就物件的標準結構達成一致，以便在使用者介面中顯示。其中一種方法是在物件結構體中定義特定的欄位，當這些欄位存在時，就會在 UI 中使用。這種方法不夠靈活，要求開發人員在每個物件中定義相同的欄位，有時這些欄位對該物件來說並沒有意義。
 
 ```move file=packages/samples/sources/programmability/display.move anchor=background
 
 ```
 
-If any of the fields contained static data, it would be duplicated in every object. And, since Move
-does not have interfaces, it is not possible to know if an object has a specific field without
-"manually" checking the object's type, which makes the client fetching more complex.
+如果任何欄位包含靜態資料，它將在每個物件中重複出現。此外，由於 Move 沒有介面 (interfaces)，如果不「手動」檢查物件的類型，就無法知道物件是否具有特定欄位，這使得客戶端獲取資料變得更加複雜。
 
-## Object Display
+## 物件顯示 (Object Display)
 
-To address these issues, Sui introduces a standard way of describing an object for display. Instead
-of defining fields in the object struct, the display metadata is stored in a separate object, which
-is associated with the type. This way, the display metadata is not duplicated, and it is easy to
-extend and maintain.
+為了探討這些問題，Sui 引入了一種標準的物件顯示描述方式。與其在物件結構體中定義欄位，顯示元資料 (display metadata) 存儲在一個單獨的物件中，該物件與類型相關聯。透過這種方式，顯示元資料不會重複，且易於擴展和維護。
 
-Another important feature of Sui Display is the ability to define templates and use object fields in
-those templates. Not only it allows for a more flexible display, but it also frees the developer
-from the need to define the same fields with the same names and types in every object.
+Sui Display 的另一個重要特性是能夠定義模板，並在這些模板中使用物件欄位。這不僅提供了更靈活的顯示方式，還將開發人員從「在每個物件中定義具有相同名稱和類型的相同欄位」的需求中解放出來。
 
-> The Object Display is natively supported by the
-> [Sui Full Node](https://docs.sui.io/guides/operator/sui-full-node), and the client can fetch the
-> display metadata for any object if the object type has a Display associated with it.
+> 物件顯示由 [Sui 全節點 (Sui Full Node)](https://docs.sui.io/guides/operator/sui-full-node) 原生支援，如果物件類型有關聯的 Display，客戶端即可獲取任何物件的顯示元資料。
 
 ```move file=packages/samples/sources/programmability/display.move anchor=hero
 
 ```
 
-## Creator Privilege
+## 創作者特權 (Creator Privilege)
 
-While the objects can be owned by accounts and may be a subject to
-[True Ownership](./../object/ownership#account-owner-or-single-owner), the Display can be owned by
-the creator of the object. This way, the creator can update the display metadata and apply the
-changes globally without the need to update every object. The creator can also transfer Display to
-another account or even build an application around the object with custom functionality to manage
-the metadata.
+雖然物件可以由帳戶擁有，並受限於 [絕對所有權 (True Ownership)](./../object/ownership#account-owner-or-single-owner)，但 Display 可以由物件的 **創作者 (creator)** 擁有。透過這種方式，創作者可以更新顯示元資料並全域套用更改，而無需更新每個物件。創作者還可以將 Display 轉移給另一個帳戶，甚至為物件開發具有自定義功能的應用程式來管理元資料。
 
-## Standard Fields
+## 標準欄位
 
-The fields that are supported most widely are:
+最廣泛支援的欄位包括：
 
-- `name` - A name for the object. The name is displayed when users view the object.
-- `description` - A description for the object. The description is displayed when users view the
-  object.
-- `link` - A link to the object to use in an application.
-- `image_url` - A URL or a blob with the image for the object.
-- `thumbnail_url` - A URL to a smaller image to use in wallets, explorers, and other products as a
-  preview.
-- `project_url` - A link to a website associated with the object or creator.
-- `creator` - A string that indicates the object creator.
+- `name`: 物件的名稱。當使用者檢視物件時顯示。
+- `description`: 物件的描述。當使用者檢視物件時顯示。
+- `link`: 指向在應用程式中使用的物件連結。
+- `image_url`: 解析為物件影像的 URL 或 blob。
+- `thumbnail_url`: 指向較小影像的 URL，用於錢包、瀏覽器和其他產品中的預覽。
+- `project_url`: 指向與物件或創作者相關的網站連結。
+- `creator`: 指示物件創作者的字串。
 
-> Please, refer to the [Sui Documentation](https://docs.sui.io/standards/display) for the most
-> up-to-date list of supported fields.
+> 請參考 [Sui 文件](https://docs.sui.io/standards/display) 以獲取支援欄位的最新清單。
 
-While there's a standard set of fields, the Display object does not enforce them. The developer can
-define any fields they need, and the client can use them as they see fit. Some applications may
-require additional fields, and omit other, and the Display is flexible enough to support them.
+雖然有一組標準欄位，但 Display 物件並不強制要求使用它們。開發人員可以根據需要定義任何欄位，而客戶端可以隨意使用它們。某些應用程式可能需要額外欄位並省略其他欄位，Display 足夠靈活以支援這些需求。
 
-## Working with Display
+## 使用 Display
 
-The `Display` object is defined in the `sui::display` module. It is a generic struct that takes a
-phantom type as a parameter. The phantom type is used to associate the `Display` object with the
-type it describes. The `fields` of the `Display` object are a `VecMap` of key-value pairs, where the
-key is the field name and the value is the field value. The `version` field is used to version the
-display metadata, and is updated on the `update_display` call.
+`Display` 物件定義在 `sui::display` 模組中。它是一個泛型結構，接收一個 phantom 類型作為參數。該 phantom 類型用於將 `Display` 物件與其描述的類型相關聯。`Display` 物件的 `fields` 是一個鍵值對的 `VecMap`，其中鍵是欄位名稱，值是欄位數值。`version` 欄位用於對顯示元資料進行版本控制，並在 `update_display` 呼叫時更新。
 
 ```move
 module sui::display;
 
 public struct Display<phantom T: key> has key, store {
     id: UID,
-    /// Contains fields for display. Currently supported
-    /// fields are: name, link, image and description.
+    /// 包含顯示欄位。目前支援的欄位有：name, link, image 和 description。
     fields: VecMap<String, String>,
-    /// Version that can only be updated manually by the Publisher.
+    /// 只能由發佈者 (Publisher) 手動更新的版本。
     version: u16
 }
 ```
 
-The [Publisher](./publisher) object is required to a new Display, since it serves as the proof of
-ownership of type.
+要建立新的 Display，需要 [發佈者 (Publisher)](./publisher) 物件，因為它作為類型所有權的證明。
 
-## Template Syntax
+## 模板語法 (Template Syntax)
 
-Currently, Display supports simple string interpolation and can use struct fields (and paths) in its
-templates. The syntax is trivial - `{path}` is replaced with the value of the field at the path. The
-path is a dot-separated list of field names, starting from the root object in case of nested fields.
+目前，Display 支援簡單的字串插值 (string interpolation)，並可以在其模板中使用結構體欄位（及路徑）。語法非常簡單 —— `{path}` 會被該路徑下欄位的數值替換。路徑是由句點分隔的欄位名稱列表，如果是巢狀欄位，則從根物件開始。
 
 ```move file=packages/samples/sources/programmability/display.move anchor=nested
-
 ```
 
-The Display for the type `LittlePony` above could be defined as follows:
+上述 `LittlePony` 類型的 Display 可以定義如下：
 
 ```json
 {
@@ -114,12 +79,11 @@ The Display for the type `LittlePony` above could be defined as follows:
 }
 ```
 
-## Multiple Display Objects
+## 多個 Display 物件
 
-There's no restriction to how many `Display<T>` objects can be created for a specific `T`. However,
-the most recently updated `Display<T>` will be used by the full node.
+對於特定的類型 `T`，可以建立的 `Display<T>` 物件數量沒有限制。然而，全節點將使用最近更新的 `Display<T>`。
 
-## Further Reading
+## 延伸閱讀
 
-- [Sui Object Display](https://docs.sui.io/standards/display) is Sui Documentation
-- [Publisher](./publisher) - the representation of the creator
+- [Sui 物件顯示 (Sui Object Display)](https://docs.sui.io/standards/display) 官方文件
+- [發佈者 (Publisher)](./publisher) —— 創作者的代表

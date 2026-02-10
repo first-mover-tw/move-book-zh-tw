@@ -1,36 +1,11 @@
-# Account
+# 帳戶 (Account)
 
-<!--
+帳戶是標識用戶的一種方式。帳戶是從私鑰生成的，並透過地址來標識。帳戶可以擁有物件，並可以發送交易。每筆交易都有一個發送者，發送者由[地址](./address)標識。
 
-- user is an account
-    - account is identified by an address
-    - account is generated from a private key
-    - account can own objects
-    - account can send transactions
-    - every transaction has a sender
-    - sender is identified by an address
-    - sui cryptographic agility
-    - sui account types
-    - supported curves: ed25519, secp256k1, zklogin
+Sui 支持多種密碼學算法用於生成帳戶。目前支持的兩條曲線是 ed25519、secp256k1，還有一種特殊的生成帳戶方式 —— zklogin。密碼學靈活性（Cryptographic agility）是 Sui 的獨特功能，允許在帳戶生成方面具有靈活性。
 
- -->
+## 進一步閱讀
 
-An account is a way to identify a user. An account is generated from a private key, and is
-identified by an address. An account can own objects, and can send transactions. Every transaction
-has a sender, and the sender is identified by an [address](./address).
-
-Sui supports multiple cryptographic algorithms for account generation. The two supported curves are
-ed25519, secp256k1, and there is also a special way of generating an account - zklogin. The
-cryptographic agility - the unique feature of Sui - allows for flexibility in the account
-generation.
-
-<!-- The cryptographic agility allows for flexibility in the account generation -->
-
-## Further Reading
-
-- [Cryptography in Sui](https://blog.sui.io/wallet-cryptography-specifications/) in the
-  [Sui Blog](https://blog.sui.io)
-- [Keys and Addresses](https://docs.sui.io/concepts/cryptography/transaction-auth/keys-addresses) in
-  the [Sui Docs](https://docs.sui.io)
-- [Signatures](https://docs.sui.io/concepts/cryptography/transaction-auth/signatures) in the
-  [Sui Docs](https://docs.sui.io)
+- [Sui 中的密碼學](https://blog.sui.io/wallet-cryptography-specifications/)，載於 [Sui 部落格](https://blog.sui.io)
+- [密鑰與地址](https://docs.sui.io/concepts/cryptography/transaction-auth/keys-addresses)，載於 [Sui 官方文件](https://docs.sui.io)
+- [簽章](https://docs.sui.io/concepts/cryptography/transaction-auth/signatures)，載於 [Sui 官方文件](https://docs.sui.io)

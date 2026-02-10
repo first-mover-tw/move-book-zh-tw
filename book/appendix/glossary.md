@@ -1,21 +1,12 @@
-# Appendix A: Glossary
+# 附錄 A: 術語表
 
-- Fast Path - term used to describe a transaction that does not involve shared objects, and can be
-  executed without the need for consensus.
-- Parallel Execution - term used to describe the ability of the Sui runtime to execute transactions
-  in parallel, including the ones that involve shared objects.
-- Internal Type - type that is defined within the module. Fields of this type can not be accessed
-  from outside the module, and, in case of "key"-only abilities, can not be used in `public_*`
-  transfer functions.
+- 快速路徑 (Fast Path) - 用來描述不涉及共享物件且無需共識即可執行的交易。
+- 平行執行 (Parallel Execution) - 用來描述 Sui 執行時期 (runtime) 平行執行交易的能力，包括涉及共享物件的交易。
+- 內部型別 (Internal Type) - 在模組內部定義的型別。此型別的欄位無法從模組外部存取，且在只有 "key" 能力的情況下，無法在 `public_*` 傳輸函數中使用。
 
-## Abilities
+## 能力 (Abilities)
 
-- key - ability that allows the struct to be used as a key in the storage. On Sui, the key ability
-  marks an object and requires the first field to be a `id: UID`.
-- store - ability that allows the struct to be stored inside other objects. This ability relaxes
-  restrictions applied to internal structs, allowing `public_*` transfer functions to accept them as
-  arguments. It also enables the object to be stored as a dynamic field.
-- copy - ability that allows the struct to be copied. On Sui, the `copy` ability conflicts with the
-  `key` ability, and can not be used together with it.
-- drop - ability that allows the struct to be ignored or discarded. On Sui, the `drop` ability
-  cannot be used together with the `key` ability, as objects are not allowed to be ignored.
+- key - 允許結構體在儲存中用作鍵的能力。在 Sui 上，key 能力會標記一個物件，並要求第一個欄位為 `id: UID`。
+- store - 允許結構體儲存於其他物件內部的能力。此能力放寬了對內部結構體的限制，允許 `public_*` 傳輸函數接受它們作為參數。它也使物件能夠作為動態欄位儲存。
+- copy - 允許結構體被複製的能力。在 Sui 上，`copy` 能力與 `key` 能力衝突，且不能與其一同使用。
+- drop - 允許結構體被忽略或丟棄的能力。在 Sui 上，`drop` 能力不能與 `key` 能力一同使用，因為物件不允許被忽略。

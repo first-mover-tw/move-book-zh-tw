@@ -1,27 +1,21 @@
-# Abilities: Introduction
+# 能力：簡介 (Abilities: Introduction)
 
-Move has a unique type system which allows customizing _type abilities_.
-[In the previous section](./struct), we introduced the `struct` definition and how to use it.
-However, the instances of the `Artist` and `Record` structs had to be unpacked for the code to
-compile. This is default behavior of a struct without _abilities_.
+Move 擁有獨特的類型系統，允許自定義 **類型能力 (type abilities)**。
+[在上一節](./struct)中，我們介紹了 `struct` 的定義及如何使用它。
+然而，`Artist` 和 `Record` 結構的實例必須被解構 (unpack) 才能編譯通過。這是沒有 **能力** 的結構的預設行為。
 
-> Throughout the book you will see chapters with name `Ability: <name>`, where `<name>` is the name
-> of the ability. These chapters will cover the ability in detail, how it works, and how to use it
-> in Move.
+> 在本書中，您會看到名為 `Ability: <名稱>` 的章節，其中 `<名稱>` 是能力的名稱。這些章節將詳細介紹該能力及其運作方式，以及如何在 Move 中使用它。
 
-## What are Abilities?
+## 什麼是能力？
 
-Abilities are a way to allow certain behaviors for a type. They are a part of the struct declaration
-and define which behaviors are allowed for the instances of the struct.
+能力是一種允許類型具有某些行為的方式。它們是結構宣告的一部分，定義了結構實例允許具備哪些行為。
 
-## Abilities Syntax
+## 能力語法 (Abilities Syntax)
 
-Abilities are set in the struct definition using the `has` keyword followed by a list of abilities.
-The abilities are separated by commas. Move supports 4 abilities: `copy`, `drop`, `key`, and
-`store`. Each ability defines a specific behavior for the struct instances.
+在結構定義中使用 `has` 關鍵字後接能力清單來設置能力。多個能力之間以逗號分隔。Move 支援 4 種能力：`copy`、`drop`、`key` 和 `store`。每種能力都定義了結構實例的特定行為。
 
 ```move
-/// This struct has the `copy` and `drop` abilities.
+/// 此結構具有 `copy` 和 `drop` 能力。
 public struct VeryAble has copy, drop {
     // field: Type1,
     // field2: Type2,
@@ -29,33 +23,23 @@ public struct VeryAble has copy, drop {
 }
 ```
 
-## Overview
+## 概覽
 
-A quick overview of the abilities:
+各能力快速概覽：
 
-> All of the built-in types except [references](references) have `copy`, `drop`, and `store`
-> abilities. References have `copy` and `drop`.
+> 除了 [參照 (references)](references) 之外，所有內建類型都具有 `copy`、`drop` 和 `store` 能力。參照則具有 `copy` 和 `drop`。
 
-- `copy` - allows the struct to be _copied_. Explained in the [Ability: Copy](./copy-ability)
-  chapter.
-- `drop` - allows the struct to be _dropped_ or _discarded_. Explained in the
-  [Ability: Drop](./drop-ability) chapter.
-- `key` - allows the struct to be used as a _key_ in a storage. Explained in the
-  [Ability: Key](./../storage/key-ability) chapter.
-- `store` - allows the struct to be _stored_ in structs that have the _key_ ability. Explained in
-  the [Ability: Store](./../storage/store-ability) chapter.
+- `copy` — 允許結構被 **複製 (copied)**。在 [能力：複製 (Ability: Copy)](./copy-ability) 章節中詳細說明。
+- `drop` — 允許結構被 **丟棄 (dropped)** 或捨棄。在 [能力：丟棄 (Ability: Drop)](./drop-ability) 章節中詳細說明。
+- `key` — 允許結構在儲存空間中被用作 **鍵 (key)**。在 [能力：鍵 (Ability: Key)](./../storage/key-ability) 章節中詳細說明。
+- `store` — 允許結構被 **儲存 (stored)** 在具有 _key_ 能力的結構中。在 [能力：儲存 (Ability: Store)](./../storage/store-ability) 章節中詳細說明。
 
-While it is important to briefly mention them here, we will go into more detail about each ability
-in the following chapters and give proper context on how to use them.
+雖然在此僅做簡要提及，但在後續章節中我們將深入探討每種能力，並提供如何使用它們的具體背景資訊。
 
-## No Abilities
+## 無能力 (No Abilities)
 
-A struct without abilities cannot be discarded, copied, or stored in storage. We call such a struct
-a _Hot Potato_. A lighthearted name, but it is a good way to remember that a struct without
-abilities is like a hot potato - it can only be passed around and requires special handling. The Hot
-Potato is one of the most powerful patterns in Move, and we go into more detail about it in the
-[Hot Potato Pattern](./../programmability/hot-potato-pattern) chapter.
+沒有能力的結構既不能被捨棄、複製，也不能儲存在儲存空間中。我們將這種結構稱為 **熱土豆 (Hot Potato)**。這是一個輕鬆的名字，但它是記住沒有能力的結構就像「熱土豆」一樣，只能傳來傳去並且需要特殊處理的好方法。熱土豆是 Move 中最強大的模式之一，我們將在 [熱土豆模式](./../programmability/hot-potato-pattern) 章節中進行更詳細的介紹。
 
-## Further Reading
+## 延伸閱讀
 
-- [Type Abilities](./../../reference/abilities) in the Move Reference.
+- Move 參考手冊中的 [類型能力](./../../reference/abilities)。

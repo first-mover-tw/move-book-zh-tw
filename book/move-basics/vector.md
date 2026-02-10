@@ -1,53 +1,44 @@
-# Vector
+# 向量 (Vector)
 
-Vectors are a native way to store collections of elements in Move. They are similar to arrays in
-other programming languages, but with a few differences. In this section, we introduce the `vector`
-type and its operations.
+向量是 Move 中儲存元素集合的一種原生方式。它們類似於其他程式語言中的陣列，但有一些不同之處。在本節中，我們將介紹 `vector` 類型及其操作。
 
-## Vector syntax
+## 向量語法 (Vector syntax)
 
-The `vector` type is written using the `vector` keyword followed by the type of the elements in
-angle brackets. The type of the elements can be any valid Move type, including other vectors.
+`vector` 類型的寫法是使用 `vector` 關鍵字，後接角括號括起來的元素類型。元素類型可以是任何有效的 Move 類型，包括其他向量。
 
-Move has a vector literal syntax that allows you to create vectors using the `vector` keyword
-followed by square brackets containing the elements (or no elements for an empty vector).
+Move 有一種向量常值 (literal) 語法，允許您使用 `vector` 關鍵字，後接包含元素的方括號（如果是空向量則不包含元素）來建立向量。
 
 ```move file=packages/samples/sources/move-basics/vector.move anchor=literal
 
 ```
 
-The `vector` type is a built-in type in Move, and does not need to be imported from a module.
-Vector operations are defined in the `std::vector` module, which is implicitly imported
-and can be used directly without explicit `use` import.
+`vector` 類型是 Move 中的內建類型，不需要從模組匯入。向量操作定義在 `std::vector` 模組中，該模組會被隱式匯入，且無需明確的 `use` 匯入即可直接使用。
 
-## Vector operations
+## 向量操作 (Vector operations)
 
-The standard library provides methods to manipulate vectors. The following are some of the most
-commonly used operations:
+標準庫提供了操作向量的方法。以下是一些最常用的操作：
 
-- `push_back`: Adds an element to the end of the vector.
-- `pop_back`: Removes the last element from the vector.
-- `length`: Returns the number of elements in the vector.
-- `is_empty`: Returns true if the vector is empty.
-- `remove`: Removes an element at a given index.
+- `push_back`: 在向量末尾添加一個元素。
+- `pop_back`: 移除向量的最後一個元素。
+- `length`: 傳回向量中的元素數量。
+- `is_empty`: 如果向量為空則傳回 true。
+- `remove`: 移除指定索引處的元素。
 
 ```move file=packages/samples/sources/move-basics/vector.move anchor=methods
 
 ```
 
-## Destroying a Vector of non-droppable types
+## 銷毀不可丟棄類型的向量 (Destroying a Vector of non-droppable types)
 
-A vector of non-droppable types cannot be discarded. If you define a vector of types without the
-`drop` ability, the vector value cannot be ignored. If the vector is empty, the compiler requires an
-explicit call to the `destroy_empty` function.
+不可丟棄類型的向量不能被捨棄。如果您定義了一個不具備 `drop` 能力的類型的向量，則該向量的值不能被忽略。如果向量為空，編譯器要求明確呼叫 `destroy_empty` 函式。
 
 ```move file=packages/samples/sources/move-basics/vector.move anchor=no_drop
 
 ```
 
-The `destroy_empty` function will fail at runtime if you call it on a non-empty vector.
+如果您對非空向量呼叫 `destroy_empty` 函式，它將在執行時期失敗。
 
-## Further Reading
+## 延伸閱讀
 
-- [Vector](./../../reference/primitive-types/vector) in the Move Reference.
-- [std::vector](https://docs.sui.io/references/framework/std/vector) module documentation.
+- Move 參考手冊中的 [向量 (Vector)](./../../reference/primitive-types/vector)。
+- [`std::vector`](https://docs.sui.io/references/framework/std/vector) 模組文件。

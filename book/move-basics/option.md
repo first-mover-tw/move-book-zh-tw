@@ -1,70 +1,49 @@
-# Option
+# 選項 (Option)
 
-`Option` is a type that represents an optional value which may or may not exist. The concept of
-`Option` in Move is borrowed from Rust, and it is a very useful primitive in Move. `Option` is
-defined in the [Standard Library](./standard-library), and is defined as follows:
+`Option` 是一種表示「可能存在也可能不存在」的可選值的類型。Move 中 `Option` 的概念借鑒自 Rust，它是 Move 中非常實用的原始類型。`Option` 定義在 [標準庫](./standard-library) 中，定義如下：
 
 ```move
 module std::option;
 
-/// Abstraction of a value that may or may not be present.
+/// 對可能存在也可能不存在的值的抽象。
 public struct Option<Element> has copy, drop, store {
     vec: vector<Element>
 }
 ```
 
-_See [full documentation for std::option][option-stdlib] module._
+_參閱 [std::option 模組完整文件][option-stdlib]。_
 
-> The 'std::option' module is implicitly imported in every module, so you don't need to add an
-> explicit import.
+> `std::option` 模組在每個模組中都會被隱式匯入，因此您不需要添加明確的匯入語句。
 
-The `Option` type is a generic type with an `Element` type parameter. It contains a single field,
-`vec`, which is a `vector` of `Element`. The vector can have a length of 0 or 1, representing the
-absence or presence of a value, respectively.
+`Option` 類型是一個具有 `Element` 類型參數的泛型類型。它包含一個名為 `vec` 的欄位，這是一個 `Element` 的 `vector`（向量）。該向量的長度可以為 0 或 1，分別代表值的缺失或存在。
 
-> Note: You might be surprised that `Option` is a `struct` containing a `vector` instead of an
-> [enum][enum-reference]. This is for historical reasons: `Option` was added to Move before it had
-> support for enums.
+> 注意：您可能會對 `Option` 是一個包含 `vector` 的 `struct` 而不是 [列舉 (enum)][enum-reference] 感到驚訝。這是由於歷史原因：`Option` 在 Move 支援列舉之前就被添加進去了。
 
-The `Option` type has two variants: `Some` and `None`. The `Some` variant contains a value, while
-the `None` variant represents the absence of a value. The `Option` type is used to represent the
-absence of a value in a type-safe way, avoiding the need for empty or `undefined` values.
+`Option` 類型有兩個變體：`Some` 和 `None`。`Some` 變體包含一個值，而 `None` 變體表示值的缺失。`Option` 類型用於以類型安全的方式表示值的缺失，從而避免對空值或 `undefined` 值的需求。
 
-## In Practice
+## 實務應用
 
-To showcase why the `Option` type is necessary, let's look at an example. Consider an application
-which takes a user input and stores it in a variable. Some fields are required, and some are
-optional. For example, a user's middle name is optional. While we could use an empty string to
-represent the absence of a middle name, it would require extra checks to differentiate between an
-empty string and a missing middle name. Instead, we can use the `Option` type to represent the
-middle name.
+為了展示為何需要 `Option` 類型，讓我們看一個範例。假設一個應用程式接收使用者輸入並將其儲存在變數中。有些欄位是必填的，有些是選填的。例如，使用者的中間名 (middle name) 是選填的。雖然我們可以使用空字串來表示中間名的缺失，但這需要額外的檢查來區分空字串和確實缺失的中間名。相反，我們可以使用 `Option` 類型來表示中間名。
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=registry
 
 ```
 
-In the previous example, the `middle_name` field is of type `Option<String>`. This means that the
-`middle_name` field can either contain a String value, wrapped in Some, or be explicitly empty,
-represented by None. Using the `Option` type makes the optional nature of the field clear, avoiding
-ambiguity and the need for extra checks to differentiate between an empty string and a missing
-middle name.
+在前面的範例中，`middle_name` 欄位的類型為 `Option<String>`。這意味著 `middle_name` 欄位既可以包含封裝在 Some 中的 String 值，也可以是明確為空的（由 None 表示）。使用 `Option` 類型使該欄位的可選性質變得明確，避免了歧義，也不需要額外的檢查來區分空字串和缺失的中間名。
 
-## Creating and Using Option values
+## 建立與使用 Option 值
 
-The `Option` type, along with the `std::option` module, is implicitly imported in Move. This means
-you can use the `Option` type directly without needing a `use` statement.
+`Option` 類型以及 `std::option` 模組在 Move 中是隱式匯入的。這意味著您可以直接使用 `Option` 類型，而不需要 `use` 語句。
 
-To create a value of the `Option` type, you can use the `option::some` or `option::none` methods.
-`Option` values also support several operations (borrowing will be discussed in the
-[references](references#references-1) chapter):
+要建立 `Option` 類型的值，您可以使用 `option::some` 或 `option::none` 方法。`Option` 值也支援多種操作（借用將在 [參照 (references)](references#references-1) 章節中討論）：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=usage
 
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [std::option][option-stdlib] in the standard library
+- 標準庫中的 [std::option][option-stdlib]
 
 [enum-reference]: ./../../reference/enums
 [option-stdlib]: https://docs.sui.io/references/framework/std/option

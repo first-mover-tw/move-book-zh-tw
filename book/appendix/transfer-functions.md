@@ -1,28 +1,28 @@
-# Appendix C: Transfer Functions
+# 附錄 C: 轉移函數
 
-## Transfer Functions Comparison
+## 轉移函數比較
 
-| Function                  | Public Function         | End State     | Permissions               |
-| ------------------------- | ----------------------- | ------------- | ------------------------- |
-| [`transfer`][transfer]    | `public_transfer`       | Address Owned | Full                      |
-| [`share_object`][share]   | `public_share_object`   | Shared        | Ref, Mut Ref, Delete      |
-| [`freeze_object`][freeze] | `public_freeze_object`  | Frozen        | Ref                       |
-| [`party_transfer`][party] | `public_party_transfer` | Party         | [See Party table](#party) |
+| 函數                      | 公開函數                 | 最終狀態     | 權限                     |
+| :------------------------ | :----------------------- | :----------- | :----------------------- |
+| [`transfer`][transfer]    | `public_transfer`        | 位址擁有     | 完整                     |
+| [`share_object`][share]   | `public_share_object`    | 共享         | 參考、可變參考、刪除     |
+| [`freeze_object`][freeze] | `public_freeze_object`   | 凍結         | 參考                     |
+| [`party_transfer`][party] | `public_party_transfer`  | 群組         | [請參閱群組表格](#party) |
 
-## States Comparison
+## 狀態比較
 
-| State         | Description                                               |
-| ------------- | --------------------------------------------------------- |
-| Address Owned | Object can be accessed fully by an address (or an object) |
-| Shared        | Object can be referenced and deleted by anyone            |
-| Frozen        | Object can be accessed via immutable reference            |
-| Party         | Depends on the Party settings ([see Party table](#party)) |
+| 狀態         | 描述                                               |
+| :----------- | :------------------------------------------------- |
+| 位址擁有     | 物件可由某個位址（或某個物件）完整存取。           |
+| 共享         | 物件可由任何人參考及刪除。                         |
+| 凍結         | 物件可透過不可變參考存取。                         |
+| 群組         | 取決於群組設定（[請參閱群組表格](#party)）。       |
 
-## Party
+## 群組
 
-| Function       | Description                                  |
-| -------------- | -------------------------------------------- |
-| `single_owner` | Object has same permissions as Address Owned |
+| 函數           | 描述                                     |
+| :------------- | :--------------------------------------- |
+| `single_owner` | 物件具有與「位址擁有」相同的權限。       |
 
 [transfer]: https://docs.sui.io/references/framework/sui_sui/transfer#sui_transfer_transfer
 [share]: https://docs.sui.io/references/framework/sui_sui/transfer#sui_transfer_share_object

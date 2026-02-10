@@ -1,63 +1,39 @@
-# Transaction
+# 交易 (Transaction)
 
-Transaction is a fundamental concept in the blockchain world. It is a way to interact with a
-blockchain. Transactions are used to change the state of the blockchain, and they are the only way
-to do so. In Move, transactions are used to call functions in a package, deploy new packages, and
-upgrade existing ones.
+交易是區塊鏈世界中的一個基本概念。它是與區塊鏈互動的一種方式。交易用於更改區塊鏈的狀態，而且它們是執行此操作的唯一方式。在 Move 中，交易用於調用套件中的函式、部署新套件以及升級現有套件。
 
-<!--
+## 交易結構
 
-- how user interacts with a program
-    - mention public functions
-    - give a concept of an entry / public function without getting into details
-    - mention that functions are called in transactions
-    - mention that transactions are sent by accounts
-    - every transaction specifies object it operates on
+> 每一筆交易都明確指定了它所操作的物件！
 
- -->
+交易由以下部分組成：
 
-## Transaction Structure
+- 發送者 (sender) —— 「簽署」交易的[帳戶](./what-is-an-account)；
+- 命令列表（或鏈） —— 要執行的操作；
+- 命令輸入 —— 命令的參數：可以是「純粹 (pure)」參數 —— 如數字或字串等簡單數值，或者是「物件 (object)」參數 —— 交易將訪問的物件；
+- Gas 物件 —— 用於支付交易費用的 `Coin` 物件；
+- Gas 價格和預算 (price and budget) —— 交易的成本；
 
-> Every transaction explicitly specifies the objects it operates on!
+## 輸入 (Inputs)
 
-Transactions consist of:
+交易輸入是交易的參數，分為兩種類型：
 
-- a sender - the [account](./what-is-an-account) that _signs_ the transaction;
-- a list (or a chain) of commands - the operations to be executed;
-- command inputs - the arguments for the commands: either `pure` - simple values like numbers or
-  strings, or `object` - objects that the transaction will access;
-- a gas object - the `Coin` object used to pay for the transaction;
-- gas price and budget - the cost of the transaction;
+- 純粹參數 (Pure arguments)：這些大多是[原始類型](../move-basics/primitive-types)以及一些額外補充。純粹參數可以是：
+  - [`bool`](../move-basics/primitive-types#booleans)。
+  - [無符號整數](../move-basics/primitive-types#integer-types) (`u8`、`u16`、`u32`、`u64`、`u128`、`u256`)。
+  - [`address`](../move-basics/address)。
+  - [`std::string::String`](../move-basics/string)，UTF8 字串。
+  - [`std::ascii::String`](../move-basics/string#ascii-strings)，ASCII 字串。
+  - [`vector<T>`](../move-basics/vector)，其中 `T` 是純粹類型。
+  - [`std::option::Option<T>`](../move-basics/option)，其中 `T` 是純粹類型。
+  - [`std::object::ID`](../storage/uid-and-id)，通常指向一個物件。另請參閱[什麼是物件](../object/object-model)。
+- 物件參數 (Object arguments)：這些是交易將訪問的物件或物件參照。物件參數必須是共享物件、凍結物件或者是交易發送者擁有的物件，交易才能成功。更多資訊請參閱[物件模型](../object)。
 
-## Inputs
+## 命令 (Commands)
 
-Transaction inputs are the arguments for the transaction and are split between 2 types:
+Sui 交易可能由多個命令組成。每個命令可以是一個內建命令（如發佈套件）或對已發佈套件中函式的調用。命令按照在交易中列出的順序執行，並且可以使用先前命令的結果來形成一個鏈。交易作為一個整體，要麼成功要麼失敗。
 
-- Pure arguments: These are mostly [primitive types](../move-basics/primitive-types) with some extra
-  additions. A pure argument can be:
-  - [`bool`](../move-basics/primitive-types#booleans).
-  - [unsigned integer](../move-basics/primitive-types#integer-types) (`u8`, `u16`, `u32`, `u64`,
-  `u128`, `u256`).
-  - [`address`](../move-basics/address).
-  - [`std::string::String`](../move-basics/string), UTF8 strings.
-  - [`std::ascii::String`](../move-basics/string#ascii-strings), ASCII strings.
-  - [`vector<T>`](../move-basics/vector), where `T` is a pure type.
-  - [`std::option::Option<T>`](../move-basics/option), where `T` is a pure type.
-  - [`std::object::ID`](../storage/uid-and-id), typically points to an object. See also
-  [What is an Object](../object/object-model).
-- Object arguments: These are objects or references of objects that the transaction will access. An
-  object argument needs to be either a shared object, a frozen object, or an object that the
-  transaction sender owns for the transaction to be successful. For more see
-  [Object Model](../object).
-
-## Commands
-
-Sui transactions may consist of multiple commands. Each command is a single built-in command (like
-publishing a package) or a call to a function in an already published package. The commands are
-executed in the order they are listed in the transaction, and they can use the results of the
-previous commands, forming a chain. Transaction either succeeds or fails as a whole.
-
-Schematically, a transaction looks like this (in pseudo-code):
+從圖解上看，一筆交易看起來像這樣（虛擬碼）：
 
 ```
 Inputs:
@@ -69,35 +45,25 @@ Commands:
 - TransferObjects(item, sender)
 ```
 
-In this example, the transaction consists of three commands:
+在這個範例中，交易由三個命令組成：
 
-1. `SplitCoins` - a built-in command that splits a new coin from the passed object, in this case,
-   the `Gas` object;
-2. `MoveCall` - a command that calls a function `purchase` in a package `0xAAA`, module `market`
-   with the given arguments - the `payment` object;
-3. `TransferObjects` - a built-in command that transfers the object to the recipient.
+1. `SplitCoins` - 一個內建命令，從傳遞的物件（在此範例中為 `Gas` 物件）中拆分出一個新代幣；
+2. `MoveCall` - 調用套件 `0xAAA`、模組 `market` 中 `purchase` 函式的命令，其參數為 `payment` 物件；
+3. `TransferObjects` - 一個內建命令，將物件轉移給接收者。
 
-<!--
-> There are multiple different implementations of transaction building, for example
--->
+## 交易效果 (Transaction Effects)
 
-## Transaction Effects
+交易效果是交易對區塊鏈狀態所做的更改。更具體地說，交易可以透過以下方式更改狀態：
 
-Transaction effects are the changes that a transaction makes to the blockchain state. More
-specifically, a transaction can change the state in the following ways:
+- 使用 Gas 物件支付交易費用；
+- 建立、更新或刪除物件；
+- 發出事件；
 
-- use the gas object to pay for the transaction;
-- create, update, or delete objects;
-- emit events;
+執行交易的結果由不同部分組成：
 
-The result of the executed transaction consists of different parts:
-
-- Transaction Digest - the hash of the transaction which is used to identify the transaction;
-- Transaction Data - the inputs, commands and gas object used in the transaction;
-- Transaction Effects - the status and the "effects" of the transaction, more specifically: the
-  status of the transaction, updates to objects and their new versions, the gas object used, the gas
-  cost of the transaction, and the events emitted by the transaction;
-- Events - the custom [events](./../programmability/events) emitted by the transaction;
-- Object Changes - the changes made to the objects, including the _change of ownership_;
-- Balance Changes - the changes made to the aggregate balances of the account involved in the
-  transaction;
+- 交易摘要 (Transaction Digest) —— 用於標識交易的交易哈希；
+- 交易數據 (Transaction Data) —— 交易中使用的輸入、命令和 Gas 物件；
+- 交易效果 (Transaction Effects) —— 交易的狀態和「效果」，更具體地說：交易的狀態、物件的更新及其新版本、使用的 Gas 物件、交易的 Gas 成本以及交易發出的事件；
+- 事件 (Events) —— 交易發出的自定義[事件](./../programmability/events)；
+- 物件變更 (Object Changes) —— 對物件所做的更改，包括「所有權變更 (change of ownership)」；
+- 餘額變更 (Balance Changes) —— 交易涉及帳戶總餘額的變更；

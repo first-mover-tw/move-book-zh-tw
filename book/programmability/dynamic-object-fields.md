@@ -1,93 +1,55 @@
-# Dynamic Object Fields
+# 動態物件欄位 (Dynamic Object Fields)
 
-> This section expands on the [Dynamic Fields](./dynamic-fields). Please, read it first to
-> understand the basics of dynamic fields.
+在上一節中，我們介紹了[動態欄位](./dynamic-fields)，它允許向物件動態添加資料。在這部分中，我們將介紹它的對應版本 —— 「動態物件欄位 (Dynamic Object Fields)」，並解釋它的特點。
 
-Another variation of dynamic fields is _dynamic object fields_, which have certain differences from
-regular dynamic fields. In this section, we will cover the specifics of dynamic object fields and
-explain how they differ from regular dynamic fields.
+## 定義
 
-> General recommendation is to avoid using dynamic object fields in favor of (just) dynamic fields,
-> especially if there's no need for direct discovery through the ID. The extra costs of dynamic
-> object fields may not be justified by the benefits they provide.
-
-## Definition
-
-Dynamic Object Fields are defined in the `sui::dynamic_object_fields` module in the
-[Sui Framework](./sui-framework). They are similar to dynamic fields in many ways, but unlike them,
-dynamic object fields have an extra constraint on the `Value` type. The `Value` must have a
-combination of `key` and `store`, not just `store` as in the case of dynamic fields.
-
-They're less explicit in their framework definition, as the concept itself is more abstract:
+動態物件欄位定義在 `sui::dynamic_object_field` 模組中。與動態欄位類似，它們透過一個名稱附加到物件的 `UID` 上。主要區別在於動態物件欄位專門用於存儲具有 [`key`](./../storage/key-ability.md) 能力的物件。
 
 ```move
 module sui::dynamic_object_field;
 
-/// Internal object used for storing the field and the name associated with the
-/// value. The separate type is necessary to prevent key collision with direct
-/// usage of dynamic_field
-public struct Wrapper<Name> has copy, drop, store {
+/// 用於存儲欄位的內部物件。
+public struct Wrapper<Name: copy + drop + store> has key {
+    id: UID,
     name: Name,
 }
 ```
 
-Unlike `Field` type in the [Dynamic Fields](./dynamic-fields#definition) section, the `Wrapper` type
-only stores the name of the field. The value is the object itself, and is _not wrapped_.
+由於儲存在動態物件欄位中的「值 (value)」本身就是一個物件，內部的 `Wrapper` 結構不需要攜帶該值。相反地，它作為動態物件欄位的代表存在，而實際的物件則單獨存儲。
 
-The constraints on the `Value` type become visible in the methods available for dynamic object
-fields. Here's the signature for the `add` function:
+在 Sui 存儲模型中，具有 `key` 能力的物件具有與正常地址擁有的物件相同的狀態，且其擁有者是父物件的 ID。
 
-```move
-/// Adds a dynamic object field to the object `object: &mut UID` at field
-/// specified by `name: Name`. Aborts with `EFieldAlreadyExists` if the object
-/// already has that field with that name.
-public fun add<Name: copy + drop + store, Value: key + store>(
-    // we use &mut UID in several spots for access control
-    object: &mut UID,
-    name: Name,
-    value: Value,
-) { /* implementation omitted */ }
-```
+## 用法
 
-The rest of the methods which are identical to the ones in the
-[Dynamic Fields](./dynamic-fields#usage) section have the same constraints on the `Value` type.
-Let's list them for reference:
-
-- `add` - adds a dynamic object field to the object
-- `remove` - removes a dynamic object field from the object
-- `borrow` - borrows a dynamic object field from the object
-- `borrow_mut` - borrows a mutable reference to a dynamic object field from the object
-- `exists_` - checks if a dynamic object field exists
-- `exists_with_type` - checks if a dynamic object field exists with a specific type
-
-Additionally, there is an `id` method which returns the `ID` of the `Value` object without
-specifying its type.
-
-## Usage & Differences with Dynamic Fields
-
-The main difference between dynamic fields and dynamic object fields is that the latter allows
-storing _only objects_ as values. This means that you can't store primitive types like `u64` or
-`bool`. It may be considered a limitation, if not for the fact that dynamic object fields are _not
-wrapped_ into a separate object.
-
-> The relaxed requirement for wrapping keeps the object available for off-chain discovery via its
-> ID. However, this property may not be outstanding if wrapped object indexing is implemented,
-> making the dynamic object fields a redundant feature.
+動態物件欄位的用法與動態欄位幾乎相同：可以使用 `add` 添加物件，使用 `remove` 移除物件，並使用 `borrow` 和 `borrow_mut` 獲取對物件的參考。
 
 ```move file=packages/samples/sources/programmability/dynamic-object-fields.move anchor=usage
 
 ```
 
-## Pricing Differences
+在上述範例中，我們向 `Character` 添加了一個 `Hat` 物件。與動態欄位的主要區別在於，`Hat` 物件現在是一個獨立的物件。這反映在鏈下索引器中，因為 `Hat` 物件現在擁有 `Character` 物件的 ID 作為其擁有者地址。
 
-Dynamic Object Fields come a little more expensive than dynamic fields. Because of their internal
-structure, they require 2 objects: the Wrapper for Name and the Value. Because of this, the cost of
-adding and accessing object fields (loading 2 objects compared to 1 for dynamic fields) is higher.
+## 與動態欄位的區別
 
-## Next Steps
+動態物件欄位與動態欄位在幾個重要方面有所不同：
 
-Both dynamic field and dynamic object fields are powerful features which allow for innovative
-solutions in applications. However, they are relatively low-level and require careful handling to
-avoid orphaned fields. In the next section, we will introduce a higher-level abstraction -
-[Dynamic Collections](./dynamic-collections) - which can help with managing dynamic fields and
-objects more effectively.
+1. **鏈下發現**：由於存儲在動態物件欄位中的值是獨立的物件，它們可以很容易地被鏈下工具發現。
+2. **刪除證明**：如果刪除了一個具有 [`key`](./../storage/key-ability.md) 能力的物件，系統會獲取刪除證明，這可以由某些鏈上應用程式利用。
+3. **物件轉移**：動態物件欄位中的物件可以像其他物件一樣被轉移或操作，只要它們被模組邏輯正確獲取。
+
+## 孤立動態物件欄位
+
+與動態欄位一樣，如果不小心操作，動態物件欄位也可能會變得孤立。一旦父項 UID 被刪除，動態物件欄位將無法透過正常的父子關係存取。
+
+<div class="tip">
+
+始終建議使用正確清理動態欄位和動態物件欄位的邏輯來實作物件刪除，或使用 [動態集合](./dynamic-collections) 來幫助管理它們。
+
+</div>
+
+## 總結
+
+動態物件欄位是動態欄位的強大擴展，專為存儲物件而設計。它們結合了動態欄位的靈活性與地址擁有物件的特性，使其成為 Sui 上開發複雜去中心化應用程式的必備工具。
+
+[dynamic-fields]: ./dynamic-fields.md

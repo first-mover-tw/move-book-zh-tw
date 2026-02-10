@@ -1,39 +1,15 @@
-# Fast Path
+# 快速路徑 (Fast Path)
 
-Due to the object model and the data organization model of Sui, some operations can be performed in
-a more efficient and parallelized way. This is called the **fast path**. Transaction that touches
-shared state requires consensus because it can be accessed by multiple parties at the same time.
-However, if the transaction only touches the private state (owned objects), there is no need for
-consensus. This is the fast path.
+由於 Sui 的物件模型和數據組織模型，某些操作可以更高效且並行地執行。這被稱為 **快速路徑 (fast path)**。觸及共享狀態 (shared state) 的交易需要共識，因為它可能同時被多方訪問。然而，如果交易僅觸及私有狀態（擁有的物件），則不需要共識。這就是快速路徑。
 
-We have a favorite example for this: a coffee machine and a coffee cup. The coffee machine placed in
-the office is a shared resource - everyone can use it, but there can be only one user at a time. The
-coffee cup, on the other hand, is a private resource - it belongs to a specific person, and only
-that person can use it. To make coffee, one needs to use the coffee machine and wait if there's
-someone else using it. However, once the coffee is made and poured into the cup, the person can take
-the cup and drink the coffee without waiting for anyone else.
+我們最喜歡的例子是：咖啡機和咖啡杯。放在辦公室的咖啡機是共享資源 —— 每個人都可以使用它，但一次只能有一個使用者。另一方面，咖啡杯是私有資源 —— 它屬於特定的人，只有那個人可以使用它。要製作咖啡，人們需要使用咖啡機，如果有其他人在使用它就需要等待。然而，一旦咖啡製作完成並倒入杯中，這個人就可以拿著杯子喝咖啡而不用等待任何人。
 
-The same principle applies to Sui. If a transaction only touches the private state (the cup with
-coffee), it can be executed without consensus. If it touches the shared state (the coffee machine),
-it requires consensus. This is the fast path.
+同樣的原則也適用於 Sui。如果一個交易僅觸及私有狀態（裝有咖啡的杯子），它可以在沒有共識的情況下執行。如果它觸及共享狀態（咖啡機），則需要共識。
 
-## Frozen objects
+## 凍結物件 (Frozen objects)
 
-Consensus is only required for mutating the shared state. If the object is immutable, it is treated
-as a "constant" and can be accessed in parallel. Frozen objects can be used to share unchangeable
-data between multiple parties without requiring consensus.
+只有修改共享狀態才需要共識。如果物件是不可變的，它被視為「常數」並可以並行訪問。凍結物件可用於在多方之間共享不可更改的數據，而不需要共識。
 
-## In Practice
+## 特別案例：Clock
 
-```move file=packages/samples/sources/programmability/fast-path.move anchor=main
-
-```
-
-## Special Case: Clock
-
-The `Clock` object with the reserved address `0x6` is a special case of a shared object which cannot
-be passed by a mutable reference in a regular transaction. An attempt to do so will not succeed, and
-the transaction will be rejected. Because of this limitation, the `Clock` object can only be
-accessed immutably, which allows executing transactions in parallel without consensus.
-
-<!-- Add more on why and how -->
+具有保留地址 `0x6` 的 `Clock` 物件是一個特殊的共享物件，它不能在一般交易中透過可變引用傳遞。嘗試這樣做將不會成功，交易將被拒絕。由於這種限制，`Clock` 物件只能以不可變方式訪問，這允許在沒有共識的情況下並行執行交易。

@@ -1,6 +1,3 @@
-# Before We Begin
+# 開始之前
 
-Move requires an environment to run and develop applications, and in this small chapter we will
-cover the prerequisites for the Move language: how to set up your IDE, how to install the compiler
-and what is Move 2024. If you are already familiar with these topics or have a CLI installed, you
-can skip this chapter and proceed to [the next one](../your-first-move/hello-world.md).
+Move 需要一個環境來執行與開發應用程式，而在此簡短章節中，我們將說明 Move 語言的必要準備工作：如何設定您的 IDE、如何安裝編譯器，以及 Move 2024 是什麼。如果您已經熟悉這些主題，或者已經安裝了 CLI，您可以跳過本章節，直接前往[下一章](../your-first-move/hello-world.md)。

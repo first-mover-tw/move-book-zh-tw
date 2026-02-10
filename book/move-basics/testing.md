@@ -1,15 +1,10 @@
-# Testing
+# 測試 (Testing)
 
-Testing is a crucial aspect of software development, especially in blockchain applications where
-security and correctness are paramount. In this section, we will cover the fundamentals of testing
-in Move, including how to write and organize tests effectively.
+測試是軟體開發中至關重要的一環，尤其是在安全性與正確性至上的區塊鏈應用中。在本節中，我們將介紹 Move 測試的基礎知識，包括如何有效地編寫和組織測試。
 
-## The `#[test]` Attribute
+## `#[test]` 屬性
 
-Tests in Move are functions marked with the `#[test]` attribute. This attribute tells the compiler
-that the function is a test function and should be run when tests are executed. Test functions are
-regular functions, but they must take no arguments and have no return value. They are excluded from
-the bytecode and are never published.
+Move 中的測試是標記有 `#[test]` 屬性的函式。此屬性告訴編譯器該函式是一個測試函式，應該在執行測試時運行。測試函式是普通函式，但它們必須不接收任何參數且沒有傳回值。它們會從位元組碼中排除，且永遠不會被發佈。
 
 ```move
 module book::testing;
@@ -17,27 +12,25 @@ module book::testing;
 #[test_only]
 use std::unit_test::assert_eq;
 
-// The test attribute is placed before the `fun` keyword (can be both above or
-// right before the `fun` keyword, as in `#[test] fun my_test() { ... }`)
-// The name of the test in this case would be `book::testing::simple_test`.
+// test 屬性放置在 `fun` 關鍵字之前（可以放在上方，
+// 也可以直接放在 `fun` 關鍵字之前，如 `#[test] fun my_test() { ... }`）
+// 在此範例中，測試的名稱將是 `book::testing::simple_test`。
 #[test]
 fun simple_test() {
     let sum = 2 + 2;
     assert_eq!(sum, 4);
 }
 
-// The name of this test would be `book::testing::more_advanced_test`.
+// 此測試的名稱將是 `book::testing::more_advanced_test`。
 #[test] fun more_advanced_test() {
     let sum = 2 + 2 + 2;
     assert_eq!(sum, 4);
 }
 ```
 
-## Running Tests
+## 執行測試
 
-To run tests, you can use the `sui move test` command. This command will first build the package in
-_test mode_ and then run all tests found in the package. In test mode, modules from both `sources/`
-and `tests/` directories are processed and their tests executed.
+要執行測試，您可以使用 `sui move test` 指令。此指令會首先在 **測試模式** 下編譯套件，然後執行套件中找到的所有測試。在測試模式下，`sources/` 和 `tests/` 目錄中的模組都會被處理並執行其中的測試。
 
 ```bash
 $ sui move test
@@ -54,17 +47,13 @@ $ sui move test
 
 <!-- TODO: fill output -->
 
-## Test Fail Cases with `#[expected_failure]`
+## 使用 `#[expected_failure]` 測試失敗情況
 
-Tests for fail cases can be marked with `#[expected_failure]`. This attribute, when added to a
-`#[test]` function, tells the compiler that the test is expected to fail. This is useful when you
-want to test that a function fails when a certain condition is met.
+針對預期失敗的情況，可以使用 `#[expected_failure]` 標記測試。當此屬性添加到 `#[test]` 函式時，會告訴編譯器該測試預期會失敗。當您想測試某個函式在滿足特定條件時是否會失敗，這非常有用。
 
-> Note: This attribute can only be added to a `#[test]` function.
+> 注意：此屬性只能添加到 `#[test]` 函式。
 
-The attribute can take an argument specifying the expected abort code that should be returned if the
-test fails. If the test returns an abort code different from the one specified in the argument, it
-will fail. Likewise, if execution does not result in an abort, the test will also fail.
+該屬性可以接收一個參數，指定測試失敗時預期傳回的中斷代碼 (abort code)。如果測試傳回的中斷代碼與參數中指定的不符，測試將失敗。同樣地，如果執行沒有導致中斷，測試也會失敗。
 
 ```move
 module book::testing_failure;
@@ -74,25 +63,21 @@ const EInvalidArgument: u64 = 1;
 #[test]
 #[expected_failure(abort_code = 0)]
 fun test_fail() {
-    abort 0 // aborts with code 0
+    abort 0 // 以代碼 0 中斷
 }
 
-// attributes can be grouped together
+// 屬性可以組合在一起
 #[test, expected_failure(abort_code = EInvalidArgument)]
 fun test_fail_1() {
-    abort EInvalidArgument // aborts with code EInvalidArgument
+    abort EInvalidArgument // 以代碼 EInvalidArgument 中斷
 }
 ```
 
-The `abort_code` argument can use constants defined in the tests module as well as imported from
-other modules. This is the only case where constants can be used and "accessed" in other modules.
+`abort_code` 參數可以使用測試模組中定義的常數，也可以從其他模組匯入。這是常數唯一可以在其他模組中被使用和「存取」的情況。
 
-## Utilities with `#[test_only]`
+## 使用 `#[test_only]` 提供測試工具
 
-In some cases, it is helpful to give the test environment access to some internal functions or
-features. This simplifies the testing process and allows for more thorough testing. However, it is
-important to remember that these functions should not be included in the final package. This is
-where the `#[test_only]` attribute comes in handy.
+在某些情況下，讓測試環境能夠存取某些內部函式或功能會很有幫助。這可以簡化測試過程並實現更徹底的測試。然而，重要的是要記住，這些函式不應包含在最終發佈的套件中。這就是 `#[test_only]` 屬性派上用場的地方。
 
 ```move
 module book::testing;
@@ -100,33 +85,31 @@ module book::testing;
 #[test_only]
 use std::unit_test::assert_eq;
 
-// Public function which uses the `secret` function.
+// 使用了 `secret` 函式的公開函式。
 public fun multiply_by_secret(x: u64): u64 {
     x * secret()
 }
 
-/// Private function which is not available to the public.
+/// 不對外公開的私有函式。
 fun secret(): u64 { 100 }
 
 #[test_only]
-/// This function is only available for testing purposes in tests and other
-/// test-only functions. Mind the visibility - for `#[test_only]` it is
-/// common to use `public` visibility.
+/// 此函式僅供測試目的使用，可用於測試及其他僅限測試的函式中。
+/// 注意可見性 — 對於 `#[test_only]`，通常使用 `public` 可見性。
 public fun secret_for_testing(): u64 {
     secret()
 }
 
 #[test]
-// In the test environment we have access to the `secret_for_testing` function.
+// 在測試環境中，我們可以存取 `secret_for_testing` 函式。
 fun test_multiply_by_secret() {
     let expected = secret_for_testing() * 2;
     assert_eq!(multiply_by_secret(2), expected);
 }
 ```
 
-Functions marked with the `#[test_only]` will be available to the test environment, and to the other
-modules if their visibility is set to `public`.
+標記為 `#[test_only]` 的函式將對測試環境開放，如果其可見性設為 `public`，則也會對其他模組開放。
 
-## Further Reading
+## 延伸閱讀
 
-- [Unit Testing](/reference/unit-testing) in the Move Reference.
+- Move 參考手冊中的 [單元測試 (Unit Testing)](/reference/unit-testing)。

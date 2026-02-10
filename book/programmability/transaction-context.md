@@ -1,78 +1,63 @@
-# Transaction Context
+# 交易上下文 (Transaction Context)
 
-Every transaction has the execution context. The context is a set of predefined variables that are
-available to the program during execution. For example, every transaction has a sender address, and
-the transaction context contains a variable that holds the sender address.
+每個交易都有一個執行上下文。上下文是一組預定義的變數，在程式執行期間可供使用。例如，每個交易都有一個發送者地址，而交易上下文包含一個保存該發送者地址的變數。
 
-The transaction context is available to the program through the `TxContext` struct. The struct is
-defined in the [`sui::tx_context`][tx-context-framework] module and contains the following fields:
+交易上下文透過 `TxContext` 結構提供給程式使用。該結構定義在 [`sui::tx_context`][tx-context-framework] 模組中，並包含以下欄位：
 
-[tx-context-framework]: https://docs.sui.io/references/framework/sui/tx_context
-
+[tx-context-framework]: https://docs.sui.io/references/framework/sui/tx_context 
 ```move
 module sui::tx_context;
 
-/// Information about the transaction currently being executed.
-/// This cannot be constructed by a transaction--it is a privileged object created by
-/// the VM and passed in to the entrypoint of the transaction as `&mut TxContext`.
+/// 有關目前正在執行的交易資訊。
+/// 這不能由交易建構——它是由 VM 建立的特權物件，
+/// 並作為 `&mut TxContext` 傳遞給交易的入口點。
 public struct TxContext has drop {
-    /// The address of the user that signed the current transaction
+    /// 簽署目前交易的使用者地址
     sender: address,
-    /// Hash of the current transaction
+    /// 目前交易的雜湊值
     tx_hash: vector<u8>,
-    /// The current epoch number
+    /// 目前的 epoch 編號
     epoch: u64,
-    /// Timestamp that the epoch started at
+    /// epoch 開始時的時間戳（毫秒）
     epoch_timestamp_ms: u64,
-    /// Counter recording the number of fresh id's created while executing
-    /// this transaction. Always 0 at the start of a transaction
+    /// 紀錄執行此交易期間建立的新 ID 數量。
+    /// 在交易開始時始終為 0。
     ids_created: u64
 }
 ```
 
-Transaction context cannot be constructed manually or directly modified. It is created by the system
-and passed to the function as a reference in a transaction. Any function called in a
-[Transaction](./../concepts/what-is-a-transaction) has access to the context and can pass it into
-the nested calls.
+交易上下文不能手動建構或直接修改。它由系統建立，並在交易中作為參考傳遞給函式。任何在 [交易](./../concepts/what-is-a-transaction) 中被呼叫的函式都可以存取上下文，並將其傳遞給巢狀呼叫。
 
-> `TxContext` has to be the last argument in the function signature.
+> `TxContext` 必須是函式簽名中的最後一個參數。
 
-## Reading the Transaction Context
+## 讀取交易上下文 (Reading the Transaction Context)
 
-With only exception of the `ids_created`, all of the fields in the `TxContext` have getters. The
-getters are defined in the `sui::tx_context` module and are available to the program. The getters
-don't require `&mut` because they don't modify the context.
+除了 `ids_created` 之外，`TxContext` 中的所有欄位都有對應的 getter 函式。這些 getter 定義在 `sui::tx_context` 模組中，可供程式使用。Getter 不需要 `&mut`，因為它們不會修改上下文。
 
 ```move file=packages/samples/sources/programmability/transaction-context.move anchor=reading
 
 ```
 
-## Mutability
+## 可變性 (Mutability)
 
-The `TxContext` is required to create new objects (or just `UID`s) in the system. New UIDs are
-derived from the transaction digest, and for the digest to be unique, there needs to be a changing
-parameter. Sui uses the `ids_created` field for that. Every time a new UID is created, the
-`ids_created` field is incremented by one. This way, the digest is always unique.
+在系統中建立新物件（或僅僅是 `UID`）需要 `TxContext`。新的 UID 是從交易摘要 (transaction digest) 衍生而來的，為了使摘要唯一，需要一個變化的參數。Sui 使用 `ids_created` 欄位來實現這一點。每當建立一個新的 UID 時，`ids_created` 欄位就會加一。這樣，摘要就始終是唯一的。
 
-Internally, it is represented as the `derive_id` function:
+在內部，這表示為 `derive_id` 函式：
 
 ```move
 native fun derive_id(tx_hash: vector<u8>, ids_created: u64): address;
 ```
 
-## Generating Unique Addresses
+## 產生唯一地址 (Generating Unique Addresses)
 
-The underlying `derive_id` function can also be utilized in your program to generate unique
-addresses. The function itself is not exposed, but a wrapper function `fresh_object_address` is
-available in the `sui::tx_context` module. It may be useful if you need to generate a unique
-identifier in your program.
+底層的 `derive_id` 函式也可以在您的程式中用來產生唯一地址。該函式本身並未公開，但 `sui::tx_context` 模組中提供了一個封裝函式 `fresh_object_address`。如果您需要在程式中產生唯一識別碼，這可能會很有用。
 
 ```move
 module sui::tx_context;
 
-/// Create an `address` that has not been used. As it is an object address, it will never
-/// occur as the address for a user.
-/// In other words, the generated address is a globally unique object ID.
+/// 建立一個尚未被使用的 `address`。
+/// 由於它是一個物件地址，因此絕不會作為使用者的地址出現。
+/// 換句話說，產生的地址是一個全域唯一的物件 ID。
 public fun fresh_object_address(ctx: &mut TxContext): address {
     let ids_created = ctx.ids_created;
     let id = derive_id(*&ctx.tx_hash, ids_created);

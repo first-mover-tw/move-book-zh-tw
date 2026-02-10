@@ -1,87 +1,59 @@
 ---
-title: 'Address | Reference'
+title: '地址 | 參考手冊'
 description: ''
 ---
 
-# Address
+# 地址 (Address)
 
-`address` is a built-in type in Move that is used to represent locations (sometimes called accounts)
-in storage. An `address` value is a 256-bit (32 byte) identifier. Move uses addresses to
-differentiate packages of [modules](./../modules), where each package has its own address and
-modules. Specific deployments of Move might also use the `address` value for
-[storage](./../abilities#key) operations.
+`address` 是 Move 中的內建類型，用於表示存儲中的位置（有時稱為帳戶）。`address` 數值是一個 256 位元（32 字节）的識別碼。Move 使用地址來區分[模組](./../modules)的套件，其中每個套件都有自己的地址和模組。Move 的具體部署可能還會將 `address` 數值用於[存儲](./../abilities#key)操作。
 
-> For Sui, `address` is used to represent "accounts", and also objects via strong type wrappers
-> (with `sui::object::UID` and `sui::object::ID`).
+> 對於 Sui，`address` 用於表示「帳戶」，也透過強類型封裝器（使用 `sui::object::UID` 和 `sui::object::ID`）來表示「物件」。
 
-Although an `address` is a 256 bit integer under the hood, Move addresses are intentionally
-opaque---they cannot be created from integers, they do not support arithmetic operations, and they
-cannot be modified. Specific deployments of Move might have `native` functions to enable some of
-these operations (e.g., creating an `address` from bytes `vector<u8>`), but these are not part of
-the Move language itself.
+雖然 `address` 在底層是一個 256 位元的整數，但 Move 地址刻意設定為「不透明 (opaque)」的 —— 它們不能從整數建立，不支持算術運算，也不能被修改。Move 的具體部署可能具有 `native` 函式來啟用其中一些操作（例如從位元組向量 `vector<u8>` 建立 `address`），但這些不屬於 Move 語言本身的一部分。
 
-While there are runtime address values (values of type `address`), they _cannot_ be used to access
-modules at runtime.
+雖然存在執行時地址數值（`address` 類型的數值），但它們「不能」用於在執行時存取模組。
 
-## Addresses and Their Syntax
+## 地址及其語法
 
-Addresses come in two flavors, named or numerical. The syntax for a named address follows the same
-rules for any named identifier in Move. The syntax of a numerical address is not restricted to
-hex-encoded values, and any valid [`u256` numerical value](./integers) can be used as an address
-value, e.g., `42`, `0xCAFE`, and `10_000` are all valid numerical address literals.
+地址有兩種形式：具名的或數值的。具名地址的語法遵循 Move 中任何具名標識符的規則。數值地址的語法不限於十六進制編譯的數值，任何有效的 [`u256` 數值](./integers) 都可以用作地址數值，例如 `42`、`0xCAFE` 和 `10_000` 都是有效的數值地址字面量。
 
-To distinguish when an address is being used in an expression context or not, the syntax when using
-an address differs depending on the context where it's used:
+為了區分地址何時用於表達式上下文，使用地址時的語法取決於其使用的上下文：
 
-- When an address is used as an expression, the address must be prefixed by the `@` character, i.e.,
-  [`@<numerical_value>`](./integers) or `@<named_address_identifier>`.
-- Outside of expression contexts, the address may be written without the leading `@` character,
-  i.e., [`<numerical_value>`](./integers) or `<named_address_identifier>`.
+- 當地址用作表達式時，地址必須以 `@` 字元為前綴，即 [`@<數值>`](./integers) 或 `@<具名地址標識符>`。
+- 在表達式上下文之外，地址可以不帶前導的 `@` 字元編寫，即 [`<數值>`](./integers) 或 `<具名地址標識符>`。
 
-In general, you can think of `@` as an operator that takes an address from being a namespace item to
-being an expression item.
+一般來說，您可以將 `@` 視為將地址從命名空間項轉換為表達式項的運算子。
 
-## Named Addresses
+## 具名地址 (Named Addresses)
 
-Named addresses are a feature that allow identifiers to be used in place of numerical values in any
-spot where addresses are used, and not just at the value level. Named addresses are declared and
-bound as top level elements (outside of modules and scripts) in Move packages, or passed as
-arguments to the Move compiler.
+具名地址是一項功能，允許在任何使用地址的地方使用標識符代替數值，而不僅僅是在數值級別。具名地址在 Move 套件中被宣告並綁定為頂級元素（在模組和指令碼之外），或作為參數傳遞給 Move 編譯器。
 
-Named addresses only exist at the source language level and will be fully substituted for their
-value at the bytecode level. Because of this, modules and module members should be accessed through
-the module's named address and not through the numerical value assigned to the named address during
-compilation. So while `use my_addr::foo` is equivalent to `use 0x2::foo` (if `my_addr` is assigned
-`0x2`), it is a best practice to always use the `my_addr` name.
+具名地址僅存在於原始語言級別，並將在位元組碼級別完全替換為其數值。因此，模組和模組成員應該透過模組的具名地址存取，而不是透過編譯期間分配給具名地址的數值。因此，雖然 `use my_addr::foo` 等同於 `use 0x2::foo`（如果 `my_addr` 被分配為 `0x2`），但始終使用 `my_addr` 名稱是最佳實踐。
 
-### Examples
+### 範例
 
 ```move
-// shorthand for
-// 0x0000000000000000000000000000000000000000000000000000000000000001
+// 0x0000000000000000000000000000000000000000000000000000000000000001 的縮寫
 let a1: address = @0x1;
-// shorthand for
-// 0x0000000000000000000000000000000000000000000000000000000000000042
+// 0x0000000000000000000000000000000000000000000000000000000000000042 的縮寫
 let a2: address = @0x42;
-// shorthand for
-// 0x00000000000000000000000000000000000000000000000000000000DEADBEEF
+// 0x00000000000000000000000000000000000000000000000000000000DEADBEEF 的縮寫
 let a3: address = @0xDEADBEEF;
-// shorthand for
-// 0x000000000000000000000000000000000000000000000000000000000000000A
+// 0x000000000000000000000000000000000000000000000000000000000000000A 的縮寫
 let a4: address = @0x0000000000000000000000000000000A;
-// Assigns `a5` the value of the named address `std`
+// 將具名地址 `std` 的數值分配給 `a5`
 let a5: address = @std;
-// Any valid numerical value can be used as an address
+// 任何有效的數值都可以用作地址
 let a6: address = @66;
 let a7: address = @42_000;
 
-module 66::some_module {   // Not in expression context, so no @ needed
-    use 0x1::other_module; // Not in expression context so no @ needed
-    use std::vector;       // Can use a named address as a namespace item
+module 66::some_module {   // 不在表達式上下文中，因此不需要 @
+    use 0x1::other_module; // 不在表達式上下文中，因此不需要 @
+    use std::vector;       // 可以使用具名地址作為命名空間項
     ...
 }
 
-module std::other_module {  // Can use a named address when declaring a module
+module std::other_module {  // 在宣告模組時可以使用具名地址
     ...
 }
 ```

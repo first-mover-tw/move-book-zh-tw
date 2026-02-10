@@ -1,85 +1,55 @@
-# Custom Types with Struct
+# 使用結構定義自定義類型 (Custom Types with Struct)
 
-Move's type system shines when it comes to defining custom types. User defined types can be custom
-tailored to the specific needs of the application, not only on the data level, but also in its
-behavior. In this section we introduce the struct definition and how to use it.
+當涉及到定義自定義類型時，Move 的類型系統大放異彩。使用者定義的類型可以根據應用程式的特定需求量身定制，不僅在資料層級，在其行為上也是如此。在本節中，我們將介紹 `struct` 的定義及其使用方法。
 
-## Struct
+## 結構 (Struct)
 
-To define a custom type, you can use the `struct` keyword followed by the name of the type. After
-the name, you can define the fields of the struct. Each field is defined with the
-`field_name: field_type` syntax. Field definitions must be separated by commas. The fields can be of
-any type, including other structs.
+要定義自定義類型，可以使用 `struct` 關鍵字，後接類型的名稱。在名稱之後，您可以定義結構的欄位。每個欄位都使用 `欄位名稱: 欄位類型` 的語法定義。欄位定義必須以逗號分隔。欄位可以是任何類型，包括其他結構。
 
-> Move does not support recursive structs, meaning a struct cannot contain itself as a field.
+> Move 不支援遞迴結構，這意味著結構不能包含自身作為欄位。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=def
 
 ```
 
-In the example above, we define a `Record` struct with five fields. The `title` field is of type
-`String`, the `artist` field is of type `Artist`, the `year` field is of type `u16`, the `is_debut`
-field is of type `bool`, and the `edition` field is of type `Option<u16>`. The `edition` field is of
-type `Option<u16>` to represent that the edition is optional.
+在上面的範例中，我們定義了一個具有五個欄位的 `Record` 結構。`title` 欄位類型為 `String`，`artist` 欄位類型為 `Artist`，`year` 欄位類型為 `u16`，`is_debut` 欄位類型為 `bool`，而 `edition` 欄位類型為 `Option<u16>`。`edition` 欄位使用 `Option<u16>` 類型來表示版本是選填的。
 
-Structs are private by default, meaning they cannot be imported and used outside of the module they
-are defined in. Their fields are also private and can't be accessed from outside the module. See
-[visibility](./visibility) for more information on different visibility modifiers.
+結構預設是私有的，這意味著它們不能在定義它們的模組之外被匯入和使用。它們的欄位也是私有的，不能從模組外部存取。有關不同可見性修飾符的更多資訊，請參閱 [可見性](./visibility)。
 
-> Fields of a struct are private and can only be accessed by the module defining the struct. Reading
-> and writing the fields of a struct in other modules is only possible if the module defining the
-> struct provides public functions to access the fields.
+> 結構的欄位是私有的，只能由定義該結構的模組存取。只有在定義結構的模組提供公開函式來存取欄位的情況下，才可能在其他模組中讀取和寫入結構的欄位。
 
-## Create and use an instance
+## 建立與使用實例
 
-We described the _definition_ of a struct. Now let's see how to initialize a struct and use it. A
-struct can be initialized using the `struct_name { field1: value1, field2: value2, ... }` syntax.
-The fields can be initialized in any order, and all of the required fields must be set.
+我們剛才描述了結構的 **定義**。現在讓我們看看如何初始化並使用一個結構。結構可以使用 `結構名稱 { 欄位1: 值1, 欄位2: 值2, ... }` 的語法進行初始化。欄位可以按任何順序初始化，並且所有必要的欄位都必須設置。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=pack
 
 ```
 
-In the example above, we create an instance of the `Artist` struct and set the `name` field to a
-string "The Beatles".
+在上面的範例中，我們建立了一個 `Artist` 結構的實例，並將 `name` 欄位設置為字串 "The Beatles"。
 
-To access the fields of a struct, you can use the `.` operator followed by the field name.
+要存取結構的欄位，可以使用 `.` 運算子後接欄位名稱。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=access
 
 ```
 
-Only the module defining the struct can access its fields (both mutably and immutably). So the above
-code should be in the same module as the `Artist` struct.
+只有定義結構的模組可以存取其欄位（包括可變存取和不可變存取）。因此，上述程式碼應與 `Artist` 結構位於同一個模組中。
 
-<!-- ## Accessing Fields
+## 解構結構 (Unpacking a struct)
 
-Struct fields are private and can be accessed only by the module defining the struct. To access the fields of a struct, you can use the `.` operator followed by the field name.
-
-```move
-# anchor: access file=packages/samples/sources/move-basics/struct.move anchor=access
-```
--->
-
-## Unpacking a struct
-
-Structs are non-discardable by default, meaning that the initialized struct value must be used,
-either by storing it or unpacking it. Unpacking a struct means deconstructing it into its fields.
-This is done using the `let` keyword followed by the struct name and the field names.
+結構預設是不可捨棄的，這意味著初始化的結構值必須被使用，無論是透過儲存還是 **解構 (unpacking)**。解構結構意味著將其拆解為其各個欄位。這可以使用 `let` 關鍵字後接結構名稱和欄位名稱來完成。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=unpack
 
 ```
 
-In the example above we unpack the `Artist` struct and create a new variable `name` with the value
-of the `name` field. Because the variable is not used, the compiler will raise a warning. To
-suppress the warning, you can use the underscore `_` to indicate that the variable is intentionally
-unused.
+在上面的範例中，我們解構了 `Artist` 結構，並建立了一個值為 `name` 欄位內容的新變數 `name`。由於變數沒有被使用，編譯器會發出警告。要消除警告，可以使用底線 `_` 來表示該變數是刻意不使用的。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=unpack_ignore
 
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [Structs](./../../reference/structs) in the Move Reference.
+- Move 參考手冊中的 [結構 (Structs)](./../../reference/structs)。

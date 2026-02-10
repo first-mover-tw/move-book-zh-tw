@@ -1,72 +1,62 @@
-# Ownership and Scope
+# 所有權與作用域 (Ownership and Scope)
 
-Every variable in Move has a scope and an owner. The scope is the range of code where the variable
-is valid, and the owner is the scope that this variable belongs to. Once the owner scope ends, the
-variable is dropped. This is a fundamental concept in Move, and it is important to understand how it
-works.
+Move 中的每個變數都有一個作用域 (Scope) 和一個所有者 (Owner)。作用域是變數有效的程式碼範圍，而所有者是該變數所屬的作用域。一旦所有者作用域結束，變數就會被丟棄 (dropped)。這是 Move 中的一個核心概念，瞭解其運作方式非常重要。
 
 <!--
 
-- Borrow Checker
-- Mention Rust's borrow checker
-- Borrowing / References intro
+- Borrow Checker (借用檢查器)
+- 提及 Rust 的 borrow checker
+- 借用 / 參照簡介
 
 -->
 
-## Ownership
+## 所有權 (Ownership)
 
-A variable defined in a function scope is owned by this scope. The runtime goes through the function
-scope and executes every expression and statement. After the function scope ends, the variables
-defined in it are dropped or deallocated.
+在函式作用域中定義的變數歸該作用域所有。執行時期會遍歷函式作用域並執行每個表達式和語句。函式作用域結束後，其中定義的變數會被丟棄或釋放。
 
 ```move
 module book::ownership;
 
 public fun owner() {
-    let a = 1; // a is owned by the `owner` function
-} // a is dropped here
+    let a = 1; // a 歸 `owner` 函式所有
+} // a 在此處被丟棄
 
 public fun other() {
-    let b = 2; // b is owned by the `other` function
-} // b is dropped here
+    let b = 2; // b 歸 `other` 函式所有
+} // b 在此處被丟棄
 
 #[test]
 fun test_owner() {
     owner();
     other();
-    // a & b are not valid here
+    // a 和 b 在此處無效
 }
 ```
 
-In the example above, the variable `a` is owned by the `owner` function, and the variable `b` is
-owned by the `other` function. When each of these functions are called, the variables are defined,
-and when the function ends, the variables are discarded.
+在上面的範例中，變數 `a` 歸 `owner` 函式所有，變數 `b` 歸 `other` 函式所有。當呼叫這些函式中的每一個時，變數被定義；當函式結束時，變數被丟棄。
 
-## Returning a Value
+## 傳回值 (Returning a Value)
 
-If we changed the `owner` function to return the variable `a`, then the ownership of `a` would be
-transferred to the caller of the function.
+如果我們更改 `owner` 函式以傳回變數 `a`，則 `a` 的所有權將轉移給該函式的呼叫者。
 
 ```move
 module book::ownership;
 
 public fun owner(): u8 {
-    let a = 1; // a defined here
-    a // scope ends, a is returned
+    let a = 1; // a 在此處定義
+    a // 作用域結束，a 被傳回
 }
 
 #[test]
 fun test_owner() {
     let a = owner();
-    // a is valid here
-} // a is dropped here
+    // a 在此處有效
+} // a 在此處被丟棄
 ```
 
-## Passing by Value
+## 按值傳遞 (Passing by Value)
 
-Additionally, if we passed the variable `a` to another function, the ownership of `a` would be
-transferred to this function. When performing this operation, we _move_ the value from one scope to
-another. This is also called _move semantics_.
+此外，如果我們將變數 `a` 傳遞給另一個函式，`a` 的所有權將轉移給該函式。在執行此操作時，我們將值從一個作用域 **移動 (move)** 到另一個作用域。這也被稱為 **移動語意 (move semantics)**。
 
 ```move
 module book::ownership;
@@ -74,66 +64,60 @@ module book::ownership;
 public fun owner(): u8 {
     let a = 10;
     a
-} // a is returned
+} // a 被傳回
 
 public fun take_ownership(v: u8) {
-    // v is owned by `take_ownership`
-} // v is dropped here
+    // v 歸 `take_ownership` 所有
+} // v 在此處被丟棄
 
 #[test]
 fun test_owner() {
     let a = owner();
-    // `u8` is copyable, pass `move a` when calling the function to force the transfer of its ownership
+    // `u8` 是可複製的，呼叫函式時使用 `move a` 以強制轉移其所有權
     take_ownership(move a);
-    // a is not valid here
+    // a 在此處無效
 }
 ```
 
-## Scopes with Blocks
+## 區塊作用域 (Scopes with Blocks)
 
-Each function has a main scope, and it can also have sub-scopes via the use of blocks. A block is a
-sequence of statements and expressions, and it has its own scope. Variables defined in a block are
-owned by this block, and when the block ends, the variables are dropped.
+每個函式都有一個主作用域，它也可以透過使用區塊 (blocks) 擁有子作用域。區塊是一系列的語句和表達式，它有自己的作用域。在區塊中定義的變數歸該區塊所有，當區塊結束時，變數被丟棄。
 
 ```move
 module book::ownership;
 
 public fun owner() {
-    let a = 1; // a is owned by the `owner` function's scope
+    let a = 1; // a 歸 `owner` 函式的作用域所有
     {
-        let b = 2; // the block that declares b owns it
+        let b = 2; // 宣告 b 的區塊擁有它
         {
-            let c = 3; // the block that declares c owns it
-        }; // c is dropped here
-    }; // b is dropped here
-    // a = b; // error: b is not valid here
-    // a = c; // error: c is not valid here
-} // a is dropped here
+            let c = 3; // 宣告 c 的區塊擁有它
+        }; // c 在此處被丟棄
+    }; // b 在此處被丟棄
+    // a = b; // 錯誤：b 在此處無效
+    // a = c; // 錯誤：c 在此處無效
+} // a 在此處被丟棄
 ```
 
-However, if we return a value from a block, the ownership of the variable is transferred to the
-caller of the block.
+發但也，如果我們從區塊中傳回一個值，則變數的所有權將轉移給該區塊的呼叫者。
 
 ```move
 module book::ownership;
 
 public fun owner(): u8 {
-    let a = 1; // a is owned by the `owner` function's scope
+    let a = 1; // a 歸 `owner` 函式的作用域所有
     let b = {
-        let c = 2; // the block that declares c owns it
-        c // c is returned from the block and transferred to b
+        let c = 2; // 宣告 c 的區塊擁有它
+        c // c 從區塊中傳回並轉移給 b
     };
-    a + b // both a and b are valid here
+    a + b // a 和 b 在此處均有效
 }
 ```
 
-## Copyable Types
+## 可複製類型 (Copyable Types)
 
-Some types in Move are _copyable_, which means that they can be copied without transferring
-ownership. This is useful for types that are small and cheap to copy, such as integers and booleans.
-The Move compiler will automatically copy these types when they are passed to or returned from a
-function, or when they're _moved_ to another scope and then accessed in their original scope.
+Move 中的某些類型是 **可複製的 (copyable)**，這意味著它們可以被複製而無需轉移所有權。這對於體積小且複製成本低的類型（如整數和布林值）非常有用。當這些類型被傳遞給函式、從函式傳回，或者當它們被「移動」到另一個作用域然後在其原始作用域中被存取時，Move 編譯器會自動複製這些類型。
 
-## Further Reading
+## 延伸閱讀
 
-- [Local Variables and Scopes](./../../reference/variables) in the Move Reference.
+- Move 參考手冊中的 [局部變數與作用域](./../../reference/variables)。

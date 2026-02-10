@@ -1,5 +1,3 @@
-# Guides
+# 指南 (Guides)
 
-This section contains a collection of guides that cover various aspects of programming on Sui. They
-are intended to provide a deeper understanding of Sui blockchain and Move language, while also
-aiming at practical challenges and solutions.
+本節蒐集了一系列指南，涵蓋了在 Sui 上編程的各個方面。它們旨在讓您更深入地了解 Sui 區塊鏈和 Move 語言，同時也針對實際挑戰提供解決方案。

@@ -1,31 +1,10 @@
-# Package
+# 套件 (Package)
 
-<!--
+Move 是一種用於編寫智能合約的語言——智能合約是存儲並在區塊鏈上運行的程式。單個程式被組織成一個套件。套件發佈在區塊鏈上，並由一個[地址](./address)標識。已發佈的套件可以透過發送調用其函式的[交易](./what-is-a-transaction)來進行互動。它也可以作為其他套件的相依項。
 
-    - packages and how they're stored
-        - overview of packages and their contents (use a diagram)
-        - how a package is created, and what it consists of
-        - what is the package manifest
-        - describe how "name" field is used
-        - mention the "edition" field
-        - what are the folders in a package and what are they for
-        - how packages are imported (give Sui as an example)
-        - what are addresses, and how they identify packages
-        - how packages are published
-        - leave a note that packages are also *upgradable*
+> 要建立新套件，請使用 `sui move new` 命令。要了解有關該命令的更多資訊，請運行 `sui move new --help`。
 
--->
-
-Move is a language for writing smart contracts - programs that are stored and run on the blockchain.
-A single program is organized into a package. A package is published on the blockchain and is
-identified by an [address](./address). A published package can be interacted with by sending
-[transactions](./what-is-a-transaction) calling its functions. It can also act as a dependency for
-other packages.
-
-> To create a new package, use the `sui move new` command. To learn more about the command, run
-> `sui move new --help`.
-
-Package consists of modules - separate scopes that contain functions, types, and other items.
+套件由模組組成——包含函式、類型和其他項目的獨立作用域。
 
 ```
 package 0x...
@@ -37,11 +16,9 @@ package 0x...
         fun hello_package()
 ```
 
-## Package Structure
+## 套件結構
 
-Locally, a package is a directory with a `Move.toml` file and a `sources` directory. The `Move.toml`
-file - called the "package manifest" - contains metadata about the package, and the `sources`
-directory contains the source code for the modules. Package usually looks like this:
+在本地，套件是一個包含 `Move.toml` 檔案和 `sources` 目錄的目錄。`Move.toml` 檔案稱為「套件清單 (package manifest)」，包含有關套件的中繼資料，而 `sources` 目錄包含模組的原始程式碼。套件通常看起來像這樣：
 
 ```
 sources/
@@ -55,16 +32,11 @@ examples/
 Move.toml
 ```
 
-The `tests` directory is optional and contains tests for the package. Code placed into the `tests`
-directory is not published on-chain and is only available in tests. The `examples` directory can be
-used for code examples, and is also not published on-chain.
+`tests` 目錄是可選的，包含套件的測試。放置在 `tests` 目錄中的程式碼不會發佈在鏈上，僅在測試中可用。`examples` 目錄可用於程式碼範例，同樣不會發佈在鏈上。
 
-## Published Package
+## 已發佈的套件
 
-During development, package doesn't have an address and it needs to be set to `0x0`. Once a package
-is published, it gets a single unique [address](./address) on the blockchain containing its modules'
-bytecode. A published package becomes _immutable_ and can be interacted with by sending
-transactions.
+在開發期間，套件沒有地址，需要設置為 `0x0`。一旦套件發佈，它就會在區塊鏈上獲得一個唯一的[地址](./address)，其中包含其模組的位元組碼。已發佈的套件會變成「不可變 (immutable)」的，並可以透過發送交易來進行互動。
 
 ```
 0x...
@@ -72,8 +44,8 @@ transactions.
     another_module: <bytecode>
 ```
 
-## Links
+## 鏈結
 
-- [Package Manifest](./manifest)
-- [Address](./address)
-- [Packages](./../../reference/packages) in the Move Reference.
+- [專案清單](./manifest)
+- [地址](./address)
+- Move 參考手冊中的[套件](./../../reference/packages)。

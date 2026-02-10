@@ -1,64 +1,58 @@
-# Ability: Store
+# 能力：Store (Ability: Store)
 
-The [`key` ability][key-ability] requires all fields to have `store`, which defines what the `store`
-ability means: it is the ability to serve as a field of an Object. A struct with
-[`copy`][copy-ability] or [`drop`][drop-ability] but without `store` can never be _stored_. A type
-with `key` but without `store` cannot be wrapped - used as a field—in another object, and is
-constrained to always remain at the top level.
+[`key` 能力][key-ability] 要求所有欄位都具有 `store`，這就定義了 `store` 能力的含義：它是作為物件欄位的能力。具有 [`copy`][copy-ability] 或 [`drop`][drop-ability] 但沒有 `store` 的結構永遠不能被「存儲」。具有 `key` 但沒有 `store` 的類型不能被包裝 (wrapped) —— 即作為另一個物件的欄位使用，且受限於始終保持在頂層。
 
-## Definition
+## 定義
 
-The `store` ability allows a type to be used as a field in a struct with the `key` ability.
+`store` 能力允許類型的實體作為具有 `key` 能力結構中的一個欄位。
 
 ```move
 // hidden-block-start
 use std::string::String;
 
 // hidden-block-end
-/// Extra metadata with `store`; all fields must have `store` as well!
+/// 帶有 `store` 的額外後設資料；所有欄位也必須具有 `store`！
 public struct Metadata has store {
     bio: String,
 }
 
-/// An object for a single user record.
+/// 單個使用者記錄的物件。
 public struct User has key {
     id: UID,
-    name: String,       // String has `store`
-    age: u8,            // All integers have `store`
-    metadata: Metadata, // Another type with the `store` ability
+    name: String,       // String 具有 `store`
+    age: u8,            // 所有整數都具有 `store`
+    metadata: Metadata, // 另一個具有 `store` 能力的類型
 }
 ```
 
-## Relation to `copy` and `drop`
+## 與 `copy` 和 `drop` 的關係
 
-All three non-`key` abilities can be used in any combination.
+所有三種非 `key` 能力都可以以任何組合使用。
 
-## Relation to `key`
+## 與 `key` 的關係
 
-An object with the `store` ability can be _stored_ in other objects.
+具有 `store` 能力的物件可以「存儲」在其他物件中。
 
-> While not a language or verifier feature, `store` acts as a _public_ modifier on a struct,
-> allowing calling _public_ [transfer functions](./storage-functions.md) which do not have an
-> [internal constraint](./internal-constraint.md).
+> 雖然不是語言或校驗器功能，但 `store` 充當結構上的一個「公開 (public)」修飾符，允許呼叫那些沒有 [內部約束 (internal constraint)](./internal-constraint.md) 的公開 [轉移函式 (transfer functions)](./storage-functions.md)。
 
-## Types with the `store` Ability
+## 具有 `store` 能力的類型
 
-All native types (except references) in Move have the `store` ability. This includes:
+Move 中除參考之外的所有原生類型都具有 `store` 能力。這包括：
 
-- [bool](./../move-basics/primitive-types.md#booleans)
-- [unsigned integers](./../move-basics/primitive-types.md#integer-types)
-- [vector](./../move-basics/vector.md)
-- [address](./../move-basics/address.md)
+- [布林值 (bool)](./../move-basics/primitive-types.md#booleans)
+- [無符號整數 (unsigned integers)](./../move-basics/primitive-types.md#integer-types)
+- [向量 (vector)](./../move-basics/vector.md)
+- [地址 (address)](./../move-basics/address.md)
 
-All of the types defined in the standard library have the `store` ability as well. This includes:
+標準函式庫中定義的所有類型也具有 `store` 能力。這包括：
 
-- [Option](./../move-basics/option.md)
-- [String](./../move-basics/string.md) and [ASCII String](./../move-basics/string.md)
-- [TypeName](./../move-basics/type-reflection.md)
+- [選項 (Option)](./../move-basics/option.md)
+- [字串 (String)](./../move-basics/string.md) 和 [ASCII 字串 (ASCII String)](./../move-basics/string.md)
+- [類型名稱 (TypeName)](./../move-basics/type-reflection.md)
 
-## Further Reading
+## 延伸閱讀
 
-- [Type Abilities](./../../reference/abilities) in the Move Reference.
+- Move 參考手冊中的 [類型能力 (Type Abilities)](./../../reference/abilities)。
 
 [key-ability]: ./key-ability.md
 [drop-ability]: ./../move-basics/drop-ability.md

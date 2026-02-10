@@ -1,77 +1,57 @@
-# Functions
+# 函式 (Functions)
 
-Functions are the building blocks of Move programs. They are called from
-[user transactions](./../concepts/what-is-a-transaction) and from other functions and group
-executable code into reusable units. Functions can take arguments and return a value. They are
-declared with the `fun` keyword at the module level. Just like any other module member, by default
-they're private and can only be accessed from within the module.
+函式是 Move 程式的構建塊。它們從 [使用者交易](./../concepts/what-is-a-transaction) 或其他函式中被呼叫，並將可執行的程式碼分組為可重用的單元。函式可以接收參數並傳回一個值。它們在模組層級中使用 `fun` 關鍵字宣告。與任何其他模組成員一樣，預設情況下它們是私有的，只能從模組內部存取。
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=math
 
 ```
 
-In this example, we define a function `add` that takes two arguments of type `u64` and returns their
-sum. The `test_add` function, located in the same module, is a test function that calls `add`. The
-test uses the `assert!` macro to compare the result of `add` with the expected value. If the
-condition inside `assert!` evaluates to false, the execution is aborted automatically.
+在此範例中，我們定義了一個 `add` 函式，它接收兩個 `u64` 類型的參數並傳回它們的和。同樣位於同一個模組中的 `test_add` 函式是一個呼叫 `add` 的測試函式。該測試使用 `assert!` 巨集將 `add` 的結果與預期值進行比較。如果 `assert!` 內部的條件評估為 false，執行將自動中斷。
 
-## Function declaration
+## 函式宣告
 
-> In Move, functions are typically named using the `snake_case` convention. This means function
-> names should be all lowercase, with words separated by underscores. Examples include
-> `do_something`, `add`, `get_balance`, `is_authorized`, and so on.
+> 在 Move 中，函式通常使用 **蛇形命名法 (snake_case)**。這意味著函式名稱應全部小寫，單字之間以底線分隔。例如 `do_something`、`add`、`get_balance`、`is_authorized` 等等。
 
-A function is declared with the `fun` keyword followed by the function name (a valid Move
-identifier), a list of arguments in parentheses, and a return type. The function body is a block of
-code that contains a sequence of statements and expressions. The last expression the function body
-is the return value of the function.
+函式使用 `fun` 關鍵字宣告，後接函式名稱（有效的 Move 識別碼）、括號中的參數清單以及傳回類型。函式主體是一個包含一系列語句和表達式的程式碼區塊。函式主體中的最後一個表達式即為函式的傳回值。
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=return_nothing
 
 ```
 
-## Accessing functions
+## 存取函式
 
-Just like other module members, functions can be imported and accessed using a path. The path
-consists of the module path and the function name, separated by ::. For example, if you have a
-function named `add` in the `math` module within the `book` package, its full path would be
-`book::math::add`. If the module has already been imported, you can access it directly as
-`math::add` as in the following example:
+與其他模組成員一樣，函式可以匯入並透過路徑存取。路徑由模組路徑和函式名稱組成，以 `::` 分隔。例如，如果您在 `book` 套件的 `math` 模組中有一個名為 `add` 的函式，其完整路徑將是 `book::math::add`。如果模組已經匯入，您可以像下面的範例一樣直接將其存取為 `math::add`：
 
 ```move file=packages/samples/sources/move-basics/function_use.move anchor=use_math
 
 ```
 
-## Multiple return values
+## 多個傳回值
 
-Move functions can return multiple values, which is particularly useful when you need to return more
-than one piece of data from a function. The return type is specified as a tuple of types, and the
-return value is provided as a tuple of expressions:
+Move 函式可以傳回多個值，這在您需要從一個函式傳回多個資料片段時特別有用。傳回類型指定為類型的元組 (tuple)，傳回值也作為表達式的元組提供：
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return
 
 ```
 
-The result of a function call with a tuple return has to be unpacked into variables via the
-`let (tuple)` syntax:
+具有元組傳回值的函式呼叫結果，必須透過 `let (tuple)` 語法解構成變數：
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_imm
 
 ```
 
-If any of the declared values need to be declared as mutable, the `mut` keyword is placed before the
-variable name:
+如果宣告的任何值需要宣告為可變的，則在變數名稱前加上 `mut` 關鍵字：
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_mut
 
 ```
 
-If some of the arguments are not used, they can be ignored with the `_` symbol:
+如果某些參數不被使用，可以使用 `_` 符號忽略它們：
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_ignore
 
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [Functions](./../../reference/functions) in the Move Reference.
+- Move 參考手冊中的 [函式 (Functions)](./../../reference/functions)。

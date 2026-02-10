@@ -1,61 +1,36 @@
-# Address Type
+# 位址類型
 
-<!--
-
-Chapter: Basic Syntax
-Goal: Introduce the address type
-Notes:
-    - a special type
-    - named addresses via the Move.toml
-    - address literals
-    - 0x2 is 0x0000000...02
-
-Links:
-    - address concept
-    - transaction context
-    - Move.toml
-    - your first move
-
- -->
-
-Move uses a special type called [address](./../concepts/address) to represent addresses. It is a
-32-byte value that can represent any address on the blockchain. Addresses can be written in two
-forms: hexadecimal addresses prefixed with 0x and named addresses.
+Move 使用一種名為 [位址](./../concepts/address) 的特殊類型來表示位址。它是一個 32 位元組的值，可以表示區塊鏈上的任何位址。位址可以兩種形式書寫：以 `0x` 為前綴的十六進位位址，以及具名位址。
 
 ```move file=packages/samples/sources/move-basics/address.move anchor=address_literal
 
 ```
 
-An address literal starts with the `@` symbol followed by a hexadecimal number or an identifier. The
-hexadecimal number is interpreted as a 32 byte value. The identifier is looked up in the
-[Move.toml](./../concepts/manifest) file and replaced with the corresponding address by the
-compiler. If the identifier is not found in the Move.toml file, the compiler will throw an error.
+位址字面值以 `@` 符號開頭，後接一個十六進位數字或一個識別符號。十六進位數字被解釋為一個 32 位元組的值。識別符號會在 [Move.toml](./../concepts/manifest) 檔案中查找，並由編譯器替換為對應的位址。如果在 Move.toml 檔案中找不到該識別符號，編譯器將會拋出錯誤。
 
-## Conversion
+## 轉換
 
-Sui Framework offers a set of helper functions to work with addresses. Given that the address type
-is a 32 byte value, it can be converted to a `u256` type and vice versa. It can also be converted to
-and from a `vector<u8>` type.
+Sui 框架提供了一組輔助函式來處理位址。鑑於位址類型是一個 32 位元組的值，它可以轉換為 `u256` 類型，反之亦然。它也可以與 `vector<u8>` 類型之間進行轉換。
 
-Example: Convert an address to a `u256` type and back.
+範例：將位址轉換為 `u256` 類型並反向轉換。
 
 ```move file=packages/samples/sources/move-basics/address.move anchor=to_u256
 
 ```
 
-Example: Convert an address to a `vector<u8>` type and back.
+範例：將位址轉換為 `vector<u8>` 類型並反向轉換。
 
 ```move file=packages/samples/sources/move-basics/address.move anchor=to_bytes
 
 ```
 
-Example: Convert an address into a string.
+範例：將位址轉換為字串。
 
 ```move file=packages/samples/sources/move-basics/address.move anchor=to_string
 
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [Address](./../../reference/primitive-types/address) in the Move Reference.
-- [sui::address](https://docs.sui.io/references/framework/sui/address) module documentation.
+- Move 參考手冊中的 [位址](./../../reference/primitive-types/address)。
+- [sui::address](https://docs.sui.io/references/framework/sui/address) 模組文件。

@@ -1,131 +1,93 @@
-# Generics
+# 泛型 (Generics)
 
-Generics are a way to define a type or function that can work with any type. This is useful when you
-want to write a function which can be used with different types, or when you want to define a type
-that can hold any other type. Generics are the foundation of many advanced features in Move
-including collections, abstract implementations, and more.
+泛型是一種定義可以與任何類型協同工作的類型或函式的方式。當您想編寫一個可以與不同類型一起使用的函式，或者想定義一個可以容納任何其他類型的類型時，這非常有用。泛型是 Move 中許多進階功能的基礎，包括集合、抽象實作等。
 
-## In the Standard Library
+## 在標準庫中
 
-In this chapter we already mentioned the [vector](./vector) type, which is a generic type that can
-hold any other type. Another example of a generic type in the standard library is the
-[Option](./option) type, which is used to represent a value that may or may not be present.
+在本章中我們已經提到了 [向量 (vector)](./vector) 類型，它是一種可以容納任何其他類型的泛型。標準庫中另一個泛型類型的例子是 [選項 (Option)](./option) 類型，它用於表示一個可能存在也可能不存在的值。
 
-## Generic Syntax
+## 泛型語法 (Generic Syntax)
 
-To define a generic type or function, a type signature needs to have a list of generic parameters
-enclosed in angle brackets (`<` and `>`). The generic parameters are separated by commas.
+要定義泛型類型或函式，類型特徵需要具有包含在角括號 (`<` 和 `>`) 中的泛型參數清單。泛型參數之間以逗號分隔。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=container
 
 ```
 
-In the example above, `Container` is a generic type with a single type parameter `T`, the `value`
-field of the container stores the `T`. The `new` function is a generic function with a single type
-parameter `T`, and it returns a `Container` with the given value. Generic types must be initialized
-with a concrete type, and generic functions must be called with a concrete type, although in some
-cases the Move compiler can infer the correct type.
+在上面的範例中，`Container` 是一個具有單一類型參數 `T` 的泛型類型，該容器的 `value` 欄位儲存 `T`。`new` 函式是一個具有單一類型參數 `T` 的泛型函式，它傳回一個包含給定值的 `Container`。泛型類型必須使用具體類型進行初始化，且泛型函式必須使用具體類型進行呼叫，儘管在某些情況下 Move 編譯器可以推斷出正確的類型。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_container
 
 ```
 
-In the test function `test_container`, we demonstrate three equivalent ways to create a new
-`Container` with a `u8` value. Because numeric constants have ambiguous types, we must specify the
-type of the number literal somewhere (in the type of the container, the parameter to `new`, or the
-number literal itself); once we specify one of these the compiler can infer the others.
+在測試函式 `test_container` 中，我們演示了三種建立具有 `u8` 值的新 `Container` 的等效方法。因為數值常值具有歧義類型，我們必須在某處指定數字常值的類型（在容器的類型、`new` 的參數或數字常值本身之中）；一旦我們指定了其中之一，編譯器就可以推斷出其他部分。
 
-## Multiple Type Parameters
+## 多個類型參數
 
-You can define a type or function with multiple type parameters. The type parameters are separated
-by commas.
+您可以定義具有多個類型參數的類型或函式。類型參數之間以逗號分隔。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=pair
 
 ```
 
-In the example above, `Pair` is a generic type with two type parameters `T` and `U`, and the
-`new_pair` function is a generic function with two type parameters `T` and `U`. The function returns
-a `Pair` with the given values. The order of the type parameters is important, and should match the
-order of the type parameters in the type signature.
+在上面的範例中，`Pair` 是一個具有兩個類型參數 `T` 和 `U` 的泛型類型，而 `new_pair` 函式是一個具有兩個類型參數 `T` 和 `U` 的泛型函式。該函式傳回一個具有給定值的 `Pair`。類型參數的順序很重要，應與類型特徵中類型參數的順序相匹配。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_pair
 
 ```
 
-If we added another instance where we swapped type parameters in the `new_pair` function, and tried
-to compare two types, we'd see that the type signatures are different, and cannot be compared.
+如果我們添加另一個在 `new_pair` 函式中交換類型參數的實例，並嘗試比較這兩個類型，我們會發現類型特徵是不同的，且無法進行比較。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_pair_swap
 
 ```
 
-Since the types for `pair1` and `pair2` are different, the comparison `pair1 == pair2` will not
-compile.
+由於 `pair1` 和 `pair2` 的類型不同，比較 `pair1 == pair2` 將無法編譯。
 
-## Why Generics?
+## 為什麼需要泛型？
 
-In the examples above we focused on instantiating generic types and calling generic functions to
-create instances of these types. However, the real power of generics lies in their ability to define
-shared behavior for the base, generic type, and then use it independently of the concrete types.
-This is especially useful when working with collections, abstract implementations, and other
-advanced features in Move.
+在上面的範例中，我們重點介紹了實體化泛型類型和呼叫泛型函式以建立這些類型的實例。然而，泛型真正的實力在於它們定義基礎泛型類型的共享行為，然後獨立於具體類型來使用它的能力。這在處理集合、抽象實作和 Move 中的其他進階功能時特別有用。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=user
 
 ```
 
-In the example above, `User` is a generic type with a single type parameter `T`, with shared fields
-`name`, `age`, and the generic `metadata` field, which can store any type. No matter what `metadata`
-is, all instances of `User` will contain the same fields and methods.
+在上面的範例中，`User` 是一個具有單一類型參數 `T` 的泛型類型，具有共享欄位 `name`、`age` 以及泛型的 `metadata` 欄位（可以儲存任何類型）。無論 `metadata` 是什麼，`User` 的所有實例都將包含相同的欄位和方法。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=update_user
 
 ```
 
-## Phantom Type Parameters
+## 幽靈類型參數 (Phantom Type Parameters)
 
-In some cases, you may want to define a generic type with a type parameter that is not used in the
-fields or methods of the type. This is called a _phantom type parameter_. Phantom type parameters
-are useful when you want to define a type that can hold any other type, but you want to enforce some
-constraints on the type parameter.
+在某些情況下，您可能希望定義一個具有在該類型的欄位或方法中未使用的類型參數的泛型類型。這被稱為 **幽靈類型參數 (phantom type parameter)**。當您想要定義一個可以容納任何其他類型的類型，但又想對類型參數強制執行某些約束時，幽靈類型參數非常有用。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=phantom
 
 ```
 
-The `Coin` type here does not contain any fields or methods that use the type parameter `T`. It is
-used to differentiate between different types of coins, and to enforce some constraints on the type
-parameter `T`.
+這裡的 `Coin` 類型不包含任何使用類型參數 `T` 的欄位或方法。它被用來區分不同類型的代幣，並對類型參數 `T` 強制執行某些約束。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_phantom
 
 ```
 
-In the example above, we demonstrate how to create two different instances of `Coin` with different
-phantom type parameters `USD` and `EUR`. The type parameter `T` is not used in the fields or methods
-of the `Coin` type, but it is used to differentiate between different types of coins. This helps
-ensure that the `USD` and `EUR` coins are not mistakenly mixed up.
+在上面的範例中，我們演示了如何建立兩個具有不同幽靈類型參數 `USD` 和 `EUR` 的不同 `Coin` 實例。類型參數 `T` 未用於 `Coin` 類型的欄位或方法中，但它用於區分不同類型的代幣。這有助於確保 `USD` 和 `EUR` 代幣不會被錯誤地混淆。
 
-## Constraints on Type Parameters
+## 類型參數的約束 (Constraints on Type Parameters)
 
-Type parameters can be constrained to have certain abilities. This is useful when you need the inner
-type to allow certain behaviors, such as _copy_ or _drop_. The syntax for constraining a type
-parameter is `T: <ability> + <ability>`.
+可以約束類型參數以使其具備某些能力。這在您需要內部類型允許某些行為（如 _copy_ 或 _drop_）時非常有用。約束類型參數的語法為 `T: <能力> + <能力>`。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=constraints
 
 ```
 
-The Move Compiler will enforce that the type parameter `T` has the specified abilities. If the type
-parameter does not have the specified abilities, the code will not compile.
-
-<!-- TODO: failure case -->
+Move 編譯器將強制執行類型參數 `T` 具有指定的能力。如果類型參數不具備指定的能力，則代碼將無法編譯。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_constraints
 
 ```
 
-## Further Reading
+## 延伸閱讀
 
-- [Generics](./../../reference/generics) in the Move Reference.
+- Move 參考手冊中的 [泛型](./../../reference/generics)。

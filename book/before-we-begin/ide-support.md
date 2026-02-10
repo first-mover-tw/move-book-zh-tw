@@ -1,55 +1,41 @@
-# Set Up Your IDE
+# 設定您的 IDE
 
-There are two most popular IDEs for Move development: VSCode and IntelliJ IDEA. Both of them provide
-basic features like syntax highlighting and error messages, though they differ in their additional
-features. Whatever IDE you choose, you'll need to use the terminal to run the
-[Move CLI](./install-sui.md).
+Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供基本功能，例如語法高亮和錯誤訊息，儘管它們的額外功能有所不同。無論您選擇哪種 IDE，您都需要使用終端機來執行 [Move CLI](./install-sui.md)。
 
-> **IntelliJ Plugin does not support Move 2024 edition, some syntax won't get highlighted.**
+> **IntelliJ 外掛程式不支援 Move 2024 版本，某些語法將無法被高亮顯示。**
 
 ## VSCode
 
-- [VSCode](https://code.visualstudio.com/) is a free and open source IDE from Microsoft.
-- [Move (Extension)](https://marketplace.visualstudio.com/items?itemName=mysten.move) is a language
-  server extension for Move maintained by [Mysten Labs](https://mystenlabs.com).
-- [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) - code
-  formatter for Move, developed and maintained by [Mysten Labs](https://mystenlabs.com).
-- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) a simple
-  syntax highlighting extension for Move by [Damir Shamanaev](https://github.com/damirka/).
+- [VSCode](https://code.visualstudio.com/) 是來自 Microsoft 的免費開源 IDE。
+- [Move (Extension)](https://marketplace.visualstudio.com/items?itemName=mysten.move) 是由 [Mysten Labs](https://mystenlabs.com) 維護的 Move 語言伺服器擴充功能。
+- [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) - 由 [Mysten Labs](https://mystenlabs.com) 開發和維護的 Move 程式碼格式化工具。
+- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 是由 [Damir Shamanaev](https://github.com/damirka/) 開發的 Move 簡單語法高亮擴充功能。
 
 ## IntelliJ IDEA
 
-- [IntelliJ IDEA](https://www.jetbrains.com/idea/) is a commercial IDE from JetBrains.
-- [Move Language Plugin](https://plugins.jetbrains.com/plugin/23301-sui-move-language) provides a
-  Move on Sui language extension for IntelliJ IDEA by [MoveFuns](https://movefuns.org/).
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) 是來自 JetBrains 的商業 IDE。
+- [Move Language Plugin](https://plugins.jetbrains.com/plugin/23301-sui-move-language) 是由 [MoveFuns](https://movefuns.org/) 為 IntelliJ IDEA 提供的 Sui Move 語言擴充功能。
 
 ## Emacs
 
-- [Emacs](https://www.gnu.org/software/emacs/) is a free and open source text editor.
-- [move-mode](https://github.com/amnn/move-mode) is a Move mode for Emacs by
-  [Ashok Menon](https://github.com/amnn).
+- [Emacs](https://www.gnu.org/software/emacs/) 是免費開源文字編輯器。
+- [move-mode](https://github.com/amnn/move-mode) 是由 [Ashok Menon](https://github.com/amnn) 開發的 Emacs Move 模式。
 
 ## Zed
 
-- [Zed](https://zed.dev/) is a next-generation code editor designed for high-performance
-  collaboration with humans and AI.
-- [Move](https://github.com/Tzal3x/move-zed-extension) is a language server extension for Move
-  maintained by [Tzal3x](https://github.com/Tzal3x).
+- [Zed](https://zed.dev/) 是為人與 AI 的高效能協作而設計的下一代程式碼編輯器。
+- [Move](https://github.com/Tzal3x/move-zed-extension) 是由 [Tzal3x](https://github.com/Tzal3x) 維護的 Move 語言伺服器擴充功能。
 
 ## Github Codespaces
 
-The Web-based IDE from Github can be run right in the browser and provides almost a full-featured
-VSCode experience.
+Github 的網頁版 IDE 可直接在瀏覽器中執行，並提供幾乎完整功能的 VSCode 體驗。
 
 - [Github Codespaces](https://github.com/features/codespaces)
-- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) is also
-  available in the extensions marketplace.
-- [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) is also
-  available in the extensions marketplace.
+- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 在擴充功能市集中也提供。
+- [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) 在擴充功能市集中也提供。
 
-## Other (CLI)
+## 其他 (CLI)
 
-Some of the tools listed above have CLI-supported versions.
+上面列出的一些工具具有 CLI 支援的版本。
 
-- [prettier-plugin-move](https://www.npmjs.com/package/@mysten/prettier-plugin-move) contains the
-  TypeScript package for the Prettier@v3 plugin as well as the binary to run it in a terminal
+- [prettier-plugin-move](https://www.npmjs.com/package/@mysten/prettier-plugin-move) 包含 Prettier@v3 外掛程式的 TypeScript 套件以及在終端機中執行它的二進位檔案。

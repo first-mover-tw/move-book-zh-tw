@@ -1,57 +1,26 @@
-# Pattern: Wrapper type
+# 模式：封裝類型 (Wrapper Type Pattern)
 
-Sometimes, there’s a need to create a new type that behaves similarly to an existing type but with
-certain modifications or restrictions. For example, you might want to create a
-[collection type](./collections) that behaves like a vector but doesn’t allow modifying the elements
-after they’ve been inserted. The wrapper type pattern is an effective way to achieve this.
+有時需要建立一個與現有類型行為相似但具有特定修改或限制的新類型。例如，您可能想建立一個行為類似於向量 (Vector) 但在插入後不允許修改元素的[集合類型](./collections)。封裝類型模式是實現這一目標的有效方法。
 
-## Definition
+## 定義
 
-The wrapper type pattern is a design pattern in which you create a new type that wraps an existing
-type. The wrapper type is distinct from the original but can be converted to and from it.
+封裝類型模式是一種設計模式，您建立一個新類型來「包裹」現有的類型。封裝類型與原始類型不同，但可以與之互相轉換。通常實作為只有一個欄位的位置結構體 (Positional struct)。
 
-Often, it is implemented as a positional struct with a single field.
+## 常見實踐
 
-```move file=packages/samples/sources/programmability/wrapper-type-pattern.move anchor=main
+當目標是擴充現有類型的行為時，通常會為被封裝的類型提供存取器 (Accessors)。這允許用戶在需要時直接訪問底層類型。例如，提供 `inner()`、`inner_mut()` 和 `into_inner()` 方法。
 
-```
+## 優點
 
-## Common Practices
+- **自定義函數**: 允許為現有類型定義自定義函數。
+- **強健的函數簽名**: 將函數簽名限制在新類型上，使程式碼更強健。
+- **提高可讀性**: 通過提供更具描述性的類型名稱來提高可讀性。
 
-In cases where the goal is to extend the behavior of an existing type, it is common to provide
-accessors for the wrapped type. This approach allows users to access the underlying type directly
-when needed. For example, in the following code, we provide the `inner()`, `inner_mut()`, and
-`into_inner()` methods for the Stack type.
+## 缺點
 
-```move file=packages/samples/sources/programmability/wrapper-type-pattern.move anchor=common
+- **冗贅**: 實作起來可能比較冗長，特別是如果您想暴露被封裝類型的所有方法。
+- **實作稀疏**: 如果只是簡單地轉發調用，實作可能會非常精簡。
 
-```
+## 下一步
 
-## Advantages
-
-The wrapper type pattern offers several benefits:
-
-- Custom Functions: It allows you to define custom functions for an existing type.
-- Robust Function Signatures: It constrains function signatures to the new type, thereby making the
-  code more robust.
-- Improved Readability: It often increases the readability of the code by providing a more
-  descriptive type name.
-
-## Disadvantages
-
-The wrapper type pattern is powerful in two scenarios—when you want to limit the behavior of an
-existing type while providing a custom interface to the same data structure, and when you want to
-extend the behavior of an existing type. However, it does have some limitations:
-
-- Verbosity: It can be verbose to implement, especially if you want to expose all the methods of the
-  wrapped type.
-- Sparse Implementation: The implementation can be quite minimal, as it often just forwards calls to
-  the wrapped type.
-
-## Next Steps
-
-The wrapper type pattern is very useful, particularly when used in conjunction with collection
-types, as demonstrated in the previous section. In the next section, we will cover
-[Dynamic Fields](./dynamic-fields) — an important primitive that enables
-[Dynamic Collections](./dynamic-collections), a way to store large collections of data in a more
-flexible, albeit more expensive, way.
+封裝類型模式非常有用，特別是與集合類型結合使用時。在下一節中，我們將介紹[動態欄位 (Dynamic Fields)](./dynamic-fields) —— 這是一個重要的原語，它支持了[動態集合 (Dynamic Collections)](./dynamic-collections)。

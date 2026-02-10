@@ -1,16 +1,30 @@
-# Object Model
+# 什麼是物件？ (What is an Object?)
 
-This chapter describes the Object Model of Sui. It focuses on the theory and concepts behind the
-Object Model, preparing you for a practical dive into Sui Storage operations and resource ownership.
-For convenience and easier lookup, we split the chapter into several sections, each covering a
-specific aspect of the Object Model.
+Sui 中的物件模型 (Object Model) 可以視為將數位資產表示為 **物件 (objects)** 的高階抽象。這些物件具有自己的類型和相關行為、唯一的識別碼，並支援原生存儲操作，例如 **轉移 (transfer)** 和 **共享 (share)**。物件模型旨在直觀且易於使用，使開發人員能夠輕鬆實現廣泛的使用案例。
 
-<div class="warning">
+Sui 中的物件具有以下屬性：
 
-In no way should this chapter be considered a comprehensive guide to the Object Model. It is only a
-high-level overview of the concepts and principles behind the Object Model.
+- **類型 (Type):** 每個物件都有一個類型，定義了物件的結構和行為。不同類型的物件不能混用或互換，確保物件根據其類型系統被正確使用。
 
-For a more detailed description, refer to the
-[Sui Documentation](https://docs.sui.io/concepts/object-model).
+- **唯一 ID (Unique ID):** 每個物件都有一個唯一的識別碼，使其區別於其他物件。此 ID 在物件建立時產生且不可變。它用於在系統內追蹤和識別物件。
 
-</div>
+<!-- Note: consider "shared across many entities" -->
+- **所有者 (Owner):** 每個物件都與一個所有者相關聯，所有者控制著對物件的變更。Sui 上的所有權可以是某個帳戶專有、全網共享或凍結（僅允許唯讀存取，不能修改或轉移）。我們將在後續部分詳細討論所有權。
+
+  請注意，所有權並不控制物件的機密性 — 始終可以從 Move 外部讀取鏈上物件的內容。您絕不應在物件內部存儲未加密的私密資訊。
+
+- **資料 (Data):** 物件封裝了它們的資料，簡化了管理和操作。資料結構和操作由物件的類型定義。
+
+- **版本 (Version):** 從帳戶到物件的過渡是透過物件版本控制來實現的。傳統上，區塊鏈使用 **nonce** 來防止重放攻擊。在 Sui 中，物件的版本充納了 nonce 的角色，為每個物件防止重放攻擊。
+
+- **摘要 (Digest):** 每個物件都有一個摘要，它是物件資料的雜湊值。摘要用於以密碼學方式驗證物件資料的完整性，並確保其未被篡改。摘要在物件建立時計算，並在物件資料更改時更新。
+
+## 總結 (Summary)
+
+- Sui 中的物件是代表數位資產的高階抽象。
+- 物件具有類型、唯一 ID、所有者、資料、版本和摘要。
+- 物件模型簡化了資產管理並實現了廣泛的使用案例。
+
+## 延伸閱讀
+
+- Sui 文檔中的 [物件模型 (Object Model)](https://docs.sui.io/concepts/object-model)。
