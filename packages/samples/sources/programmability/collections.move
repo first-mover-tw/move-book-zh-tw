@@ -7,13 +7,13 @@ module book::collections_vector;
 
 use std::string::String;
 
-/// The Book that can be sold by a `BookStore`
+/// 可由 `BookStore` 銷售的書籍
 public struct Book has key, store {
     id: UID,
     name: String
 }
 
-/// The BookStore that sells `Book`s
+/// 販售 `Book` 的書店
 public struct BookStore has key, store {
     id: UID,
     books: vector<Book>

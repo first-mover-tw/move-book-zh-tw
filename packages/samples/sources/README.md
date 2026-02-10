@@ -1,18 +1,18 @@
-# Managing Samples
+# 管理範例
 
-For every page in the book (under the `src/` directory), there is a `samples/` directory which contains the code samples for that page. The `samples/` directory is organized in the same way as the `src/` directory, with the same directory structure and file names.
+對於書中每一頁（位於 `src/` 目錄下），都有一個 `samples/` 目錄，其中包含該頁面的程式碼範例。`samples/` 目錄的組織方式與 `src/` 目錄相同，具有相同的目錄結構和檔案名稱。
 
-## Rules
+## 規則
 
-1. There's one Move file per page in the book.
-2. The file name is the same as the page name (or similar for keywords).
-3. The file can hold multiple modules.
-4. The modules are named after the sub-sections of the page.
-5. Anchors should be used to point to the specific code snippets in the Move file.
+1. 書中每一頁都有一個 Move 檔案。
+2. 檔案名稱與頁面名稱相同（或關鍵字類似）。
+3. 該檔案可以包含多個模組。
+4. 模組以頁面的子章節命名。
+5. 應使用錨點指向 Move 檔案中的特定程式碼片段。
 
-## Example
+## 範例
 
-For example, the `src/basic-syntax/address.md` page has a corresponding `samples/guides/address.move` file. The file contains the code samples for the page, organized in modules named after the sub-sections of the page.
+例如，`src/basic-syntax/address.md` 頁面有對應的 `samples/guides/address.move` 檔案。該檔案包含頁面的程式碼範例，並以頁面的子章節命名的模組組織。
 
 ```bash
 samples/

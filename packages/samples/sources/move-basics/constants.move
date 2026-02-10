@@ -5,12 +5,12 @@ module book::constants;
 
 const MAX: u64 = 100;
 
-// however you can pass constant outside using a function
+// 但是你可以使用函式將常數傳遞到外部
 public fun max(): u64 {
     MAX
 }
 
-// or using
+// 或者使用
 public fun is_max(num: u64): bool {
     num == MAX
 }

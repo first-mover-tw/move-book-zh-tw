@@ -5,11 +5,10 @@
 // ANCHOR: grouped
 module book::grouped_imports;
 
-// imports the `new` function and the `Character` struct from
-// the `module_one` module
+// 從 `module_one` 模組匯入 `new` 函式和 `Character` 結構
 use book::module_one::{new, Character};
 
-/// Calls the `new` function from the `module_one` module.
+/// 呼叫 `module_one` 模組中的 `new` 函式。
 public fun create_character(): Character {
     new()
 }

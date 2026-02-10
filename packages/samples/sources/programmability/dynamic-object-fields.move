@@ -7,18 +7,18 @@ module book::dynamic_object_field;
 
 use std::string::String;
 
-// there are two common aliases for the long module name: `dof` and
-// `ofield`. Both are commonly used and met in different projects.
+// 長模組名稱有兩個常見別名：`dof` 和
+// `ofield`。兩者都常用並在不同專案中遇到。
 use sui::dynamic_object_field as dof;
 use sui::dynamic_field as df;
 
-/// The `Character` that we will use for the example
+/// 用於範例的 `Character`
 public struct Character has key { id: UID }
 
-/// Metadata that doesn't have the `key` ability
+/// 沒有 `key` 能力的中繼資料
 public struct Metadata has store, drop { name: String }
 
-/// Accessory that has the `key` and `store` abilities.
+/// 具有 `key` 和 `store` 能力的配飾。
 public struct Accessory has key, store { id: UID }
 
 #[test]
@@ -26,24 +26,24 @@ fun equip_accessory() {
     let ctx = &mut tx_context::dummy();
     let mut character = Character { id: object::new(ctx) };
 
-    // Create an accessory and attach it to the character
+    // 建立配飾並將其附加至角色
     let hat = Accessory { id: object::new(ctx) };
 
-    // Add the hat to the character. Just like with `dynamic_fields`
+    // 將帽子加入角色。就像使用 `dynamic_fields` 一樣
     dof::add(&mut character.id, b"hat_key", hat);
 
-    // However for non-key structs we can only use `dynamic_field`
+    // 但是對於非鍵結構，我們只能使用 `dynamic_field`
     df::add(&mut character.id, b"metadata_key", Metadata {
         name: b"John".to_string()
     });
 
-    // Borrow the hat from the character
+    // 從角色借用帽子
     let hat_id = dof::id(&character.id, b"hat_key").extract(); // Option<ID>
     let hat_ref: &Accessory = dof::borrow(&character.id, b"hat_key");
     let hat_mut: &mut Accessory = dof::borrow_mut(&mut character.id, b"hat_key");
     let hat: Accessory = dof::remove(&mut character.id, b"hat_key");
 
-    // Clean up, Metadata is an orphan now.
+    // 清理，中繼資料現在成為孤兒。
     std::unit_test::destroy(hat);
     std::unit_test::destroy(character);
 }

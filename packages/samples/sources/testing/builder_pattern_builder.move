@@ -8,7 +8,7 @@ module book::user_builder;
 use book::user::{Self, User};
 use std::string::String;
 
-/// Builder for creating `User` instances in tests.
+/// 用於在測試中建立 `User` 實例的建造器。
 public struct UserBuilder has drop {
     name: Option<String>,
     age: Option<u8>,
@@ -17,7 +17,7 @@ public struct UserBuilder has drop {
     is_active: Option<bool>,
 }
 
-/// Creates an empty builder with all fields unset.
+/// 建立一個空的建造器，所有欄位都未設定。
 public fun new(): UserBuilder {
     UserBuilder {
         name: option::none(),
@@ -28,7 +28,7 @@ public fun new(): UserBuilder {
     }
 }
 
-// === Setter methods - each returns the builder for chaining ===
+// === Setter 方法 - 每個都回傳建造器以便鏈接 ===
 
 public fun name(mut self: UserBuilder, name: String): UserBuilder {
     self.name = option::some(name);
@@ -55,7 +55,7 @@ public fun is_active(mut self: UserBuilder, is_active: bool): UserBuilder {
     self
 }
 
-/// Builds the `User`, using defaults for any unset fields.
+/// 建立 `User`，對於任何未設定的欄位使用預設值。
 public fun build(self: UserBuilder): User {
     let UserBuilder { name, age, email, balance, is_active } = self;
     user::new(
@@ -71,12 +71,12 @@ public fun build(self: UserBuilder): User {
 // ANCHOR: test_without_builder
 #[test]
 fun test_balance_check_without_builder() {
-    // We only care about `balance`, but must specify everything
+    // 我們只關心 `balance`，但必須指定所有內容
     let user = user::new(
         b"Alice".to_string(),
         25,
         b"alice@example.com".to_string(),
-        1000, // <-- the only field we care about
+        1000, // <-- 唯一我們關心的欄位
         true,
     );
     assert!(user.balance() == 1000);
@@ -84,13 +84,13 @@ fun test_balance_check_without_builder() {
 
 #[test]
 fun test_inactive_user_without_builder() {
-    // We only care about `is_active`, but must specify everything
+    // 我們只關心 `is_active`，但必須指定所有內容
     let user = user::new(
         b"Bob".to_string(),
         30,
         b"bob@example.com".to_string(),
         500,
-        false, // <-- the only field we care about
+        false, // <-- 唯一我們關心的欄位
     );
     assert!(user.is_active() == false);
 }
@@ -99,7 +99,7 @@ fun test_inactive_user_without_builder() {
 // ANCHOR: test_with_builder
 #[test]
 fun test_balance_check() {
-    // Only specify what matters for this test
+    // 只指定對這個測試重要的內容
     let user = new()
         .balance(1000)
         .build();
@@ -109,7 +109,7 @@ fun test_balance_check() {
 
 #[test]
 fun test_inactive_user() {
-    // Only specify what matters for this test
+    // 只指定對這個測試重要的內容
     let user = new()
         .is_active(false)
         .build();
@@ -119,7 +119,7 @@ fun test_inactive_user() {
 
 #[test]
 fun test_underage_user() {
-    // Testing age-related logic
+    // 測試年齡相關的邏輯
     let user = new()
         .age(16)
         .build();

@@ -6,7 +6,7 @@ module book::user;
 
 use std::string::String;
 
-/// A user account with multiple properties.
+/// 具有多個屬性的使用者帳戶。
 public struct User has drop {
     name: String,
     age: u8,
@@ -15,7 +15,7 @@ public struct User has drop {
     is_active: bool,
 }
 
-/// Creates a new user - requires all fields.
+/// 建立新使用者 - 需要所有欄位。
 public fun new(
     name: String,
     age: u8,

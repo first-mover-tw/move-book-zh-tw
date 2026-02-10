@@ -7,10 +7,10 @@ module book::address;
 #[test] fun address_literal() {
 
 // ANCHOR: address_literal
-// address literal
+// 位址字面值
 let value: address = @0x1;
 
-// named address registered in Move.toml
+// 在 Move.toml 中註冊的命名位址
 let value = @std;
 let other = @sui;
 // ANCHOR_END: address_literal

@@ -6,10 +6,10 @@ module book::dynamic_collections {
 use std::string::String;
 
 // ANCHOR: bag_struct
-/// Imported from the `sui::bag` module.
+/// 從 `sui::bag` 模組匯入。
 use sui::bag::{Self, Bag};
 
-/// An example of a `Bag` as a struct field.
+/// 以結構欄位形式使用 `Bag` 的範例。
 public struct Carrier has key {
     id: UID,
     bag: Bag
@@ -25,33 +25,33 @@ let ctx = &mut tx_context::dummy();
 // ANCHOR: bag_usage
 let mut bag = bag::new(ctx);
 
-// bag has the `length` function to get the number of elements
+// bag 有 `length` 函式來取得元素個數
 assert_eq!(bag.length(), 0);
 
 bag.add(b"my_key", b"my_value".to_string());
 
-// length has changed to 1
+// 長度已變更為 1
 assert_eq!(bag.length(), 1);
 
-// in order: `borrow`, `borrow_mut` and `remove`
-// the value type must be specified
+// 依序：`borrow`、`borrow_mut` 及 `remove`
+// 必須指定值的類型
 let field_ref: &String = &bag[b"my_key"];
 let field_mut: &mut String = &mut bag[b"my_key"];
 let field: String = bag.remove(b"my_key");
 
-// length is back to 0 - we can unpack
+// 長度回到 0 - 我們可以解包
 bag.destroy_empty();
 // ANCHOR_END: bag_usage
 }
 
 // ANCHOR: table_struct
-/// Imported from the `sui::table` module.
+/// 從 `sui::table` 模組匯入。
 use sui::table::{Self, Table};
 
-/// Some record type with `store`
+/// 具有 `store` 的某個記錄類型
 public struct Record has store { /* ... */ }
 
-/// An example of a `Table` as a struct field.
+/// 以結構欄位形式使用 `Table` 的範例。
 public struct UserRegistry has key {
     id: UID,
     table: Table<address, Record>
@@ -62,40 +62,40 @@ public struct UserRegistry has key {
 let ctx = &mut tx_context::dummy();
 
 // ANCHOR: table_usage
-// Table requires explicit type parameters for the key and value
-// ...but does it only once in initialization.
+// Table 需要在初始化時明確指定鍵和值的類型參數。
+// ...但只需在初始化時指定一次。
 let mut table = table::new<address, String>(ctx);
 
-// table has the `length` function to get the number of elements
+// table 有 `length` 函式來取得元素個數
 assert_eq!(table.length(), 0);
 
 table.add(@0xa11ce, b"my_value".to_string());
 table.add(@0xb0b, b"another_value".to_string());
 
-// length has changed to 2
+// 長度已變更為 2
 assert_eq!(table.length(), 2);
 
-// in order: `borrow`, `borrow_mut` and `remove`
+// 依序：`borrow`、`borrow_mut` 及 `remove`
 let value_ref = &table[@0xa11ce];
 let value_mut = &mut table[@0xa11ce];
 
-// removing both values
+// 移除兩個值
 let _value = table.remove(@0xa11ce);
 let _another_value = table.remove(@0xb0b);
 
-// length is back to 0 - we can unpack
+// 長度回到 0 - 我們可以解包
 table.destroy_empty();
 // ANCHOR_END: table_usage
 }
 
 // ANCHOR: linked_table_struct
-/// Imported from the `sui::linked_table` module.
+/// 從 `sui::linked_table` 模組匯入。
 use sui::linked_table::{Self, LinkedTable};
 
-/// Some record type with `store`
+/// 具有 `store` 的某個權限類型
 public struct Permissions has store { /* ... */ }
 
-/// An example of a `LinkedTable` as a struct field.
+/// 以結構欄位形式使用 `LinkedTable` 的範例。
 public struct AdminRegistry has key {
     id: UID,
     linked_table: LinkedTable<address, Permissions>
@@ -106,30 +106,30 @@ public struct AdminRegistry has key {
 let ctx = &mut tx_context::dummy();
 
 // ANCHOR: linked_table_usage
-// LinkedTable requires explicit type parameters for the key and value
-// ...but does it only once in initialization.
+// LinkedTable 需要在初始化時明確指定鍵和值的類型參數。
+// ...但只需在初始化時指定一次。
 let mut linked_table = linked_table::new<address, String>(ctx);
 
-// linked_table has the `length` function to get the number of elements
+// linked_table 有 `length` 函式來取得元素個數
 assert_eq!(linked_table.length(), 0);
 
 linked_table.push_front(@0xa0a, b"first_value".to_string());
 linked_table.push_back(@0xb1b, b"second_value".to_string());
 linked_table.push_back(@0xc2c, b"third_value".to_string());
 
-// length has changed to 3
+// 長度已變更為 3
 assert_eq!(linked_table.length(), 3);
 
-// in order: `borrow`, `borrow_mut` and `remove`
+// 依序：`borrow`、`borrow_mut` 及 `remove`
 let first_value_ref = &linked_table[@0xa0a];
 let second_value_mut = &mut linked_table[@0xb1b];
 
-// remove by key, from the beginning or from the end
+// 按鍵移除，從開始或從末尾
 let _second_value = linked_table.remove(@0xb1b);
 let (_first_addr, _first_value) = linked_table.pop_front();
 let (_third_addr, _third_value) = linked_table.pop_back();
 
-// length is back to 0 - we can unpack
+// 長度回到 0 - 我們可以解包
 linked_table.destroy_empty();
 // ANCHOR_END: linked_table_usage
 }

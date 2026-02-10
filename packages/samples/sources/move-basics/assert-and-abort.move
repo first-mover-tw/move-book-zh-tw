@@ -9,7 +9,7 @@ fun test_abort() {
 // ANCHOR: abort
 let user_has_access = false;
 
-// abort with a predefined constant if `user_has_access` is false
+// 如果 `user_has_access` 為 false，則以預定義常數中止
 if (!user_has_access) {
     abort 1
 };
@@ -20,10 +20,10 @@ if (!user_has_access) {
 fun show_assert() {
 let user_has_access = true;
 // ANCHOR: assert
-// aborts if `user_has_access` is `false` with abort code 0
+// 如果 `user_has_access` 為 `false`，則以中止碼 0 中止
 assert!(user_has_access, 0);
 
-// expands to:
+// 展開為：
 if (!user_has_access) {
     abort 0
 };
@@ -31,14 +31,14 @@ if (!user_has_access) {
 }
 
 // ANCHOR: error_const
-/// Error code for when the user has no access.
+/// 使用者無存取權限時的錯誤碼。
 const ENoAccess: u64 = 0;
-/// Trying to access a field that does not exist.
+/// 嘗試存取不存在的欄位。
 const ENoField: u64 = 1;
 
-/// Updates a record.
+/// 更新一筆記錄。
 public fun update_record(/* ... , */ user_has_access: bool, field_exists: bool) {
-    // asserts are way more readable now
+    // 現在 assert 會更容易閱讀
     assert!(user_has_access, ENoAccess);
     assert!(field_exists, ENoField);
 
@@ -55,7 +55,7 @@ const ENotAuthorized: vector<u8> = b"The user is not authorized to perform this 
 #[error]
 const EValueTooLow: vector<u8> = b"The value is too low, it should be at least 10";
 
-/// Performs an action on behalf of the user.
+/// 代表使用者執行操作。
 public fun update_value(user: &mut User, value: u64) {
     assert!(user.is_authorized, ENotAuthorized);
     assert!(value >= 10, EValueTooLow);

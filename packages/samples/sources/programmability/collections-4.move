@@ -20,6 +20,6 @@ let mut set2 = vec_set::empty();
 set2.insert(2);
 set2.insert(1);
 
-assert_eq!(set1, set2); // aborts!
+assert_eq!(set1, set2); // 中止！
 // ANCHOR_END: vec_set_comparison
 }

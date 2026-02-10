@@ -5,13 +5,13 @@
 // ANCHOR: definition
 module book::one_time;
 
-/// The OTW for the `book::one_time` module.
-/// Only `drop`, no fields, no generics, all uppercase.
+/// `book::one_time` 模組的 OTW。
+/// 僅 `drop`，沒有欄位，沒有泛型，全部大寫。
 public struct ONE_TIME has drop {}
 
-/// Receive the instance of `ONE_TIME` as the first argument.
+/// 以 OTW 實例作為第一個引數接收。
 fun init(otw: ONE_TIME, ctx: &mut TxContext) {
-    // do something with the OTW
+    // 對 OTW 進行某些操作
 }
 // ANCHOR_END: definition
 
@@ -20,7 +20,7 @@ use sui::types;
 
 const ENotOneTimeWitness: u64 = 1;
 
-/// Takes an OTW as an argument, aborts if the type is not OTW.
+/// 以 OTW 作為引數，如果類型不是 OTW 則中止。
 public fun takes_witness<T: drop>(otw: T) {
     assert!(types::is_one_time_witness(&otw), ENotOneTimeWitness);
 }

@@ -1,7 +1,7 @@
 /*
 #[test_only]
 module todo_list::todo_list_tests {
-    // uncomment this line to import the module
+    // 取消註解這一行以匯入模組
     // use todo_list::todo_list;
 
     const ENotImplemented: u64 = 0;
@@ -20,7 +20,7 @@ module todo_list::todo_list_tests {
 
 #[test_only]
 module todo_list::todo_list_tests {
-    // uncomment this line to import the module
+    // 取消註解這一行以匯入模組
     // use todo_list::todo_list;
 
     // const ENotImplemented: u64 = 0;

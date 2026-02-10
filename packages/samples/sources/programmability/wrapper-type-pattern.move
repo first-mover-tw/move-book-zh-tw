@@ -4,41 +4,41 @@
 // ANCHOR: main
 module book::wrapper_type_pattern;
 
-/// Very simple stack implementation using the wrapper type pattern. Does not allow
-/// accessing the elements unless they are popped.
+/// 使用 wrapper 類型模式的非常簡單的棧實現。不允許
+/// 存取元素，除非它們被彈出。
 public struct Stack<T>(vector<T>) has copy, store, drop;
 
-/// Create a new instance by wrapping the value.
+/// 透過包裝值來建立新實例。
 public fun new<T>(value: vector<T>): Stack<T> {
     Stack(value)
 }
 
-/// Push an element to the stack.
+/// 將一個元素推入棧。
 public fun push_back<T>(v: &mut Stack<T>, el: T) {
     v.0.push_back(el);
 }
 
-/// Pop an element from the stack. Unlike `vector`, this function won't
-/// fail if the stack is empty and will return `None` instead.
+/// 從棧中彈出一個元素。不同於 `vector`，如果棧為空，
+/// 此函式不會失敗，並將回傳 `None`。
 public fun pop_back<T>(v: &mut Stack<T>): Option<T> {
     if (v.0.length() == 0) option::none()
     else option::some(v.0.pop_back())
 }
 
-/// Get the size of the stack.
+/// 取得棧的大小。
 public fun size<T>(v: &Stack<T>): u64 {
     v.0.length()
 }
 // ANCHOR_END: main
 
 // ANCHOR: common
-/// Allows reading the contents of the `Stack`.
+/// 允許讀取 `Stack` 的內容。
 public fun inner<T>(v: &Stack<T>): &vector<T> { &v.0 }
 
-/// Allows mutable access to the contents of the `Stack`.
+/// 允許可變存取 `Stack` 的內容。
 public fun inner_mut<T>(v: &mut Stack<T>): &mut vector<T> { &mut v.0 }
 
-/// Unpacks the `Stack` into the underlying `vector`.
+/// 將 `Stack` 解包成底層 `vector`。
 public fun into_inner<T>(v: Stack<T>): vector<T> {
     let Stack(inner) = v;
     inner

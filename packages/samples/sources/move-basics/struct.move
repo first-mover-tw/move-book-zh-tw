@@ -7,23 +7,23 @@ module book::struct_syntax;
 use std::string::String;
 
 // ANCHOR: def
-/// A struct representing an artist.
+/// 代表藝術家的結構體。
 public struct Artist {
-    /// The name of the artist.
+    /// 藝術家的名字。
     name: String,
 }
 
-/// A struct representing a music record.
+/// 代表音樂唱片的結構體。
 public struct Record {
-    /// The title of the record.
+    /// 唱片的標題。
     title: String,
-    /// The artist of the record. Uses the `Artist` type.
+    /// 唱片的藝術家。使用 `Artist` 型別。
     artist: Artist,
-    /// The year the record was released.
+    /// 唱片發行的年份。
     year: u16,
-    /// Whether the record is a debut album.
+    /// 唱片是否為首張專輯。
     is_debut: bool,
-    /// The edition of the record.
+    /// 唱片的版本。
     edition: Option<u16>,
 }
 // ANCHOR_END: def
@@ -40,22 +40,22 @@ let mut artist = Artist {
 // ANCHOR_END: pack
 
 // ANCHOR: access
-// Access the `name` field of the `Artist` struct.
+// 存取 `Artist` 結構體的 `name` 欄位。
 let artist_name = artist.name;
 
-// Access a field of the `Artist` struct.
+// 存取 `Artist` 結構體的欄位。
 assert_eq!(artist.name, b"The Beatles".to_string());
 
-// Mutate the `name` field of the `Artist` struct.
+// 修改 `Artist` 結構體的 `name` 欄位。
 artist.name = b"Led Zeppelin".to_string();
 
-// Check that the `name` field has been mutated.
+// 檢查 `name` 欄位已被修改。
 assert_eq!(artist.name, b"Led Zeppelin".to_string());
 // ANCHOR_END: access
 
 // ANCHOR: unpack
-// Unpack the `Artist` struct and create a new variable `name`
-// with the value of the `name` field.
+// 解開 `Artist` 結構體並建立新的 `name` 變數
+// 其值為 `name` 欄位的值。
 let Artist { name } = artist;
 // ANCHOR_END: unpack
 
@@ -64,7 +64,7 @@ let artist = Artist {
 };
 
 // ANCHOR: unpack_ignore
-// Unpack the `Artist` struct and ignore the `name` field.
+// 解開 `Artist` 結構體並忽略 `name` 欄位。
 let Artist { name: _ } = artist;
 // ANCHOR_END: unpack_ignore
 }

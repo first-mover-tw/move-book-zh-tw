@@ -3,19 +3,19 @@
 
 #[allow(unused_function, unused_const, unused_variable, unused_field)]
 // ANCHOR: main
-/// Module has documentation!
+/// 模組有文件說明！
 module book::comments_doc;
 
-/// This is a 0x0 address constant!
+/// 這是一個 0x0 位址常數！
 const AN_ADDRESS: address = @0x0;
 
-/// This is a struct!
+/// 這是一個結構體！
 public struct AStruct {
-    /// This is a field of a struct!
+    /// 這是結構體的一個欄位！
     a_field: u8,
 }
 
-/// This function does something!
-/// And it's documented!
+/// 此函式執行某些操作！
+/// 並且它有文件說明！
 fun do_something() {}
 // ANCHOR_END: main

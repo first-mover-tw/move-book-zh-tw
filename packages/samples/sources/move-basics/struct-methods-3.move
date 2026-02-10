@@ -9,20 +9,20 @@ module book::hero_to_bytes;
 // in the top of the module.
 // public use fun bcs::to_bytes as Hero.to_bytes;
 
-/// A struct representing a hero.
+/// 代表英雄的結構體。
 public struct Hero has drop {
     health: u8,
     mana: u8,
 }
 
-/// Create a new Hero.
+/// 建立新的英雄。
 public fun new(): Hero { Hero { health: 100, mana: 100 } }
 
 // #[test_only]
 // use std::unit_test::assert_eq;
 
 #[test]
-// Test the methods of the `Hero` struct.
+// 測試 `Hero` 結構體的方法。
 fun test_hero_serialize() {
     // let mut hero = new();
     // let serialized = hero.to_bytes();

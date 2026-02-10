@@ -7,14 +7,14 @@ module book::user_registry;
 
 use std::string::String;
 
-/// A struct representing a user record.
+/// 代表使用者記錄的結構。
 public struct User has drop {
     first_name: String,
     middle_name: Option<String>,
     last_name: String,
 }
 
-/// Create a new `User` struct with the given fields.
+/// 使用給定的欄位建立新的 `User` 結構。
 public fun register(
     first_name: String,
     middle_name: Option<String>,
@@ -30,24 +30,24 @@ use std::unit_test::{assert_eq, assert_ref_eq};
 #[test] fun use_option() {
 
 // ANCHOR: usage
-// `option::some` creates an `Option` value with a value.
+// `option::some` 建立包含值的 `Option` 值。
 let mut opt = option::some(b"Alice");
 
-// `option::none` creates an `Option` without a value. We need to specify the
-// type since it can't be inferred from context.
+// `option::none` 建立不含值的 `Option`。我們需要指定類型，
+// 因為無法從上下文推斷。
 let empty : Option<u64> = option::none();
 
-// `option.is_some()` returns true if option contains a value.
+// `option.is_some()` 如果 option 包含值，則回傳 true。
 assert_eq!(opt.is_some(), true);
 assert_eq!(empty.is_none(), true);
 
-// internal value can be `borrow`ed and `borrow_mut`ed.
+// 內部值可以被 `borrow` 和 `borrow_mut`。
 assert_ref_eq!(opt.borrow(), &b"Alice");
 
-// `option.extract` takes the value out of the option, leaving the option empty.
+// `option.extract` 從 option 中取出值，留下空的 option。
 let inner = opt.extract();
 
-// `option.is_none()` returns true if option is None.
+// `option.is_none()` 如果 option 是 None，則回傳 true。
 assert_eq!(opt.is_none(), true);
 // ANCHOR_END: usage
 }

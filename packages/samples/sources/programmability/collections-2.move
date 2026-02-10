@@ -8,7 +8,7 @@ module book::collections_vec_set;
 use sui::vec_set::{Self, VecSet};
 
 public struct App has drop {
-    /// `VecSet` used in the struct definition
+    /// 在結構定義中使用的 `VecSet`
     subscribers: VecSet<address>
 }
 
@@ -17,16 +17,16 @@ use std::unit_test::assert_eq;
 
 #[test]
 fun vec_set_playground() {
-    let set = vec_set::empty<u8>(); // create an empty set
-    let mut set = vec_set::singleton(1); // create a set with a single item
+    let set = vec_set::empty<u8>(); // 建立一個空集合
+    let mut set = vec_set::singleton(1); // 建立一個包含單一項目的集合
 
-    set.insert(2); // add an item to the set
+    set.insert(2); // 將項目新增至集合
     set.insert(3);
 
-    assert!(set.contains(&1)); // check if an item is in the set
-    assert!(set.length() == 3); // get the number of items in the set
-    assert!(!set.is_empty()); // check if the set is empty
+    assert!(set.contains(&1)); // 檢查項目是否在集合中
+    assert!(set.length() == 3); // 取得集合中的項目數
+    assert!(!set.is_empty()); // 檢查集合是否為空
 
-    set.remove(&2); // remove an item from the set
+    set.remove(&2); // 從集合中移除項目
 }
 // ANCHOR_END: vec_set

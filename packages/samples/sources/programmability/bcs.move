@@ -24,19 +24,19 @@ use std::unit_test::assert_eq;
 // ANCHOR: encode
 use sui::bcs;
 
-// 0x01 - a single byte with value 1 (or 0 for false)
+// 0x01 - 單個位元組，值為 1（或 false 為 0）
 let bool_bytes = bcs::to_bytes(&true);
 assert_eq!(bool_bytes, x"01");
 
-// 0x2a - just a single byte
+// 0x2a - 只是單個位元組
 let u8_bytes = bcs::to_bytes(&42u8);
 assert_eq!(u8_bytes, x"2A");
 
-// 0x2a00000000000000 - 8 bytes
+// 0x2a00000000000000 - 8 個位元組
 let u64_bytes = bcs::to_bytes(&42u64);
 assert_eq!(u64_bytes, x"2A00000000000000");
 
-// address is a fixed sequence of 32 bytes
+// 位址是 32 個位元組的固定序列
 // 0x0000000000000000000000000000000000000000000000000000000000000002
 let addr = bcs::to_bytes(&@sui);
 assert_eq!(addr, x"0000000000000000000000000000000000000000000000000000000000000002");
@@ -56,7 +56,7 @@ custom_bytes.append(bcs::to_bytes(&42u8));
 custom_bytes.append(bcs::to_bytes(&b"hello, world!".to_string()));
 custom_bytes.append(bcs::to_bytes(&true));
 
-// struct is just a sequence of fields, so the bytes should be the same!
+// 結構只是欄位的序列，所以位元組應該相同！
 assert_eq!(struct_bytes, custom_bytes);
 // ANCHOR_END: encode_struct
 }
@@ -65,10 +65,10 @@ assert_eq!(struct_bytes, custom_bytes);
 // ANCHOR: decode
 use sui::bcs;
 
-// BCS instance should always be declared as mutable
+// BCS 實例應該總是宣告為可變
 let mut bcs = bcs::new(x"010000000000000000");
 
-// Same bytes can be read differently, for example: Option<u64>
+// 相同的位元組可以以不同方式讀取，例如：Option<u64>
 let value: Option<u64> = bcs.peel_option_u64();
 
 assert_eq!(value.is_some(), true);
@@ -82,8 +82,8 @@ assert_eq!(remainder.length(), 0);
 // ANCHOR: chain_decode
 let mut bcs = bcs::new(x"0101010F0000000000F00000000000");
 
-// mind the order!!!
-// handy way to peel multiple values
+// 注意順序！！！
+// 提取多個值的便利方式
 let (bool_value, u8_value, u64_value) = (
     bcs.peel_bool(),
     bcs.peel_u8(),
@@ -94,20 +94,20 @@ let (bool_value, u8_value, u64_value) = (
 // ANCHOR: decode_vector
 let mut bcs = bcs::new(x"0101010F0000000000F00000000000");
 
-// bcs.peel_vec_length() peels the length of the vector :)
+// bcs.peel_vec_length() 提取向量的長度 :)
 let mut len = bcs.peel_vec_length();
 let mut vec = vector[];
 
-// then iterate depending on the data type
+// 然後根據資料型別迭代
 while (len > 0) {
-    vec.push_back(bcs.peel_u64()); // or any other type
+    vec.push_back(bcs.peel_u64()); // 或任何其他型別
     len = len - 1;
 };
 
 assert_eq!(vec.length(), 1);
 
-// The above `while` can be simplified and made more readable using a `macro`.
-// bcs.peel_vec!(|bcs| bcs.peel_u64()) is equivalent to the above `while` loop.
+// 上面的 `while` 可以使用 `巨集` 簡化並使其更易讀。
+// bcs.peel_vec!(|bcs| bcs.peel_u64()) 等效於上面的 `while` 迴圈。
 // ANCHOR_END: decode_vector
 
 // ANCHOR: decode_option
@@ -127,7 +127,7 @@ assert_eq!(value, 1);
 // ANCHOR: decode_struct
 let mut bcs = bcs::new(x"0101010F0000000000F00000000000");
 
-// Note: order matters!
+// 注意：順序很重要！
 let user = User {
     age: bcs.peel_u8(),
     is_active: bcs.peel_bool(),

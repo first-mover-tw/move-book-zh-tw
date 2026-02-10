@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ANCHOR: other
-// In the same package as the `shop` module
+// 在與 `shop` 模組相同的套件中
 module book::bank;
 
 public struct Bank has key {

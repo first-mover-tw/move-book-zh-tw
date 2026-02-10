@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ANCHOR: module
-// Module label.
+// 模組標籤。
 module book::my_module;
 
-// module body
+// 模組主體
 // ANCHOR_END: module

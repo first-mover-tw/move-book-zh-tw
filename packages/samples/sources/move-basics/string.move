@@ -5,17 +5,17 @@
 // ANCHOR: custom
 module book::custom_string;
 
-/// Anyone can implement a custom string-like type by wrapping a vector.
+/// 任何人都可以藉由包裝向量來實作自訂字串型別。
 public struct MyString {
     bytes: vector<u8>,
 }
 
-/// Implement a `from_bytes` function to convert a vector of bytes to a string.
+/// 實作 `from_bytes` 函式以將位元組向量轉換為字串。
 public fun from_bytes(bytes: vector<u8>): MyString {
     MyString { bytes }
 }
 
-/// Implement a `bytes` function to convert a string to a vector of bytes.
+/// 實作 `bytes` 函式以將字串轉換為位元組向量。
 public fun bytes(self: &MyString): &vector<u8> {
     &self.bytes
 }
@@ -27,14 +27,14 @@ public fun bytes(self: &MyString): &vector<u8> {
 #[test]
 fun using_strings() {
 // ANCHOR: ascii
-// the module is `std::ascii` and the type is `String`
+// 模組是 `std::ascii` 而型別是 `String`
 use std::ascii::{Self, String};
 
-// strings can be created using the `string` function
-// type declaration is not necessary, we put it here for clarity
+// 字串可以使用 `string` 函式建立
+// 型別宣告非必要，我們在這裡加上是為了清楚起見
 let hey: String = ascii::string(b"Hey");
 
-// there is a handy alias `.to_ascii_string()` on the `vector<u8>` type
+// 在 `vector<u8>` 型別上有個便利的別名 `.to_ascii_string()`
 let hey = b"Hey".to_ascii_string();
 
 // ANCHOR_END: ascii
@@ -42,28 +42,28 @@ let hey = b"Hey".to_ascii_string();
 
 #[test] fun using_strings_utf8() {
 // ANCHOR: utf8
-// the module is `std::string` and the type is `String`
+// 模組是 `std::string` 而型別是 `String`
 use std::string::{Self, String};
 
-// strings are normally created using the `utf8` function
-// type declaration is not necessary, we put it here for clarity
+// 字串通常使用 `utf8` 函式建立
+// 型別宣告非必要，我們在這裡加上是為了清楚起見
 let hello: String = string::utf8(b"Hello");
 
-// The `.to_string()` alias on the `vector<u8>` is more convenient
+// `vector<u8>` 上的 `.to_string()` 別名更方便
 let hello = b"Hello".to_string();
 // ANCHOR_END: utf8
 }
 
 #[test] fun safe_strings() {
 // ANCHOR: safe_utf8
-// this is a valid UTF-8 string
+// 這是個有效的 UTF-8 字串
 let hello = b"Hello".try_to_string();
 
-assert!(hello.is_some()); // abort if the value is not valid UTF-8
+assert!(hello.is_some()); // 如果值不是有效的 UTF-8 則中止
 
-// this is not a valid UTF-8 string
+// 這不是個有效的 UTF-8 字串
 let invalid = b"\xFF".try_to_string();
 
-assert!(invalid.is_none()); // abort if the value is valid UTF-8
+assert!(invalid.is_none()); // 如果值是有效的 UTF-8 則中止
 // ANCHOR_END: safe_utf8
 }

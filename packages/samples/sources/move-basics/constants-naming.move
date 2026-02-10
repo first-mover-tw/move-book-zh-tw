@@ -5,9 +5,9 @@
 module book::naming;
 
 // ANCHOR: naming
-/// Price of the item used at the shop.
+/// 商店中使用的商品價格。
 const ITEM_PRICE: u64 = 100;
 
-/// Error constant.
+/// 錯誤常數。
 const EItemNotFound: u64 = 1;
 // ANCHOR_END: naming

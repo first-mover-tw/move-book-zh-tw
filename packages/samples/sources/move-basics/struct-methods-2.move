@@ -4,30 +4,28 @@
 // ANCHOR: hero_and_villain
 module book::hero_and_villain;
 
-/// A struct representing a hero.
+/// 代表英雄的結構體。
 public struct Hero has drop {
     health: u8,
 }
 
-/// A struct representing a villain.
+/// 代表反派的結構體。
 public struct Villain has drop {
     health: u8,
 }
 
-/// Create a new Hero.
+/// 建立新的英雄。
 public fun new_hero(): Hero { Hero { health: 100 } }
 
-/// Create a new Villain.
+/// 建立新的反派。
 public fun new_villain(): Villain { Villain { health: 200 } }
 
-// Alias for the `hero_health` method. It will be imported automatically when
-// the module is imported.
+// `hero_health` 方法的別名。在模組被導入時將自動被導入。
 public use fun hero_health as Hero.health;
 
 public fun hero_health(hero: &Hero): u8 { hero.health }
 
-// Alias for the `villain_health` method. Will be imported automatically
-// when the module is imported.
+// `villain_health` 方法的別名。在模組被導入時將自動被導入。
 public use fun villain_health as Villain.health;
 
 public fun villain_health(villain: &Villain): u8 { villain.health }
@@ -36,7 +34,7 @@ public fun villain_health(villain: &Villain): u8 { villain.health }
 use std::unit_test::assert_eq;
 
 #[test]
-// Test the methods of the `Hero` and `Villain` structs.
+// 測試 `Hero` 和 `Villain` 結構體的方法。
 fun test_associated_methods() {
     let hero = new_hero();
     assert_eq!(hero.health(), 100);

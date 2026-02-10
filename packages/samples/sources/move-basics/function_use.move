@@ -8,7 +8,7 @@ module book::use_math;
 use book::math;
 
 fun call_add() {
-    // function is called via the path
+    // 函式透過路徑被呼叫
     let sum = math::add(1, 2);
 }
 // ANCHOR_END: use_math

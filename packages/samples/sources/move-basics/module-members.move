@@ -5,18 +5,18 @@
 // ANCHOR: members
 module book::my_module_with_members;
 
-// import
+// 匯入
 use book::my_module;
 
-// a constant
+// 一個常數
 const CONST: u8 = 0;
 
-// a struct
+// 一個結構
 public struct Struct {}
 
-// method alias
+// 方法別名
 public use fun function as Struct.struct_fun;
 
-// function
+// 函式
 fun function(_: &Struct) { /* function body */ }
 // ANCHOR_END: members

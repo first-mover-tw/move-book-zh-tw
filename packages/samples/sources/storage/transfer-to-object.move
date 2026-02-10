@@ -5,22 +5,22 @@
 module book::receiving;
 
 use sui::derived_object;
-use sui::transfer::Receiving; // not imported by default!
+use sui::transfer::Receiving; // 預設未匯入！
 
-/// Base derivation object to create derived `PostBox`-es.
+/// 用於建立衍生 `PostBox` 的基礎衍生物件。
 public struct PostOffice has key { id: UID }
 
-/// Object with derived UID which receives objects sent to an address.
+/// 具有衍生 UID 的物件，接收發送到某個位址的物件。
 public struct PostBox has key { id: UID, owner: address }
 
-/// Transfer functionality. Anyone can come to the PostOffice and send to a specific
-/// recipient's PostBox. Items can be received from the `PostBox` by the recipient.
+/// 轉移功能。任何人都可以來 PostOffice 並發送到特定
+/// 收件者的 PostBox。收件者可以從 `PostBox` 接收項目。
 public fun send<T: key + store>(office: &PostOffice, parcel: T, recipient: address) {
     let postbox = derived_object::derive_address(office.id.to_inner(), recipient);
     transfer::public_transfer(parcel, postbox)
 }
 
-/// Receive the parcel. Requires the sender to be the owner of the `PostBox`!
+/// 接收包裹。需要發送者是 `PostBox` 的擁有者！
 public fun receive<T: key + store>(
     box: &mut PostBox,
     to_receive: Receiving<T>,
@@ -28,14 +28,14 @@ public fun receive<T: key + store>(
 ): T {
     assert!(box.owner == ctx.sender());
 
-    // Receive `to_receive` from `PostBox`.
+    // 從 `PostBox` 接收 `to_receive`。
     let parcel = transfer::public_receive(&mut box.id, to_receive);
     parcel
 }
 
-/// If user hasn't claimed their `PostBox` yet, create it.
-/// Note: this is not a requirement for transferring assets!
-/// Parcels can be sent even to unregistered post boxes, see `send` implementation.
+/// 如果使用者還沒有宣告他們的 `PostBox`，就建立它。
+/// 注意：這不是轉移資產的要求！
+/// 甚至可以將包裹發送到未註冊的郵箱，詳見 `send` 實現。
 public fun register_address(office: &mut PostOffice, ctx: &mut TxContext) {
     transfer::share_object(PostBox {
         id: derived_object::claim(&mut office.id, ctx.sender()),
@@ -43,7 +43,7 @@ public fun register_address(office: &mut PostOffice, ctx: &mut TxContext) {
     })
 }
 
-// Create a PostOffice on module publish.
+// 在模組發佈時建立一個 PostOffice。
 fun init(ctx: &mut TxContext) {
     transfer::share_object(PostOffice { id: object::new(ctx) });
 }

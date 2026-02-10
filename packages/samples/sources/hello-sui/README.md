@@ -1,3 +1,3 @@
 # Hello Sui
 
-This tutorial is packed as a separate package which you can find in the root of this repository.
+本教學課程以獨立套件的形式提供，您可以在此儲存庫的根目錄中找到它。

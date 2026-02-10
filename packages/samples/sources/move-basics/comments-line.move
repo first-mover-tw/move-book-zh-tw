@@ -5,11 +5,11 @@
 // ANCHOR: main
 module book::comments_line;
 
-// let's add a note to everything!
+// 讓我們為所有東西加上說明！
 fun some_function_with_numbers() {
     let a = 10;
-    // let b = 10 this line is commented and won't be executed
-    let b = 5; // here comment is placed after code
-    a + b; // result is 15, not 10!
+    // let b = 10 這一行已註釋，不會執行
+    let b = 5; // 這裡註釋是放在程式碼之後
+    a + b; // 結果是 15，不是 10！
 }
 // ANCHOR_END: main

@@ -7,13 +7,13 @@ module book::vector_syntax {
 use std::unit_test::assert_eq;
 #[test] fun test_vector() {
 // ANCHOR: literal
-// An empty vector of bool elements.
+// 一個空的布林元素向量。
 let empty: vector<bool> = vector[];
 
-// A vector of u8 elements.
+// 一個 u8 元素的向量。
 let v: vector<u8> = vector[10, 20, 30];
 
-// A vector of vector<u8> elements.
+// 一個 vector<u8> 元素的向量。
 let vv: vector<vector<u8>> = vector[
     vector[10, 20],
     vector[30, 40]
@@ -40,16 +40,16 @@ assert_eq!(last_value, 40);
 module book::non_droppable_vec {
 
 // ANCHOR: no_drop
-/// A struct without `drop` ability.
+/// 沒有 `drop` 能力的結構體。
 public struct NoDrop {}
 
 #[test]
 fun test_destroy_empty() {
-    // Initialize a vector of `NoDrop` elements.
+    // 初始化一個 `NoDrop` 元素的向量。
     let v = vector<NoDrop>[];
 
-    // While we know that `v` is empty, we still need to call
-    // the explicit `destroy_empty` function to discard the vector.
+    // 雖然我們知道 `v` 是空的，我們仍然需要呼叫
+    // 明確的 `destroy_empty` 函式來丟棄向量。
     v.destroy_empty();
 }
 // ANCHOR_END: no_drop

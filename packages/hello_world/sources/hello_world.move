@@ -1,12 +1,12 @@
 // ANCHOR: source
-/// The module `hello_world` under named address `hello_world`.
-/// The named address is set in the `Move.toml`.
+/// 模組 `hello_world` 位於具名地址 `hello_world` 下。
+/// 具名地址在 `Move.toml` 中設定。
 module hello_world::hello_world;
 
-// Imports the `String` type from the Standard Library
+// 從標準程式庫匯入 `String` 類型
 use std::string::String;
 
-/// Returns the "Hello World!" as a `String`.
+/// 回傳 "Hello World!" 作為 `String`。
 public fun hello_world(): String {
     b"Hello, World!".to_string()
 }

@@ -14,7 +14,7 @@ use std::unit_test::assert_eq;
 fun test_if() {
     let x = 5;
 
-    // `x > 0` is a boolean expression.
+    // `x > 0` 是一個布林運算式。
     if (x > 0) {
         std::debug::print(&b"X is bigger than 0".to_string())
     };
@@ -34,16 +34,16 @@ fun test_if_else() {
 }
 // ANCHOR_END: if_else
 // ANCHOR: while_loop
-// This function iterates over the `x` variable until it reaches 10, the
-// return value is the number of iterations it took to reach 10.
+// 此函式會迭代 `x` 變數直到達到 10，
+// 回傳值是達到 10 所需的迭代次數。
 //
-// If `x` is 0, then the function will return 10.
-// If `x` is 5, then the function will return 5.
+// 如果 `x` 是 0，則函式會回傳 10。
+// 如果 `x` 是 5，則函式會回傳 5。
 fun while_loop(mut x: u8): u8 {
     let mut y = 0;
 
-    // This will loop until `x` is 10.
-    // And will never run if `x` is 10 or more.
+    // 此迴圈會執行直到 `x` 是 10。
+    // 如果 `x` 是 10 或更大則永遠不會執行。
     while (x < 10) {
         y = y + 1;
         x = x + 1;
@@ -54,9 +54,9 @@ fun while_loop(mut x: u8): u8 {
 
 #[test]
 fun test_while() {
-    assert_eq!(while_loop(0), 10); // 10 times
-    assert_eq!(while_loop(5), 5); // 5 times
-    assert_eq!(while_loop(10), 0); // loop never executed
+    assert_eq!(while_loop(0), 10); // 10 次
+    assert_eq!(while_loop(5), 5); // 5 次
+    assert_eq!(while_loop(10), 0); // 迴圈從未執行
 }
 // ANCHOR_END: while_loop
 // ANCHOR: infinite_while
@@ -64,12 +64,12 @@ fun test_while() {
 fun test_infinite_while() {
     let mut x = 0;
 
-    // This will loop forever.
+    // 此迴圈會無限迴圈。
     while (true) {
         x = x + 1;
     };
 
-    // This line will never be executed.
+    // 此行永遠不會被執行。
     assert_eq!(x, 5);
 }
 // ANCHOR_END: infinite_while
@@ -79,12 +79,12 @@ fun test_infinite_while() {
 fun test_infinite_loop() {
     let mut x = 0;
 
-    // This will loop forever.
+    // 此迴圈會無限迴圈。
     loop {
         x = x + 1;
     };
 
-    // This line will never be executed.
+    // 此行永遠不會被執行。
     assert_eq!(x, 5);
 }
 // ANCHOR_END: infinite_loop
@@ -93,13 +93,13 @@ fun test_infinite_loop() {
 fun test_break_loop() {
     let mut x = 0;
 
-    // This will loop until `x` is 5.
+    // 此迴圈會執行直到 `x` 是 5。
     loop {
         x = x + 1;
 
-        // If `x` is 5, then exit the loop.
+        // 如果 `x` 是 5，則退出迴圈。
         if (x == 5) {
-            break // Exit the loop.
+            break // 退出迴圈。
         }
     };
 
@@ -111,20 +111,20 @@ fun test_break_loop() {
 fun test_continue_loop() {
     let mut x = 0;
 
-    // This will loop until `x` is 10.
+    // 此迴圈會執行直到 `x` 是 10。
     loop {
         x = x + 1;
 
-        // If `x` is odd, then skip the rest of the iteration.
+        // 如果 `x` 是奇數，則跳過迭代的其餘部分。
         if (x % 2 == 1) {
-            continue // Skip the rest of the iteration.
+            continue // 跳過迭代的其餘部分。
         };
 
         std::debug::print(&x);
 
-        // If `x` is 10, then exit the loop.
+        // 如果 `x` 是 10，則退出迴圈。
         if (x == 10) {
-            break // Exit the loop.
+            break // 退出迴圈。
         }
     };
 
@@ -132,8 +132,8 @@ fun test_continue_loop() {
 }
 // ANCHOR_END: continue_loop
 // ANCHOR: return_statement
-/// This function returns `true` if `x` is greater than 0 and not 5,
-/// otherwise it returns `false`.
+/// 如果 `x` 大於 0 且不是 5 則此函式回傳 `true`，
+/// 否則回傳 `false`。
 fun is_positive(x: u8): bool {
     if (x == 5) {
         return false
