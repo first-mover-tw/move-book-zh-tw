@@ -18,7 +18,7 @@
 - 每個共識提交都會更新其中的值。
 
 ---
-- 開發者調用 `new_generator` 並傳入全局隨機物件。
+- 開發者呼叫 `new_generator` 並傳入全局隨機物件。
 - ...這會從具有新鮮物件 ID 的全局種子建立 RandomGenerator。
 - RandomGenerator 使用未知且不可預測的隨機字節 + 交易中的新鮮物件 UID。
 - 然後他們使用 `generate_bytes` 或 `generate_u64` 或任何其他整數，或者範圍內的值。
@@ -36,6 +36,6 @@
 - 一種解決方案是先計算隨機性，然後執行單獨的昂貴操作。
 - 他們可以為失敗場景設置 Gas 限制，這樣失敗就不會發生。
 
-> `public entry` -> `entry` 調用
+> `public entry` -> `entry` 呼叫
 > Random 物件存在 PTB 攻擊風險。
  -->

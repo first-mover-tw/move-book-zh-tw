@@ -1,6 +1,6 @@
 # 地址 (Address)
 
-地址是區塊鏈上位置的唯一標識符。它用於標識[套件](./packages)、[帳戶](./what-is-an-account)和[物件](./../object/object-model)。地址具有 32 位元組的固定大小，通常表示為以 `0x` 為前綴的十六進制字串。地址不區分大小寫。
+地址是區塊鏈上位置的唯一識別字。它用於標識[套件](./packages)、[帳戶](./what-is-an-account)和[物件](./../object/object-model)。地址具有 32 位元組的固定大小，通常表示為以 `0x` 為前綴的十六進制字串。地址不區分大小寫。
 
 ```move
 0xe51ff5cd221a81c3d6e22b9e670ddf99004d71de4f769b0312b68c7c4872e2f1

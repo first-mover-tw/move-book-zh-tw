@@ -74,7 +74,7 @@ fun find_position(values: &vector<u64>, target_value: u64): Option<u64> {
 
 ### 在 `while` 循環中使用 `continue`
 
-與 `break` 類似，Move 的 `while` 循環可以調用 `continue` 來跳過部分循環主體。這允許我們在未滿足條件時跳過部分計算，如下例所示：
+與 `break` 類似，Move 的 `while` 循環可以呼叫 `continue` 來跳過部分循環主體。這允許我們在未滿足條件時跳過部分計算，如下例所示：
 
 ```move
 fun sum_even(values: &vector<u64>): u64 {

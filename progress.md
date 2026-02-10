@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-02-11: 全域術語一致性修正
+
+### 完成
+- 掃描所有翻譯檔，修正非台灣慣用語：
+  - 代碼 → 程式碼（11 檔）
+  - 調用 → 呼叫（8 檔）
+  - 對象 → 物件/來源（依語境，2 檔）
+  - 宏 → 巨集（1 檔）
+  - 標識符 → 識別字（1 檔）
+  - 運行時 → 執行時期（1 檔）
+- 新增 `book/testing/` 目錄翻譯（12 檔）
+- 補完 `reference/` 翻譯內容（9 檔，previously truncated）
+- 補完 `book/programmability/` 翻譯（5 檔）
+- 補完 `book/appendix/` 翻譯（3 檔）
+- 補完 `book/before-we-begin/move-2024.md`
+
 ## 2026-02-10: 翻譯系統重構
 
 ### 完成
@@ -35,3 +51,12 @@
 - [ ] 本地分批全量翻譯 119 個檔（`--all --batch-size 10`）
 - [ ] commit 推到 zh-tw-main
 - [ ] workflow_dispatch 手動觸發測試
+
+## 2026-02-10: Reference 目錄內容審計
+
+### 完成
+- 比對 `english-main` 與 `zh-tw-main` 的 `reference/` 目錄
+- 發現大規模內容缺失 (Truncation)：
+  - 35 個文件中，28 個文件內容不到原文 5%
+  - 修正術語一致性：將 "宏" (Macro) 統一改為 "巨集"
+- 產生審計報告 `translation_audit_report.md` 與 `walkthrough.md`

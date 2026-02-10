@@ -53,7 +53,7 @@ $ sui move test
 
 > 注意：此屬性只能添加到 `#[test]` 函式。
 
-該屬性可以接收一個參數，指定測試失敗時預期傳回的中斷代碼 (abort code)。如果測試傳回的中斷代碼與參數中指定的不符，測試將失敗。同樣地，如果執行沒有導致中斷，測試也會失敗。
+該屬性可以接收一個參數，指定測試失敗時預期傳回的中斷程式碼 (abort code)。如果測試傳回的中斷程式碼與參數中指定的不符，測試將失敗。同樣地，如果執行沒有導致中斷，測試也會失敗。
 
 ```move
 module book::testing_failure;
@@ -63,13 +63,13 @@ const EInvalidArgument: u64 = 1;
 #[test]
 #[expected_failure(abort_code = 0)]
 fun test_fail() {
-    abort 0 // 以代碼 0 中斷
+    abort 0 // 以程式碼 0 中斷
 }
 
 // 屬性可以組合在一起
 #[test, expected_failure(abort_code = EInvalidArgument)]
 fun test_fail_1() {
-    abort EInvalidArgument // 以代碼 EInvalidArgument 中斷
+    abort EInvalidArgument // 以程式碼 EInvalidArgument 中斷
 }
 ```
 

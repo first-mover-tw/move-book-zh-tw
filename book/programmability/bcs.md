@@ -68,7 +68,7 @@ BCS 在 Move 中是以封裝器 (wrapper) 的形式實作的。解碼器按值�
 
 ```
 
-此功能由函式庫提供，表現為宏 `peel_vec!`。它根據向量長度重複呼叫內部表達式，並將結果匯總到單個向量中。
+此功能由函式庫提供，表現為巨集 `peel_vec!`。它根據向量長度重複呼叫內部表達式，並將結果匯總到單個向量中。
 
 ```move
 let u64_vec = bcs.peel_vec!(|bcs| bcs.peel_u64());
@@ -89,7 +89,7 @@ Move 中的 [Option](./../move-basics/option) 被表示為具有 0 或 1 個元�
 
 ```
 
-與 [向量](#decoding-vectors) 類似，這裡也有一個封裝宏 `peel_option!`，它會檢查變體索引，並在底層數值為 _some_ 時評估表達式。
+與 [向量](#decoding-vectors) 類似，這裡也有一個封裝巨集 `peel_option!`，它會檢查變體索引，並在底層數值為 _some_ 時評估表達式。
 
 ```move
 let u8_opt = bcs.peel_option!(|bcs| bcs.peel_u8());

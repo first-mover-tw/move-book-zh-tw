@@ -24,7 +24,7 @@
 
 ## 錯誤常數
 
-為了使錯誤代碼更具描述性，定義 [錯誤常數](./constants) 是一個很好的做法。錯誤常數被定義為 `const` 宣告，通常以 `E` 開頭，後接大駝峰式 (camel case) 名稱。錯誤常數與其他常數類似，沒有任何特殊處理。但是，它們通常用於提高程式碼的可讀性，並使中斷情境更容易理解。
+為了使錯誤程式碼更具描述性，定義 [錯誤常數](./constants) 是一個很好的做法。錯誤常數被定義為 `const` 宣告，通常以 `E` 開頭，後接大駝峰式 (camel case) 名稱。錯誤常數與其他常數類似，沒有任何特殊處理。但是，它們通常用於提高程式碼的可讀性，並使中斷情境更容易理解。
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=error_const
 

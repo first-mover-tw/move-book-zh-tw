@@ -82,7 +82,7 @@
 
 ```
 
-Move 編譯器將強制執行類型參數 `T` 具有指定的能力。如果類型參數不具備指定的能力，則代碼將無法編譯。
+Move 編譯器將強制執行類型參數 `T` 具有指定的能力。如果類型參數不具備指定的能力，則程式碼將無法編譯。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_constraints
 

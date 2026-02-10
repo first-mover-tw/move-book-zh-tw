@@ -5,7 +5,7 @@ description: "Move 模組參考手冊：宣告模組、定義類型與函數、�
 
 # 模組 (Modules)
 
-**模組 (Modules)** 是核心程式單元，定義了類型以及操作這些類型的函式。結構體 (Struct) 類型定義了 Move [存儲 (storage)](./abilities#key) 的結構 (schema)，而模組函式定義了與這些類型的數值互動的規則。雖然模組本身也存儲在存儲中，但它們無法從 Move 程式內部存取。在區塊鏈環境中，模組存儲在鏈上，這個過程通常稱為「發布 (publishing)」。發布後，可以根據該特定 Move 實例的規則調用 [`entry`](./functions#entry-modifier) 和 [`public`](./functions#visibility) 函式。
+**模組 (Modules)** 是核心程式單元，定義了類型以及操作這些類型的函式。結構體 (Struct) 類型定義了 Move [存儲 (storage)](./abilities#key) 的結構 (schema)，而模組函式定義了與這些類型的數值互動的規則。雖然模組本身也存儲在存儲中，但它們無法從 Move 程式內部存取。在區塊鏈環境中，模組存儲在鏈上，這個過程通常稱為「發布 (publishing)」。發布後，可以根據該特定 Move 實例的規則呼叫 [`entry`](./functions#entry-modifier) 和 [`public`](./functions#visibility) 函式。
 
 ## 語法
 

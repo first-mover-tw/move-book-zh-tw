@@ -1,6 +1,6 @@
 ---
 title: '終止與斷言 (Abort and Assert) | 參考手冊'
-description: "Move 終止與斷言參考手冊：使用錯誤代碼停止執行、使用 assert! 強制執行條件，以及處理交易失敗。"
+description: "Move 終止與斷言參考手冊：使用錯誤程式碼停止執行、使用 assert! 強制執行條件，以及處理交易失敗。"
 ---
 
 # 終止與斷言 (Abort and Assert)
@@ -11,7 +11,7 @@ description: "Move 終止與斷言參考手冊：使用錯誤代碼停止執行�
 
 ## `abort`
 
-`abort` 是一個表達式，它可以不帶參數，也可以只帶一個參數 —— 類型為 `u64` 的 **終止代碼 (abort code)**。例如：
+`abort` 是一個表達式，它可以不帶參數，也可以只帶一個參數 —— 類型為 `u64` 的 **終止程式碼 (abort code)**。例如：
 
 ```move
 abort
@@ -59,16 +59,16 @@ fun check_vec(v: &vector<u64>, bound: u64) {
 
 ### `assert`
 
-`assert` 是 Move 編譯器提供的內建巨集操作。它接受兩個參數：類型為 `bool` 的條件和類型為 `u64` 的代碼。
+`assert` 是 Move 編譯器提供的內建巨集操作。它接受兩個參數：類型為 `bool` 的條件和類型為 `u64` 的程式碼。
 
 ```move
-assert!(條件: bool, 代碼: u64)
+assert!(條件: bool, 程式碼: u64)
 ```
 
-由於該操作是一個巨集，因此必須使用 `!` 調用。這是為了傳達 `assert` 的參數是按表達式呼叫 (call-by-expression) 的。換句話說，`assert` 不是普通函式，且在字節碼層級並不存在。它在編譯器內部被替換為：
+由於該操作是一個巨集，因此必須使用 `!` 呼叫。這是為了傳達 `assert` 的參數是按表達式呼叫 (call-by-expression) 的。換句話說，`assert` 不是普通函式，且在字節碼層級並不存在。它在編譯器內部被替換為：
 
 ```move
-if (條件) () else abort 代碼
+if (條件) () else abort 程式碼
 ```
 
 `assert` 比單獨使用 `abort` 更常被使用。上面的 `abort` 範例可以使用 `assert` 重寫：
@@ -116,16 +116,16 @@ if (true) () else abort (1 / 0)
 
 因此算術表達式永遠不會被評估！
 
-### Move VM 中的終止代碼
+### Move VM 中的終止程式碼
 
-使用 `abort` 時，瞭解 VM 如何使用 `u64` 代碼非常重要。
+使用 `abort` 時，瞭解 VM 如何使用 `u64` 程式碼非常重要。
 
 通常，在成功執行後，Move VM 以及特定部署的適配器會決定對儲存空間所做的變更。
 
 如果觸發了 `abort`，VM 將轉而指示錯誤。該錯誤將包含兩部分資訊：
 
 - 產生終止的模組（套件/地址值和模組名稱）
-- 終止代碼。
+- 終止程式碼。
 
 例如：
 
@@ -143,11 +143,11 @@ module 0x3::invoker {
 }
 ```
 
-如果一筆交易（例如上面的函式 `always_aborts`）呼叫了 `0x2::example::aborts`，VM 將產生一個錯誤，指出模組 `0x2::example` 和代碼 `42`。
+如果一筆交易（例如上面的函式 `always_aborts`）呼叫了 `0x2::example::aborts`，VM 將產生一個錯誤，指出模組 `0x2::example` 和程式碼 `42`。
 
 這對於在一個模組中將多個相關的終止操作分組在一起非常有用。
 
-在這個範例中，該模組在多個函式中使用了兩個不同的錯誤代碼：
+在這個範例中，該模組在多個函式中使用了兩個不同的錯誤程式碼：
 
 ```move
 module 0::example;
