@@ -1,39 +1,38 @@
-# The Move Book
+# Move Book (繁體中文版)
 
-This is the repository for [the Move Book](https://move-book.com) and
-[Move Language Reference](https://move-book.com/reference).
+這是 [Move Book](https://move-book.com) 和 [Move 語言參考手冊 (Move Language Reference)](https://move-book.com/reference) 的繁體中文原始碼庫。
 
-## Structure
+## 專案結構
 
-- Two books are placed in the `book` and `reference` directories. The `book` directory contains the
-  main book, and the `reference` directory contains the reference book.
-- The `packages` directory contains the code samples used in both books.
-- The `site` directory contains [docusaurus](docusaurus.io) configuration and custom plugins for it.
+- **book**: 包含主要的 Move Book 內容。
+- **reference**: 包含 Move 語言參考手冊。
+- **packages**: 包含兩本書中所使用的程式碼範例。
+- **site**: 包含 [Docusaurus](https://docusaurus.io) 的配置以及自定義插件。
 
-## Running the Books Locally
+## 在本地運行
 
-### Prerequisites
+### 前置條件
 
 - NodeJS
-- `pnpm` (installation is: `npm i -g pnpm`)
+- `pnpm` (安裝指令：`npm i -g pnpm`)
 
-### Local Server
+### 本地伺服器
 
-> All commands can be run from the root.
+> 所有指令均可在根目錄下執行。
 
 ```bash
 pnpm start
 ```
 
-_The book will be available at `http://localhost:3000`._
+_您可以在 `http://localhost:3000` 訪問本書。_
 
-### Production Build Test
+### 生產環境建置測試 (Production Build Test)
 
 ```bash
 pnpm build
 pnpm serve
 ```
 
-## Archive
+## 封存 (Archive)
 
-For the archive of the old version of the book, see the `archive` branch.
+若需查看舊版內容，請參閱 `archive` 分支。
