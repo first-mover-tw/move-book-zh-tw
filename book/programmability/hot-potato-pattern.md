@@ -1,4 +1,4 @@
-# 模式：Hot Potato (熱馬鈴薯)
+# 模式：Hot Potato (燙手山芋)
 
 在能力系統中有一種特殊情況 —— 沒有任何能力的結構體，被稱為 _Hot Potato_。它不能被儲存（既不能作為[物件](./../storage/key-ability)，也不能作為[另一個結構體的欄位](./../storage/store-ability)），不能被[複製](./../move-basics/copy-ability)或[捨棄](./../move-basics/drop-ability)。因此，一旦建構，它必須優雅地被[其模組拆解](./../move-basics/struct)，否則交易會因為存在未被捨棄的未使用值而中止 (abort)。
 

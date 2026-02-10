@@ -48,7 +48,7 @@
 | 模組 | 描述 | 章節 |
 | :--- | :--- | :--- |
 | [sui::bcs](https://docs.sui.io/references/framework/sui/bcs) | 實作 BCS 編碼與解碼功能 | [二進位規範序列化 (BCS)](./bcs) |
-| [sui::borrow](https://docs.sui.io/references/framework/sui/borrow) | 實作「按值借用」的借用機制 | [熱馬鈴薯 (Hot Potato)](./hot-potato-pattern) |
+| [sui::borrow](https://docs.sui.io/references/framework/sui/borrow) | 實作「按值借用」的借用機制 | [燙手山芋 (Hot Potato)](./hot-potato-pattern) |
 | [sui::hex](https://docs.sui.io/references/framework/sui/hex) | 實作十六進位編碼與解碼功能 | - |
 | [sui::types](https://docs.sui.io/references/framework/sui/types) | 提供檢查類型是否為 One-Time-Witness 的方法 | [一次性見證 (One-Time Witness)](./one-time-witness) |
 
