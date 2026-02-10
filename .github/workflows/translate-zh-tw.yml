@@ -39,11 +39,11 @@ jobs:
       - name: Checkout english source files
         if: steps.detect.outputs.count != '0'
         run: |
-          # Checkout the english versions of files that need translation
-          while IFS= read -r file; do
+          # Only checkout the files we will actually translate (first 5)
+          head -5 /tmp/changed_files.txt | while IFS= read -r file; do
             [ -z "$file" ] && continue
             git checkout origin/english-main -- "$file" 2>/dev/null || true
-          done < /tmp/changed_files.txt
+          done
 
       - name: Skip if no changes
         if: steps.detect.outputs.count == '0'
