@@ -13,12 +13,12 @@ export default {
   // Future compatibility flags.
   future: { v4: true },
 
-  url: 'https://move-book.com',
-  baseUrl: '/',
+  url: 'https://Thalassia.github.io',
+  baseUrl: '/move-book-zh-tw/',
 
   // GitHub pages deployment config.
-  organizationName: 'MystenLabs',
-  projectName: 'move-book',
+  organizationName: 'Thalassia',
+  projectName: 'move-book-zh-tw',
 
   // Relax or throw on broken links, options are: 'warn', 'throw'.
   onBrokenLinks: 'throw',
