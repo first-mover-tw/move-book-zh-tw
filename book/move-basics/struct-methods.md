@@ -1,3 +1,8 @@
+---
+
+description: "Struct methods in Move: use receiver syntax to call functions on struct instances with dot notation for cleaner code."
+---
+
 # 結構方法 (Struct Methods)
 
 Move 編譯器支援 **接收者語法 (receiver syntax)** `e.f()`，這允許定義可以在結構實例上呼叫的方法。術語「接收者」特別是指接收方法呼叫的實例。這與其他程式語言中的方法語法類似。這是定義操作結構欄位的函式的一種便捷方式，可以直接存取結構欄位，並建立比將結構作為參數傳遞更簡潔、更直觀的程式碼。

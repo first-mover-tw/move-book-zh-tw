@@ -1,3 +1,8 @@
+---
+
+description: "The Capability pattern in Move: use owned objects as access-control tokens to authorize privileged operations in Sui smart contracts."
+---
+
 # 模式：能力 (Pattern: Capability)
 
 在程式設計中，「能力 (Capability)」是一種授權持有者執行特定動作的權杖 (token)。這是一種用於控制資源和操作存取權限的模式。能力的一個簡單例子是門的鑰匙：如果您有鑰匙，就可以開門；如果您沒有鑰匙，就無法開門。一個更實際的例子是「管理員能力 (Admin Capability)」，它允許持有者執行普通使用者無法執行的管理操作。

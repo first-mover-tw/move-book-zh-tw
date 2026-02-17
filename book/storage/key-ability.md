@@ -1,3 +1,8 @@
+---
+
+description: "The key ability in Move makes a struct an object that can be stored, owned, and transferred on the Sui blockchain."
+---
+
 # 能力：Key (Ability: Key)
 
 在 [基礎語法][basic-syntax] 章節中，我們已經介紹了四種能力中的兩種：[Drop][drop-ability] 和 [Copy][copy-ability]。它們影響數值在作用域中的行為，與存儲沒有直接關係。現在是時候介紹 `key` 能力了，它允許結構 (struct) 被「存儲」。

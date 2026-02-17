@@ -1,3 +1,8 @@
+---
+
+description: "Object ownership types in Sui: single owner, shared state, immutable objects, and object-owned objects explained with examples."
+---
+
 # 所有權 (Ownership)
 
 Sui 為物件引入了四種不同的所有權類型：**單一所有者 (single owner)**、**共享狀態 (shared state)**、**不可變共享狀態 (immutable shared state)** 以及 **物件所有者 (object-owner)**。每種模型都具備獨特的特性，適用於不同的使用案例，從而增強了物件管理的靈活性與控制力。

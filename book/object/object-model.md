@@ -1,3 +1,8 @@
+---
+
+description: "What is a Sui Object: unique identifiers, types, ownership, and native operations like transfer and share for on-chain digital assets."
+---
+
 # 什麼是物件？ (What is an Object?)
 
 Sui 中的物件模型 (Object Model) 可以視為將數位資產表示為 **物件 (objects)** 的高階抽象。這些物件具有自己的類型和相關行為、唯一的識別碼，並支援原生存儲操作，例如 **轉移 (transfer)** 和 **共享 (share)**。物件模型旨在直觀且易於使用，使開發人員能夠輕鬆實現廣泛的使用案例。

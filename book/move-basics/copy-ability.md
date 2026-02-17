@@ -1,3 +1,8 @@
+---
+
+description: "The copy ability in Move enables value duplication. Learn how to add copy to custom types and understand its role in resource safety."
+---
+
 # 能力：複製 (Copy)
 
 在 Move 中，類型上的 **copy** 能力表示該類型的實例或值可以被複製或複製。雖然在使用數字或其他原始類型時預設提供了此行為，但對於自定義類型，這並非預設行為。Move 旨在表達數位資產 and 資源，而控制複製資源的能力是資源模型的一個核心原則。然而，Move 類型系統允許您為自定義類型添加 **copy** 能力：

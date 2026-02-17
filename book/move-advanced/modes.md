@@ -1,3 +1,8 @@
+---
+
+description: "Compilation modes in Move: include unpublishable code in named build modes like debug, benchmark, or spec beyond the built-in test mode."
+---
+
 # 模式 (Modes)
 
 模式 (Modes) 允許您僅在明確選擇加入具名構建「模式」時，才包含 **不可發佈** 的程式碼。您可以將其視為用於任何目的（例如 `debug`、`benchmark`、`spec` 或任何其他功能）的 `#[test_only]` [測試註解](../move-basics/testing) 的泛化。

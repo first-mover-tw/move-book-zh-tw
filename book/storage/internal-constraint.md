@@ -1,3 +1,8 @@
+---
+
+description: "The Sui Verifier internal constraint: why storage operations require the type to be defined in the calling module."
+---
+
 # Sui 校驗器：內部約束 (Internal Constraint)
 
 Sui 位元組碼校驗器 (Sui Bytecode Verifier) 對 Move 位元組碼強制執行一組規則，以確保關鍵存儲操作的安全。其中一項規則就是「內部約束」。它要求具有類型參數 `T` 的函式呼叫者必須是該類型的「定義模組 (defining module)」。換句話說，`T` 對於發起呼叫的模組來說必須是「內部的 (internal)」。

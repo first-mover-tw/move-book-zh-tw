@@ -1,3 +1,8 @@
+---
+
+description: "Install the Move Registry (MVR) CLI to publish, discover, and manage reusable Move packages for Sui development."
+---
+
 # 安裝 MVR
 
 [Move Registry (MVR)](https://moveregistry.com) 是 Move 的套件管理員。它允許任何人發佈套件，並在以 Move 編寫的新應用程式中使用已發佈的套件。本地二進位檔案允許在註冊表中搜尋套件，並將其作為 Sui CLI 構建過程的一部分進行安裝。

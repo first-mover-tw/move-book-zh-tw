@@ -1,3 +1,8 @@
+---
+
+description: "Collection types in Sui Move: VecSet, VecMap, and other vector-based data structures from the Sui Framework."
+---
+
 # 集合 (Collections)
 
 集合類型是任何程式語言的基本組成部分。它們用於儲存一組數據。我們已經在[向量 (Vector)](./../move-basics/vector) 部分介紹過 `vector` 類型，本章我們將介紹 [Sui 框架](./sui-framework) 提供的基於向量的集合類型。

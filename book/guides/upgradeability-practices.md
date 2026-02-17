@@ -1,3 +1,8 @@
+---
+
+description: "Best practices for upgrading Move packages on Sui: maintain compatibility, plan for versioning, and avoid breaking changes."
+---
+
 # 升級實踐 (Upgradeability Practices)
 
 要討論升級的最佳實踐，我們首先需要了解套件中可以升級什麼。升級的基本前提是，升級不應破壞與先前版本的公開相容性。

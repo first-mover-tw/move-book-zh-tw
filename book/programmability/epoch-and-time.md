@@ -1,3 +1,8 @@
+---
+
+description: "Access time in Sui Move: use epochs for operational periods and Clock for millisecond timestamps in your smart contracts."
+---
+
 # Epoch 與時間 (Epoch and Time)
 
 Sui 有兩種存取目前時間的方式：`Epoch` 和 `Time`。前者代表系統中的運作週期，大約每 24 小時更改一次；後者代表自 Unix Epoch 以來的目前時間（毫秒）。兩者都可以在程式中自由存取。

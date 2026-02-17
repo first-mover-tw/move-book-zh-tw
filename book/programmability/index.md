@@ -1,3 +1,8 @@
+---
+
+description: "Advanced Sui programmability: patterns, events, dynamic fields, capabilities, BCS serialization, and design patterns in Move."
+---
+
 # 進階程式設計 (Advanced Programmability)
 
 在之前的章節中，我們已經介紹了 [Move 基礎知識](./../move-basics) 以及 [Sui 存儲模型](./../storage)。現在是時候深入探討 Sui 程式設計的高階主題了。

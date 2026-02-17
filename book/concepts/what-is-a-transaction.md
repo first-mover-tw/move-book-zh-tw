@@ -1,3 +1,8 @@
+---
+
+description: "Learn how Sui transactions work: structure, commands, gas payments, and how they change blockchain state through Move function calls."
+---
+
 # 交易 (Transaction)
 
 交易是區塊鏈世界中的一個基本概念。它是與區塊鏈互動的一種方式。交易用於更改區塊鏈的狀態，而且它們是執行此操作的唯一方式。在 Move 中，交易用於呼叫套件中的函式、部署新套件以及升級現有套件。

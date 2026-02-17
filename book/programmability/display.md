@@ -1,3 +1,8 @@
+---
+
+description: "Object Display in Sui: define rich metadata templates for your objects using the Display standard for wallets and explorers."
+---
+
 # 物件顯示 (Object Display)
 
 Sui 上的物件在結構和行為上都是顯性的，並且可以以易於理解的方式顯示。然而，為了支援客戶端更豐富的元資料，有一種標準且高效的方式來向客戶端「描述」它們 —— 即 [Sui 框架](./sui-framework) 中定義的 `Display` 物件。

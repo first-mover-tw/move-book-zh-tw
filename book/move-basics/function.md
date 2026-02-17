@@ -1,3 +1,8 @@
+---
+
+description: "Functions in Move: declare, call, and return values from functions with support for multiple return values and type parameters."
+---
+
 # 函式 (Functions)
 
 函式是 Move 程式的構建塊。它們從 [使用者交易](./../concepts/what-is-a-transaction) 或其他函式中被呼叫，並將可執行的程式碼分組為可重用的單元。函式可以接收參數並傳回一個值。它們在模組層級中使用 `fun` 關鍵字宣告。與任何其他模組成員一樣，預設情況下它們是私有的，只能從模組內部存取。

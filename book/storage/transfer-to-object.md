@@ -1,3 +1,8 @@
+---
+
+description: "Transfer to Object (TTO) in Sui: send objects to other objects and receive them using the Receiving type in Move."
+---
+
 # 接收物件 (Receiving as Object)
 
 [地址擁有的](./storage-functions.md#transfer) 物件狀態支援兩種類型的擁有者：帳戶和另一個物件。如果一個物件被轉移到另一個物件，Sui 提供了一種透過其擁有者的 [`UID`][uid] 來「接收 (receive)」此物件的方法。

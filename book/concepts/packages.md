@@ -1,3 +1,8 @@
+---
+
+description: "Understand Move packages — the unit of code organization containing modules, dependencies, and addresses published on the Sui blockchain."
+---
+
 # 套件 (Package)
 
 Move 是一種用於編寫智能合約的語言——智能合約是存儲並在區塊鏈上運行的程式。單個程式被組織成一個套件。套件發佈在區塊鏈上，並由一個[地址](./address)標識。已發佈的套件可以透過發送呼叫其函式的[交易](./what-is-a-transaction)來進行互動。它也可以作為其他套件的相依項。

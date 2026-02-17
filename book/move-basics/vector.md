@@ -1,3 +1,8 @@
+---
+
+description: "Vectors in Move: create, manipulate, and iterate over dynamic collections with push, pop, and destroy operations."
+---
+
 # 向量 (Vector)
 
 向量是 Move 中儲存元素集合的一種原生方式。它們類似於其他程式語言中的陣列，但有一些不同之處。在本節中，我們將介紹 `vector` 類型及其操作。

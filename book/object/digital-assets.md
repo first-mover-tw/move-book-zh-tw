@@ -1,3 +1,8 @@
+---
+
+description: "How Move handles digital assets natively: from fungible tokens to NFTs, with built-in safety and type-level resource guarantees."
+---
+
 # Move — 數位資產的專屬語言 (Move - Language for Digital Assets)
 
 智慧合約程式語言歷來專注於定義和管理數位資產。例如，以太坊 (Ethereum) 的 ERC-20 標準開創了一套與數位貨幣代幣互動的標準，建立了在區塊鏈上建立和管理數位貨幣的藍圖。隨後，ERC-721 標準的引入標誌著一次重大的演進，普及了非同質化代幣 (NFTs) 的概念，用於表示唯一的、不可分割的資產。這些標準為我們今天看到的複雜數位資產奠定了基礎。

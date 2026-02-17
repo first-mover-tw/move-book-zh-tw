@@ -1,3 +1,8 @@
+---
+
+description: "Visibility modifiers in Move: private, public, public(package), and entry functions for controlling access to module members."
+---
+
 # 可見性修飾符
 
 每個模組成員都有其可見性。預設情況下，所有模組成員都是 _私有的 (private)_ — 這意味著它們僅能在定義它們的模組內被存取。但是，您可以添加可見性修飾符來使模組成員變為 _公開的 (public)_ — 模組外部可見；或 _公開的（套件）(public(package))_ — 對同一個套件內的模組可見；或 _進入 (entry)_ — 可以從交易中呼叫，但不能從其他模組中呼叫。

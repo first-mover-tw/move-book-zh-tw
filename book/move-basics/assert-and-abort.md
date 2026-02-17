@@ -1,3 +1,8 @@
+---
+
+description: "Error handling in Move: use abort to halt execution with error codes and assert! to enforce conditions in smart contracts."
+---
+
 # 中斷執行
 
 交易不是成功就是失敗。成功的執行會套用對物件和鏈上資料所做的所有更改，並將交易提交到區塊鏈。或者，如果交易中斷，則不會套用更改。使用 `abort` 關鍵字來中斷交易並還原所做的任何更改。

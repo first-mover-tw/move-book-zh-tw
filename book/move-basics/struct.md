@@ -1,3 +1,8 @@
+---
+
+description: "Define custom types with struct in Move: create, pack, unpack, and access fields for building data models in Sui smart contracts."
+---
+
 # 使用結構定義自定義類型 (Custom Types with Struct)
 
 當涉及到定義自定義類型時，Move 的類型系統大放異彩。使用者定義的類型可以根據應用程式的特定需求量身定制，不僅在資料層級，在其行為上也是如此。在本節中，我們將介紹 `struct` 的定義及其使用方法。

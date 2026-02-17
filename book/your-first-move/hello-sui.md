@@ -1,3 +1,8 @@
+---
+
+description: "Build and publish a todo list app on Sui: create an account, deploy a Move package, and send transactions via the CLI."
+---
+
 # 你好，Sui！
 
 在[上一節](./hello-world)中，我們建立了一個新的程式包，並展示了建立、建置和測試 Move 程式包的基本流程。在本節中，我們將編寫一個使用儲存模型並可與之互動的簡單應用程式。為此，我們將建立一個簡單的待辦事項清單應用程式。

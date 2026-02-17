@@ -1,3 +1,8 @@
+---
+
+description: "The drop ability in Move allows struct instances to be discarded. Learn how it works and when to use it in Sui smart contracts."
+---
+
 # 能力：丟棄 (Abilities: Drop)
 
 `drop` 能力 — 最簡單的一種 — 允許結構實例被 **忽略** 或 **丟棄**。在許多程式語言中，這種行為被認為是預設的。然而，在 Move 中，不允許忽略沒有 `drop` 能力的結構。這是 Move 語言的一項安全功能，確保所有資產都得到正確處理。嘗試忽略沒有 `drop` 能力的結構將導致編譯錯誤。

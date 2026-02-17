@@ -1,3 +1,8 @@
+---
+
+description: "Understand Sui accounts: how they are generated from private keys, identified by addresses, and support multiple crypto schemes."
+---
+
 # 帳戶 (Account)
 
 帳戶是標識用戶的一種方式。帳戶是從私鑰生成的，並透過地址來標識。帳戶可以擁有物件，並可以發送交易。每筆交易都有一個發送者，發送者由[地址](./address)標識。

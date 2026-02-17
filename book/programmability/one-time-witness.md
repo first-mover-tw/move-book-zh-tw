@@ -1,3 +1,8 @@
+---
+
+description: "One Time Witness (OTW) in Sui Move: a type guaranteed to be instantiated only once, used for Publisher and Coin creation."
+---
+
 # 一次性見證 (One Time Witness)
 
 雖然一般的 [見證 (Witness)](./witness-pattern) 是靜態證明類型所有權的一種絕佳方式，但在某些情況下，我們需要確保見證僅被實例化一次。這就是「一次性見證 (One Time Witness, OTW)」的用途。

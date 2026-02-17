@@ -1,3 +1,8 @@
+---
+
+description: "Design for the fast path in Sui: structure owned vs shared objects to maximize transaction parallelism and performance."
+---
+
 # 快速路徑 (Fast Path)
 
 由於 Sui 的物件模型和數據組織模型，某些操作可以更高效且並行地執行。這被稱為 **快速路徑 (fast path)**。觸及共享狀態 (shared state) 的交易需要共識，因為它可能同時被多方訪問。然而，如果交易僅觸及私有狀態（擁有的物件），則不需要共識。這就是快速路徑。

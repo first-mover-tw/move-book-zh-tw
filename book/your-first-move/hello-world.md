@@ -1,3 +1,8 @@
+---
+
+description: "Create your first Move package on Sui: learn the project structure, write a module, compile code, and run tests with the Move CLI."
+---
+
 # 哈囉，世界！
 
 在本章中，您將學習如何建立一個新的 Move 套件、編寫一個簡單的模組、編譯它，並使用 Move CLI 執行測試。請確保您已[安裝 Sui](./../before-we-begin/install-sui.md) 並設定好您的 [IDE 環境](./../before-we-begin/ide-support.md)。執行以下指令來測試 Sui 是否已正確安裝。

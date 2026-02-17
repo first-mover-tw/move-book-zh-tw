@@ -1,3 +1,8 @@
+---
+
+description: "Migrate your Move code to the 2024 edition: updated syntax, new features, method syntax, and step-by-step migration instructions."
+---
+
 # Move 2024 遷移指南 (Move 2024 Migration Guide)
 
 Move 2024 是由 Mysten Labs 維護的 Move 語言新版本。本指南旨在幫助您了解 2024 版本與之前版本 Move 語言之間的差異。

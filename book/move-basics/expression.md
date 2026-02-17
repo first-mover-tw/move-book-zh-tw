@@ -1,3 +1,8 @@
+---
+
+description: "Expressions in Move: literals, function calls, blocks, and how almost everything returns a value in the Move language."
+---
+
 # 表達式 (Expression)
 
 在程式語言中，表達式是傳回一個值的程式碼單位。在 Move 中，幾乎所有內容都是表達式，唯一的例外是 `let` 語句，它是一個宣告。在本節中，我們將介紹表達式的類型並引入作用域 (scope) 的概念。

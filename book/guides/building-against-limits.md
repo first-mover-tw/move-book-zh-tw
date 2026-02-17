@@ -1,3 +1,8 @@
+---
+
+description: "Sui network limits and how to build within them: object size, dynamic fields, transaction limits, and protocol constraints."
+---
+
 # 針對限制進行開發 (Building Against Limits)
 
 為了保證網路的安全，Sui 設定了某些限制和約束。這些限制旨在防止濫用並確保網路保持穩定和高效。本指南概述了這些限制，以及如何使您的應用程式在這些限制下工作。

@@ -1,3 +1,8 @@
+---
+
+description: "Emit and subscribe to events in Sui Move: notify off-chain listeners about on-chain activity in your smart contracts."
+---
+
 # 事件 (Events)
 
 事件是用於通知鏈外監聽器關於鏈上事件的一種方式。它們用於發送有關交易的附加資訊，這些資訊不存儲在鏈上，因此無法在鏈上存取。事件由位於 [Sui 框架](./sui-framework) 中的 `sui::event` 模組發送。

@@ -1,3 +1,8 @@
+---
+
+description: "The Witness pattern in Move: prove type ownership through struct instantiation for type-safe authorization in Sui smart contracts."
+---
+
 # 模式：見證 (Pattern: Witness)
 
 見證 (Witness) 是一種透過建構證明來證實存在性的模式。在程式設計的語境下，見證是一種透過提供一個「只有在某種屬性成立時才能被建構」的數值，來證明該系統具有某種屬性的方式。

@@ -1,3 +1,8 @@
+---
+
+description: "Fast path vs consensus in Sui: how owned objects skip consensus for faster transactions while shared objects require ordering."
+---
+
 # 快速路徑與共識 (Fast Path & Consensus)
 
 物件模型允許根據物件的所有權類型而有不同的交易執行路徑。執行路徑決定了網路如何處理和驗證交易。

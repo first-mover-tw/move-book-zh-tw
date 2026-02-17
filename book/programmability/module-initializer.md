@@ -1,3 +1,8 @@
+---
+
+description: "The init function in Move: run one-time setup code when a module is published on Sui, with rules and best practices."
+---
+
 # 模組初始化器 (Module Initializer)
 
 許多應用程式中一個常見的使用案例是在套件發佈時僅執行一次某些程式碼。想像一個簡單的商店模組，它需要在發佈時建立主要的「商店 (Store)」物件。在 Sui 中，這是透過在模組內定義 `init` 函式來實現的。該函式將在模組發佈時自動被呼叫。

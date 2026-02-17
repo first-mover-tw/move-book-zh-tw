@@ -1,3 +1,8 @@
+---
+
+description: "Enums and pattern matching in Move: define variant types, use match expressions, and handle multiple cases in smart contracts."
+---
+
 # 列舉與模式匹配 (Enums and Match)
 
 列舉 (enum) 是一種使用者定義的資料結構，與 [結構 (struct)](./struct) 不同的是，它可以表示多個 **變體 (variants)**。每個變體可以包含原始類型、結構或其他列舉。然而，與遞迴結構定義類似，不允許定義遞迴列舉。

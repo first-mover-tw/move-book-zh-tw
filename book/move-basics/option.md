@@ -1,3 +1,8 @@
+---
+
+description: "The Option type in Move: represent optional values safely, with methods for creating, checking, extracting, and destroying options."
+---
+
 # 選項 (Option)
 
 `Option` 是一種表示「可能存在也可能不存在」的可選值的類型。Move 中 `Option` 的概念借鑒自 Rust，它是 Move 中非常實用的原始類型。`Option` 定義在 [標準庫](./standard-library) 中，定義如下：

@@ -1,3 +1,8 @@
+---
+
+description: "Type reflection in Move: inspect type names at runtime using std::type_name for dynamic type checks in smart contracts."
+---
+
 # 類型反射 (Type Reflection)
 
 在程式語言中，_反射 (Reflection)_ 是指程式檢查並修改自身結構和行為的能力。Move 支援有限形式的反射，讓您可以在執行時期檢查值的類型。當您需要在同質集合 (homogeneous collection) 中儲存類型資訊，或者想檢查某個類型是否來自特定的套件時，這非常有用。

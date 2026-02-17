@@ -1,3 +1,8 @@
+---
+
+description: "Move primitive types: booleans, unsigned integers (u8 to u256), addresses, and type casting for blockchain smart contracts."
+---
+
 # 原生類型 (Primitive Types)
 
 對於簡單的值，Move 有許多內建的原生類型。它們是所有其他類型的基礎。原生類型包括：

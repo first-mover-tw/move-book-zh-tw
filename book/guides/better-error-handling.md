@@ -1,3 +1,8 @@
+---
+
+description: "Improve error handling in Move smart contracts: use descriptive abort codes and error constants for better debugging on Sui."
+---
+
 # 更好的錯誤處理 (Better Error Handling)
 
 Move 2024 提供了更好的錯誤處理機制。在一個函式中呼叫多個可能中斷的函式時，如果呼叫者收到中斷碼 `0`，將很難理解是哪個呼叫導致了中斷。

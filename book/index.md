@@ -1,3 +1,8 @@
+---
+
+description: "A comprehensive guide to the Move programming language and Sui blockchain for smart contract developers."
+---
+
 # Move 寶典
 
 <!-- TODO: insert author(s) -->

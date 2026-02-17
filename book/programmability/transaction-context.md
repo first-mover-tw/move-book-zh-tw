@@ -1,3 +1,8 @@
+---
+
+description: "TxContext in Sui Move: access sender address, transaction digest, epoch, and generate unique IDs in your smart contracts."
+---
+
 # 交易上下文 (Transaction Context)
 
 每個交易都有一個執行上下文。上下文是一組預定義的變數，在程式執行期間可供使用。例如，每個交易都有一個發送者地址，而交易上下文包含一個保存該發送者地址的變數。

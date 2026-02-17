@@ -1,3 +1,8 @@
+---
+
+description: "Learn about addresses in Sui — 32-byte unique identifiers used to locate packages, accounts, and objects on the blockchain."
+---
+
 # 地址 (Address)
 
 地址是區塊鏈上位置的唯一識別字。它用於標識[套件](./packages)、[帳戶](./what-is-an-account)和[物件](./../object/object-model)。地址具有 32 位元組的固定大小，通常表示為以 `0x` 為前綴的十六進制字串。地址不區分大小寫。

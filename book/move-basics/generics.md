@@ -1,3 +1,8 @@
+---
+
+description: "Generics in Move: write reusable functions and types that work with any type parameter, with phantom types and constraints."
+---
+
 # 泛型 (Generics)
 
 泛型是一種定義可以與任何類型協同工作的類型或函式的方式。當您想編寫一個可以與不同類型一起使用的函式，或者想定義一個可以容納任何其他類型的類型時，這非常有用。泛型是 Move 中許多進階功能的基礎，包括集合、抽象實作等。

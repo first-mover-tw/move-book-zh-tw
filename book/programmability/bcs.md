@@ -1,3 +1,8 @@
+---
+
+description: "BCS (Binary Canonical Serialization) in Move: encode and decode structured data for on-chain storage and cross-platform communication."
+---
+
 # 二進位規範序列化 (Binary Canonical Serialization, BCS)
 
 二進位規範序列化 (BCS) 是一種用於結構化資料的二進位編碼格式。它最初是為 Diem 設計的，後來成為 Move 的標準序列化格式。BCS 簡單、高效、具有確定性，且易於在任何程式語言中實作。

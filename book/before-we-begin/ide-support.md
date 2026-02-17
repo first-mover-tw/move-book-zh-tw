@@ -1,3 +1,8 @@
+---
+
+description: "Configure VSCode or IntelliJ IDEA for Move development with syntax highlighting, error checking, and code formatting extensions."
+---
+
 # 設定您的 IDE
 
 Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供基本功能，例如語法高亮和錯誤訊息，儘管它們的額外功能有所不同。無論您選擇哪種 IDE，您都需要使用終端機來執行 [Move CLI](./install-sui.md)。

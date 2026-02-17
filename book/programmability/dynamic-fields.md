@@ -1,3 +1,8 @@
+---
+
+description: "Dynamic fields in Sui: attach heterogeneous key-value data to objects at runtime, bypassing object size limits."
+---
+
 # 動態欄位 (Dynamic Fields)
 
 物件 [欄位](./../move-basics/struct.md#fields-and-data-types) 被定義在 Move 結構中，且一旦發表模組後就是固定的。雖然這提供了一種非常強大且靜態的方法來定義物件的佈局，但有時應用程式需要更多的靈活性，這就是動態欄位的用武之地。動態欄位是可以在執行期間動態添加、移除和存取的物件欄位。這使得開發者可以建立更複雜且可擴展的應用程式邏輯。

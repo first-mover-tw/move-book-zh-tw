@@ -1,3 +1,8 @@
+---
+
+description: "Overview of the Move Standard Library: common modules for strings, vectors, options, and type names available in every Move package."
+---
+
 # 標準庫 (Standard Library)
 
 Move 標準庫為原生類型和運算提供功能。它是一組不與儲存空間互動的標準模組，但提供處理和操作資料的基本工具。它是 [Sui 框架](./../programmability/sui-framework) 唯一的依賴項，並與之一併匯入。

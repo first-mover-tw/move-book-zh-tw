@@ -1,3 +1,8 @@
+---
+
+description: "The Wrapper type pattern in Move: create restricted or extended versions of existing types by wrapping them in new structs."
+---
+
 # 模式：封裝類型 (Wrapper Type Pattern)
 
 有時需要建立一個與現有類型行為相似但具有特定修改或限制的新類型。例如，您可能想建立一個行為類似於向量 (Vector) 但在插入後不允許修改元素的[集合類型](./collections)。封裝類型模式是實現這一目標的有效方法。

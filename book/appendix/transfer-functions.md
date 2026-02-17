@@ -1,3 +1,8 @@
+---
+
+description: "Quick reference for Sui transfer functions: transfer, share, freeze, receive, and their public variants with permissions and end states."
+---
+
 # 附錄 C: 轉移函數
 
 ## 轉移函數比較

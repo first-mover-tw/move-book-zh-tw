@@ -1,3 +1,8 @@
+---
+
+description: "The Publisher object in Sui: prove package authority to configure Display, transfer policies, and other type-level settings."
+---
+
 # 發佈者權限 (Publisher Authority)
 
 在應用程式設計與開發中，通常需要證明發佈者權限。這在數位資產的背景下尤為重要，發佈者可能需要為其資產啟用或停用某些功能。發佈者物件 (Publisher Object) 是在 [Sui 框架](./sui-framework) 中定義的一種物件，它允許發佈者證明其對於 **某種類型的權限 (authority over a type)**。

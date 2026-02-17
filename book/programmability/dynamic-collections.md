@@ -1,3 +1,8 @@
+---
+
+description: "Dynamic collections in Sui: Bag, Table, ObjectBag, ObjectTable, and LinkedTable built on dynamic fields for flexible storage."
+---
+
 # 動態集合 (Dynamic Collections)
 
 [Sui 框架](./sui-framework)基於[動態欄位](./dynamic-fields)和[動態物件欄位](./dynamic-object-fields)概念，提供了多種集合類型。這些集合被設計為一種更安全、更易於理解的方式來儲存和管理動態欄位和物件。

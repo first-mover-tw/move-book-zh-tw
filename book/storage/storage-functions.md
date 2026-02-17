@@ -1,3 +1,8 @@
+---
+
+description: "Sui storage functions: transfer, share, freeze, and receive objects using the sui::transfer module in Move smart contracts."
+---
+
 # 存儲函式 (Storage Functions)
 
 一旦定義了 [具有 `key` 能力](./key-ability.md) 的結構，它就可以與 Sui 的「存儲函式 (storage functions)」一起使用。這些函式在 `sui::transfer` 模組中定義，並提供了一種在 Sui 上管理物件生命週期、所有權和存取權限的方法。

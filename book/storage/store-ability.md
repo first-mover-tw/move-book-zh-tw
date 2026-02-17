@@ -1,3 +1,8 @@
+---
+
+description: "The store ability in Move allows types to be used as fields in objects and enables public transfer and storage operations on Sui."
+---
+
 # 能力：Store (Ability: Store)
 
 [`key` 能力][key-ability] 要求所有欄位都具有 `store`，這就定義了 `store` 能力的含義：它是作為物件欄位的能力。具有 [`copy`][copy-ability] 或 [`drop`][drop-ability] 但沒有 `store` 的結構永遠不能被「存儲」。具有 `key` 但沒有 `store` 的類型不能被包裝 (wrapped) —— 即作為另一個物件的欄位使用，且受限於始終保持在頂層。

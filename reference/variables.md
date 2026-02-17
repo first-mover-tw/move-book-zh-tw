@@ -1,3 +1,9 @@
+---
+
+title: 'Local Variables and Scope | Reference'
+description: "Move local variables and scope: let bindings, mutability, type annotations, shadowing, and move semantics reference."
+---
+
 # 變數 (Variables)
 
 變數在 Move 中有兩種類型：局部變數 (local variables) 和常數 (constants)。局部變數用於儲存函數內部的數據，而常數用於定義在編譯時確定的固定值。

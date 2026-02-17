@@ -1,21 +1,21 @@
 ---
-description: "Sui Move 中的測試情境：模擬多交易流程、測試物件轉移，並在測試中驗證共享物件行為。"
+description: "Sui Move 中的測試場景 (Test Scenario)：模擬多交易流程、測試物件轉移，並在測試中驗證共享物件的行為。"
 ---
 
-# 測試情境 (Test Scenario)
+# 測試場景 (Test Scenario)
 
-[Sui Framework](./../programmability/sui-framework.md) 的 `test_scenario` 模組提供了一種方式來模擬測試中的多交易情境。它維護全域物件池的視圖，並允許你測試物件如何在多個交易中建立、轉移和存取。
+來自 [Sui Framework](./../programmability/sui-framework.md) 的 `test_scenario` 模組提供了一種在測試中模擬多交易場景的方法。它維護全局物件池的視圖 (view)，並允許你測試物件如何在多個交易之間被建立、轉移和存取。
 
 ```move
 #[test_only]
 use sui::test_scenario;
 ```
 
-## 開始和結束情境
+## 開始和結束場景
 
-測試情境以 `test_scenario::begin` 開始，它以發送者位址作為參數。情境必須以 `test_scenario::end` 結束以清理資源。如果未正確結束情境，將導致編譯錯誤。
+測試場景以 `test_scenario::begin` 開始，該函式接受發送者地址作為參數。場景必須以 `test_scenario::end` 結束以清理資源。若未能結束場景將導致編譯錯誤。
 
-> **注意：** 每個測試中應該只有一個情境。在同一測試中建立多個情境可能會產生意外結果，應該避免。
+> **注意：** 每個測試應該只有一個場景。在同一個測試中建立多個場景可能會產生意外結果，應避免這樣做。
 
 ```move
 use sui::test_scenario;
@@ -24,19 +24,19 @@ use sui::test_scenario;
 fun test_basic_scenario() {
     let alice = @0xA;
 
-    // 以 alice 作為發送者啟動情境
+    // 以 alice 作為發送者開始一個場景
     let mut scenario = test_scenario::begin(alice);
 
     // ... 執行操作 ...
 
-    // 結束情境 - 返回 TransactionEffects
+    // 結束場景 - 回傳交易效果 (TransactionEffects)
     scenario.end();
 }
 ```
 
 ## 交易模擬
 
-使用 `next_tx` 推進到新交易並指定發送者。在前一交易中轉移的物件將在下一個交易中可用。每個 `next_tx` 呼叫返回 [`TransactionEffects`](#讀取交易效果) 包含有關前一個交易中發生的訊息。
+使用 `next_tx` 前進到具有指定發送者的新交易。在前一個交易中轉移的物件將在下一個交易中可用。每個 `next_tx` 調用都會回傳 [`TransactionEffects`](#reading-transaction-effects)，其中包含有關前一個交易中發生的事情的資訊。
 
 ```move
 use sui::test_scenario;
@@ -48,11 +48,11 @@ fun test_multi_transaction() {
 
     let mut scenario = test_scenario::begin(alice);
 
-    // 第一個交易：alice 建立物件
-    // 在此建立的物件尚未在任何人的物件清單中
+    // 第一筆交易：alice 建立一個物件
+    // 這裡建立的物件尚未進入任何人的庫存
 
-    // 推進到第二個交易，bob 為發送者
-    // 第一個交易中的物件現在可用
+    // 前進到以 bob 為發送者的第二筆交易
+    // 來自第一筆交易的物件現在可用了
     let _effects = scenario.next_tx(bob);
 
     // ... bob 現在可以存取轉移給他的物件 ...
@@ -61,11 +61,11 @@ fun test_multi_transaction() {
 }
 ```
 
-> 重要：交易期間轉移的物件只有在呼叫 `next_tx` 後才可用。你不能在轉移物件的同一交易中存取該物件。
+> 重要：交易期間轉移的物件僅在調用 `next_tx` 後才可用。你無法在轉移物件的同一交易中存取它。
 
-## 存取擁有的物件
+## 存取擁有的物件 (Owned Objects)
 
-[擁有的物件](./../object/ownership.md#owned-by-an-address) 轉移到位址可以使用 `take_from_sender` 或 `take_from_address` 存取。然後可以將物件傳遞給函式、使用 `return_to_sender` 或 `return_to_address` 返回，或使用 `public_transfer` 轉移到其他地方（如果物件有 `store` 能力）。
+轉移到某個地址的[擁有物件](./../object/ownership.md#owned-by-an-address)可以使用 `take_from_sender` 或 `take_from_address` 來存取。然後該物件可以傳遞給函式，使用 `return_to_sender` 或 `return_to_address` 歸還，或者使用 `public_transfer` (如果物件具有 `store` 能力) 轉移到其他地方。
 
 ```move
 module book::test_scenario_example;
@@ -89,20 +89,20 @@ fun test_take_and_return() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 交易 1：建立物件並轉移到 alice
+    // 交易 1：建立並轉移一個 item 給 alice
     {
         let item = create(100, scenario.ctx());
         transfer::public_transfer(item, alice);
     };
 
-    // 交易 2：Alice 取得物件
+    // 交易 2：Alice 取出該 item
     scenario.next_tx(alice);
     {
-        // 從發送者的物件清單中取得最近的 Item
+        // 從發送者的庫存中取出最近的 Item
         let item = scenario.take_from_sender<Item>();
         assert_eq!(item.value(), 100);
 
-        // 返回物件到發送者的物件清單
+        // 將 item 歸還給發送者的庫存
         scenario.return_to_sender(item);
     };
 
@@ -110,9 +110,9 @@ fun test_take_and_return() {
 }
 ```
 
-### 按 ID 取得
+### 透過 ID 取出
 
-當存在多個相同類型的物件時，使用 `take_from_sender_by_id` 或 `take_from_address_by_id` 取得特定物件：
+當存在多個相同型別的物件時，使用 `take_from_sender_by_id` 或 `take_from_address_by_id` 來取出特定的物件：
 
 ```move
 #[test]
@@ -123,7 +123,7 @@ fun test_take_by_id() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 建立兩個物件
+    // 建立兩個 item
     let item1 = create(100, scenario.ctx());
     let item2 = create(200, scenario.ctx());
     let id1 = object::id(&item1);
@@ -133,7 +133,7 @@ fun test_take_by_id() {
 
     scenario.next_tx(alice);
     {
-        // 按 ID 取得特定物件
+        // 透過 ID 取出特定的 item
         let item = scenario.take_from_sender_by_id<Item>(id1);
         assert_eq!(item.value(), 100);
         scenario.return_to_sender(item);
@@ -145,7 +145,7 @@ fun test_take_by_id() {
 
 ### 檢查物件可用性
 
-在取得物件之前，可以檢查是否存在物件：
+在取出物件之前，你可以檢查是否存在該物件：
 
 ```move
 #[test]
@@ -155,7 +155,7 @@ fun test_has_object() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 尚無物件存在
+    // 尚未存在任何 item
     assert!(!scenario.has_most_recent_for_sender<Item>());
 
     let item = create(100, scenario.ctx());
@@ -163,16 +163,16 @@ fun test_has_object() {
 
     scenario.next_tx(alice);
 
-    // 現在物件存在
+    // 現在有一個 item 存在
     assert!(scenario.has_most_recent_for_sender<Item>());
 
     scenario.end();
 }
 ```
 
-## 存取共享物件
+## 存取共享物件 (Shared Objects)
 
-[共享物件](./../object/ownership.md#shared-state) 使用 `take_shared` 存取，必須使用 `return_shared` 返回：
+[共享物件](./../object/ownership.md#shared-state) 使用 `take_shared` 存取，並且必須使用 `return_shared` 歸還：
 
 ```move
 module book::shared_counter;
@@ -205,7 +205,7 @@ fun test_shared_object() {
 
     let mut scenario = test_scenario::begin(alice);
 
-    // Alice 建立共享計數器
+    // Alice 建立一個共享計數器
     create(scenario.ctx());
 
     // Bob 遞增它
@@ -232,7 +232,7 @@ fun test_shared_object() {
 
 ### `with_shared` 巨集
 
-為了更簡潔的程式碼，使用 `with_shared!` 巨集自動處理取得和返回：
+為了讓程式碼更簡潔，可以使用 `with_shared!` 巨集，它會自動處理取出和歸還：
 
 ```move
 #[test]
@@ -255,9 +255,9 @@ fun test_with_shared_macro() {
 }
 ```
 
-## 存取不可變物件
+## 存取不可變物件 (Immutable Objects)
 
-[不可變（凍結）物件](./../object/ownership.md#immutable-frozen-object) 使用 `take_immutable` 存取，使用 `return_immutable` 返回：
+[不可變 (凍結) 物件](./../object/ownership.md#immutable-frozen-object) 使用 `take_immutable` 存取，並使用 `return_immutable` 歸還：
 
 ```move
 module book::immutable_config;
@@ -284,16 +284,16 @@ fun test_immutable_object() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 建立不可變設定
+    // 建立一個不可變配置
     create(1000, scenario.ctx());
 
     scenario.next_tx(alice);
     {
-        // 取得不可變物件
+        // 取出不可變物件
         let config = scenario.take_immutable<Config>();
         assert_eq!(config.max_value(), 1000);
 
-        // 返回到全域物件清單
+        // 將其歸還給全局庫存
         test_scenario::return_immutable(config);
     };
 
@@ -301,9 +301,9 @@ fun test_immutable_object() {
 }
 ```
 
-## 存取交易上下文
+## 存取交易上下文 (Transaction Context)
 
-`ctx` 方法提供對目前交易的 [`TxContext`](./../programmability/transaction-context.md) 的存取。當呼叫需要上下文的函式時使用它：
+`ctx` 方法提供對當前交易的 [`TxContext`](./../programmability/transaction-context.md) 的存取。在調用需要上下文的函式時使用它：
 
 ```move
 #[test]
@@ -317,20 +317,20 @@ fun test_context_access() {
     // 存取交易上下文
     let ctx = scenario.ctx();
 
-    // 使用它進行需要上下文的操作
+    // 將其用於需要上下文的操作
     let item = create(100, ctx);
     transfer::public_transfer(item, alice);
 
-    // 發送者與傳遞給 begin() 的相符
+    // 發送者與我們傳遞給 begin() 的一致
     assert_eq!(ctx.sender(), alice);
 
     scenario.end();
 }
 ```
 
-## 讀取交易效果
+## 讀取交易效果 (Transaction Effects)
 
-`next_tx` 和 `end` 都返回 `TransactionEffects`，其中包含有關交易期間發生的訊息：
+`next_tx` 和 `end` 都會回傳 `TransactionEffects`，其中包含有關交易期間發生事件的資訊：
 
 ```move
 #[test]
@@ -342,13 +342,13 @@ fun test_transaction_effects() {
     let bob = @0xB;
     let mut scenario = test_scenario::begin(alice);
 
-    // 在第一個交易中建立物件
+    // 在第一筆交易中建立物件
     let item1 = create(100, scenario.ctx());
     let item2 = create(200, scenario.ctx());
     transfer::public_transfer(item1, alice);
     transfer::public_transfer(item2, bob);
 
-    // 取得第一個交易的效果
+    // 獲取第一筆交易的效果
     let effects = scenario.next_tx(alice);
 
     // 檢查建立了什麼
@@ -366,20 +366,20 @@ fun test_transaction_effects() {
 
 ### 可用的效果欄位
 
-| 方法                       | 返回              | 描述                       |
-| -------------------------- | --------------- | -------------------------- |
-| `created()`                | `vector<ID>`    | 在此交易中建立的物件       |
-| `written()`                | `vector<ID>`    | 在此交易中修改的物件       |
-| `deleted()`                | `vector<ID>`    | 在此交易中刪除的物件       |
-| `transferred_to_account()` | `VecMap<ID, address>` | 轉移到位址的物件      |
-| `transferred_to_object()`  | `VecMap<ID, ID>` | 轉移到其他物件的物件     |
-| `shared()`                 | `vector<ID>`    | 在此交易中共享的物件       |
-| `frozen()`                 | `vector<ID>`    | 在此交易中凍結的物件       |
-| `num_user_events()`        | `u64`           | 發出的事件數量             |
+| 方法 | 回傳值 | 描述 |
+| -------------------------- | --------------------- | ------------------------------------ |
+| `created()` | `vector<ID>` | 在此交易中建立的物件 |
+| `written()` | `vector<ID>` | 在此交易中修改的物件 |
+| `deleted()` | `vector<ID>` | 在此交易中刪除的物件 |
+| `transferred_to_account()` | `VecMap<ID, address>` | 轉移到地址的物件 |
+| `transferred_to_object()` | `VecMap<ID, ID>` | 轉移到其他物件的物件 |
+| `shared()` | `vector<ID>` | 在此交易中共享的物件 |
+| `frozen()` | `vector<ID>` | 在此交易中凍結的物件 |
+| `num_user_events()` | `u64` | 發出的事件數量 |
 
-## 系統物件
+## 系統物件 (System Objects)
 
-使用 `create_system_objects` 使系統物件如 `Clock`、`Random` 和 `DenyList` 在測試中可用。有關使用系統物件進行測試的更詳細說明，請參閱 [使用系統物件](./using-system-objects.md)。
+使用 `create_system_objects` 讓 `Clock`、`Random` 和 `DenyList` 等系統物件在測試中可用。關於使用系統物件進行測試的更詳細介紹，請參見[使用系統物件](./using-system-objects.md)。
 
 ```move
 use sui::clock::Clock;
@@ -392,12 +392,12 @@ fun test_with_clock() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 建立系統物件（Clock、Random、DenyList）
+    // 建立系統物件 (Clock, Random, DenyList)
     scenario.create_system_objects();
 
     scenario.next_tx(alice);
     {
-        // 現在 Clock 作為共享物件可用
+        // 現在 Clock 可作為共享物件使用
         let clock = scenario.take_shared<Clock>();
         assert_eq!(clock.timestamp_ms(), 0);
         test_scenario::return_shared(clock);
@@ -407,9 +407,9 @@ fun test_with_clock() {
 }
 ```
 
-## 紀元和時間操作
+## Epoch 和時間操作
 
-使用 `next_epoch` 和 `later_epoch` 測試 [時間相關邏輯](./../programmability/epoch-and-time.md)：
+使用 `next_epoch` 和 `later_epoch` 測試[依賴時間的邏輯](./../programmability/epoch-and-time.md)：
 
 ```move
 #[test]
@@ -420,14 +420,14 @@ fun test_epoch_advancement() {
     let alice = @0xA;
     let mut scenario = test_scenario::begin(alice);
 
-    // 檢查初始紀元
+    // 檢查初始 epoch
     assert_eq!(scenario.ctx().epoch(), 0);
 
-    // 推進到下一個紀元
+    // 前進到下一個 epoch
     scenario.next_epoch(alice);
     assert_eq!(scenario.ctx().epoch(), 1);
 
-    // 一起推進紀元和時間（1000ms = 1 秒）
+    // 同時推進 epoch 和時間 (1000ms = 1 秒)
     scenario.later_epoch(1000, alice);
     assert_eq!(scenario.ctx().epoch(), 2);
     assert_eq!(scenario.ctx().epoch_timestamp_ms(), 1000);
@@ -438,7 +438,7 @@ fun test_epoch_advancement() {
 
 ## 完整範例
 
-以下是測試簡單代幣轉移流程的完整範例：
+這是一個測試簡單代幣轉移流程的完整範例：
 
 ```move
 module book::simple_token;
@@ -463,7 +463,7 @@ fun test_token_transfer_flow() {
     let alice = @0xA;
     let bob = @0xB;
 
-    // 以 admin 開始情境
+    // 以 admin 開始場景
     let mut scenario = test_scenario::begin(admin);
 
     // Admin 為 alice 鑄造代幣
@@ -472,7 +472,7 @@ fun test_token_transfer_flow() {
         transfer::public_transfer(token, alice);
     };
 
-    // Alice 接收並轉移到 bob
+    // Alice 接收並轉移給 bob
     scenario.next_tx(alice);
     {
         assert!(scenario.has_most_recent_for_sender<Token>());
@@ -489,34 +489,34 @@ fun test_token_transfer_flow() {
         scenario.return_to_sender(token);
     };
 
-    // 通過效果驗證最終狀態
+    // 透過效果驗證最終狀態
     let effects = scenario.end();
-    assert_eq!(effects.transferred_to_account().size(), 0); // 最終交易中無轉移
+    assert_eq!(effects.transferred_to_account().size(), 0); // 最後一筆交易沒有轉移
 }
 ```
 
 ## 總結
 
-| 函式                        | 用途                           |
-| --------------------------- | ------------------------------ |
-| `begin(sender)`             | 啟動新情境                     |
-| `end(scenario)`             | 結束情境並取得最終效果         |
-| `next_tx(scenario, sender)` | 推進到下一個交易               |
-| `ctx(scenario)`             | 取得 `TxContext` 的可變參考    |
-| `take_from_sender<T>`       | 從發送者取得擁有的物件         |
-| `return_to_sender(obj)`     | 返回物件到發送者               |
-| `take_shared<T>`            | 取得共享物件                   |
-| `return_shared(obj)`        | 返回共享物件                   |
-| `take_immutable<T>`         | 取得不可變物件                 |
-| `return_immutable(obj)`     | 返回不可變物件                 |
-| `create_system_objects`     | 建立 Clock、Random、DenyList   |
-| `next_epoch`                | 推進到下一個紀元               |
-| `later_epoch(ms, sender)`   | 推進紀元和時間                 |
+| 函式 | 用途 |
+| --------------------------- | -------------------------------------- |
+| `begin(sender)` | 開始一個新場景 |
+| `end(scenario)` | 結束場景並獲取最終效果 |
+| `next_tx(scenario, sender)` | 前進到下一筆交易 |
+| `ctx(scenario)` | 獲取 `TxContext` 的可變引用 |
+| `take_from_sender<T>` | 從發送者取出擁有物件 |
+| `return_to_sender(obj)` | 將物件歸還給發送者 |
+| `take_shared<T>` | 取出共享物件 |
+| `return_shared(obj)` | 歸還共享物件 |
+| `take_immutable<T>` | 取出不可變物件 |
+| `return_immutable(obj)` | 歸還不可變物件 |
+| `create_system_objects` | 建立 Clock, Random, DenyList |
+| `next_epoch` | 前進到下一個 Epoch |
+| `later_epoch(ms, sender)` | 推進 Epoch 和時間 |
 
 ## 延伸閱讀
 
-- [使用系統物件](./using-system-objects.md) - 在測試中建立和操作 Clock、Random、DenyList、Coin 和 Balance
-- [測試工具](./test-utilities.md) - `assert_eq!`、`destroy` 和其他測試幫助函式
+- [使用系統物件](./using-system-objects.md) - 在測試中建立和操作 Clock, Random, DenyList, Coin 和 Balance
+- [測試工具](./test-utilities.md) - `assert_eq!`, `destroy` 和其他測試輔助工具
 - [交易上下文](./../programmability/transaction-context.md) - 理解 `TxContext` 及其欄位
-- [物件所有權](./../object/ownership.md) - 擁有、共享和不可變物件的運作方式
-- [紀元和時間](./../programmability/epoch-and-time.md) - 在 Sui 中使用時間
+- [物件所有權](./../object/ownership.md) - 擁有物件、共享物件和不可變物件如何運作
+- [Epoch 和時間](./../programmability/epoch-and-time.md) - 在 Sui 中處理時間

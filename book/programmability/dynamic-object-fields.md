@@ -1,3 +1,8 @@
+---
+
+description: "Dynamic object fields in Sui: attach objects as fields that remain accessible by ID, with differences from regular dynamic fields."
+---
+
 # 動態物件欄位 (Dynamic Object Fields)
 
 在上一節中，我們介紹了[動態欄位](./dynamic-fields)，它允許向物件動態添加資料。在這部分中，我們將介紹它的對應版本 —— 「動態物件欄位 (Dynamic Object Fields)」，並解釋它的特點。

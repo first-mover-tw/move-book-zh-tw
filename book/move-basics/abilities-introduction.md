@@ -1,3 +1,8 @@
+---
+
+description: "Introduction to Move abilities: copy, drop, key, and store — the system that controls how types behave in smart contracts."
+---
+
 # 能力：簡介 (Abilities: Introduction)
 
 Move 擁有獨特的類型系統，允許自定義 **類型能力 (type abilities)**。

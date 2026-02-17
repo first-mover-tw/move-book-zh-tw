@@ -1,3 +1,8 @@
+---
+
+description: "The address type in Move: literals, named addresses, conversion functions, and how addresses identify accounts and packages on Sui."
+---
+
 # 位址類型
 
 Move 使用一種名為 [位址](./../concepts/address) 的特殊類型來表示位址。它是一個 32 位元組的值，可以表示區塊鏈上的任何位址。位址可以兩種形式書寫：以 `0x` 為前綴的十六進位位址，以及具名位址。

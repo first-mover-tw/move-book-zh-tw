@@ -1,3 +1,8 @@
+---
+
+description: "Install the Sui binary and Move compiler using suiup, Homebrew, or Chocolatey to start developing Move smart contracts."
+---
+
 # 安裝 Sui
 
 Move 是一門編譯型語言，因此您需要安裝編譯器才能編寫和執行 Move 程式。編譯器包含在 Sui 二進位檔案中，您可以透過以下任一方法進行安裝或下載。

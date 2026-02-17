@@ -1,3 +1,8 @@
+---
+
+description: "Ownership and scope in Move: how variables are owned, moved, and dropped when they go out of scope in the Move language."
+---
+
 # 所有權與作用域 (Ownership and Scope)
 
 Move 中的每個變數都有一個作用域 (Scope) 和一個所有者 (Owner)。作用域是變數有效的程式碼範圍，而所有者是該變數所屬的作用域。一旦所有者作用域結束，變數就會被丟棄 (dropped)。這是 Move 中的一個核心概念，瞭解其運作方式非常重要。

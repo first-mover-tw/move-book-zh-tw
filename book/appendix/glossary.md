@@ -1,3 +1,8 @@
+---
+
+description: "Glossary of Move and Sui terminology: fast path, parallel execution, internal types, and other key concepts defined."
+---
+
 # 附錄 A: 術語表
 
 - 快速路徑 (Fast Path) - 用來描述不涉及共享物件且無需共識即可執行的交易。

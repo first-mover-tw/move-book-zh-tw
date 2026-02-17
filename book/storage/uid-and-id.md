@@ -1,3 +1,8 @@
+---
+
+description: "UID and ID in Sui Move: unique object identifiers, how they are created, used for dynamic fields, and guaranteed to be unique."
+---
+
 # UID 與 ID (UID and ID)
 
 Sui 校驗器要求在所有具有 [`key`](./key-ability.md) 能力的類型上使用 `UID` 類型。在這裡，我們將深入探討 `UID` 及其用法。

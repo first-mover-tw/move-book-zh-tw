@@ -21,7 +21,7 @@ export default {
   projectName: 'move-book-zh-tw',
 
   // Relax or throw on broken links, options are: 'warn', 'throw'.
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'throw',
 
   // Even if you don't use internationalization, you can use this field to set

@@ -1,3 +1,8 @@
+---
+
+description: "Constants in Move: how to define immutable module-level values, naming conventions, and supported constant types."
+---
+
 # 常數 (Constants)
 
 常數是在模組層級定義的不可變值。它們通常用於為整個模組中使用的靜態值命名。例如，如果某個產品有預設價格，您可以為其定義一個常數。常數儲存在模組的位元組碼 (bytecode) 中，每次使用它們時，該值都會被複製。

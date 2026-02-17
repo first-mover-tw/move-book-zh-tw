@@ -1,3 +1,8 @@
+---
+
+description: "The design philosophy behind Move: security by default, expressiveness, and intuitive resource management for smart contracts."
+---
+
 # 前言
 
 本書旨在介紹 Move，這是一種智能合約語言，它擷取了數位資產安全程式設計的精髓。Move 的設計圍繞著以下核心價值：

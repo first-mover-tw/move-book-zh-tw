@@ -1,3 +1,8 @@
+---
+
+description: "The Sui Framework: built-in modules for storage, coins, display, clock, events, and other Sui-specific features available to every package."
+---
+
 # Sui 框架 (Sui Framework)
 
 要在 Sui 上進行程式設計，您必須與 Sui 框架互動。它是一組定義了物件、其行為以及如何在系統內與其互動的模組。Sui 框架作為一個套件發佈，且對網路上的任何程式都可用（其地址為 `0x2`）。

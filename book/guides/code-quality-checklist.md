@@ -1,3 +1,8 @@
+---
+
+description: "Move code quality checklist: review your Sui smart contracts against current best practices for safety, style, and maintainability."
+---
+
 # 程式碼品質檢查清單 (Code Quality Checklist)
 
 本指南提供了一份針對 Move 2024 的程式碼品質檢查清單，旨在幫助開發者編寫更乾淨、更高效且更易於維護的 Move 程式碼。

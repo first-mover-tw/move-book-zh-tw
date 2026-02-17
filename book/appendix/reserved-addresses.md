@@ -1,3 +1,8 @@
+---
+
+description: "Reserved addresses on Sui: standard library (0x1), Sui framework (0x2), system objects, and other fixed address assignments."
+---
+
 # 附錄 B：保留位址
 
 保留位址是 Sui 上具有特定用途的特殊位址。它們在不同環境之間保持不變，並用於特定的原生操作。
