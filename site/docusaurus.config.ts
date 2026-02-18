@@ -13,8 +13,8 @@ export default {
   // Future compatibility flags.
   future: { v4: true },
 
-  url: 'https://Thalassia.github.io',
-  baseUrl: '/move-book-zh-tw/',
+  url: 'https://move-book-tw.vercel.app',
+  baseUrl: '/',
 
   // GitHub pages deployment config.
   organizationName: 'Thalassia',
