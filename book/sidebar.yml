@@ -2,142 +2,142 @@
 # For possible values of type
 
 bookSidebar:
-  - label: Move 寶典
+  - label: Move 寶典 (The Move Book)
     enumerate: false
     id: index
-  - label: 前言
+  - label: 前言 (Foreword)
     enumerate: false
     id: foreword
   - type: category
-    label: 開始之前
+    label: 開始之前 (Before We Begin)
     link:
       id: before-we-begin/index
       type: doc
     items:
-      - label: 安裝 Sui
+      - label: 安裝 Sui (Install Sui)
         id: before-we-begin/install-sui
-      - label: 安裝 MVR
+      - label: 安裝 MVR (Install MVR)
         id: before-we-begin/install-move-registry-cli
-      - label: IDE 支援
+      - label: IDE 支援 (IDE Support)
         id: before-we-begin/ide-support
       - label: Move 2024
         id: before-we-begin/move-2024
-  - label: 哈囉，世界！
+  - label: '哈囉，世界！(Hello World!)'
     id: your-first-move/hello-world
-  - label: 你好，Sui！
+  - label: '你好，Sui！(Hello Sui!)'
     id: your-first-move/hello-sui
   - type: category
-    label: 概念
+    label: 概念 (Concepts)
     link:
       id: concepts/index
       type: doc
     items:
-      - label: 套件
+      - label: 套件 (Packages)
         id: concepts/packages
-      - label: 專案清單
+      - label: 專案清單 (Manifest)
         id: concepts/manifest
-      - label: 地址
+      - label: 地址 (Address)
         id: concepts/address
-      - label: 帳戶
+      - label: 帳戶 (Account)
         id: concepts/what-is-an-account
-      - label: 交易
+      - label: 交易 (Transaction)
         id: concepts/what-is-a-transaction
   - type: category
-    label: Move 基礎
+    label: Move 基礎 (Move Basics)
     link:
       id: move-basics/index
       type: doc
     items:
-      - label: 模組
+      - label: 模組 (Modules)
         id: move-basics/module
-      - label: 註解
+      - label: 註解 (Comments)
         id: move-basics/comments
-      - label: 原生類型
+      - label: 原生類型 (Primitive Types)
         id: move-basics/primitive-types
-      - label: 位址類型
+      - label: 位址類型 (Address Type)
         id: move-basics/address
-      - label: 表達式
+      - label: 表達式 (Expressions)
         id: move-basics/expression
-      - label: 結構
+      - label: 結構 (Structs)
         id: move-basics/struct
-      - label: 能力：簡介
+      - label: '能力：簡介 (Abilities Introduction)'
         id: move-basics/abilities-introduction
-      - label: 能力：Drop
+      - label: '能力：Drop (Ability: Drop)'
         id: move-basics/drop-ability
-      - label: 匯入模組
+      - label: 匯入模組 (Importing Modules)
         id: move-basics/importing-modules
-      - label: 標準庫
+      - label: 標準庫 (Standard Library)
         id: move-basics/standard-library
-      - label: 向量
+      - label: 向量 (Vector)
         id: move-basics/vector
-      - label: 選項
+      - label: 選項 (Option)
         id: move-basics/option
-      - label: 字串
+      - label: 字串 (String)
         id: move-basics/string
-      - label: 流程控制
+      - label: 流程控制 (Control Flow)
         id: move-basics/control-flow
-      - label: 列舉與模式匹配
+      - label: 列舉與模式匹配 (Enums and Match)
         id: move-basics/enum-and-match
-      - label: 常數
+      - label: 常數 (Constants)
         id: move-basics/constants
-      - label: 中斷執行
+      - label: 中斷執行 (Aborting Execution)
         id: move-basics/assert-and-abort
-      - label: 函式
+      - label: 函式 (Functions)
         id: move-basics/function
-      - label: 結構方法
+      - label: 結構方法 (Struct Methods)
         id: move-basics/struct-methods
-      - label: 可見性修飾符
+      - label: 可見性修飾符 (Visibility Modifiers)
         id: move-basics/visibility
-      - label: 所有權與作用域
+      - label: 所有權與作用域 (Ownership and Scope)
         id: move-basics/ownership-and-scope
-      - label: 能力：Copy
+      - label: '能力：Copy (Ability: Copy)'
         id: move-basics/copy-ability
-      - label: 參照
+      - label: 參照 (References)
         id: move-basics/references
-      - label: 泛型
+      - label: 泛型 (Generics)
         id: move-basics/generics
-      - label: 類型反射
+      - label: 類型反射 (Type Reflection)
         id: move-basics/type-reflection
       # - label: "5.26 Macros: Introduction"
       #   type: doc
       #   id: move-basics/type-parameters
-      - label: 測試
+      - label: 測試 (Testing)
         id: move-basics/testing
   - type: category
-    label: 物件模型
+    label: 物件模型 (Object Model)
     link:
       id: object/index
       type: doc
     items:
-      - label: 數位資產的專屬語言
+      - label: 數位資產的專屬語言 (Language for Digital Assets)
         id: object/digital-assets
-      - label: Move 的演進
+      - label: Move 的演進 (Evolution of Move)
         id: object/evolution-of-move
-      - label: 什麼是物件？
+      - label: '什麼是物件？(What is an Object?)'
         id: object/object-model
-      - label: 所有權
+      - label: 所有權 (Ownership)
         id: object/ownership
-      - label: 快速路徑與共識
+      - label: 快速路徑與共識 (Fast Path & Consensus)
         id: object/fast-path-and-consensus
   - type: category
-    label: 使用物件
+    label: 使用物件 (Using Objects)
     link:
       id: storage/index
       type: doc
     items:
-      - label: 內部約束
+      - label: 內部約束 (Internal Constraint)
         id: storage/internal-constraint
-      - label: 能力：Key
+      - label: '能力：Key (Ability: Key)'
         id: storage/key-ability
-      - label: 能力：Store
+      - label: '能力：Store (Ability: Store)'
         id: storage/store-ability
-      - label: 存儲函式
+      - label: 存儲函式 (Storage Functions)
         id: storage/storage-functions
       # - label: Transfer Restrictions
       #   id: storage/transfer-restrictions
-      - label: UID 與 ID
+      - label: UID 與 ID (UID and ID)
         id: storage/uid-and-id
-      - label: 接收物件
+      - label: 接收物件 (Receiving as Object)
         id: storage/transfer-to-object
       # - label: 9.6 Transfer to Object
       #   id: storage/transfer-to-object
@@ -145,45 +145,45 @@ bookSidebar:
       # - label: Derived Object
       #   id: storage/derived-object
   - type: category
-    label: 進階程式設計
+    label: 進階程式設計 (Advanced Programmability)
     link:
       id: programmability/index
       type: doc
     items:
-      - label: Sui 框架
+      - label: Sui 框架 (Sui Framework)
         id: programmability/sui-framework
-      - label: 交易上下文
+      - label: 交易上下文 (Transaction Context)
         id: programmability/transaction-context
-      - label: 模組初始化器
+      - label: 模組初始化器 (Module Initializer)
         id: programmability/module-initializer
-      - label: 模式：能力
+      - label: '模式：能力 (Pattern: Capability)'
         id: programmability/capability
-      - label: Epoch 與時間
+      - label: Epoch 與時間 (Epoch and Time)
         id: programmability/epoch-and-time
-      - label: 集合
+      - label: 集合 (Collections)
         id: programmability/collections
-      - label: 模式：封裝類型
+      - label: '模式：封裝類型 (Pattern: Wrapper Type)'
         id: programmability/wrapper-type-pattern
-      - label: 動態欄位
+      - label: 動態欄位 (Dynamic Fields)
         id: programmability/dynamic-fields
-      - label: 動態物件欄位
+      - label: 動態物件欄位 (Dynamic Object Fields)
         id: programmability/dynamic-object-fields
-      - label: 動態集合
+      - label: 動態集合 (Dynamic Collections)
         id: programmability/dynamic-collections
-      - label: 模式：見證
+      - label: '模式：見證 (Pattern: Witness)'
         id: programmability/witness-pattern
-      - label: 一次性見證
+      - label: 一次性見證 (One-Time Witness)
         id: programmability/one-time-witness
-      - label: 發佈者權限
+      - label: 發佈者權限 (Publisher Authority)
         id: programmability/publisher
-      - label: 物件顯示
+      - label: 物件顯示 (Object Display)
         id: programmability/display
-      - label: 事件
+      - label: 事件 (Events)
         id: programmability/events
       # - label: Balance & Coin
       #   id: programmability/balance-and-coin
       #   type: doc
-      - label: 模式：Hot Potato
+      - label: '模式：Hot Potato'
         id: programmability/hot-potato-pattern
       # - label: '8.18 Pattern: Request'
       #   id: programmability/request-pattern
@@ -209,74 +209,74 @@ bookSidebar:
       - label: BCS
         id: programmability/bcs
   - type: category
-    label: 測試
+    label: 測試 (Testing)
     link:
       id: testing/index
       type: doc
     items:
-      - label: 測試基礎
+      - label: 測試基礎 (Testing Basics)
         id: testing/testing-basics
-      - label: 什麼是好的測試
+      - label: 什麼是好的測試 (What Makes a Good Test)
         id: testing/good-tests
-      - label: 單元測試工具
+      - label: 單元測試工具 (Unit Test Utilities)
         id: testing/test-utilities
-      - label: 模擬交易上下文
+      - label: 模擬交易上下文 (Simulating Transaction Context)
         id: testing/transaction-context
-      - label: 測試場景
+      - label: 測試場景 (Test Scenario)
         id: testing/test-scenario
-      - label: 使用系統物件
+      - label: 使用系統物件 (Using System Objects)
         id: testing/using-system-objects
-      - label: 模式：Builder
+      - label: '模式：Builder (Pattern: Builder)'
         id: testing/builder-pattern
-      - label: 隨機輸入
+      - label: 隨機輸入 (Random Inputs)
         id: testing/random-test
       # - label: Writing Test Macros
       #   id: testing/writing-test-macros
-      - label: 擴充模組
+      - label: 擴充模組 (Extending Modules)
         id: testing/extend-foreign-module
-      - label: 覆蓋率報告
+      - label: 覆蓋率報告 (Coverage Reports)
         id: testing/coverage
-      - label: Gas 分析
+      - label: Gas 分析 (Gas Profiling)
         id: testing/gas-profiling
   - type: category
-    label: 進階 Move 功能
+    label: 進階 Move 功能 (Advanced Move Features)
     link:
       id: move-advanced/index
       type: doc
     items:
-      - label: 編譯模式
+      - label: 編譯模式 (Compilation Modes)
         id: move-advanced/modes
   - type: category
-    label: 指南
+    label: 指南 (Guides)
     enumerate: false
     items:
-      - label: 2024 遷移指南
+      - label: 2024 遷移指南 (2024 Migration Guide)
         id: guides/2024-migration-guide
-      - label: 升級實踐
+      - label: 升級實踐 (Upgradeability Practices)
         id: guides/upgradeability-practices
-      - label: 針對限制進行開發
+      - label: 針對限制進行開發 (Building Against Limits)
         id: guides/building-against-limits
-      - label: 更好的錯誤處理
+      - label: 更好的錯誤處理 (Better Error Handling)
         id: guides/better-error-handling
-      - label: 程式碼品質檢查清單
+      - label: 程式碼品質檢查清單 (Code Quality Checklist)
         id: guides/code-quality-checklist
       # - label: Open-sourcing Libraries
       #   id: guides/open-sourcing-libraries
       # - label: Creating an NFT Collection
       #   id: guides/creating-an-nft-collection
   - type: category
-    label: 附錄
+    label: 附錄 (Appendix)
     enumerate: false
     items:
-      - label: A. 術語表
+      - label: A. 術語表 (Glossary)
         id: appendix/glossary
-      - label: B. 保留位址
+      - label: B. 保留位址 (Reserved Addresses)
         id: appendix/reserved-addresses
-      - label: C. 轉移函數
+      - label: C. 轉移函數 (Transfer Functions)
         id: appendix/transfer-functions
-      - label: D. 著作
+      - label: D. 著作 (Publications)
         id: appendix/publications
-      - label: E. 貢獻
+      - label: E. 貢獻 (Contributing)
         id: appendix/contributing
-      - label: F. 致謝
+      - label: F. 致謝 (Acknowledgements)
         id: appendix/acknowledgements

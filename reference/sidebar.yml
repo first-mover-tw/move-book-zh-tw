@@ -2,112 +2,112 @@
 # For possible values of type
 
 referenceSidebar:
-  - label: Move 參考手冊
+  - label: Move 參考手冊 (The Move Reference)
     enumerate: false
     id: index
   - type: category
     enumerate: false
-    label: 入門
+    label: 入門 (Getting Started)
     items:
-      - label: 1. 模組
+      - label: 1. 模組 (Modules)
         id: modules
   - type: category
     enumerate: false
-    label: 基本概念
+    label: 基本概念 (Basic Concepts)
     items:
       - type: category
-        label: 2. 原生類型
+        label: 2. 原生類型 (Primitive Types)
         link:
           id: primitive-types
           type: doc
         items:
-          - label: 2.1 整數
+          - label: 2.1 整數 (Integers)
             id: primitive-types/integers
-          - label: 2.2 布林值
+          - label: 2.2 布林值 (Bool)
             id: primitive-types/bool
-          - label: 2.3 地址
+          - label: 2.3 地址 (Address)
             id: primitive-types/address
-          - label: 2.4 向量
+          - label: 2.4 向量 (Vector)
             id: primitive-types/vector
-          - label: 2.5 引用
+          - label: 2.5 引用 (References)
             id: primitive-types/references
-          - label: 2.6 元組與單元
+          - label: 2.6 元組與單元 (Tuples and Unit)
             id: primitive-types/tuples
-      - label: 3. 變數與作用域
+      - label: 3. 變數與作用域 (Local Variables and Scopes)
         id: variables
-      - label: 4. 等式
+      - label: 4. 等式 (Equality)
         id: equality
       - type: category
-        label: 5. 終止與斷言
+        label: 5. 終止與斷言 (Abort and Assert)
         link:
           id: abort-and-assert
           type: doc
         items:
-          - label: 5.1 聰明錯誤
+          - label: 5.1 聰明錯誤 (Clever Errors)
             id: abort-and-assert/clever-errors
       - type: category
-        label: 6. 控制流
+        label: 6. 控制流 (Control Flow)
         link:
           id: control-flow
           type: doc
         items:
-          - label: 6.1 條件表達式
+          - label: 6.1 條件表達式 (Conditional Expressions)
             id: control-flow/conditionals
-          - label: 6.2 迴圈
+          - label: 6.2 迴圈 (Loops)
             id: control-flow/loops
-          - label: 6.3 帶標籤的控制流
+          - label: 6.3 帶標籤的控制流 (Labeled Control Flow)
             id: control-flow/labeled-control-flow
-          - label: 6.4 模式匹配
+          - label: 6.4 模式匹配 (Pattern Matching)
             id: control-flow/pattern-matching
       - type: category
-        label: 7. 函式
+        label: 7. 函式 (Functions)
         link:
           id: functions
           type: doc
         items:
-          - label: 7.1 巨集函式
+          - label: 7.1 巨集函式 (Macros)
             id: functions/macros
-      - label: 8. 結構體
+      - label: 8. 結構體 (Structs)
         id: structs
-      - label: 9. 列舉
+      - label: 9. 列舉 (Enums)
         id: enums
-      - label: 10. 常數
+      - label: 10. 常數 (Constants)
         id: constants
-      - label: 11. 泛型
+      - label: 11. 泛型 (Generics)
         id: generics
-      - label: 12. 能力
+      - label: 12. 能力 (Abilities)
         id: abilities
-      - label: 13. 導入與別名
+      - label: 13. 導入與別名 (Uses and Aliases)
         id: uses
   - type: category
     enumerate: false
-    label: 進階概念
+    label: 進階概念 (Advanced Concepts)
     items:
-      - label: 14. 方法語法
+      - label: 14. 方法語法 (Method Syntax)
         id: method-syntax
-      - label: 15. 索引語法
+      - label: 15. 索引語法 (Index Syntax)
         id: index-syntax
   - type: category
-    label: 工具
+    label: 工具 (Tooling)
     enumerate: false
     items:
-      - label: 16. 套件
+      - label: 16. 套件 (Packages)
         id: packages
-      - label: 17. 單元測試
+      - label: 17. 單元測試 (Unit Testing)
         id: unit-testing
-      - label: 18. 編譯模式
+      - label: 18. 編譯模式 (Compilation Modes)
         id: modes
-      - label: 19. 模組擴展
+      - label: 19. 模組擴展 (Module Extensions)
         id: extensions
   - type: category
-    label: 參考
+    label: 參考 (Reference)
     enumerate: false
     items:
-      - label: 20. 編碼約定
+      - label: 20. 編碼約定 (Coding Conventions)
         id: coding-conventions
   - type: category
-    label: 已棄用
+    label: 已棄用 (Deprecated)
     enumerate: false
     items:
-      - label: 21. 友元
+      - label: 21. 友元 (Friends)
         id: friends
