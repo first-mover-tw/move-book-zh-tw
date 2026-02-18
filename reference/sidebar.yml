@@ -2,112 +2,112 @@
 # For possible values of type
 
 referenceSidebar:
-  - label: The Move Reference
+  - label: Move 參考手冊
     enumerate: false
     id: index
   - type: category
     enumerate: false
-    label: Getting Started
+    label: 入門
     items:
-      - label: 1. Modules
+      - label: 1. 模組
         id: modules
   - type: category
     enumerate: false
-    label: Basic Concepts
+    label: 基本概念
     items:
       - type: category
-        label: 2. Primitive Types
+        label: 2. 原生類型
         link:
           id: primitive-types
           type: doc
         items:
-          - label: 2.1 Integers
+          - label: 2.1 整數
             id: primitive-types/integers
-          - label: 2.2 Bool
+          - label: 2.2 布林值
             id: primitive-types/bool
-          - label: 2.3 Address
+          - label: 2.3 地址
             id: primitive-types/address
-          - label: 2.4 Vector
+          - label: 2.4 向量
             id: primitive-types/vector
-          - label: 2.5 References
+          - label: 2.5 引用
             id: primitive-types/references
-          - label: 2.6 Tuples and Unit
+          - label: 2.6 元組與單元
             id: primitive-types/tuples
-      - label: 3. Local Variables and Scopes
+      - label: 3. 變數與作用域
         id: variables
-      - label: 4. Equality
+      - label: 4. 等式
         id: equality
       - type: category
-        label: 5. Abort and Assert
+        label: 5. 終止與斷言
         link:
           id: abort-and-assert
           type: doc
         items:
-          - label: 5.1 Clever Errors
+          - label: 5.1 聰明錯誤
             id: abort-and-assert/clever-errors
       - type: category
-        label: 6. Control Flow
+        label: 6. 控制流
         link:
           id: control-flow
           type: doc
         items:
-          - label: 6.1 Conditional Expressions
+          - label: 6.1 條件表達式
             id: control-flow/conditionals
-          - label: 6.2 Loops
+          - label: 6.2 迴圈
             id: control-flow/loops
-          - label: 6.3 Labeled Control Flow
+          - label: 6.3 帶標籤的控制流
             id: control-flow/labeled-control-flow
-          - label: 6.4 Pattern Matching
+          - label: 6.4 模式匹配
             id: control-flow/pattern-matching
       - type: category
-        label: 7. Functions
+        label: 7. 函式
         link:
           id: functions
           type: doc
         items:
-          - label: 7.1 Macros
+          - label: 7.1 巨集函式
             id: functions/macros
-      - label: 8. Structs
+      - label: 8. 結構體
         id: structs
-      - label: 9. Enums
+      - label: 9. 列舉
         id: enums
-      - label: 10. Constants
+      - label: 10. 常數
         id: constants
-      - label: 11. Generics
+      - label: 11. 泛型
         id: generics
-      - label: 12. Abilities
+      - label: 12. 能力
         id: abilities
-      - label: 13. Uses and Aliases
+      - label: 13. 導入與別名
         id: uses
   - type: category
     enumerate: false
-    label: Advanced Concepts
+    label: 進階概念
     items:
-      - label: 14. Method Syntax
+      - label: 14. 方法語法
         id: method-syntax
-      - label: 15. Index Syntax
+      - label: 15. 索引語法
         id: index-syntax
   - type: category
-    label: Tooling
+    label: 工具
     enumerate: false
     items:
-      - label: 16. Packages
+      - label: 16. 套件
         id: packages
-      - label: 17. Unit Testing
+      - label: 17. 單元測試
         id: unit-testing
-      - label: 18. Compilation Modes
+      - label: 18. 編譯模式
         id: modes
-      - label: 19. Module Extensions
+      - label: 19. 模組擴展
         id: extensions
   - type: category
-    label: Reference
+    label: 參考
     enumerate: false
     items:
-      - label: 20. Coding Conventions
+      - label: 20. 編碼約定
         id: coding-conventions
   - type: category
-    label: Deprecated
+    label: 已棄用
     enumerate: false
     items:
-      - label: 21. Friends
+      - label: 21. 友元
         id: friends
