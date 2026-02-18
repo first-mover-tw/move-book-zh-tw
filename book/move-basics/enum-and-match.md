@@ -129,7 +129,7 @@ Move 中的 `match` 表達式可以用於任何類型的值 — 列舉、結構�
   - 可以傳回值並用於表達式中。
 - 列舉的常見模式包括 `is_variant` 檢查和 `try_into` 輔助函式。
 
-## 延伸閱讀
+## 延伸閱讀 {#further-reading}
 
 - Move 參考手冊中的 [列舉 (Enums)](./../../reference/enums)。
 - Move 參考手冊中的 [模式匹配 (Pattern Matching)](/reference/control-flow/pattern-matching)。

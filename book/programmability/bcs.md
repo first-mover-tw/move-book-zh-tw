@@ -65,7 +65,7 @@ BCS 在 Move 中是以封裝器 (wrapper) 的形式實作的。解碼器按值�
 
 ```
 
-### 解碼向量 (Decoding Vectors)
+### 解碼向量 (Decoding Vectors) {#decoding-vectors}
 
 雖然大多數原始類型都有專用的解碼函式，但向量需要特殊處理，這取決於元素的類型。對於向量，首先需要解碼向量的長度，然後在迴圈中解碼每個元素。
 

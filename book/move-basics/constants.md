@@ -47,4 +47,4 @@ fun change_price() {
 ## 相關連結
 
 - Move 參考手冊中的 [常數 (Constants)](./../../reference/constants)
-- [常數編碼規範](./../guides/code-quality-checklist#regular-constant-are-all_caps)
+- [常數編碼規範](./../guides/code-quality-checklist)

@@ -57,7 +57,7 @@ Move 標準庫提供了一組與整數類型相關的函式。這些函式分佈
 std = "0x1"
 ```
 
-## 隱式匯入 (Implicit Imports)
+## 隱式匯入 (Implicit Imports) {#implicit-imports}
 
 某些模組會被隱式匯入，無需明確的 `use` 語法即可在模組中使用。對於標準庫，這些模組和類型包括：
 
@@ -73,6 +73,6 @@ Move 標準庫可以被直接匯入到套件中。然而，單獨的 `std` 不�
 MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "framework/mainnet" }
 ```
 
-## 原始碼
+## 原始碼 {#source-code}
 
 Move 標準庫的原始碼可在 [Sui 儲存庫](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/move-stdlib/sources) 中找到。

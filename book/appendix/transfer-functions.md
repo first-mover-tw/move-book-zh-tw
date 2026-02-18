@@ -23,7 +23,7 @@ description: "Quick reference for Sui transfer functions: transfer, share, freez
 | 凍結         | 物件可透過不可變參考存取。                         |
 | 群組         | 取決於群組設定（[請參閱群組表格](#party)）。       |
 
-## 群組
+## 群組 {#party}
 
 | 函數           | 描述                                     |
 | :------------- | :--------------------------------------- |

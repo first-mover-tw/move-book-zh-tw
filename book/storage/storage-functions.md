@@ -24,7 +24,7 @@ description: "Sui storage functions: transfer, share, freeze, and receive object
 
 我們將在 [能力：Store](./store-ability.md) 章節中更深入地探討這一點。
 
-## 轉移至地址 (Transfer to Address)
+## 轉移至地址 (Transfer to Address) {#transfer}
 
 最常見的操作是將物件轉移給一個地址（使用者或另一個物件）。一旦轉移，物件就歸該地址所有。
 

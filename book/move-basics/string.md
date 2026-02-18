@@ -82,7 +82,7 @@ let bytes: &vector<u8> = str.bytes();
 
 然而，諸如 `sub_string` 和 `insert` 之類的方法會驗證字元邊界，如果指定的索引落在字元中間，則會中斷執行。
 
-## ASCII 字串
+## ASCII 字串 {#ascii-strings}
 
 此部分即將推出！
 

@@ -19,15 +19,15 @@ let y = x + 1;
 
 作用域 (Scope) 定義了變數的可見性。當作用域結束時，在該作用域中宣告的變數將不再可用。
 
-## 運算式區塊 (Expression Blocks)
+## 運算式區塊 (Expression Blocks) {#expression-blocks}
 
 運算式區塊是由花括號 `{}` 包圍的一系列語句。區塊的最後一個運算式是該區塊的結果值。
 
-## 遮蔽 (Shadowing)
+## 遮蔽 (Shadowing) {#shadowing}
 
 如果 `let` 宣告了一個與現有變數同名的新變數，則舊變數在該作用域內將無法訪問。這被稱為「遮蔽」。遮蔽可以改變變數的類型。
 
-## 移動與複製 (Move and Copy)
+## 移動與複製 (Move and Copy) {#move-and-copy}
 
 Move 中的所有局部變數可以透過 `move` 或 `copy` 使用。
 

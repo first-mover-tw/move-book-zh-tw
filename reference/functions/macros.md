@@ -97,7 +97,7 @@ let incremented = map!(vector[1, 2, 3], |x| x + res);
 
 任何變數都可以被捕捉，包括可變和不可變引用。
 
-有關更複雜的使用方式，請參閱[範例](#遍歷向量)章節。
+有關更複雜的使用方式，請參閱[範例](#iterating-over-a-vector)章節。
 
 ### 限制
 
@@ -129,7 +129,7 @@ macro fun call_foo<$T, $U>($x: $T): &$U {
 }
 ```
 
-只有當 `$T` 具備一個回傳引用 `&$U` 的 `foo` 方法時，此巨集才能成功展開。如[衛生 (Hygiene)](#衛生)章節所述，`foo` 將根據 `call_foo` 被定義的範圍來解析，而不是它被展開的範圍。
+只有當 `$T` 具備一個回傳引用 `&$U` 的 `foo` 方法時，此巨集才能成功展開。如[衛生 (Hygiene)](#hygiene)章節所述，`foo` 將根據 `call_foo` 被定義的範圍來解析，而不是它被展開的範圍。
 
 ### 類型參數
 
@@ -285,7 +285,7 @@ let sum = {
 };
 ```
 
-### 衛生 (Hygiene)
+### 衛生 (Hygiene) {#hygiene}
 
 在上面的範例中，`dup` 巨集有一個本地變數 `a`，用於綁定引數 `$x`。你可能會問，如果變數被命名為 `x` 會發生什麼？這會與 lambda 中的 `x` 產生衝突嗎？
 
@@ -564,7 +564,7 @@ macro fun num_sqrt<$T, $U>($x: $T, $bitsize: u8): $T {
 }
 ```
 
-### 遍歷向量 (Iterating over a vector)
+### 遍歷向量 (Iterating over a vector) {#iterating-over-a-vector}
 
 這兩個 `macro` 分別對向量進行不可變和可變遍歷。
 

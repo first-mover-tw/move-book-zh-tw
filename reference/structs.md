@@ -9,7 +9,7 @@ description: "Move 結構體參考手冊：定義自定義類型、位置欄位�
 
 結構體可用於定義所有的「資產 (asset)」數值或不受限的數值，其中對這些數值執行的操作可以受結構體的 [能力 (abilities)](./abilities) 控制。預設情況下，結構體是線性 (linear) 且短暫 (ephemeral) 的。我們的意思是，它們：不能被複製，不能被丟棄，也不能存儲在存儲中。這意味著所有數值都必須進行所有權轉移（線性），且數值必須在程式執行結束前處理完畢（短暫）。我們可以透過賦予結構體 [能力 (abilities)](./abilities) 來放寬這種行為，這允許數值被複製或丟棄，並允許存儲在存儲中或定義存儲架構 (storage schemas)。
 
-## 定義結構體
+## 定義結構體 {#defining-structs}
 
 結構體必須定義在模組內部，其欄位可以是命名欄位 (named fields) 或位置欄位 (positional fields)：
 
@@ -40,7 +40,7 @@ public struct D(D)
 //              ^ 錯誤！遞歸定義
 ```
 
-### 可見性 (Visibility)
+### 可見性 (Visibility) {#visibility}
 
 你可能已經注意到，所有結構體都被宣告為 `public`。這意味著該結構體的類型可以從任何其他模組引用。然而，結構體的欄位，以及建立或銷毀結構體的能力，仍然是定義該結構體的模組所私有的。
 
@@ -230,7 +230,7 @@ let y = pos_foo.1;  // y == true
 
 在不借用或複製的情況下存取結構體欄位會受到欄位能力約束的限制。更多細節請參閱[借用結構體與欄位](#borrowing-structs-and-fields)以及[讀取與寫入欄位](#reading-and-writing-fields)章節。
 
-### 借用結構體與欄位
+### 借用結構體與欄位 {#borrowing-structs-and-fields}
 
 `&` 和 `&mut` 運算子可用於建立對結構體或欄位的引用。這些範例包含了一些可選的類型標籤（例如 `: &Foo`）來演示操作類型。
 
@@ -262,7 +262,7 @@ let x_ref = &foo_ref.x;
 // 這與 let x_ref = &foo.x 效果相同
 ```
 
-### 讀取與寫入欄位
+### 讀取與寫入欄位 {#reading-and-writing-fields}
 
 如果你需要讀取並複製欄位的值，可以對借用的欄位進行解引用 (dereference)：
 

@@ -162,4 +162,4 @@ let z = x; // 錯誤！x 已被移動
 
 ## 所有權 (Ownership)
 
-如 [上文](#銷毀和複製向量) 所述，只有在元素可複製的情況下才能複製 `vector` 數值。在這種情況下，可以透過 [`copy`](./../variables#移動與複製) 或 [解引用 `*`](./references#透過引用讀取和寫入) 來完成複製。
+如 [上文](#銷毀和複製向量) 所述，只有在元素可複製的情況下才能複製 `vector` 數值。在這種情況下，可以透過 [`copy`](./../variables#move-and-copy) 或 [解引用 `*`](./references#reading-and-writing-through-references) 來完成複製。

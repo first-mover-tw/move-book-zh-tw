@@ -42,7 +42,7 @@ module book::metro_pass;
 
 <!-- In [the previous section](./ownership-and-scope) we explained the ownership and scope in Move. We showed how the value is *moved* to a new scope, and how it changes the owner. In this section, we will explain how to *borrow* a reference to a value to avoid moving it, and how Move's *borrow checker* ensures that the references are used correctly. -->
 
-## 參照 (References)
+## 參照 (References) {#references}
 
 參照是一種在不放棄所有權的情況下，向函式 **展示** 一個值的方法。在我們的案例中，當我們向查票員出示卡片時，我們並不希望放棄它的所有權，也不允許查票員消耗我們的乘車次數。我們只是想允許 **讀取** 卡片的值並證明其所有權。
 

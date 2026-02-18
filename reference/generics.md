@@ -92,7 +92,7 @@ fun foo() {
 }
 ```
 
-## 類型推導 (Type Inference)
+## 類型推導 (Type Inference) {#type-inference}
 
 在大多數情況下，Move 編譯器能夠推導出類型引數，因此你不需要顯式寫下它們。以下是省略類型引數時上述範例的樣子：
 
@@ -185,7 +185,7 @@ let x = 340282366920938463463374607431768211454u128;
 //                                             ^^^^ 有效！
 ```
 
-## 未使用的類型參數 (Unused Type Parameters)
+## 未使用的類型參數 (Unused Type Parameters) {#unused-type-parameters}
 
 對於結構體定義，未使用的類型參數是指未出現在結構體定義的任何欄位中，但在編譯時會進行靜態檢查的參數。Move 允許未使用的類型參數，因此以下結構體定義是有效的：
 

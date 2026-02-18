@@ -337,7 +337,7 @@ $ sui client publish --gas-budget 100000000 --json
 
 為了演示與 `todo_list` 程式包的互動，我們將發送一筆交易來建立一個新清單並向其中新增一個項目。交易透過 `sui client ptb` 命令發送，它允許充分利用 [交易區塊 (Transaction Blocks)](./../concepts/what-is-a-transaction) 的功能。這個命令可能看起來龐大而複雜，但我們會逐步解釋。
 
-### 準備變數
+### 準備變數 {#prepare-the-variables}
 
 在我們建構命令之前，讓我們先儲存將在交易中使用的值。將 `0x4....` 替換為您已發布的程式包地址。而 `MY_ADDRESS` 變數將自動從命令列介面 (CLI) 輸出中設定為您的地址。
 

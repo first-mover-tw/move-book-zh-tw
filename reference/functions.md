@@ -21,7 +21,7 @@ description: "Move 函式參考手冊：宣告、可見性修飾符、進入點�
 fun foo<T1, T2>(x: u64, y: T1, z: T2): (T2, T1, u64) { (z, y, x) }
 ```
 
-### 可見性 (Visibility)
+### 可見性 (Visibility) {#visibility}
 
 預設情況下，模組函式只能在同一個模組內被呼叫。這些內部（有時稱為私有）函式不能從其他模組呼叫，也不能作為執行的進入點。
 
@@ -39,7 +39,7 @@ module b::other {
 }
 ```
 
-若要允許從其他模組存取，函式必須宣告為 `public` 或 `public(package)`。與可見性切線相關的是，[`entry`](#entry-修飾符) 函式可以被呼叫作為執行的進入點。
+若要允許從其他模組存取，函式必須宣告為 `public` 或 `public(package)`。與可見性切線相關的是，[`entry`](#entry-modifier) 函式可以被呼叫作為執行的進入點。
 
 #### `public` 可見性
 
@@ -62,7 +62,7 @@ module b::other {
 }
 ```
 
-有關執行進入點的更多細節，請參閱[下方章節](#entry-修飾符)。
+有關執行進入點的更多細節，請參閱[下方章節](#entry-modifier)。
 
 #### `public(package)` 可見性
 
@@ -95,7 +95,7 @@ module b::other {
 
 在引入 `public(package)` 之前，`public(friend)` 被用於允許同一個套件中的函式進行有限的公開存取，但必須由被呼叫者的模組顯式列舉允許的模組清單。詳情請參閱 [朋友圈 (Friends)](./friends)。
 
-### `entry` 修飾符
+### `entry` 修飾符 {#entry-modifier}
 
 除了 `public` 函式之外，你的模組中可能還有一些函式想要作為執行的進入點。`entry` 修飾符旨在允許模組函式啟動執行，而無需將功能暴露給其他模組。
 
@@ -250,7 +250,7 @@ fun example(): u64 {
 
 有關表達式區塊的更多資訊，請參閱 [Move 變數 (Variables)](./variables)。
 
-### 原生函式 (Native Functions)
+### 原生函式 (Native Functions) {#native-functions}
 
 有些函式沒有指定主體，而是由虛擬機 (VM) 提供主體。這些函式被標記為 `native` (原生)。
 

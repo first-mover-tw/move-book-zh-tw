@@ -62,7 +62,7 @@ sui move test my_module
 sui move test book::my_module::test_addition
 ```
 
-## 預期失敗 (Expected Failures)
+## 預期失敗 (Expected Failures) {#expected-failures}
 
 使用 `#[expected_failure]` 來測試程式碼在特定條件下是否會中止。只有當程式碼中止時，測試才會通過；如果它正常完成，測試就會失敗。
 

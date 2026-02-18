@@ -36,7 +36,7 @@ description: "Move 能力參考手冊：copy, drop, store 與 key —— 關於�
 
 - 在本地變數或參數中不使用該數值
 - 在[透過 `;` 連接的序列](./variables#expression-blocks)中不使用該數值
-- 在[賦值](./variables#assignments)中覆寫變數中的數值
+- 在[賦值](./variables#move-and-copy)中覆寫變數中的數值
 - 在[寫入 `*e1 = e2`](./primitive-types/references#reading-and-writing-through-references) 時透過引用覆寫數值。
 
 如果一個數值具有 `drop`，則該數值內包含的所有數值也都具有 `drop`。
@@ -70,7 +70,7 @@ description: "Move 能力參考手冊：copy, drop, store 與 key —— 關於�
 
 請注意，原始類型都不具備 `key` 能力，這意味著它們都不能直接與存儲操作一起使用。
 
-## 標記結構體與列舉
+## 標記結構體與列舉 {#annotating-structs-and-enums}
 
 要宣告 `struct` 或 `enum` 具有某種能力，可以在資料類型名稱之後、欄位/變體之前或之後使用 `has <ability>`。例如：
 
@@ -129,7 +129,7 @@ public struct MyDataEnum has store {
 }
 ```
 
-## 條件能力與泛型類型 (Conditional Abilities and Generic Types)
+## 條件能力與泛型類型 (Conditional Abilities and Generic Types) {#conditional-abilities-and-generic-types}
 
 當在泛型類型上標記能力時，並非該類型的所有實例都保證具備該能力。考慮這個結構體宣告：
 

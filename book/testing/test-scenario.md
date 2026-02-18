@@ -65,7 +65,7 @@ fun test_multi_transaction() {
 
 ## 存取擁有的物件 (Owned Objects)
 
-轉移到某個地址的[擁有物件](./../object/ownership.md#owned-by-an-address)可以使用 `take_from_sender` 或 `take_from_address` 來存取。然後該物件可以傳遞給函式，使用 `return_to_sender` 或 `return_to_address` 歸還，或者使用 `public_transfer` (如果物件具有 `store` 能力) 轉移到其他地方。
+轉移到某個地址的[擁有物件](./../object/ownership.md#account-owner-or-single-owner)可以使用 `take_from_sender` 或 `take_from_address` 來存取。然後該物件可以傳遞給函式，使用 `return_to_sender` 或 `return_to_address` 歸還，或者使用 `public_transfer` (如果物件具有 `store` 能力) 轉移到其他地方。
 
 ```move
 module book::test_scenario_example;
@@ -328,7 +328,7 @@ fun test_context_access() {
 }
 ```
 
-## 讀取交易效果 (Transaction Effects)
+## 讀取交易效果 (Transaction Effects) {#reading-transaction-effects}
 
 `next_tx` 和 `end` 都會回傳 `TransactionEffects`，其中包含有關交易期間發生事件的資訊：
 

@@ -7,7 +7,7 @@ description: "Define custom types with struct in Move: create, pack, unpack, and
 
 當涉及到定義自定義類型時，Move 的類型系統大放異彩。使用者定義的類型可以根據應用程式的特定需求量身定制，不僅在資料層級，在其行為上也是如此。在本節中，我們將介紹 `struct` 的定義及其使用方法。
 
-## 結構 (Struct)
+## 結構 (Struct) {#struct}
 
 要定義自定義類型，可以使用 `struct` 關鍵字，後接類型的名稱。在名稱之後，您可以定義結構的欄位。每個欄位都使用 `欄位名稱: 欄位類型` 的語法定義。欄位定義必須以逗號分隔。欄位可以是任何類型，包括其他結構。
 
@@ -23,7 +23,7 @@ description: "Define custom types with struct in Move: create, pack, unpack, and
 
 > 結構的欄位是私有的，只能由定義該結構的模組存取。只有在定義結構的模組提供公開函式來存取欄位的情況下，才可能在其他模組中讀取和寫入結構的欄位。
 
-## 建立與使用實例
+## 建立與使用實例 {#create-and-use-an-instance}
 
 我們剛才描述了結構的 **定義**。現在讓我們看看如何初始化並使用一個結構。結構可以使用 `結構名稱 { 欄位1: 值1, 欄位2: 值2, ... }` 的語法進行初始化。欄位可以按任何順序初始化，並且所有必要的欄位都必須設置。
 
@@ -41,7 +41,7 @@ description: "Define custom types with struct in Move: create, pack, unpack, and
 
 只有定義結構的模組可以存取其欄位（包括可變存取和不可變存取）。因此，上述程式碼應與 `Artist` 結構位於同一個模組中。
 
-## 解構結構 (Unpacking a struct)
+## 解構結構 (Unpacking a struct) {#unpacking-a-struct}
 
 結構預設是不可捨棄的，這意味著初始化的結構值必須被使用，無論是透過儲存還是 **解構 (unpacking)**。解構結構意味著將其拆解為其各個欄位。這可以使用 `let` 關鍵字後接結構名稱和欄位名稱來完成。
 

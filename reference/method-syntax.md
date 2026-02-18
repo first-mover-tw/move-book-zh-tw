@@ -270,9 +270,9 @@ module b::other {
 }
 ```
 
-一個有幫助的想法是 `use` 在它能做到時為函式建立隱式 `use fun` 別名。在此情況下，`use a::cup::cup_borrow as borrow` 建立了隱含的 `use fun a::cup::cup_borrow as Cup.borrow`，因為它將成為有效的 `use fun` 別名。兩種觀點是等價的。這條推理線可以告知使用遮蔽時特定方法將如何解析。有關更多詳情，請參閱[範圍](#範圍)中的情況。
+一個有幫助的想法是 `use` 在它能做到時為函式建立隱式 `use fun` 別名。在此情況下，`use a::cup::cup_borrow as borrow` 建立了隱含的 `use fun a::cup::cup_borrow as Cup.borrow`，因為它將成為有效的 `use fun` 別名。兩種觀點是等價的。這條推理線可以告知使用遮蔽時特定方法將如何解析。有關更多詳情，請參閱[範圍](#scoping)中的情況。
 
-### 範圍 (Scoping)
+### 範圍 (Scoping) {#scoping}
 
 如果不是 `public`，`use fun` 別名在其範圍內是本地的，很像普通的 [`use`](uses)。例如
 

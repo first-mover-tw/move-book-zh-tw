@@ -42,7 +42,7 @@ public fun uid(ctx: &mut TxContext) {
 
 `UID` 充當物件的代表，並允許定義物件的行為和功能。其中一個關鍵功能 —— [動態欄位 (Dynamic Fields)](./../programmability/dynamic-fields) —— 之所以可行，是因為 `UID` 類型是顯式的。此外，它允許接收發送到其他物件的物件。此功能稱為 [轉移至物件 (Transfer to Object, TTO)](./transfer-to-object.md)，我們稍後將在本章中解釋。
 
-## UID 衍生 (UID Derivation)
+## UID 衍生 (UID Derivation) {#uid-derivation}
 
 Sui 允許使用「衍生金鑰 (derivation keys)」從其他 UID 衍生出 UID。此功能在 [`sui::derived_object`][derived-object] 模組中實作，允許產生可預測且確定性的 `UIDs`，以便於鏈下發現。每一對「父項 (parent) + 金鑰 (key)」的 UID 只能產生一次！
 

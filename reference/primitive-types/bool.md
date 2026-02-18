@@ -33,4 +33,4 @@ description: "Move 布林類型參考手冊：true 和 false 常值、邏輯運�
 
 ## 所有權 (Ownership)
 
-與語言中內建的其他純量值 (scalar values) 一樣，布林值是隱式可複製的，這意味著它們可以在沒有明確指令（如 [`copy`](.././variables#移動與複製)）的情況下被複製。
+與語言中內建的其他純量值 (scalar values) 一樣，布林值是隱式可複製的，這意味著它們可以在沒有明確指令（如 [`copy`](.././variables#move-and-copy)）的情況下被複製。

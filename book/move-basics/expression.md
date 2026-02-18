@@ -9,7 +9,7 @@ description: "Expressions in Move: literals, function calls, blocks, and how alm
 
 > 表達式以分號 `;` 序列化。如果分號後「沒有表達式」，編譯器將插入一個 `unit ()`，它代表一個空的表達式。
 
-## 常數值 (Literals)
+## 常數值 (Literals) {#literals}
 
 在 [原始類型](./primitive-types) 章節中，我們介紹了 Move 的基本類型。為了說明這些類型，我們使用了常數值 (literal)。常數值是程式原始碼中表示固定值的記法。常數值可用於初始化變數，或直接作為參數傳遞給函式。Move 具有以下常數值：
 

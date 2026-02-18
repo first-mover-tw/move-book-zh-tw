@@ -79,7 +79,7 @@ description: "Generics in Move: write reusable functions and types that work wit
 
 在上面的範例中，我們演示了如何建立兩個具有不同幽靈類型參數 `USD` 和 `EUR` 的不同 `Coin` 實例。類型參數 `T` 未用於 `Coin` 類型的欄位或方法中，但它用於區分不同類型的代幣。這有助於確保 `USD` 和 `EUR` 代幣不會被錯誤地混淆。
 
-## 類型參數的約束 (Constraints on Type Parameters)
+## 類型參數的約束 (Constraints on Type Parameters) {#constraints-on-type-parameters}
 
 可以約束類型參數以使其具備某些能力。這在您需要內部類型允許某些行為（如 _copy_ 或 _drop_）時非常有用。約束類型參數的語法為 `T: <能力> + <能力>`。
 

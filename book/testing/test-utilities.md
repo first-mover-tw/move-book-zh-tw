@@ -28,7 +28,7 @@ assert!(balance >= amount, EInsufficientBalance);
 assert!(balance >= amount);
 ```
 
-## `assert_eq!` 和 `assert_ref_eq!`
+## `assert_eq!` 和 `assert_ref_eq!` {#assert_eq-and-assert_ref_eq}
 
 雖然 `assert!` 可以工作，但它有一個限制：當它失敗時，它只顯示條件為假，而不會給出導致失敗的實際數值。考慮這個測試：
 

@@ -161,7 +161,7 @@ public fun borrow(c: &List<T>, key: String): &T { /* ... */ }
 public fun borrow_mut(c: &mut List<T>, key: String): &mut T { /* ... */ }
 ```
 
-## 方法別名 (Method Aliases)
+## 方法別名 (Method Aliases) {#method-aliases}
 
 在 Move 2024 中，方法可以與類型關聯。別名可以針對任何類型在模組本地定義；如果類型在同一個模組中定義，則可以公開定義。
 

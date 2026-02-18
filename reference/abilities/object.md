@@ -19,7 +19,7 @@ description: "Sui 物件參考手冊：key 能力如何定義物件、UID 的要
 
 請注意，由於 `sui::object::UID` 僅具備 `store` 能力（它不具備 `copy` 或 `drop`），因此沒有物件具備 `copy` 或 `drop` 能力。
 
-## 傳輸規則 (Transfer Rules)
+## 傳輸規則 (Transfer Rules) {#transfer-rules}
 
 物件的所有權可以在 `sui::transfer` 模組中更改和傳輸。該模組中的許多函式都有「公開 (public)」和「私有 (private)」變體，其中「私有」變體只能在定義物件類型的模組內部呼叫。只有當物件具備 `store` 能力時，才能呼叫「公開」變體。
 

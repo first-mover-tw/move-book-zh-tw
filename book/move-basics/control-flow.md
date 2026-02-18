@@ -12,7 +12,7 @@ description: "Control flow in Move: if/else expressions, while and loop construc
 - [`break` 和 `continue` 語句](#exiting-a-loop-early) — 提早退出迴圈
 - [`return`](#early-return) 語句 — 提早退出函式
 
-## 條件語句 (Conditional Statements)
+## 條件語句 (Conditional Statements) {#conditional-statements}
 
 `if` 表達式用於在程式中做出決策。它會評估一個 [布林表達式](./expression#literals)，如果表達式為 true，則執行一段程式碼。與 `else` 配合使用時，如果表達式為 false，它可以執行另一段不同的程式碼。
 
@@ -39,7 +39,7 @@ if (<布林表達式>) <表達式> else <表達式>;
 
 條件表達式是 Move 中最重要的流程控制語句之一。它們評估使用者提供的輸入或儲存的資料以做出決策。一個關鍵的使用案例是 [`assert!` 巨集](./assert-and-abort)，它檢查條件是否為 true，如果不是則中斷執行。我們稍後將詳細探討這一點。
 
-## 使用迴圈重複語句 (Repeating Statements with Loops)
+## 使用迴圈重複語句 (Repeating Statements with Loops) {#repeating-statements-with-loops}
 
 迴圈用於多次執行一段程式碼。Move 有兩種內建的迴圈類型：`loop` 和 `while`。在許多情況下它們可以互換使用，但通常 `while` 用於預先知道迭代次數的情況，而 `loop` 用於預先不知道迭代次數或有多個退出點的情況。
 
@@ -83,7 +83,7 @@ loop { <多個表達式>; };
 
 無限迴圈在 Move 中很少具有實用性，因為每項運算都會消耗 Gas，無限迴圈必然會導致 Gas 耗盡。如果您發現自己在運用迴圈，請考慮是否有更好的方法，因為許多使用案例可以使用其他流程控制結構更有效地處理。儘管如此，當 `loop` 與 `break` 和 `continue` 語句結合使用時，對於建立受控且靈活的循環行為可能非常有用。
 
-## 提早退出迴圈 (Exiting a Loop Early)
+## 提早退出迴圈 (Exiting a Loop Early) {#exiting-a-loop-early}
 
 正如我們已經提到的，無限迴圈本身是沒什麼用處的。這就是我們引入 `break` 和 `continue` 語句的原因。它們分別用於提早退出迴圈和跳過當前迭代的剩餘部分。
 
@@ -119,7 +119,7 @@ continue
 
 `break` 和 `continue` 語句在 `while` 和 `loop` 迴圈中都可以使用。
 
-## 提早傳回 (Early Return)
+## 提早傳回 (Early Return) {#early-return}
 
 `return` 語句用於提早退出 [函式](./function) 並傳回一個值。它通常與條件語句結合使用，以便在滿足特定條件時退出函式。`return` 語句的語法為：
 

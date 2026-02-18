@@ -49,7 +49,7 @@ let y = if (maximum >= 10) maximum;
 // highlight-error-end
 ```
 
-通常，`if` 表達式會與 [表達式區塊 (expression blocks)](./../variables#表達式區塊) 結合使用。
+通常，`if` 表達式會與 [表達式區塊 (expression blocks)](./../variables#expression-blocks) 結合使用。
 
 ```move
 let maximum = if (x > y) x else y;

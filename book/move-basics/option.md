@@ -40,7 +40,7 @@ _參閱 [std::option 模組完整文件][option-stdlib]。_
 
 `Option` 類型以及 `std::option` 模組在 Move 中是隱式匯入的。這意味著您可以直接使用 `Option` 類型，而不需要 `use` 語句。
 
-要建立 `Option` 類型的值，您可以使用 `option::some` 或 `option::none` 方法。`Option` 值也支援多種操作（借用將在 [參照 (references)](references#references-1) 章節中討論）：
+要建立 `Option` 類型的值，您可以使用 `option::some` 或 `option::none` 方法。`Option` 值也支援多種操作（借用將在 [參照 (references)](references#references) 章節中討論）：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=usage
 

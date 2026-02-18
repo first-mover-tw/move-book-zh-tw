@@ -71,7 +71,7 @@ sui = "0x2"
 std = "0x1"
 ```
 
-## 隱式導入 (Implicit Imports)
+## 隱式導入 (Implicit Imports) {#implicit-imports}
 
 就像 [標準庫](./../move-basics/standard-library#implicit-imports) 一樣，Sui 框架中的某些模組和類型會被隱式導入。以下是無需顯式使用 `use` 導入即可使用的模組和類型清單：
 
@@ -82,6 +82,6 @@ std = "0x1"
 - sui::tx_context::TxContext
 - sui::transfer
 
-## 原始碼 (Source Code)
+## 原始碼 (Source Code) {#source-code}
 
 Sui 框架的原始碼可在 [Sui 儲存庫](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/sui-framework/sources) 中找到。
