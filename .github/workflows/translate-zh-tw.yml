@@ -9,7 +9,7 @@ on:
     branches:
       - english-main
   schedule:
-    - cron: "0 2 * * *"  # Daily at 02:00 UTC 
+    - cron: "0 2 * * *"  # Daily at 02:00 UTC
   workflow_dispatch:
 
 jobs:

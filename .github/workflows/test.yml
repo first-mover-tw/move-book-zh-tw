@@ -24,7 +24,7 @@ jobs:
           version: main
           cache: enable
 
-      # Run the tests in every directory using the latest mainnet binary 
+      # Run the tests in every directory using the latest mainnet binary
       - run: sui move test --path packages/samples
       - run: sui move test --path packages/reference
       - run: sui move test --path packages/todo_list
