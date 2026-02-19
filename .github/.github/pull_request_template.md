@@ -1,9 +1,0 @@
-## Description
-
-Please, make sure to reflect the target in the header of your PR!
-
-## Changes
-
-- [ ] book: ...
-- [ ] reference: ...
-- [ ] other (specify): ...
