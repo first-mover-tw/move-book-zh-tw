@@ -16,3 +16,6 @@ __pycache__/
 venv/
 .venv/
 .uv/
+
+# Local progress tracking
+progress.md
