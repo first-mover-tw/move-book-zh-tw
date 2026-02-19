@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 import argparse
@@ -23,6 +24,20 @@ RATE_LIMIT_WAIT = 60
 BETWEEN_FILES_WAIT = 20
 
 MANIFEST_PATH = Path("scripts/translation-manifest.json")
+
+SIDEBAR_PROMPT = (
+    "You are a professional technical translator.\n"
+    "Translate the following sidebar labels into Traditional Chinese (Taiwan).\n"
+    "Use the format: 繁體中文翻譯 (Original English)\n"
+    "Use natural Taiwan zh-TW terminology (e.g. 套件 not 包, 函式 not 函數, 模組 not 模塊).\n"
+    "Keep Move/Sui technical terms accurate.\n"
+    "If a label already has the format '中文 (English)', keep it as-is.\n"
+    "If a label is a proper noun or abbreviation (e.g. BCS, Move 2024), keep it unchanged.\n\n"
+    "Input is one label per line, numbered. Return the same numbered format.\n"
+    "Return ONLY the numbered translated labels, no explanation."
+)
+
+SIDEBAR_FILES = ["book/sidebar.yml", "reference/sidebar.yml"]
 
 
 def load_manifest() -> dict[str, str]:
@@ -77,7 +92,7 @@ def detect_changed_files(english_ref: str = "english-main",
 
         for line in result.stdout.strip().splitlines():
             line = line.strip()
-            if not line.endswith(".md"):
+            if not (line.endswith(".md") or line in SIDEBAR_FILES):
                 continue
             eng_hash = git_hash_object_ref(english_ref, line)
             if eng_hash is None:
@@ -96,7 +111,11 @@ def translate_markdown(client, input_path: Path) -> str:
         + text
         + "\n\nReturn only the translated Markdown, no explanation."
     )
+    return _call_model(client, msg)
 
+
+def _call_model(client, msg: str) -> str:
+    """Call Gemini with model fallback and retry logic."""
     for model_name in MODELS:
         for attempt in range(MAX_RETRIES):
             try:
@@ -115,8 +134,52 @@ def translate_markdown(client, input_path: Path) -> str:
                 else:
                     print(f"  Error with {model_name}: {e}")
                     time.sleep(5)
-
     raise RuntimeError("All models failed after retries.")
+
+
+def translate_sidebar_yml(client, input_path: Path) -> str:
+    """Translate only label values in a sidebar YAML file.
+
+    Extracts all `label:` values, sends them to Gemini in batch,
+    and replaces them back preserving YAML structure and comments.
+    """
+    text = input_path.read_text(encoding="utf-8")
+    label_pattern = re.compile(r'^(\s*-?\s*label:\s*)(.+)$', re.MULTILINE)
+
+    matches = list(label_pattern.finditer(text))
+    if not matches:
+        return text
+
+    # Build numbered list of labels for the model
+    labels = [m.group(2).strip().strip("'\"") for m in matches]
+    numbered = "\n".join(f"{i+1}. {label}" for i, label in enumerate(labels))
+
+    msg = SIDEBAR_PROMPT + "\n\n" + numbered
+
+    raw_response = _call_model(client, msg)
+
+    # Parse numbered response back
+    translated = {}
+    for line in raw_response.strip().splitlines():
+        line = line.strip()
+        m = re.match(r'^(\d+)\.\s*(.+)$', line)
+        if m:
+            translated[int(m.group(1))] = m.group(2).strip()
+
+    # Replace labels in original text (reverse order to preserve positions)
+    result = text
+    for i, match in reversed(list(enumerate(matches))):
+        idx = i + 1
+        new_label = translated.get(idx)
+        if not new_label:
+            continue
+        # Quote the label if it contains special YAML chars
+        if any(c in new_label for c in ":{}[],'\"&*?|>!%@`"):
+            new_label = f"'{new_label}'"
+        prefix = match.group(1)
+        result = result[:match.start()] + prefix + new_label + result[match.end():]
+
+    return result
 
 
 def main():
@@ -178,10 +241,15 @@ def main():
         except subprocess.CalledProcessError:
             eng_hash = None
 
-        print(f"[{i+1}/{len(files_to_translate)}] Translating {input_path} ...")
+        is_sidebar = str(input_path) in SIDEBAR_FILES
+        kind = "sidebar" if is_sidebar else "markdown"
+        print(f"[{i+1}/{len(files_to_translate)}] Translating {input_path} ({kind}) ...")
 
         try:
-            translated = translate_markdown(client, input_path)
+            if is_sidebar:
+                translated = translate_sidebar_yml(client, input_path)
+            else:
+                translated = translate_markdown(client, input_path)
             # Overwrite the file in-place (no .zh-TW suffix)
             input_path.write_text(translated, encoding="utf-8")
             print(f"  -> {input_path} (overwritten)")
