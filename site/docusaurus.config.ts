@@ -13,11 +13,11 @@ export default {
   // Future compatibility flags.
   future: { v4: true },
 
-  url: 'https://move-book-tw.vercel.app',
+  url: 'http://first-mover-tw.com/',
   baseUrl: '/',
 
   // GitHub pages deployment config.
-  organizationName: 'Thalassia',
+  organizationName: 'first-mover-tw',
   projectName: 'move-book-zh-tw',
 
   // Relax or throw on broken links, options are: 'warn', 'throw'.
