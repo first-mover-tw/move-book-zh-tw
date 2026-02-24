@@ -13,7 +13,7 @@ export default {
   // Future compatibility flags.
   future: { v4: true },
 
-  url: 'http://first-mover-tw.com/',
+  url: 'http://first-mover-tw.com',
   baseUrl: '/',
 
   // GitHub pages deployment config.
@@ -191,7 +191,7 @@ export default {
           position: 'right',
         },
         {
-          href: 'https://github.com/MystenLabs/move-book',
+          href: 'https://github.com/first-mover-tw/move-book-zh-tw',
           position: 'right',
           html: '<i class="fab fa-github"></i>', // 👈 icon here
         },
