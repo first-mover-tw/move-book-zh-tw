@@ -30,4 +30,3 @@ jobs:
 
           # 允許合併無共同祖先的歷史（fork 重建或 shallow clone 導致）
           upstream_pull_args: "--tags --allow-unrelated-histories"
-          test_mode: true
