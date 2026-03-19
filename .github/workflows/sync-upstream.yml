@@ -16,19 +16,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # 這裡用 english-main，代表我們要在 english-main 上做同步
           ref: english-main
+          fetch-depth: 0
 
       - name: Sync from MystenLabs/move-book
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
-          # 你自己 repo 的 branch = 要被同步的目標分支
           target_sync_branch: english-main
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
 
-          # 上游官方 repo & branch
           upstream_sync_repo: MystenLabs/move-book
           upstream_sync_branch: main
 
-          # （可選）dry run 模式關掉，才會真的 push
-          upstream_fetch_args: "--tags --prune"
+          # 允許合併無共同祖先的歷史（fork 重建或 shallow clone 導致）
+          upstream_pull_args: "--tags --allow-unrelated-histories"
+          test_mode: true
