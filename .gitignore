@@ -1,5 +1,27 @@
 build
 .idea
 .DS_Store
-.claude/
+
+# Security
 .env
+
+# AI Assistant
+.claude/
+.gemini/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.uv/
+
+# Local progress tracking
+progress.md
+
+# Generated AI-friendly docs (created by llms-txt plugin)
+site/static/llms.txt
+site/static/llms-full.txt
+site/static/**/*.md
+!site/static/move-semantics.md

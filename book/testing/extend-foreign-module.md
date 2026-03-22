@@ -9,6 +9,13 @@ defined in those packages. However, many libraries don't provide test utilities,
 to construct the objects your tests require. Module extensions solve this problem by allowing you to
 add test-only functions to foreign modules.
 
+> This feature is currently available only in `2024.alpha` edition.
+> To use it, you need to specify the edition in the `Move.toml` :
+> ```toml
+> [package]
+> edition = "2024.alpha"
+> ```
+
 ## The Problem
 
 Consider an application that uses [Pyth Network](https://pyth.network/) for price feeds. Your code
