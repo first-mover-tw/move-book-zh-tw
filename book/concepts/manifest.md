@@ -1,24 +1,16 @@
 # Package Manifest
 
-The `Move.toml` is a manifest file that describes the [package](./packages) and its dependencies.
-It is written in [TOML](https://toml.io/en/) format and contains multiple sections, the most
-important of which are `[package]`, `[dependencies]` and `[addresses]`.
+The `Move.toml` is a manifest file that describes the [package](./packages) and its dependencies. It
+is written in [TOML](https://toml.io/en/) format and contains multiple sections, the most important
+of which are `[package]`, `[dependencies]` and `[addresses]`.
 
 ```toml
 [package]
 name = "my_project"
-version = "0.0.0"
 edition = "2024"
 
 [dependencies]
-Example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
-
-[addresses]
-std =  "0x1"
-alice = "0xA11CE"
-
-[dev-addresses]
-alice = "0xB0B"
+example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
 ```
 
 ## Sections
@@ -30,7 +22,6 @@ published on chain, but they are used in tooling and release management; they al
 edition for the compiler.
 
 - `name` - the name of the package when it is imported;
-- `version` - the version of the package, can be used in release management;
 - `edition` - the edition of the Move language; currently, the only valid value is `2024`.
 
 <!-- published-at -->
@@ -44,10 +35,10 @@ local directory.
 
 ```toml
 # git repository
-Example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
+example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
 
 # local directory
-MyPackage = { local = "../my-package" }
+my_package = { local = "../my-package" }
 ```
 
 Packages also import addresses from other packages. For example, the Sui dependency adds the `std`
@@ -68,28 +59,8 @@ in the dependency itself.
 
 ```toml
 [dependencies]
-Example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 ```
-
-### Dev-dependencies
-
-It is possible to add `[dev-dependencies]` section to the manifest. It is used to override
-dependencies in the dev and test modes. For example, if you want to use a different version of the
-Sui package in the dev mode, you can add a custom dependency specification to the
-`[dev-dependencies]` section.
-
-### Addresses
-
-The `[addresses]` section is used to add aliases for the addresses. Any address can be specified in
-this section, and then used in the code as an alias. For example, if you add `alice = "0xA11CE"` to
-this section, you can use `alice` as `0xA11CE` in the code.
-
-### Dev-addresses
-
-The `[dev-addresses]` section is the same as `[addresses]`, but only works for the test and dev
-modes. Important to note that it is impossible to introduce new aliases in this section, only
-override the existing ones. So in the example above, if you add `alice = "0xB0B"` to this section,
-the `alice` address will be `0xB0B` in the test and dev modes, and `0xA11CE` in the regular build.
 
 ## TOML Styles
 
@@ -100,19 +71,19 @@ for the `[package]` section, but it can be useful for the dependencies.
 ```toml
 # Inline style
 [dependencies]
-Example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 MyPackage = { local = "../my-package" }
 ```
 
 ```toml
 # Multiline style
-[dependencies.Example]
+[dependencies.example]
 override = true
 git = "https://github.com/example/example.git"
 subdir = "crates/sui-framework/packages/sui-framework"
 rev = "framework/testnet"
 
-[dependencies.MyPackage]
+[dependencies.my_package]
 local = "../my-package"
 ```
 
