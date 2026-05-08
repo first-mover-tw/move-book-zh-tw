@@ -149,6 +149,8 @@ export default {
     ],
   ],
 
+  clientModules: [require.resolve('./src/clientModules/plausiblePageview.js')],
+
   stylesheets: [
     {
       href: 'https://fonts.googleapis.com/css2?family=Rubik:wght@300&amp;display=swap',
@@ -157,6 +159,23 @@ export default {
     {
       href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
       type: 'text/css',
+    },
+  ],
+
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {
+        async: 'true',
+        'data-manual': 'true',
+        src: 'https://plausible.io/js/pa-bN7BN21wQVcP-pdkKddge.js',
+      },
+    },
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML:
+        'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()',
     },
   ],
 
