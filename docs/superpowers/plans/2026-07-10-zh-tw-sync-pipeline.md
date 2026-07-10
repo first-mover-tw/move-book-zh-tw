@@ -24,6 +24,11 @@
   這三個 helper 底層改用 `markdown-it-py`（CommonMark 參考實作）。
 - 這三個 helper 接收的是 **body**（frontmatter 已剝除）。傳入完整文件會讓 `---\ndescription: ...\n---`
   被 CommonMark 解析成 setext 標題，憑空多一個 h2。
+- **任何用 regex 逼近 CommonMark 語意的地方，必須有接上生成器的差異測試。** 以 `markdown-it-py`
+  的 token stream 為 oracle，用片段組合（反引號串、換行、違禁詞、一般文字）生成上萬個 body，
+  斷言我們的判定與 oracle 逐一相符。Task 5 的 inline code 遮蔽連續三輪出現規格落差
+  （跨行 span、非極大反引號串、span 越過 fence 邊界），前兩輪靠人工探針才發現，
+  第三輪是生成器在幾秒內找到的。手選探針只能覆蓋想得到的情況。
 - 暫存清單檔一律寫入 session scratchpad，不寫 `/tmp`。每個 shell 步驟開頭先設定：
   ```bash
   export SP="/private/tmp/claude-501/-Users-ramonliao-Documents-Code-Project-Web3-BlockchainDev-SUI-First-Mover-TW-move-book/5f7f30a1-5d4e-475c-9570-ddb0ae12915c/scratchpad"
