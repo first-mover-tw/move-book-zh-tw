@@ -796,7 +796,9 @@ git commit -m "feat(zh_tw): glossary scan and enforcement, code-aware"
   - `chunk(body: str, max_lines: int = 250) -> list[str]`
   - `join(chunks: list[str]) -> str`
 
-不變式：`join(chunk(x)) == x`。這是 D2 靜默截斷的根本修法 —— `reference/variables.md` 824 行整檔送模型會超出輸出額度。
+不變式：`join(chunk(x)) == x`（逐位元組）。這是 D2 靜默截斷的根本修法 —— `reference/variables.md` 824 行整檔送模型會超出輸出額度。
+
+**切段必須遞迴。** 只切 H2 不夠：`english-main` 上有 5 個檔案，其單一 H2 章節本身就超過 250 行（`variables.md` 432 行、`macros.md` 327、`method-syntax.md` 313、`functions.md` 285、`structs.md` 251），全部含有 H3 可再切。任何仍超長的段落必須依序按 H3、H4… 再切，直到夠小或再也沒有標題可切；無法再切者原樣送出，不 raise。
 
 - [ ] **Step 1: 寫失敗測試**
 
