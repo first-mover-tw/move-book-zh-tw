@@ -6,7 +6,7 @@
 
 **Architecture:** `scripts/zh_tw/` 模組化。LLM 只出現在 `backends/` 的 `translate(text) -> str`；其餘皆為純函式。每個檔案寫入前必須通過 7 道驗證，不過就 raise、不寫檔。本地 backfill 走 `claude -p`，CI 走 Gemini，共用同一個 `pipeline.py`。
 
-**Tech Stack:** Python 3.13、uv、pytest、PyYAML、`claude -p` CLI、`google-genai`、GitHub Actions。
+**Tech Stack:** Python 3.13、uv、pytest、PyYAML、**markdown-it-py**（CommonMark 參考實作）、`claude -p` CLI、`google-genai`、GitHub Actions。
 
 ## Global Constraints
 
@@ -18,6 +18,12 @@
 - `git add` 只加明確指定的檔案，禁止 `git add -A` / `git add .`。
 - 術語表固定為這 8 條，不擴充：`函數→函式`、`調用→呼叫`、`返回→回傳`、`循環→迴圈`、`全局→全域`、`變量→變數`、`遍歷→走訪`、`優化→最佳化`。不動 `類型`、`實例`。
 - 測試中的翻譯後端一律用 fake，不打真實 API。
+- **markdown 區塊解析一律走 `scripts/zh_tw/anchors.py` 匯出的 `headings()` / `visible_lines()` / `fence_lines()`。**
+  任何模組都不得自己寫 fence 切換迴圈。手刻掃描器連續三輪出現 CommonMark 規格落差（HTML 註解、
+  空格縮排、tab 縮排），且每次的失效簽名都是「假陽性 + 假陰性互相抵消」，讓數量相符的守衛全部變綠。
+  這三個 helper 底層改用 `markdown-it-py`（CommonMark 參考實作）。
+- 這三個 helper 接收的是 **body**（frontmatter 已剝除）。傳入完整文件會讓 `---\ndescription: ...\n---`
+  被 CommonMark 解析成 setext 標題，憑空多一個 h2。
 - 暫存清單檔一律寫入 session scratchpad，不寫 `/tmp`。每個 shell 步驟開頭先設定：
   ```bash
   export SP="/private/tmp/claude-501/-Users-ramonliao-Documents-Code-Project-Web3-BlockchainDev-SUI-First-Mover-TW-move-book/5f7f30a1-5d4e-475c-9570-ddb0ae12915c/scratchpad"
@@ -229,7 +235,10 @@ git commit -m "feat(zh_tw): deterministic frontmatter split/join"
 
 **Interfaces:**
 - Produces:
-  - `headings(body: str) -> list[tuple[int, str]]` — `(level, raw_text)`，跳過 fenced code block。
+  - `headings(body: str) -> list[tuple[int, str]]` — `(level, raw_text)`，只回傳實際會渲染的標題。
+  - `heading_lines(body: str) -> list[tuple[int, int]]` — `(line_index_0based, level)`，供 chunking 取切段邊界。
+  - `visible_lines(body: str) -> list[tuple[int, str]]` — 不在 fence / HTML block / 縮排程式碼內的行。
+  - `fence_lines(body: str) -> int` — 實際會渲染的 fence 分隔行數。
   - `slugify(heading: str) -> str`
   - `slugify_all(texts: list[str]) -> list[str]` — 依 github-slugger 規則對重複 slug 加 `-1`、`-2` 後綴。
 
@@ -293,29 +302,87 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'scripts.zh_tw.anchors'
 """標題 anchor 的解析與注入。
 
 anchor 是已發佈的 URL，是對外契約。既有的 {#id} 一律沿用，永不重算。
+
+區塊結構（標題、fence、HTML block、縮排程式碼）一律交給 markdown-it-py 判定。
+手刻的 fence 切換迴圈連續三輪出現 CommonMark 規格落差，且失效簽名都是
+「假陽性 + 假陰性互相抵消」——  數量相符的守衛因此全部變綠。本模組是全專案
+唯一的 markdown 區塊真相來源；其他模組必須呼叫這裡的 helper。
 """
 
 import re
 
+from markdown_it import MarkdownIt
+
+from . import frontmatter
+
+_MD = MarkdownIt("commonmark")
+
 _ANCHOR = re.compile(r"\s*\{#([A-Za-z0-9_-]+)\}\s*$")
 _INLINE_CODE = re.compile(r"`([^`]+)`")
 _LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
-_HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+_FENCE_MARK = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+
+_OPAQUE = ("fence", "code_block", "html_block")
+
+
+class FrontmatterPassedIn(ValueError):
+    """呼叫者傳了完整文件而非 body。"""
+
+
+def _require_body(text: str) -> str:
+    """CommonMark 會把 `---\ndescription: x\n---` 解析成 setext 標題，憑空多一個 h2。"""
+    meta, _ = frontmatter.split(text)
+    if meta:
+        raise FrontmatterPassedIn("headings/visible_lines/fence_lines 需要 body，不是完整文件")
+    return text
+
+
+def _tokens(body: str):
+    return _MD.parse(body)
+
+
+def heading_lines(body: str) -> list[tuple[int, int]]:
+    """(0-based 行號, 標題層級)，只含實際會渲染的標題。"""
+    _require_body(body)
+    return [
+        (t.map[0], int(t.tag[1]))
+        for t in _tokens(body)
+        if t.type == "heading_open" and t.map
+    ]
 
 
 def headings(body: str) -> list[tuple[int, str]]:
-    out: list[tuple[int, str]] = []
-    in_fence = False
-    for line in body.splitlines():
-        if line.lstrip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        m = _HEADING.match(line)
-        if m:
-            out.append((len(m.group(1)), m.group(2)))
-    return out
+    """(層級, 標題原始文字)。文字保留 inline code 與 {#anchor}。"""
+    _require_body(body)
+    toks = _tokens(body)
+    return [
+        (int(t.tag[1]), toks[i + 1].content)
+        for i, t in enumerate(toks)
+        if t.type == "heading_open"
+    ]
+
+
+def visible_lines(body: str) -> list[tuple[int, str]]:
+    """不在 fence / HTML block / 縮排程式碼內的行，附 0-based 行號。"""
+    _require_body(body)
+    hidden: set[int] = set()
+    for t in _tokens(body):
+        if t.type in _OPAQUE and t.map:
+            hidden.update(range(t.map[0], t.map[1]))
+    return [(i, l) for i, l in enumerate(body.splitlines()) if i not in hidden]
+
+
+def fence_lines(body: str) -> int:
+    """實際會渲染的 fence 分隔行數（不含 HTML 註解內的 fence）。"""
+    _require_body(body)
+    lines = body.splitlines()
+    return sum(
+        1
+        for t in _tokens(body)
+        if t.type == "fence" and t.map
+        for l in lines[t.map[0]:t.map[1]]
+        if _FENCE_MARK.match(l)
+    )
 
 
 def slugify(heading: str) -> str:
@@ -328,16 +395,17 @@ def slugify(heading: str) -> str:
 
 
 def slugify_all(texts: list[str]) -> list[str]:
-    seen: dict[str, int] = {}
+    """github-slugger 風格去重：候選若已被占用，遞增後綴直到空出為止。"""
+    used: set[str] = set()
     out: list[str] = []
     for t in texts:
         base = slugify(t)
-        if base in seen:
-            seen[base] += 1
-            out.append(f"{base}-{seen[base]}")
-        else:
-            seen[base] = 0
-            out.append(base)
+        candidate, n = base, 0
+        while candidate in used:
+            n += 1
+            candidate = f"{base}-{n}"
+        used.add(candidate)
+        out.append(candidate)
     return out
 
 
@@ -345,6 +413,8 @@ def existing_anchor(heading: str) -> str | None:
     m = _ANCHOR.search(heading)
     return m.group(1) if m else None
 ```
+
+`markdown-it-py` 是 CommonMark 的參考實作。改用它之後，先前手刻掃描器的六個已知失效案例（HTML 註解、`~~~` fence、info string 誤關 fence、3/4 空格縮排、tab 縮排）全部與參考渲染器一致。實測：對 `zh-tw-main`、merge-base、`english-main` 三個 ref 的 423 個檔案版本，新舊實作的標題層級序列與 fence 行數 **完全一致**，故 47 / 15 兩個基線不受影響。
 
 - [ ] **Step 4: 執行測試確認通過**
 
@@ -535,22 +605,18 @@ def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
         for i in range(len(en_h))
     ]
 
-    out: list[str] = []
-    idx, in_fence = 0, False
-    for line in zh_body.splitlines(keepends=True):
-        stripped = line.rstrip("\n")
-        if stripped.lstrip().startswith("```"):
-            in_fence = not in_fence
+    # 行號與層級一律取自共用的區塊解析器，不自己掃 fence。
+    at_line = {ln: (idx, lv) for idx, (ln, lv) in enumerate(heading_lines(zh_body))}
+
+    out = []
+    for i, line in enumerate(zh_body.splitlines(keepends=True)):
+        if i not in at_line:
             out.append(line)
             continue
-        m = _HEADING.match(stripped) if not in_fence else None
-        if m:
-            text = _ANCHOR.sub("", m.group(2))
-            nl = "\n" if line.endswith("\n") else ""
-            out.append(f"{m.group(1)} {text} {{#{wanted[idx]}}}{nl}")
-            idx += 1
-        else:
-            out.append(line)
+        idx, level = at_line[i]
+        text = _ANCHOR.sub("", zh_h[idx][1])
+        nl = "\n" if line.endswith("\n") else ""
+        out.append(f"{'#' * level} {text} {{#{wanted[idx]}}}{nl}")
     return "".join(out)
 ```
 
@@ -775,11 +841,12 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'scripts.zh_tw.chunking
 `scripts/zh_tw/chunking.py`:
 
 ```python
-"""按 H2 語意邊界切段，避免整檔送模型時輸出 token 用盡而靜默截斷。"""
+"""按 H2 語意邊界切段，避免整檔送模型時輸出 token 用盡而靜默截斷。
 
-import re
+切段邊界一律取自 anchors.heading_lines()，不得自己掃 fence —— 見 Global Constraints。
+"""
 
-_H2 = re.compile(r"^##\s+\S")
+from . import anchors
 
 
 def chunk(body: str, max_lines: int = 250) -> list[str]:
@@ -787,13 +854,7 @@ def chunk(body: str, max_lines: int = 250) -> list[str]:
     if len(lines) <= max_lines:
         return [body]
 
-    starts, in_fence = [], False
-    for i, line in enumerate(lines):
-        if line.lstrip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if not in_fence and _H2.match(line):
-            starts.append(i)
+    starts = [i for i, level in anchors.heading_lines(body) if level == 2]
 
     if not starts:
         return [body]
@@ -1117,10 +1178,6 @@ class ValidationError(Exception):
     pass
 
 
-def _fence_count(body: str) -> int:
-    return sum(1 for l in body.splitlines() if l.lstrip().startswith("```"))
-
-
 def check_file(zh_text: str, en_text: str, prev_zh_text: str = "") -> list[str]:
     errs: list[str] = []
     zh_meta, zh_body = frontmatter.split(zh_text)
@@ -1134,9 +1191,10 @@ def check_file(zh_text: str, en_text: str, prev_zh_text: str = "") -> list[str]:
         errs.append(f"標題層級序列不符: 中文 {len(zh_h)} 個, 英文 {len(en_h)} 個")
 
     # 2. code fence 數量
-    if _fence_count(zh_body) != _fence_count(en_body):
+    if anchors.fence_lines(zh_body) != anchors.fence_lines(en_body):
         errs.append(
-            f"程式碼 fence 數不符: 中文 {_fence_count(zh_body)}, 英文 {_fence_count(en_body)}"
+            f"程式碼 fence 數不符: 中文 {anchors.fence_lines(zh_body)}, "
+            f"英文 {anchors.fence_lines(en_body)}"
         )
 
     # 3. frontmatter key 集合
@@ -2026,9 +2084,7 @@ def _show(ref: str, path: str) -> str | None:
 
 def _fingerprint(text: str) -> tuple[tuple[int, ...], int]:
     _, body = frontmatter.split(text)
-    levels = tuple(lv for lv, _ in anchors.headings(body))
-    fences = sum(1 for l in body.splitlines() if l.lstrip().startswith("```"))
-    return levels, fences
+    return tuple(lv for lv, _ in anchors.headings(body)), anchors.fence_lines(body)
 
 
 def heal(dry_run: bool = True) -> tuple[list[str], list[str]]:
@@ -2462,7 +2518,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: pip install pyyaml google-genai
+        run: pip install pyyaml markdown-it-py google-genai
 
       - name: Detect files needing translation
         id: detect
