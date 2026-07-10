@@ -520,8 +520,21 @@ git commit -m "feat(zh_tw): heading parser and github-compatible slugify"
 - Consumes: `headings`, `slugify_all`, `existing_anchor`（Task 3）
 - Produces:
   - `inject(zh_body: str, en_body: str, prev_zh_body: str = "", prev_en_body: str = "") -> str`
+  - `inject_report(...) -> tuple[str, list[str]]` — 同上，另回傳退役／未沿用的說明
   - `DuplicateAnchor(Exception)` / `NestedHeading(Exception)`
   - `HeadingMismatch(Exception)` — 標題數不符時 raise
+
+三層解析，逐標題：
+
+1. `zh_body` 該標題已有 `{#id}` → 原樣沿用（tier 1）
+2. 否則以 **`slugify_all(英文標題)`** 為身分鍵，從 `prev_zh_body` 搬移其 anchor（tier 2）
+3. 否則補上 `slugify_all(新英文標題)[j]`（tier 3；先保留 tier 1/2 的 id，derived 撞號時讓 derived 退讓）
+
+**身分鍵是 slug，不是位置，也不是原始文字。** 位置配對會在上游增刪標題時把 anchor 位移到錯誤的標題（見 spec D10）；
+原始文字配對會因大小寫改變而誤退役（`Error constants` → `Error Constants`）。沒有 `prev_en_body` 時**不沿用任何 anchor**，
+並在 `inject_report` 中說明 —— 位置猜測正是這個 bug 本身。
+
+上游真的刪除／改名章節時，該 anchor 退役。`inject_report()` 回報，但**不阻斷**：validate 不因退役而失敗。
 
 - [ ] **Step 1: 寫失敗測試**
 
