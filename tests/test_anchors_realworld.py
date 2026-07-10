@@ -31,7 +31,12 @@ def _files() -> list[str]:
 
 
 def test_slugify_reproduces_existing_anchors():
-    """除了兩個已知的人工選定 anchor，slugify(英文標題) 應重現全部既有 anchor。"""
+    """除了兩個已知的人工選定 anchor，slugify(英文標題) 應重現全部既有 anchor。
+
+    47 而非 46：初版 headings() 把 HTML 註解裡的標題也算進去，導致
+    book/move-basics/string.md 的中英文標題數不符（10 vs 11）而被跳過。
+    修好 parser 後該檔重新納入，貢獻一個正確配對的 {#ascii-strings}。
+    """
     divergent, reproduced = set(), 0
     for path in _files():
         zh, en = _show(PRE_FIX, path), _show(MERGE_BASE, path)
@@ -49,5 +54,5 @@ def test_slugify_reproduces_existing_anchors():
             else:
                 divergent.add((path, aid))
 
-    assert reproduced == 46
+    assert reproduced == 47
     assert divergent == KNOWN_DIVERGENT
