@@ -24,6 +24,21 @@ _LINK = re.compile(r"\]\((?!https?:|mailto:)([^)#\s]*)#([\w-]+)\)")
 # 「了→瞭」「群→羣」「才→纔」「峰→峯」這類台灣日常就寫簡筆的字產生大量
 # 假陽性（實測 143 檔中 35 檔會中）。s2tw 已經處理了這些，但逐字套用時
 # 仍有兩個字被它的「詞語規則」錯誤地套到單字上，需要另外允許：
+#
+# 這份白名單只收「OpenCC 轉換本身是錯的」的字，不是收「OpenCC 會轉換的
+# 每一個字」。判斷標準是教育部（MOE）標準字形，不是「這個字看起來眼熟／
+# 台灣人常這樣寫」。凡是 s2tw 的轉換結果本身就是 MOE 標準字形，一律
+# 不進白名單，即使原字在其他中文地區（港澳、中國大陸）通行——那正是
+# gate 8 要攔的東西。
+#
+# 「裏→裡」「着→著」不在白名單裡，是刻意的：MOE 標準字形是「裡」「著」，
+# 「裏」「着」是港澳／中國大陸的字形，s2tw 把它們轉掉是本關卡的設計目的，
+# 不是假陽性，不要因為「看起來也是常見寫法」就加進來。
+#
+# 字元層級沒有一條乾淨規則能同時判對所有情況：round-trip 規則
+# `s2tw(c) != c and tw2s(s2tw(c)) == c` 可以救回「裏」，但會誤判真正的
+# 簡體字「麽」為非簡體（tw2s(s2tw('麽')) == '麽' 但『麽』確實是簡體），
+# 同時仍然攔不住「台」「游」。因此改用逐字白名單，而非嘗試找一條規則。
 _ALLOWED_VARIANTS = frozenset({
     # 「台」與「臺」在台灣同為正字（教育部異體字審訂通過兩者並存），
     # s2tw 逐字會把「台」轉成「臺」，但「台」本身不是簡體字，不該被攔。
@@ -104,32 +119,47 @@ def check_file(
         prev_zh_h = anchors.headings(prev_zh_body)
         prev_en_h = anchors.headings(prev_en_body)
 
-        prev_keys = anchors.slugify_all([t for _, t in prev_en_h])
-        new_keys = anchors.slugify_all([t for _, t in en_h])
-        new_key_index = {k: j for j, k in enumerate(new_keys)}
+        # prev_keys 是用 prev_en 的標題文字算出來的，只有在 prev_zh 與 prev_en
+        # 標題數一致時，「第 i 個中文標題對應第 i 個英文標題」這個 by-index
+        # 假設才成立。anchors._identity_carry 面對同一個問題時的作法是：
+        # 數量不符就什麼都不猜、不沿用。這裡必須維持同一個 guard，兩邊要
+        # 一起改——一旦其中一個放寬了對齊假設，另一個也要跟著檢查。
+        if len(prev_zh_h) != len(prev_en_h):
+            _, prev_body = frontmatter.split(prev_zh_text)
+            prev_ids = {
+                aid for _, t in anchors.headings(prev_body)
+                if (aid := anchors.existing_anchor(t))
+            }
+            now_ids = {
+                aid for _, t in zh_h if (aid := anchors.existing_anchor(t))
+            }
+            for lost in sorted(prev_ids - now_ids):
+                errs.append(f"既有 anchor 消失: {{#{lost}}}")
+        else:
+            prev_keys = anchors.slugify_all([t for _, t in prev_en_h])
+            new_keys = anchors.slugify_all([t for _, t in en_h])
+            new_key_index = {k: j for j, k in enumerate(new_keys)}
 
-        now_ids_by_idx = {
-            j: aid for j, (_, t) in enumerate(zh_h) if (aid := anchors.existing_anchor(t))
-        }
+            now_ids_by_idx = {
+                j: aid for j, (_, t) in enumerate(zh_h) if (aid := anchors.existing_anchor(t))
+            }
 
-        for i, (_, t) in enumerate(prev_zh_h):
-            aid = anchors.existing_anchor(t)
-            if aid is None:
-                continue
-            if i >= len(prev_keys):
-                continue
-            k = prev_keys[i]
-            j = new_key_index.get(k)
-            if j is None:
-                # 對應的英文標題在新版消失了：anchor 退場，人工核准，不算錯誤。
-                continue
-            if now_ids_by_idx.get(j) != aid:
-                en_text_i = prev_en_h[i][1] if i < len(prev_en_h) else "?"
-                actual = now_ids_by_idx.get(j)
-                errs.append(
-                    f"既有 anchor 被重新指派: {{#{aid}}}（原標題「{en_text_i}」）"
-                    f"未出現在對應標題上，實際為 {f'{{#{actual}}}' if actual else '無'}"
-                )
+            for i, (_, t) in enumerate(prev_zh_h):
+                aid = anchors.existing_anchor(t)
+                if aid is None:
+                    continue
+                k = prev_keys[i]
+                j = new_key_index.get(k)
+                if j is None:
+                    # 對應的英文標題在新版消失了：anchor 退場，人工核准，不算錯誤。
+                    continue
+                if now_ids_by_idx.get(j) != aid:
+                    en_text_i = prev_en_h[i][1]
+                    actual = now_ids_by_idx.get(j)
+                    errs.append(
+                        f"既有 anchor 被重新指派: {{#{aid}}}（原標題「{en_text_i}」）"
+                        f"未出現在對應標題上，實際為 {f'{{#{actual}}}' if actual else '無'}"
+                    )
     elif prev_zh_text:
         # 沒有英文側可比對身分，退回舊的「消失偵測」。
         _, prev_body = frontmatter.split(prev_zh_text)
@@ -158,14 +188,24 @@ def _anchor_ids(text: str) -> set[str]:
     """Docusaurus 只為每個標題產出一個 id：有 {#id} 就只用它，
     沒有就用衍生 slug。兩者絕不會同時存在——舊版把兩者聯集起來，
     等於承認一個 Docusaurus 從未產生過的 phantom slug 也能通過連結檢查。
+
+    必須與 anchors.inject() 的分層順序一致：先保留（reserve）每個明確 {#id}，
+    再用 slugify_all(reserved=...) 對沒有明確 id 的標題衍生 slug，讓衍生出的
+    slug 撞到明確 id 時會自動遞增尾碼，而不是各自獨立衍生後才發現撞名、
+    直接聯集成看起來變少了一個的 id 集合。
     """
     _, body = frontmatter.split(text)
     hs = anchors.headings(body)
-    derived_all = anchors.slugify_all([t for _, t in hs])
-    ids = set()
-    for (_, t), derived in zip(hs, derived_all):
+    ids: set[str] = set()
+    derive_texts = []
+    for _, t in hs:
         explicit = anchors.existing_anchor(t)
-        ids.add(explicit if explicit else derived)
+        if explicit:
+            ids.add(explicit)
+        else:
+            derive_texts.append(t)
+    derived = anchors.slugify_all(derive_texts, reserved=ids)
+    ids.update(derived)
     return ids
 
 

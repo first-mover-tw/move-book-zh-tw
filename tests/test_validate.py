@@ -162,6 +162,74 @@ def _show(ref: str, path: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
+# --- Finding 1 / gate 6: prev_en's slug keys indexed by prev_zh's heading index ---
+
+
+def test_gate6_heading_count_drift_does_not_misfire():
+    """一個插在 anchored 標題前面的多餘中文標題，不該讓 index-based
+    比對把後面每個 anchor 都判成「被重新指派」。prev_zh 比 prev_en 多一個
+    標題（「額外」），且新版 zh 已經正確對齊 en，不該報錯。"""
+    prev_en = "# A\n\n## B\n\n## C\n"
+    prev_zh = "# 甲\n\n## 額外\n\n## 乙 {#b}\n\n## 丙 {#c}\n"
+    en = "# A\n\n## B\n\n## C\n"
+    zh = "# 甲\n\n## 乙 {#b}\n\n## 丙 {#c}\n"
+    assert validate.check_file(zh, en, prev_zh, prev_en) == []
+
+
+def test_gate6_still_detects_reassignment_when_counts_match():
+    """標題數對齊時，guard 不能把 gate 6 整個關掉——真正的重新指派仍要報錯。"""
+    prev_en = "# H0\n\n## Alpha\n\n## Beta\n"
+    prev_zh = "# H0 {#h0}\n\n## 甲 {#alpha-id}\n\n## 乙 {#beta-id}\n"
+    en = "# H0\n\n## Alpha\n\n## Beta\n"
+    # alpha-id 錯放到 Beta 對應的標題上。
+    zh_bad = "# H0 {#h0}\n\n## 甲\n\n## 乙 {#alpha-id}\n"
+    errs = validate.check_file(zh_bad, en, prev_zh, prev_en)
+    assert any("alpha-id" in e for e in errs)
+
+
+def test_gate6_real_data_heading_count_drift():
+    """reference/variables.md（6 中文標題 vs 21 英文）與
+    book/storage/storage-functions.md（11 vs 13）是修復前 zh-tw-main 上
+    真實存在標題數落差的兩個已 anchor 檔案。inject() 產出的新版 zh 是正確
+    對齊 en 的，gate 6 不該對它們報 anchor 重新指派。"""
+    for path in ("reference/variables.md", "book/storage/storage-functions.md"):
+        prev_zh_full = _show(PRE_FIX, path)
+        prev_en_full = _show(MERGE_BASE, path)
+        en_full = _show("english-main", path)
+        if not prev_zh_full or not prev_en_full or not en_full:
+            pytest.skip(f"{path} unavailable in this checkout")
+
+        _, prev_zh_body = frontmatter.split(prev_zh_full)
+        _, prev_en_body = frontmatter.split(prev_en_full)
+        zh_meta, en_body = frontmatter.split(en_full)
+
+        zh_body = anchors.inject(en_body, en_body, prev_zh_body, prev_en_body)
+        zh_text = frontmatter.join(zh_meta, zh_body)
+
+        errs = validate.check_file(zh_text, en_full, prev_zh_full, prev_en_full)
+        assert not any("anchor" in e for e in errs), (path, errs)
+
+
+# --- Finding 2 / _anchor_ids: explicit ids not reserved before deriving ---
+
+
+def test_anchor_ids_reserves_explicit_ids_before_deriving():
+    """`## Custom` 是第一個 id-less 標題，`## Custom {#custom}` 明確佔用了
+    `custom`。真相是 inject() 會把 id-less 那個標題衍生成 `custom-1`
+    （因為 `custom` 已被明確 id 佔走），_anchor_ids 必須算出同一個結果，
+    而不是各自獨立衍生後才發現撞名、直接聯集成只有兩個 id。"""
+    body = "# T\n\n## Custom\n\n## Custom {#custom}\n"
+    ids = validate._anchor_ids(body)
+    assert "custom" in ids
+    assert "custom-1" in ids
+
+    injected = anchors.inject(body, body)
+    injected_ids = {
+        aid for _, t in anchors.headings(injected) if (aid := anchors.existing_anchor(t))
+    }
+    assert ids == injected_ids
+
+
 def test_gate6_real_data_ownership_and_epoch_and_time():
     """Feeds real merge-base/english-main/pre-fix content through inject(),
     exercising the actual identity-carry path (commits 90043922, e24322bc)
@@ -272,6 +340,17 @@ def test_gate8_does_not_flag_allowlisted_or_non_simplified_chars(ch):
     body = f"這是一段包含 {ch} 字的文字。\n"
     hits = validate.simplified_chars(body)
     assert not any(c == ch for _, c in hits)
+
+
+@pytest.mark.parametrize("ch", ["裏", "着"])
+def test_gate8_flags_hk_mainland_variants_not_moe_standard(ch):
+    """REJECTED finding: 有人主張 `裏`/`着` 該加進 ALLOWED_VARIANTS，理由是
+    s2tw 誤判了合法台灣用字。這是錯的——教育部標準字形是 `裡`/`著`，
+    `裏`/`着` 是港澳/中國大陸的字形，s2tw 把它們轉換掉是本關卡的目的，
+    不是假陽性。不要把這兩個字加進白名單。"""
+    body = f"這是一段包含 {ch} 字的文字。\n"
+    hits = validate.simplified_chars(body)
+    assert any(c == ch for _, c in hits)
 
 
 def test_gate8_skips_fenced_code():
