@@ -98,6 +98,11 @@ def _needs_quote(v: str) -> bool:
 
 
 def _quote(v: str) -> str:
+    # 換行字元無法用任何 flow scalar 引號安全還原 —— YAML 的單/雙引號
+    # flow scalar 遇到字面換行會 fold 成空白，值會被悄悄改掉。與其引號
+    # 出一個看似安全、實則失真的結果，這裡直接視為不可寫入而擋下來。
+    if "\n" in v or "\r" in v:
+        raise ValueError(f"label 含有換行字元，無法安全寫入 YAML: {v!r}")
     if not _needs_quote(v):
         return v
     return "'" + v.replace("'", "''") + "'"
@@ -144,6 +149,52 @@ def _walk_labels(node):
             yield from _walk_labels(item)
 
 
+def _assert_labels_equal(parsed_labels: list, intended: list[str]) -> None:
+    """postcondition：解析後的 label 必須逐一等於原本要寫入的值。
+
+    只檢查型別/非空是不夠的 —— 一個值改變但型別仍是非空字串的寫入
+    （例如換行被 YAML flow scalar fold 成空白）會直接漏網。這裡逐一比對
+    「解析後的值」是否真的等於「當初打算寫入的值」，兩者缺一都擋下來。
+    """
+    if len(parsed_labels) != len(intended):
+        raise ValueError(
+            f"label 數不符（解析後 {len(parsed_labels)}, 預期 {len(intended)}）"
+        )
+    for i, (got, want) in enumerate(zip(parsed_labels, intended)):
+        if not isinstance(got, str) or got == "" or got != want:
+            raise ValueError(
+                f"label 值不符（index {i}）: 預期 {want!r}, 實際解析出 {got!r}"
+            )
+
+
+def _validate_new_label_format(pairs: list[tuple[str, str]]) -> None:
+    """驗證這批「新翻譯」（非沿用）label 是否符合「中文 (English)」慣例。
+
+    不符合慣例的新 label 下次同步時 `_zh_label_key` 對不回英文 label，
+    會被誤判成「新」而永遠重翻（與 finding 1 的鍵值 bug 同一種後果，
+    肇因不同：這裡是格式漂移）。
+
+    但這裡刻意不逐筆要求「一定要有括號」：測試用的 FakeBackend 之類
+    structure-preserving fake 本來就不遵循側邊欄的雙語括號慣例（它把
+    整段英文替換成佔位字），對它逐筆要求括號只會在完全沒有基準可比的
+    情況下製造誤報。真正的訊號是「同一批裡有的符合、有的不符合」——
+    backend 這次呼叫顯然有能力（或被要求）產出正確格式，卻在某幾筆上
+    漏掉，那才是需要擋下來的格式漂移。如果整批都不符合慣例（例如
+    FakeBackend 那種全面替換的 fake），代表這個 backend 這次根本沒有
+    在嘗試這個慣例，沒有基準可比對，略過不擋。
+    """
+    if not pairs:
+        return
+    conforms = [_zh_label_key(dst) == src for src, dst in pairs]
+    if any(conforms) and not all(conforms):
+        for (src, dst), ok in zip(pairs, conforms):
+            if not ok:
+                raise ValueError(
+                    "新翻譯 label 不符合「中文 (English)」慣例，"
+                    f"下次同步將無法沿用: 英文={src!r} 譯文={dst!r}"
+                )
+
+
 def translate(en_text: str, prev_zh_text: str, backend: Backend) -> str:
     en_labels = labels(en_text)
 
@@ -166,24 +217,27 @@ def translate(en_text: str, prev_zh_text: str, backend: Backend) -> str:
         numbered = "\n".join(f"{i + 1}. {l}" for i, l in enumerate(todo))
         payload = f"{SIDEBAR_PROMPT}\n\n{numbered}"
         raw = backend.translate(payload, kind="text")
-        for src, dst in zip(todo, _parse_numbered(raw, len(todo))):
+        new_pairs = list(zip(todo, _parse_numbered(raw, len(todo))))
+        _validate_new_label_format(new_pairs)
+        for src, dst in new_pairs:
             carried[src] = dst
 
-    out = apply(en_text, [carried[l] for l in en_labels])
+    intended = [carried[l] for l in en_labels]
+    out = apply(en_text, intended)
     if skeleton(out) != skeleton(en_text):
         raise ValueError("sidebar 結構被更動")
 
-    # skeleton 相等只證明「位置」沒被動到，證明不了型別 —— _quote 沒引號時
-    # 一個看起來正常的字串仍可能被 yaml.safe_load 成 int/bool/None。這裡
-    # 真的解析一次輸出，確保每個 label 都還原成非空字串。
+    # skeleton 相等只證明「位置」沒被動到，證明不了值本身 —— _quote 沒引號時
+    # 一個看起來正常的字串仍可能被 yaml.safe_load 成 int/bool/None，或者
+    # （即使型別仍是字串）被 YAML 的 flow scalar 規則悄悄改值（例如換行
+    # fold 成空白）。這裡真的解析一次輸出，逐一比對每個 label 是否還原成
+    # 當初打算寫入的值本身，不只是型別對。
     try:
         parsed = yaml.safe_load(out)
     except yaml.YAMLError as e:
         raise ValueError(f"輸出無法解析為 YAML: {e}") from e
     if parsed is None:
         raise ValueError("輸出無法解析為 YAML")
-    for lv in _walk_labels(parsed):
-        if not isinstance(lv, str) or lv == "":
-            raise ValueError(f"label 型別或內容不正確（非空字串）: {lv!r}")
+    _assert_labels_equal(list(_walk_labels(parsed)), intended)
 
     return out

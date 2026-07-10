@@ -337,3 +337,77 @@ def test_translate_sends_sidebar_instruction_to_backend():
     assert "編號" in backend.payload
     assert backend.payload.startswith(sidebar.SIDEBAR_PROMPT)
     assert "Brand New" in backend.payload
+
+
+# --- Finding (Important): postcondition must check value, not just type -----
+
+
+def test_apply_raises_on_newline_in_label():
+    """換行在 YAML flow scalar 引號裡會被 fold 成空白，沒有任何引號方式能
+    安全保留字面換行 —— 與其悄悄改值，apply 直接擋下來。"""
+    with pytest.raises(ValueError):
+        sidebar.apply("a:\n  - label: X\n    id: x\n", ["a\nb"])
+
+
+def test_assert_labels_equal_catches_synthetic_value_mismatch():
+    """_needs_quote 目前對非換行的輸入是全面的（quote 一定能安全還原），
+    所以透過 apply()/translate() 已經構造不出「型別對但值不對」的案例 ——
+    唯一的破口是換行，而換行現在在 apply() 就直接 raise 了。
+    因此這裡直接單元測試 postcondition helper 本身，餵一個合成的
+    「解析後的值 != 當初打算寫入的值」案例，證明 helper 真的會抓值不等，
+    不是只抓型別。"""
+    with pytest.raises(ValueError):
+        sidebar._assert_labels_equal(["寫入後解析出的值"], ["原本打算寫入的值"])
+    # 型別不對（例如被 YAML 解成非字串）也要抓
+    with pytest.raises(ValueError):
+        sidebar._assert_labels_equal([123], ["123"])
+    # 空字串也要抓
+    with pytest.raises(ValueError):
+        sidebar._assert_labels_equal([""], [""])
+    # 完全相等才放行
+    sidebar._assert_labels_equal(["甲", "乙"], ["甲", "乙"])
+
+
+# --- Finding (Minor): new label missing (English) suffix breaks reuse -------
+
+
+class DropsSuffix:
+    """模擬一個 backend：對其中一個新 label 漏掉「(English)」括號後綴，
+    其餘新 label 都正常。這正是 finding 2 描述的情境 —— 不是整批都不遵循
+    慣例（那樣沒有基準可比對，見 sidebar._validate_new_label_format 的
+    設計說明），而是同一批裡有的符合、有的不符合，才是真正的格式漂移。"""
+
+    def translate(self, text, *, kind="markdown"):
+        return "1. 全新標籤\n2. 另一個 (Another New)"
+
+
+def test_translate_raises_when_new_label_drops_english_suffix():
+    en_plus = EN + "  - label: New Label\n    id: new1\n  - label: Another New\n    id: new2\n"
+    with pytest.raises(ValueError):
+        sidebar.translate(en_plus, PREV_ZH, DropsSuffix())
+
+
+class WellFormedNewLabel:
+    def translate(self, text, *, kind="markdown"):
+        return "1. 全新標籤 (New Label)"
+
+
+def test_translate_accepts_well_formed_new_label():
+    en_plus = EN + "  - label: New Label\n    id: new1\n"
+    out = sidebar.translate(en_plus, PREV_ZH, WellFormedNewLabel())
+    assert "全新標籤 (New Label)" in out
+    assert sidebar.skeleton(out) == sidebar.skeleton(en_plus)
+
+
+def test_validate_new_label_format_skips_when_batch_uniformly_non_conforming():
+    """FakeBackend 這類 structure-preserving fake 會把整批新 label 都變成
+    不含括號的佔位字（見 backends/fake.py），沒有「本來會但這筆漏了」的
+    對照組，直接呼叫 helper 驗證這種全面不符合的情形不會被擋下來。"""
+    pairs = [("Macro Functions", "中文 中文"), ("Randomness", "中文")]
+    sidebar._validate_new_label_format(pairs)  # 不應拋錯
+
+
+def test_validate_new_label_format_raises_on_mixed_batch():
+    pairs = [("New Label", "全新標籤"), ("Another New", "另一個 (Another New)")]
+    with pytest.raises(ValueError):
+        sidebar._validate_new_label_format(pairs)
