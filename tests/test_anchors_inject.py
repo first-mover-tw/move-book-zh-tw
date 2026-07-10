@@ -160,6 +160,50 @@ def test_inject_preserves_crlf_line_ending():
 # --- Round-trip: 混合 ATX 標題、fence、HTML 註解 ---
 
 
+# --- Finding 4: 巢狀標題(blockquote/list item)必須顯式炸掉，不得靜默拉升到頂層 ---
+
+
+def test_inject_raises_on_atx_heading_inside_blockquote():
+    with pytest.raises(anchors.NestedHeading):
+        anchors.inject("> ## 標題\n", "> ## Title\n")
+
+
+def test_inject_raises_on_setext_heading_inside_blockquote():
+    with pytest.raises(anchors.NestedHeading):
+        anchors.inject("> 標題\n> ----\n", "> Title\n> -----\n")
+
+
+def test_inject_raises_on_heading_inside_list_item():
+    with pytest.raises(anchors.NestedHeading):
+        anchors.inject("- ## 標題\n", "- ## Title\n")
+
+
+def test_inject_raises_on_nested_heading_only_in_english():
+    """中文乾淨,但英文有巢狀標題——兩邊都要檢查。"""
+    with pytest.raises(anchors.NestedHeading):
+        anchors.inject("# 標題\n", "> # Title\n")
+
+
+def test_inject_blockquote_without_heading_survives_untouched():
+    zh = "> 一般引言\n>\n> 內文\n"
+    en = "> A normal quote\n>\n> Body\n"
+    out = anchors.inject(zh, en)
+    assert out == zh
+
+
+def test_inject_fenced_code_that_looks_like_nested_heading_does_not_raise():
+    zh = "# 標題\n\n```\n> ## 看起來像標題\n```\n"
+    en = "# Title\n\n```\n> ## looks like heading\n```\n"
+    out = anchors.inject(zh, en)
+    assert "{#title}" in out
+    assert "> ## 看起來像標題" in out
+
+
+def test_inject_nested_heading_error_message_contains_heading_text():
+    with pytest.raises(anchors.NestedHeading, match="巢狀標題"):
+        anchors.inject("> ## 巢狀標題\n", "> ## Nested Title\n")
+
+
 def test_inject_roundtrip_heading_levels_and_anchor_count():
     zh = (
         "# 標題一\n\n"

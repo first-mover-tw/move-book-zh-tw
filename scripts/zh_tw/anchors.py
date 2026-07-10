@@ -130,6 +130,22 @@ class DuplicateAnchor(Exception):
     """兩個標題最終算出同一個 anchor id——防禦性守衛，理論上不該發生。"""
 
 
+class NestedHeading(Exception):
+    """標題巢狀在 blockquote 或 list item 裡——inject() 只會輸出頂層 ATX 標題，
+    硬寫會把容器前綴（`>`、`-`）整行吃掉，讓標題被拉升到頂層。無法正確轉換的
+    檔案不寫出去，直接炸掉。"""
+
+
+def _nested_heading_texts(body: str) -> list[str]:
+    """回傳所有巢狀（level > 0）標題的原始文字，供錯誤訊息使用。"""
+    toks = _tokens(body)
+    return [
+        toks[i + 1].content
+        for i, t in enumerate(toks)
+        if t.type == "heading_open" and t.level > 0
+    ]
+
+
 def _anchor_map(body: str) -> dict[int, str]:
     """以標題序號為鍵，取出既有的 anchor id。"""
     return {
@@ -160,6 +176,12 @@ def _line_ending(line: str) -> str:
 
 
 def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
+    nested = _nested_heading_texts(zh_body) + _nested_heading_texts(en_body)
+    if nested:
+        raise NestedHeading(
+            f"標題巢狀在 blockquote 或 list item 裡，無法安全注入 anchor: {nested!r}"
+        )
+
     zh_h, en_h = headings(zh_body), headings(en_body)
     if len(zh_h) != len(en_h):
         raise HeadingMismatch(
