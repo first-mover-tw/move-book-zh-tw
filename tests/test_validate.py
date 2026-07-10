@@ -215,7 +215,16 @@ def test_gate6_real_data_heading_count_drift():
     """reference/variables.md（6 中文標題 vs 21 英文）與
     book/storage/storage-functions.md（11 vs 13）是修復前 zh-tw-main 上
     真實存在標題數落差的兩個已 anchor 檔案。inject() 產出的新版 zh 是正確
-    對齊 en 的，gate 6 不該對它們報 anchor 重新指派。"""
+    對齊 en 的，gate 6 不該對它們報 anchor 重新指派。
+
+    這個真實資料案例本身不足以證明修復有效：storage-functions.md 唯一的
+    自訂 anchor `{#transfer}` 恰好等於它在新版英文標題上衍生出的 slug
+    （tier-3 推導與明確 id 湊巧相同），所以就算 gate 6 誤判成「標題數對齊」
+    去跑消失檢查，也剛好找不到任何消失的 id —— 綠燈是資料的巧合，不是程式
+    碼正確。因此下面另外用一個建構出來的案例補上：舊中文 anchor 是 tier-3
+    絕對推導不出來的 id（`{#custom-beta}` 掛在英文文字是 `Beta Heading`
+    的標題上，slugify 只會推出 `beta-heading`），修復前的程式碼在這個案例
+    上一定會報「消失」，修復後必須完全不報。"""
     for path in ("reference/variables.md", "book/storage/storage-functions.md"):
         prev_zh_full = _show(PRE_FIX, path)
         prev_en_full = _show(MERGE_BASE, path)
@@ -232,6 +241,54 @@ def test_gate6_real_data_heading_count_drift():
 
         errs = validate.check_file(zh_text, en_full, prev_zh_full, prev_en_full)
         assert not any("anchor" in e for e in errs), (path, errs)
+
+    # 建構案例：舊中文比舊英文多一個標題（4 vs 3），custom-beta / custom-gamma
+    # 是 tier-3 永遠推導不出來的 id（衍生 slug 會是 beta-heading /
+    # gamma-heading）。這是本次修復的原始 repro。
+    prev_en = "# A\n\n## Beta Heading\n\n## Gamma Heading\n"
+    prev_zh = (
+        "# 甲\n\n## 額外 {#extra-id}\n\n## 乙 {#custom-beta}\n\n## 丙 {#custom-gamma}\n"
+    )
+    en = prev_en
+    zh = anchors.inject(en, en, prev_zh, prev_en)
+    assert validate.check_file(zh, en, prev_zh, prev_en) == []
+
+
+def test_gate6_heading_count_drift_repro_returns_empty():
+    """The exact reproduction pasted in the task spec: prev_zh has 4 headings,
+    prev_en has 3. inject() correctly carries nothing forward; gate 6 must not
+    report the declined-to-carry anchors as disappeared."""
+    prev_en = "# A\n\n## Beta Heading\n\n## Gamma Heading\n"
+    prev_zh = (
+        "# 甲\n\n## 額外 {#extra-id}\n\n## 乙 {#custom-beta}\n\n## 丙 {#custom-gamma}\n"
+    )
+    en = prev_en
+    zh = anchors.inject(en, en, prev_zh, prev_en)
+    assert zh_anchor_ids(zh) == ["a", "beta-heading", "gamma-heading"]
+    assert validate.check_file(zh, en, prev_zh, prev_en) == []
+
+
+def zh_anchor_ids(body: str) -> list[str]:
+    return [aid for _, t in anchors.headings(body) if (aid := anchors.existing_anchor(t))]
+
+
+def test_gate6_heading_count_drift_pipeline_assemble_succeeds():
+    """pipeline.assemble must not raise ValidationError on the reproduction's
+    inputs, and the anchors it produces must carry none of the previous
+    custom ids forward (they cannot be identity-matched: prev_zh and prev_en
+    have different heading counts)."""
+    from scripts.zh_tw import pipeline
+    from scripts.zh_tw.backends.fake import FakeBackend
+
+    prev_en = "# A\n\n## Beta Heading\n\n## Gamma Heading\n"
+    prev_zh = (
+        "# 甲\n\n## 額外 {#extra-id}\n\n## 乙 {#custom-beta}\n\n## 丙 {#custom-gamma}\n"
+    )
+    en = prev_en
+
+    out = pipeline.assemble(en, prev_zh, prev_en, FakeBackend())
+    out_ids = set(zh_anchor_ids(out))
+    assert out_ids.isdisjoint({"extra-id", "custom-beta", "custom-gamma"})
 
 
 def test_gate6_real_deadlocked_files_no_prev_en():

@@ -82,9 +82,10 @@ def simplified_chars(body: str) -> list[tuple[int, str]]:
 def check_file(
     zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
 ) -> list[str]:
-    """gate 6（anchor 身分）需要 prev_zh_text *與* prev_en_text 同時在場才會
-    執行；只要其中一個缺席（尤其是 prev_en_text），gate 6 就完全棄權，不做
-    任何檢查——理由見 gate 6 區塊的註解。"""
+    """gate 6（anchor 身分）的執行前提鏡射 anchors._identity_carry：prev_en_text
+    缺席，或 prev_zh_text 與 prev_en_text 的標題數不對齊，兩種情況都讓 gate 6
+    完全棄權，不做任何檢查（不會退化成別的部分檢查）——理由見 gate 6 區塊的
+    註解。"""
     errs: list[str] = []
     zh_meta, zh_body = frontmatter.split(zh_text)
     en_meta, en_body = frontmatter.split(en_text)
@@ -117,46 +118,35 @@ def check_file(
 
     # 6. 既有 anchor 不得消失，也不得被重新指派到別的標題上
     #
-    # 三種情況，鏡射 anchors._identity_carry 的三個分支（同一份 guard，
-    # 兩邊要一起改）：
-    #   1) prev_zh 與 prev_en 都在，且標題數對齊 → 用身分（slugify_all
-    #      比對）驗證每個既有 anchor 落在正確的新標題上，如下。
-    #   2) prev_zh 與 prev_en 都在，但標題數不對齊 → by-index 的「第 i 個
-    #      中文對應第 i 個英文」假設不成立，什麼都不驗證（與
-    #      _identity_carry 遇到同樣落差時「什麼都不沿用」對稱）。
-    #   3) prev_en 缺席 → 完全棄權，不做任何 gate 6 檢查。這不是「假設最壞
-    #      情況」的舊行為（舊版會把 prev_zh 有、新 zh 沒有的 anchor 一律
-    #      當消失來報錯）；那個假設是錯的，因為 inject() 面對同樣缺席的
-    #      prev_en 時，本來就拒絕沿用任何 anchor（見 _identity_carry），
-    #      所以這裡看到的「消失」其實是 inject 正確的保守選擇，不是一次
-    #      翻譯把 anchor 弄丟。沒有 prev_en，gate 6 沒有身分依據去分辨
-    #      「翻譯弄丟了 anchor」與「上游刪掉了對應章節、anchor 退場」，
-    #      猜測任一邊都可能誤報或漏報，所以直接不猜。
-    #      已發佈 URL 真正依賴的保護在 gate 5（check_links）：只要新 anchor
-    #      id 仍能被連結解析，gate 6 棄權並不會讓壞掉的連結流出去。
+    # 這個 guard 執行與否，必須完全鏡射 anchors._identity_carry 的棄權
+    # 前提——兩邊是同一個判斷邏輯的兩處實作，改一邊沒改另一邊就會重現
+    # 這個 gate 曾經卡死的 deadlock，這次是換一個分支。_identity_carry
+    # 在以下兩種情況都拒絕沿用任何 anchor，gate 6 必須在同樣兩種情況下
+    # 完全棄權、不做任何檢查（不是退化成別的檢查方式）：
+    #
+    #   1) prev_en_text 缺席 → inject() 沒有身分依據去分辨「翻譯弄丟了
+    #      anchor」與「上游刪掉了對應章節、anchor 退場」，本來就拒絕沿用
+    #      任何 anchor。這裡看到的「消失」其實是 inject 正確的保守選擇。
+    #   2) prev_zh 與 prev_en 標題數不對齊 → prev_keys 是用 prev_en 的
+    #      標題文字算出來的，「第 i 個中文標題對應第 i 個英文標題」這個
+    #      by-index 假設只在數量一致時成立。_identity_carry 遇到落差時
+    #      「什麼都不沿用」，gate 6 必須對稱地「什麼都不驗證」——不能落回
+    #      舊版的消失檢查，那個檢查同樣是 by-index 假設之下才有意義的
+    #      東西，假設不成立時它一樣會誤報 inject 正確拒絕沿用的 anchor。
+    #
+    # 兩種棄權情況都不設 disappearance fallback；第三條路徑（棄權失敗、
+    # 退化成別的部分檢查）不存在，也不該被加回來。
+    #
+    # 已發佈 URL 真正依賴的保護在 gate 5（check_links）：無論 gate 6 因為
+    # 上述哪一種情況棄權，只要新 anchor id 仍能被連結解析，壞掉的連結就
+    # 不會流出去；gate 6 棄權不代表已發佈 URL 失去保護。
     if prev_zh_text and prev_en_text:
         _, prev_zh_body = frontmatter.split(prev_zh_text)
         _, prev_en_body = frontmatter.split(prev_en_text)
         prev_zh_h = anchors.headings(prev_zh_body)
         prev_en_h = anchors.headings(prev_en_body)
 
-        # prev_keys 是用 prev_en 的標題文字算出來的，只有在 prev_zh 與 prev_en
-        # 標題數一致時，「第 i 個中文標題對應第 i 個英文標題」這個 by-index
-        # 假設才成立。anchors._identity_carry 面對同一個問題時的作法是：
-        # 數量不符就什麼都不猜、不沿用。這裡必須維持同一個 guard，兩邊要
-        # 一起改——一旦其中一個放寬了對齊假設，另一個也要跟著檢查。
-        if len(prev_zh_h) != len(prev_en_h):
-            _, prev_body = frontmatter.split(prev_zh_text)
-            prev_ids = {
-                aid for _, t in anchors.headings(prev_body)
-                if (aid := anchors.existing_anchor(t))
-            }
-            now_ids = {
-                aid for _, t in zh_h if (aid := anchors.existing_anchor(t))
-            }
-            for lost in sorted(prev_ids - now_ids):
-                errs.append(f"既有 anchor 消失: {{#{lost}}}")
-        else:
+        if len(prev_zh_h) == len(prev_en_h):
             prev_keys = anchors.slugify_all([t for _, t in prev_en_h])
             new_keys = anchors.slugify_all([t for _, t in en_h])
             new_key_index = {k: j for j, k in enumerate(new_keys)}
@@ -181,6 +171,7 @@ def check_file(
                         f"既有 anchor 被重新指派: {{#{aid}}}（原標題「{en_text_i}」）"
                         f"未出現在對應標題上，實際為 {f'{{#{actual}}}' if actual else '無'}"
                     )
+        # else: 標題數不對齊，完全棄權（見上方註解情況 2）——不做任何檢查。
     # 7. glossary
     for bad, n in sorted(glossary.scan(zh_body).items()):
         errs.append(f"違禁詞 {bad} 出現 {n} 次")
