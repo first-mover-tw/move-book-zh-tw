@@ -6,7 +6,7 @@
 import subprocess
 from pathlib import Path
 
-from . import anchors, chunking, frontmatter, glossary, manifest, validate
+from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -133,20 +133,15 @@ def run(
     ok, failed = 0, {}
 
     for path in paths:
-        # sidebar.py 是 Task 14，尚未存在：sidebar 沒有 frontmatter 也沒有標題，
-        # markdown 那條路上的每一道關卡都會對它「無害地」放行，等於用假綠燈
-        # 掩護一個被損毀的翻譯。在 sidebar 支援落地前，一律當成失敗處理。
-        if path in manifest.SIDEBAR_FILES:
-            failed[path] = [f"{path} 是 sidebar，尚未支援（見 Task 14），拒絕以 markdown 流程翻譯"]
-            continue
-
         en = _show(en_ref, path)
         if en is None:
             failed[path] = [f"{path} 不存在於 {en_ref}"]
             continue
         prev = _show("HEAD", path) or ""
         try:
-            if prev and tier(path, en_ref) == "A":
+            if path in manifest.SIDEBAR_FILES:
+                out = sidebar.translate(en, prev, backend)
+            elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend)
             else:
                 prev_en = _prev_en(path, m) if prev else ""

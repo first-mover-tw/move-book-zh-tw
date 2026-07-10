@@ -175,12 +175,37 @@ def test_assemble_succeeds_when_prev_en_missing_carrying_no_old_anchors():
     assert ids == {"vector", "syntax"}  # 兩者皆為對 en 標題文字重新衍生的結果
 
 
-def test_run_on_sidebar_path_fails_clearly():
-    ok, failed = pipeline.run(list(manifest.SIDEBAR_FILES[:1]), "fake", apply=False)
-    assert ok == 0
+def test_run_routes_sidebar_through_sidebar_module_not_markdown():
+    """sidebar.yml 不得走 markdown 路徑，否則整份 YAML 會被當內文翻譯（Task 14）。
+    Task 11 曾讓這條路直接失敗；sidebar.py 落地後這裡改為驗證它成功且產出
+    合法 YAML，結構與 english-main 的 skeleton 相同。"""
+    import yaml
+
+    from scripts.zh_tw import sidebar as sidebar_mod
+
     path = manifest.SIDEBAR_FILES[0]
-    assert path in failed
-    assert failed[path]  # non-empty message
+    ok, failed = pipeline.run([path], "fake", apply=False)
+    assert failed == {}
+    assert ok == 1
+
+    en = pipeline._show("english-main", path)
+    prev = pipeline._show("HEAD", path) or ""
+    out = sidebar_mod.translate(en, prev, pipeline.base.get("fake"))
+    assert sidebar_mod.skeleton(out) == sidebar_mod.skeleton(en)
+    assert yaml.safe_load(out) is not None
+
+
+def test_run_routes_sidebar_to_sidebar_module(monkeypatch, tmp_path):
+    """sidebar.yml 不得走 markdown 路徑，否則整份 YAML 會被當內文翻譯。"""
+    called = []
+    monkeypatch.setattr(
+        pipeline.sidebar, "translate",
+        lambda en, prev, backend: called.append("sidebar") or "ok\n",
+    )
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
+    ok, failed = pipeline.run(["book/sidebar.yml"], "fake", apply=False)
+    assert called == ["sidebar"]
+    assert ok == 1 and failed == {}
 
 
 def test_run_dry_run_writes_nothing_and_leaves_manifest_untouched(tmp_path, monkeypatch):
