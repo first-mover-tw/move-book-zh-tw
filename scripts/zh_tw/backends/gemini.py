@@ -38,6 +38,11 @@ class GeminiBackend:
                     return resp.text
                 except Exception as e:  # noqa: BLE001
                     last = e
+                    is_last_attempt = (
+                        model == MODELS[-1] and attempt == MAX_RETRIES - 1
+                    )
+                    if is_last_attempt:
+                        continue
                     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                         time.sleep(RATE_LIMIT_WAIT)
                     else:

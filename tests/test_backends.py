@@ -50,6 +50,8 @@ def test_claude_cli_backend_constructs_expected_argv(monkeypatch):
         captured["kwargs"] = kwargs
         return subprocess.CompletedProcess(argv, 0, stdout="翻譯結果", stderr="")
 
+    monkeypatch.setenv("ZH_TW_CLAUDE_MODEL", "sonnet")
+    monkeypatch.setenv("ZH_TW_TIMEOUT", "42")
     monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
     b = claude_cli.ClaudeCLIBackend()
     out = b.translate("hello")
@@ -58,10 +60,10 @@ def test_claude_cli_backend_constructs_expected_argv(monkeypatch):
     assert argv[0] == "claude"
     assert argv[1] == "-p"
     assert argv[2] == "--model"
-    assert argv[3] == claude_cli.MODEL
+    assert argv[3] == "sonnet"
     assert "hello" in argv[4]
     assert claude_cli.SYSTEM_PROMPT in argv[4]
-    assert captured["kwargs"]["timeout"] == claude_cli.TIMEOUT
+    assert captured["kwargs"]["timeout"] == 42
     assert out == "翻譯結果\n"
 
 

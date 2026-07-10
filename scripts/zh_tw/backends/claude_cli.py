@@ -5,16 +5,15 @@ import subprocess
 
 from .base import SYSTEM_PROMPT
 
-MODEL = os.environ.get("ZH_TW_CLAUDE_MODEL", "haiku")
-TIMEOUT = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
-
 
 class ClaudeCLIBackend:
     def translate(self, text: str, *, kind: str = "markdown") -> str:
+        model = os.environ.get("ZH_TW_CLAUDE_MODEL", "haiku")
+        timeout = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
         prompt = f"{SYSTEM_PROMPT}\n\n要翻譯的內容：\n\n{text}"
         r = subprocess.run(
-            ["claude", "-p", "--model", MODEL, prompt],
-            capture_output=True, text=True, timeout=TIMEOUT,
+            ["claude", "-p", "--model", model, prompt],
+            capture_output=True, text=True, timeout=timeout,
         )
         if r.returncode != 0:
             raise RuntimeError(f"claude CLI 失敗: {r.stderr[:400]}")
