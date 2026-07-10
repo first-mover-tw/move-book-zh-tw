@@ -16,6 +16,11 @@
 - **anchor 是已發佈的 URL，是對外契約。** 既有 `{#id}` 一律沿用，永不重算。
 - Glossary 替換必須跳過 fenced code block 與 inline code。
 - `git add` 只加明確指定的檔案，禁止 `git add -A` / `git add .`。
+- **禁止任何會改寫工作區的 git 操作**：`git stash` / `git stash pop` / `git stash apply`、
+  `git reset --hard`、`git checkout <ref> -- <path>`、`git restore --source`、`git merge`、`git rebase`。
+  要讀某個 ref 的檔案內容，一律用 `git show <ref>:<path>` 讀到記憶體或 scratchpad，不要落到工作區。
+  （事故：一個 subagent 在無未提交變更時跑了 `git stash`（no-op），接著 `git stash pop` 彈出使用者
+  一個不相關的舊 stash，在 24 個檔案上撞出衝突。它自己沒有未提交的東西，卻假設 stash 頂端是自己的。）
 - 術語表固定為這 8 條，不擴充：`函數→函式`、`調用→呼叫`、`返回→回傳`、`循環→迴圈`、`全局→全域`、`變量→變數`、`遍歷→走訪`、`優化→最佳化`。不動 `類型`、`實例`。
 - 測試中的翻譯後端一律用 fake，不打真實 API。
 - **markdown 區塊解析一律走 `scripts/zh_tw/anchors.py` 匯出的 `headings()` / `visible_lines()` / `fence_lines()`。**
