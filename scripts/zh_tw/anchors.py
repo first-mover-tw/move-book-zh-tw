@@ -191,7 +191,72 @@ def _line_ending(line: str) -> str:
     return ""
 
 
-def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
+def _identity_carry(
+    prev_zh_body: str, prev_en_body: str, en_texts: list[str]
+) -> tuple[dict[int, str], list[str]]:
+    """依英文標題文字身分，把 prev_zh 的既有 anchor 對應到新標題序號。
+
+    回傳 (carried: 新標題序號 -> anchor id, notes: 人類可讀的沿用/退場說明)。
+    絕不做 by-index 的猜測性 fallback —— 缺少 prev_en_body 就什麼都不沿用。
+    """
+    notes: list[str] = []
+    if not prev_zh_body:
+        return {}, notes
+
+    prev_anchor_map = _anchor_map(prev_zh_body)
+
+    if not prev_en_body:
+        if prev_anchor_map:
+            notes.append(
+                f"no prev_en_body given; {len(prev_anchor_map)} existing anchors "
+                "were not carried forward"
+            )
+        return {}, notes
+
+    prev_zh_h = headings(prev_zh_body)
+    prev_en_h = headings(prev_en_body)
+    if len(prev_zh_h) != len(prev_en_h):
+        notes.append(
+            f"prev heading count mismatch (zh={len(prev_zh_h)}, en={len(prev_en_h)}); "
+            "nothing carried forward"
+        )
+        return {}, notes
+
+    prev_en_texts = [t for _, t in prev_en_h]
+
+    matched_prev_idx: set[int] = set()
+    carried: dict[int, str] = {}
+    for j, u_text in enumerate(en_texts):
+        found = None
+        for i, t in enumerate(prev_en_texts):
+            if i in matched_prev_idx:
+                continue
+            if t == u_text:
+                found = i
+                break
+        if found is None:
+            continue
+        matched_prev_idx.add(found)
+        aid = prev_anchor_map.get(found)
+        if aid is not None:
+            carried[j] = aid
+
+    for i, aid in prev_anchor_map.items():
+        if i not in matched_prev_idx:
+            notes.append(
+                f"anchor {{#{aid}}} retired: heading '{prev_en_texts[i]}' "
+                "no longer exists in the English source"
+            )
+
+    return carried, notes
+
+
+def inject_report(
+    zh_body: str,
+    en_body: str,
+    prev_zh_body: str = "",
+    prev_en_body: str = "",
+) -> tuple[str, list[str]]:
     nested = _nested_heading_texts(zh_body) + _nested_heading_texts(en_body)
     if nested:
         raise NestedHeading(
@@ -204,10 +269,12 @@ def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
             f"標題數不符: 中文 {len(zh_h)}, 英文 {len(en_h)}"
         )
 
-    carried = _anchor_map(prev_zh_body) if prev_zh_body else {}
+    carried, notes = _identity_carry(
+        prev_zh_body, prev_en_body, [t for _, t in en_h]
+    )
     current = _anchor_map(zh_body)
 
-    # tier 1（zh_body 裡已有的 anchor）優先於 tier 2（沿用自舊版中文檔）。
+    # tier 1（zh_body 裡已有的 anchor）優先於 tier 2（依身分沿用自舊版中文檔）。
     fixed: dict[int, str] = {}
     for i in range(len(en_h)):
         aid = current.get(i)
@@ -254,4 +321,14 @@ def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
         text = _ANCHOR.sub("", zh_h[idx][1])
         nl = _line_ending(line)
         out.append(f"{'#' * level} {text} {{#{wanted[idx]}}}{nl}")
-    return "".join(out)
+    return "".join(out), notes
+
+
+def inject(
+    zh_body: str,
+    en_body: str,
+    prev_zh_body: str = "",
+    prev_en_body: str = "",
+) -> str:
+    body, _notes = inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
+    return body

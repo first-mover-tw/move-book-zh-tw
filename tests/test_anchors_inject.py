@@ -1,7 +1,9 @@
+import subprocess
+
 import pytest
 from markdown_it import MarkdownIt
 
-from scripts.zh_tw import anchors
+from scripts.zh_tw import anchors, frontmatter
 
 _MD = MarkdownIt("commonmark")
 
@@ -31,11 +33,19 @@ def test_inject_adds_slug_from_english_heading():
 
 
 def test_inject_carries_forward_existing_anchor():
-    """人工選定的 anchor 必須原樣保留，即使它不等於英文 slug。"""
+    """人工選定的 anchor 必須原樣保留，即使它不等於英文 slug。
+
+    身分匹配需要 prev_en_body 才能沿用（見設計規則 4）；這裡英文標題文字
+    在新舊之間沒變，所以身分匹配與舊版的 by-index 行為結果一致。
+    """
     zh = "## 不可變狀態\n"
     en = "## Immutable (Frozen) State\n"
-    prev = "## 不可變狀態 {#immutable-frozen-object}\n"
-    assert anchors.inject(zh, en, prev) == "## 不可變狀態 {#immutable-frozen-object}\n"
+    prev_zh = "## 不可變狀態 {#immutable-frozen-object}\n"
+    prev_en = "## Immutable (Frozen) State\n"
+    assert (
+        anchors.inject(zh, en, prev_zh, prev_en)
+        == "## 不可變狀態 {#immutable-frozen-object}\n"
+    )
 
 
 def test_inject_preserves_anchor_already_in_zh():
@@ -72,8 +82,9 @@ def test_inject_ignores_headings_inside_code_fences():
 def test_inject_derived_slug_does_not_collide_with_carried_anchor():
     zh = "## 設定\n\n## 別的\n"
     en = "## Setup\n\n## Other\n"
-    prev = "## 舊標題\n\n## 別的 {#setup}\n"
-    out = anchors.inject(zh, en, prev)
+    prev_zh = "## 舊標題\n\n## 別的 {#setup}\n"
+    prev_en = "## Old Title\n\n## Other\n"
+    out = anchors.inject(zh, en, prev_zh, prev_en)
 
     ids = _anchor_ids(out)
     assert len(ids) == len(set(ids)), f"重複 anchor id: {ids}"
@@ -86,8 +97,9 @@ def test_inject_carried_anchor_equals_other_headings_natural_slug_carried_first(
     """carried anchor 恰好等於「另一個標題」衍生後會產生的 slug；carried 排前面。"""
     zh = "## 設定\n\n## 別的\n"
     en = "## Other\n\n## Setup\n"  # 注意：英文順序對調，衍生 slug 分別是 other / setup
-    prev = "## 舊標題 {#setup}\n\n## 舊別的\n"  # 索引 0 carried = setup
-    out = anchors.inject(zh, en, prev)
+    prev_zh = "## 舊標題 {#setup}\n\n## 舊別的\n"  # 索引 0 carried = setup
+    prev_en = "## Other\n\n## Setup\n"  # 身分匹配：舊標題 0 對應 "Other"
+    out = anchors.inject(zh, en, prev_zh, prev_en)
 
     ids = _anchor_ids(out)
     assert len(ids) == len(set(ids)), f"重複 anchor id: {ids}"
@@ -99,8 +111,9 @@ def test_inject_carried_anchor_equals_other_headings_natural_slug_carried_first(
 def test_inject_carried_anchor_equals_other_headings_natural_slug_carried_second():
     zh = "## 設定\n\n## 別的\n"
     en = "## Setup\n\n## Other\n"
-    prev = "## 舊設定\n\n## 舊別的 {#setup}\n"  # 索引 1 carried = setup
-    out = anchors.inject(zh, en, prev)
+    prev_zh = "## 舊設定\n\n## 舊別的 {#setup}\n"  # 索引 1 carried = setup
+    prev_en = "## Setup\n\n## Other\n"  # 身分匹配：舊標題 1 對應 "Other"
+    out = anchors.inject(zh, en, prev_zh, prev_en)
 
     ids = _anchor_ids(out)
     assert len(ids) == len(set(ids)), f"重複 anchor id: {ids}"
@@ -228,3 +241,166 @@ def test_inject_roundtrip_heading_levels_and_anchor_count():
     for _, text in out_headings:
         ids = anchors._ANCHOR.findall(text)
         assert len(ids) == 1, f"標題應恰好帶一個 anchor: {text!r}"
+
+
+# --- Identity-based carry-forward (Task 4 review remedy) ---
+#
+# `inject()` 過去用「第 i 個標題」配對舊 anchor 與新標題，一旦英文標題序列
+# 增刪，carried anchor 就會靜默套到錯的標題上。以下測試改以英文標題「文字」
+# 當作身分鍵，重現該迴歸並鎖住修好後的行為。
+
+
+def test_inject_carries_anchor_by_identity_not_index_after_heading_insertion():
+    """迴歸測試：上游在 B 之前插入新標題，carried anchor 必須跟著 B 走。"""
+    prev_en = "# A\n\n# B\n\n# C\n"
+    new_en = "# A\n\n# NEW\n\n# B\n\n# C\n"
+    prev_zh = "# 一\n\n# 二 {#b-anchor}\n\n# 三\n"
+    zh = "# 甲\n\n# 新\n\n# 乙\n\n# 丙\n"
+
+    out = anchors.inject(zh, new_en, prev_zh, prev_en)
+    out_headings = anchors.headings(out)
+
+    assert anchors.existing_anchor(out_headings[2][1]) == "b-anchor"
+    assert out_headings[2][1].startswith("乙")
+    # 舊程式碼會把它套到索引 1(NEW)上——明確排除這個錯誤結果。
+    assert anchors.existing_anchor(out_headings[1][1]) != "b-anchor"
+
+
+def test_inject_retires_anchor_for_heading_removed_upstream():
+    prev_en = "# A\n\n# Gone\n\n# C\n"
+    new_en = "# A\n\n# C\n"
+    prev_zh = "# 一\n\n# 走 {#gone}\n\n# 三\n"
+    zh = "# 甲\n\n# 丙\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+
+    assert "{#gone}" not in out
+    assert any("gone" in n and "retired" in n for n in notes), notes
+
+
+def test_inject_retires_anchor_for_heading_renamed_upstream():
+    prev_en = "# A\n\n# OldName\n\n# C\n"
+    new_en = "# A\n\n# NewName\n\n# C\n"
+    prev_zh = "# 一\n\n# 舊 {#old-anchor}\n\n# 三\n"
+    zh = "# 甲\n\n# 新名\n\n# 丙\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+
+    assert "{#old-anchor}" not in out
+    assert any("old-anchor" in n and "retired" in n for n in notes), notes
+    out_headings = anchors.headings(out)
+    assert anchors.existing_anchor(out_headings[1][1]) == "newname"
+
+
+def test_inject_duplicate_heading_texts_match_left_to_right():
+    prev_en = "# Setup\n\n# Setup\n"
+    new_en = "# Setup\n\n# Setup\n"
+    prev_zh = "# 設定甲 {#setup-0}\n\n# 設定乙 {#setup-1}\n"
+    zh = "# 甲\n\n# 乙\n"
+
+    out = anchors.inject(zh, new_en, prev_zh, prev_en)
+    out_headings = anchors.headings(out)
+
+    assert anchors.existing_anchor(out_headings[0][1]) == "setup-0"
+    assert anchors.existing_anchor(out_headings[1][1]) == "setup-1"
+
+
+def test_inject_no_prev_en_body_carries_nothing_even_with_prev_zh_body():
+    """設計規則 4：缺 prev_en_body 絕不 fallback 回 by-index 猜測。"""
+    zh = "# 甲\n"
+    en = "# A\n"
+    prev_zh = "# 舊 {#foo}\n"
+
+    out, notes = anchors.inject_report(zh, en, prev_zh, "")
+
+    assert "{#foo}" not in out
+    assert any("prev_en_body" in n and "not carried forward" in n for n in notes), notes
+    # 明確驗證：沒有發生 positional carry。
+    out_headings = anchors.headings(out)
+    assert anchors.existing_anchor(out_headings[0][1]) != "foo"
+
+
+def test_inject_mismatched_prev_heading_counts_carries_nothing_no_exception():
+    prev_zh = "# 一\n\n# 二\n"
+    prev_en = "# A\n\n# B\n\n# C\n"
+    zh = "# 甲\n"
+    en = "# A\n"
+
+    out, notes = anchors.inject_report(zh, en, prev_zh, prev_en)
+
+    assert "{#" in out  # 仍然照常衍生 slug，只是沒有任何東西被沿用
+    assert any("mismatch" in n for n in notes), notes
+
+
+def test_inject_tier1_still_beats_carried_tier2():
+    zh = "## 已有 {#existing}\n"
+    en = "## Already\n"
+    prev_zh = "## 舊有 {#carried}\n"
+    prev_en = "## Already\n"
+
+    out = anchors.inject(zh, en, prev_zh, prev_en)
+
+    assert "{#existing}" in out
+    assert "{#carried}" not in out
+
+
+def test_inject_carried_anchor_reserves_id_over_colliding_derived_slug():
+    prev_en = "# A\n\n# Setup\n"
+    prev_zh = "# 舊甲\n\n# 設定 {#setup}\n"
+    new_en = "# Setup\n\n# Setup\n"
+    zh = "# 甲\n\n# 乙\n"
+
+    out = anchors.inject(zh, new_en, prev_zh, prev_en)
+    out_headings = anchors.headings(out)
+
+    assert anchors.existing_anchor(out_headings[0][1]) == "setup"
+    assert anchors.existing_anchor(out_headings[1][1]) == "setup-1"
+
+
+# --- Real-data regression: book/object/ownership.md 與 epoch-and-time.md ---
+
+_MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
+_PRE_FIX = "0d4b8bea77f1a6195b589ded4067d287adb4379a"
+
+
+def _git_show(ref: str, path: str) -> str:
+    import subprocess
+
+    r = subprocess.run(
+        ["git", "show", f"{ref}:{path}"], capture_output=True, text=True, check=True
+    )
+    return r.stdout
+
+
+def _body_at(ref: str, path: str) -> str:
+    from scripts.zh_tw import frontmatter as fm
+
+    _, body = fm.split(_git_show(ref, path))
+    return body
+
+
+@pytest.mark.parametrize(
+    "path,anchor_id,heading_text",
+    [
+        ("book/object/ownership.md", "immutable-frozen-object", "Immutable (Frozen) State"),
+        ("book/programmability/epoch-and-time.md", "clock", "Time"),
+    ],
+)
+def test_inject_real_data_identity_carry_lands_on_correct_heading(
+    path, anchor_id, heading_text
+):
+    """english-main 的英文本文當作「重新翻譯」的替身(每個標題逐一對應)，
+    驗證身分匹配能把人工選定的 anchor 準確沿用到正確的新標題上。"""
+    en_body = _body_at("english-main", path)  # 同時充當 zh_body 的替身與新英文
+    prev_zh_body = _body_at(_PRE_FIX, path)
+    prev_en_body = _body_at(_MERGE_BASE, path)
+
+    out, notes = anchors.inject_report(en_body, en_body, prev_zh_body, prev_en_body)
+
+    out_headings = anchors.headings(out)
+    match = [
+        text for _, text in out_headings
+        if anchors.existing_anchor(text) == anchor_id
+    ]
+    assert len(match) == 1, f"{anchor_id!r} 未被沿用到恰好一個標題: {notes}"
+    assert match[0].split(" {#")[0] == heading_text
