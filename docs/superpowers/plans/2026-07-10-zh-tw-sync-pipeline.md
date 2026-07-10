@@ -2001,7 +2001,9 @@ git commit -m "feat(zh_tw): pipeline orchestration and CLI"
 Run: `npx --yes prettier@3 --check 'book/**/*.md' 'reference/**/*.md'`
 Expected: `All matched files use Prettier code style!`
 
-若仍有檔案不符，那是既有的表格／清單格式問題，執行 `npx --yes prettier@3 --write 'book/**/*.md' 'reference/**/*.md'` 一次性正規化，並在本 task 的 commit 中一併納入。
+實測（HEAD 5add39b2）：現況 143 檔 prettier 不合規；`frontmatter.join` 的 YAML 規範化會在 backfill 時自動修好 93 檔（143→50）；剩 50 檔是兩個純機械問題 —— 清單標記 `-   `（三空格）→ `- `（一空格）、檔尾缺換行，prettier 修得乾淨、不折斷中文句子。
+
+**這次 `prettier --write` 不在 Task 12 執行**（它會改動 50 個內容檔）。依人工裁決，併入 **PR 2（A 層）**：PR 2 本就只改 frontmatter、不碰譯文內文，把這 50 檔的清單標記與檔尾換行一併正規化，同屬「非譯文內容的機械格式改動」，diff 完全可預測。PR 2 的驗收改為：`npx prettier@3 --check` 對 A 層涉及的檔案通過。
 
 - [ ] **Step 3: 寫 repo 級檢查**
 
