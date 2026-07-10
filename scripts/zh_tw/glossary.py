@@ -50,7 +50,7 @@ def load(path: str | None = None) -> dict[str, str]:
     return json.loads(Path(path or _DEFAULT).read_text(encoding="utf-8"))
 
 
-def _protected_mask(body: str) -> list[bool]:
+def protected_mask(body: str) -> list[bool]:
     """逐字元遮罩：True 代表這個字元不可被術語替換碰到。
 
     保護來源有兩個，缺一不可：
@@ -117,7 +117,7 @@ def _segments(body: str, mask: list[bool]):
 
 def enforce(body: str, table: dict[str, str] | None = None) -> str:
     table = table or load()
-    mask = _protected_mask(body)
+    mask = protected_mask(body)
     out = []
     for protected, seg in _segments(body, mask):
         if not protected:
@@ -129,7 +129,7 @@ def enforce(body: str, table: dict[str, str] | None = None) -> str:
 
 def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
     table = table or load()
-    mask = _protected_mask(body)
+    mask = protected_mask(body)
     counts: Counter[str] = Counter()
     for protected, seg in _segments(body, mask):
         if protected:
