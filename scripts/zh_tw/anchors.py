@@ -115,3 +115,47 @@ def slugify_all(texts: list[str]) -> list[str]:
 def existing_anchor(heading: str) -> str | None:
     m = _ANCHOR.search(heading)
     return m.group(1) if m else None
+
+
+class HeadingMismatch(Exception):
+    """中文與英文的標題數量不符，通常代表翻譯被截斷。"""
+
+
+def _anchor_map(body: str) -> dict[int, str]:
+    """以標題序號為鍵，取出既有的 anchor id。"""
+    return {
+        i: aid
+        for i, (_, text) in enumerate(headings(body))
+        if (aid := existing_anchor(text)) is not None
+    }
+
+
+def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
+    zh_h, en_h = headings(zh_body), headings(en_body)
+    if len(zh_h) != len(en_h):
+        raise HeadingMismatch(
+            f"標題數不符: 中文 {len(zh_h)}, 英文 {len(en_h)}"
+        )
+
+    carried = _anchor_map(prev_zh_body) if prev_zh_body else {}
+    current = _anchor_map(zh_body)
+    derived = slugify_all([t for _, t in en_h])
+
+    wanted = [
+        current.get(i) or carried.get(i) or derived[i]
+        for i in range(len(en_h))
+    ]
+
+    # 行號與層級一律取自共用的區塊解析器，不自己掃 fence。
+    at_line = {ln: (idx, lv) for idx, (ln, lv) in enumerate(heading_lines(zh_body))}
+
+    out = []
+    for i, line in enumerate(zh_body.splitlines(keepends=True)):
+        if i not in at_line:
+            out.append(line)
+            continue
+        idx, level = at_line[i]
+        text = _ANCHOR.sub("", zh_h[idx][1])
+        nl = "\n" if line.endswith("\n") else ""
+        out.append(f"{'#' * level} {text} {{#{wanted[idx]}}}{nl}")
+    return "".join(out)
