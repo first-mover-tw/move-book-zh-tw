@@ -35,7 +35,7 @@ import subprocess
 
 import pytest
 
-from scripts.zh_tw import frontmatter as fm
+from scripts.zh_tw import anchors, frontmatter as fm
 from scripts.zh_tw import glossary, validate
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -43,6 +43,11 @@ PRE_FIX = "0d4b8bea77f1a6195b589ded4067d287adb4379a"
 
 
 def _show(ref: str, path: str) -> str | None:
+    """Return file content or None if it doesn't exist.
+
+    Matches manifest.blob_sha's convention: any non-zero return code
+    (including transient git errors) reads as file absence.
+    """
     r = subprocess.run(
         ["git", "show", f"{ref}:{path}"], capture_output=True, text=True
     )
@@ -56,7 +61,7 @@ def _zh_files() -> list[str]:
         text=True,
         check=True,
     )
-    return [f for f in r.stdout.split("\0") if f.endswith(".md")]
+    return [f for f in r.stdout.rstrip('\0').split('\0') if f and f.endswith(".md")]
 
 
 @pytest.fixture(scope="module")
@@ -189,6 +194,26 @@ def test_anchor_links_currently_resolve(zh_docs):
     這是唯一現況已經全綠的關卡，也是最容易在 backfill 中被無意破壞的一個：
     若重譯過程整段換掉標題文字卻沒保留既有 {#id}，會把手寫的 anchor 全部
     洗掉，這裡就會由 0 變紅——它的作用正是攔住這種情況。
+
+    Note: 56 (not 55). The earlier design-doc count came from a regex `\\{#[a-z0-9-]+\\}`
+    that omitted underscores, which missed `{#assert_eq-and-assert_ref_eq}` on
+    book/testing/test-utilities.md:31. slugify preserves underscores because
+    github-slugger and Docusaurus do.
     """
+    # Count explicit anchors on rendered headings
+    total_anchors = 0
+    files_with_anchors = set()
+
+    for path, content in zh_docs.items():
+        _, body = fm.split(content)
+        for _, heading_text in anchors.headings(body):
+            if anchors.existing_anchor(heading_text):
+                total_anchors += 1
+                files_with_anchors.add(path)
+
+    assert total_anchors == 56, total_anchors
+    assert len(files_with_anchors) == 35, len(files_with_anchors)
+
+    # All internal anchor links must resolve
     errs = validate.check_links(zh_docs)
     assert errs == [], errs
