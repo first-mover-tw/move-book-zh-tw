@@ -32,9 +32,11 @@
 
 `sync-upstream.yml` 未受影響，因為它只跑 git 指令、不需要 Python 依賴。
 
-### D2：19 個檔案結構殘缺，其中 13 個嚴重截斷
+### D2：15 個檔案結構殘缺，其中 13 個嚴重截斷
 
-比對中文檔與其英文來源（merge-base `f2c0a93e`）的標題層級序列與 code fence 數量，143 個檔案中有 19 個不符。中文行數不到英文 60% 的有 13 個：
+> 修正（實作階段）：初次調查得出 19，但當時的掃描腳本與 Task 3 初版 `headings()` 共用同一個天真的 fence 切換邏輯 —— 它把 HTML 註解（`<!-- ... -->`）裡的 ``` 與標題也算進去。修正後為 **15**。移除的 4 個假陽性是 `struct.md`、`struct-methods.md`、`string.md`、`2024-migration-guide.md`：英文原檔有被註解掉的區塊，中文正確地沒翻。13 個嚴重截斷檔全數仍在名單內。
+
+比對中文檔與其英文來源（merge-base `f2c0a93e`）的標題層級序列與 code fence 數量，143 個檔案中有 15 個不符。中文行數不到英文 60% 的有 13 個：
 
 | 檔案 | 英文行數 | 中文行數 |
 |---|---|---|
@@ -264,21 +266,21 @@ inject(zh_body, en_body, prev_zh_body) -> zh_body'
 
 ## 七、執行計畫
 
-各 PR 的檔案集合互斥且涵蓋全部 151 檔。PR 3 抽走的 19 個殘缺檔已自 PR 4–7 的章節計數中扣除。
+各 PR 的檔案集合互斥且涵蓋全部 151 檔。PR 3 抽走的 15 個殘缺檔已自 PR 4–7 的章節計數中扣除。
 
 | PR | 內容 | 譯文檔數 |
 |---|---|---|
 | 0 | `scripts/zh_tw/` 模組 + 單元測試 + `.prettierrc` override + manifest provenance 回填 + 移除 `pyproject.toml` 的 `google` 假依賴 | 0 |
 | 1 | CI 修復（`translate-zh-tw.yml`） | 0 |
 | 2 | A 層（只換 frontmatter） | 47 |
-| 3 | **P0：結構殘缺檔** + 刪除孤兒檔 `transfer-restrictions.md` | 19 |
-| 4 | `book/move-basics`（扣除 PR 3 的 3 檔） | 26 |
+| 3 | **P0：結構殘缺檔** + 刪除孤兒檔 `transfer-restrictions.md` | 15 |
+| 4 | `book/move-basics` | 29 |
 | 5 | `book/programmability`（扣除 PR 3 的 6 檔） | 18 |
 | 6 | `book/testing`（全新章節） | 13 |
-| 7 | 其餘（`concepts` 6 / `storage` 6 / `object` 4 / `move-advanced` 3 / `appendix` 2 / `book` 根 2 / `before-we-begin` 1 / `guides` 1 / `your-first-move` 1 / `reference` 2） | 28 |
+| 7 | 其餘（`concepts` 6 / `storage` 6 / `object` 4 / `move-advanced` 3 / `appendix` 2 / `book` 根 2 / `guides` 2 / `before-we-begin` 1 / `your-first-move` 1 / `reference` 2） | 29 |
 | | **合計** | **151** |
 
-PR 3 的 19 檔分佈：`programmability` 6、`guides` 5、`move-basics` 3、`object` 2、`reference` 2、`storage` 1。
+PR 3 的 15 檔分佈：`programmability` 6、`guides` 4、`object` 2、`reference` 2、`storage` 1。
 
 PR 3 排在內容 PR 最前：那 13 個嚴重殘缺頁面現正掛在線上，優先於同步上游新內容。
 
@@ -308,7 +310,7 @@ PR 3 的第一個步驟：取一個術語密集的長檔（建議 `reference/var
 ## 九、驗收條件
 
 1. `zh-tw-main` 的 `book` + `reference` 下有 149 個 md 檔，與 `english-main` 路徑集合完全一致（含新增 7 檔、刪除孤兒檔 1 檔）。
-2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 19 檔，第 4 條紅 88 檔，第 7 條紅 126 處。
+2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 15 檔，第 4 條紅 88 檔，第 7 條紅 126 處。
 3. `manifest.stale_files()` 回傳空清單；`manifest.orphans()` 回傳空清單。
 4. 97 條內部 anchor 連結全部可解析（`check_links` 須剝除 `?query` 才不會有假陽性）；55 個既有 anchor 的 ID 值一個都沒變。
 5. 8 條 glossary 違禁詞在正文中出現次數為 0（現況：程式碼區塊外 126 處）。

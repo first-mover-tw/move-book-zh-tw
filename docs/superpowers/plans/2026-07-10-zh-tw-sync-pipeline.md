@@ -391,7 +391,12 @@ def _files() -> list[str]:
 
 
 def test_slugify_reproduces_existing_anchors():
-    """除了兩個已知的人工選定 anchor，slugify(英文標題) 應重現全部既有 anchor。"""
+    """除了兩個已知的人工選定 anchor，slugify(英文標題) 應重現全部既有 anchor。
+
+    47 而非 46：初版 headings() 把 HTML 註解裡的標題也算進去，導致
+    book/move-basics/string.md 的中英文標題數不符（10 vs 11）而被跳過。
+    修好 parser 後該檔重新納入，貢獻一個正確配對的 {#ascii-strings}。
+    """
     divergent, reproduced = set(), 0
     for path in _files():
         zh, en = _show(PRE_FIX, path), _show(MERGE_BASE, path)
@@ -409,7 +414,7 @@ def test_slugify_reproduces_existing_anchors():
             else:
                 divergent.add((path, aid))
 
-    assert reproduced == 46
+    assert reproduced == 47
     assert divergent == KNOWN_DIVERGENT
 ```
 
@@ -1218,7 +1223,7 @@ git commit -m "feat(zh_tw): seven validation gates, raise before write"
 **Interfaces:**
 - Consumes: `validate.check_file`, `manifest.blob_sha`
 
-這個測試的作用是證明守衛有效：對修復前的 HEAD 執行，第 1、2 條紅 19 檔、第 4 條紅 88 檔、第 7 條紅 126 處。backfill 完成後改為斷言全綠（收尾 task）。
+這個測試的作用是證明守衛有效：對修復前的 HEAD 執行，第 1、2 條紅 15 檔、第 4 條紅 88 檔、第 7 條紅 126 處。backfill 完成後改為斷言全綠（收尾 task）。
 
 > 這三個數字是以本計畫的 `check_file` 邏輯實測得出，與 spec 中的 89 / 143 略有出入。spec 的 89 來自粗略 grep；143 含 code block 內的字。**以此處為準。**
 
@@ -1274,12 +1279,16 @@ def failures() -> dict[str, list[str]]:
 
 
 def test_structural_failures_baseline(failures):
-    """D2: 19 檔的標題序列或 fence 數與英文來源不符。"""
+    """D2: 15 檔的標題序列或 fence 數與英文來源不符。
+
+    19 是調查階段用有 bug 的 fence 掃描器算出來的。修正 parser 後為 15；
+    移除的 4 個假陽性其英文原檔有被 HTML 註解掉的區塊。
+    """
     structural = [
         p for p, errs in failures.items()
         if any("標題層級序列" in e or "fence" in e for e in errs)
     ]
-    assert len(structural) == 19, sorted(structural)
+    assert len(structural) == 15, sorted(structural)
 
 
 def test_severe_truncation_is_present(failures):
@@ -2680,7 +2689,7 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 
 ---
 
-### Task 19: PR 3 — 19 個結構殘缺檔（P0）
+### Task 19: PR 3 — 15 個結構殘缺檔（P0）
 
 這 13 個嚴重殘缺的頁面現正掛在線上：`reference/variables.md` 中文只有 36 行（英文 824）、`code-quality-checklist.md` 24 行（英文 592）。優先於同步上游新內容。
 
@@ -2710,14 +2719,14 @@ for p in [f for f in files if f.endswith(".md")]:
 PY
 wc -l $SP/broken.txt
 ```
-Expected: `19`
+Expected: `15`
 
 - [ ] **Step 2: 全譯（B 層）**
 
 ```bash
 xargs -a $SP/broken.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 ```
-Expected: `成功 19，失敗 0`
+Expected: `成功 15，失敗 0`
 
 任何失敗都代表 validate 攔下了壞翻譯 —— 這是設計意圖。重跑該檔即可。
 
@@ -2774,11 +2783,11 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 
 | PR | 路徑前綴 | 檔數 | 分支 |
 |---|---|---|---|
-| 4 | `book/move-basics/` | 26 | `sync/pr4-move-basics` |
+| 4 | `book/move-basics/` | 29 | `sync/pr4-move-basics` |
 | 5 | `book/programmability/` | 18 | `sync/pr5-programmability` |
 | 6 | `book/testing/` | 13 | `sync/pr6-testing` |
 
-檔數已扣除 PR 3 抽走的殘缺檔（move-basics 3 個、programmability 6 個）。
+檔數已扣除 PR 3 抽走的殘缺檔（move-basics 0 個、programmability 6 個）。
 
 - [ ] **Step 1: PR 4 — book/move-basics**
 
@@ -2787,7 +2796,7 @@ git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr4-move-basics
 uv run --with pyyaml python -m scripts.zh_tw --detect \
   | grep '^book/move-basics/' > $SP/pr4.txt
-wc -l $SP/pr4.txt   # Expected: 26
+wc -l $SP/pr4.txt   # Expected: 29
 xargs -a $SP/pr4.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 uv run --with pyyaml python -m scripts.zh_tw.check_repo
 npx --yes prettier@3 --check 'book/**/*.md'
@@ -2796,7 +2805,7 @@ xargs -a $SP/pr4.txt git add --
 git commit -m "docs(zh-tw): sync book/move-basics with upstream"
 git push -u origin sync/pr4-move-basics
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
-  --title "PR 4: sync book/move-basics (26 files)" --body "術語密集章節，請仔細 review。"
+  --title "PR 4: sync book/move-basics (29 files)" --body "術語密集章節，請仔細 review。"
 ```
 
 - [ ] **Step 2: 等 PR 4 合併，再做 PR 5 — book/programmability**
@@ -2840,7 +2849,7 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 
 ---
 
-### Task 21: PR 7 — 剩餘 28 檔
+### Task 21: PR 7 — 剩餘 29 檔
 
 `concepts` 6、`storage` 6、`object` 4、`move-advanced` 3、`appendix` 2、`book` 根 2、`before-we-begin` 1、`guides` 1、`your-first-move` 1、`reference` 2。
 
