@@ -6,7 +6,7 @@
 
 **Architecture:** `scripts/zh_tw/` 模組化。LLM 只出現在 `backends/` 的 `translate(text) -> str`；其餘皆為純函式。每個檔案寫入前必須通過 7 道驗證，不過就 raise、不寫檔。本地 backfill 走 `claude -p`，CI 走 Gemini，共用同一個 `pipeline.py`。
 
-**Tech Stack:** Python 3.13、uv、pytest、PyYAML、**markdown-it-py**（CommonMark 參考實作）、`claude -p` CLI、`google-genai`、GitHub Actions。
+**Tech Stack:** Python 3.13、uv、pytest、PyYAML、**markdown-it-py**（CommonMark 參考實作）、**opencc-python-reimplemented**（簡繁字形偵測）、`claude -p` CLI、`google-genai`、GitHub Actions。
 
 ## Global Constraints
 
@@ -519,7 +519,8 @@ git commit -m "feat(zh_tw): heading parser and github-compatible slugify"
 **Interfaces:**
 - Consumes: `headings`, `slugify_all`, `existing_anchor`（Task 3）
 - Produces:
-  - `inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str`
+  - `inject(zh_body: str, en_body: str, prev_zh_body: str = "", prev_en_body: str = "") -> str`
+  - `DuplicateAnchor(Exception)` / `NestedHeading(Exception)`
   - `HeadingMismatch(Exception)` — 標題數不符時 raise
 
 - [ ] **Step 1: 寫失敗測試**
@@ -1070,7 +1071,7 @@ git commit -m "feat(zh_tw): backend-free manifest module with orphan detection"
 - Consumes: `frontmatter.split`, `anchors.headings/existing_anchor`, `glossary.scan`
 - Produces:
   - `ValidationError(Exception)`
-  - `check_file(zh_text: str, en_text: str, prev_zh_text: str = "") -> list[str]` — 回傳失敗訊息清單，空清單代表通過
+  - `check_file(zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = "") -> list[str]` — 回傳失敗訊息清單，空清單代表通過
   - `check_links(files: dict[str, str]) -> list[str]` — repo 級 anchor 連結解析
 
 - [ ] **Step 1: 寫失敗測試**
@@ -1291,7 +1292,7 @@ git commit -m "feat(zh_tw): seven validation gates, raise before write"
 **Interfaces:**
 - Consumes: `validate.check_file`, `manifest.blob_sha`
 
-這個測試的作用是證明守衛有效：對修復前的 HEAD 執行，第 1、2 條紅 15 檔、第 4 條紅 88 檔、第 7 條紅 126 處。backfill 完成後改為斷言全綠（收尾 task）。
+這個測試的作用是證明守衛有效：對修復前的 HEAD 執行，第 1、2 條紅 15 檔、第 4 條紅 88 檔、第 7 條紅 126 處、第 8 條紅 4 檔 5 字。backfill 完成後改為斷言全綠（收尾 task）。
 
 > 這三個數字是以本計畫的 `check_file` 邏輯實測得出，與 spec 中的 89 / 143 略有出入。spec 的 89 來自粗略 grep；143 含 code block 內的字。**以此處為準。**
 
@@ -2528,7 +2529,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: pip install pyyaml markdown-it-py google-genai
+        run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
 
       - name: Detect files needing translation
         id: detect
