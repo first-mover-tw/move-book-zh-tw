@@ -93,12 +93,17 @@ def slugify(heading: str) -> str:
     return re.sub(r"\s+", "-", text).strip("-")
 
 
-def slugify_all(texts: list[str]) -> list[str]:
+def slugify_all(
+    texts: list[str], reserved: "set[str] | frozenset[str]" = frozenset()
+) -> list[str]:
     """依 github-slugger 規則去重：每個候選 slug 都要對照「已產出集合」，
     衝突就一直遞增到找到空位為止（而不是各自獨立計數），避免產生的
     `-N` 尾碼撞上另一個字面上就長那樣的 slug。
+
+    `reserved` 讓呼叫端預先佔位既有的 id（例如 carried-forward anchor），
+    使衍生出來的 slug 不會撞上一個它完全看不到的命名空間。
     """
-    used: set[str] = set()
+    used: set[str] = set(reserved)
     out: list[str] = []
     for t in texts:
         base = slugify(t)
@@ -121,6 +126,10 @@ class HeadingMismatch(Exception):
     """中文與英文的標題數量不符，通常代表翻譯被截斷。"""
 
 
+class DuplicateAnchor(Exception):
+    """兩個標題最終算出同一個 anchor id——防禦性守衛，理論上不該發生。"""
+
+
 def _anchor_map(body: str) -> dict[int, str]:
     """以標題序號為鍵，取出既有的 anchor id。"""
     return {
@@ -128,6 +137,26 @@ def _anchor_map(body: str) -> dict[int, str]:
         for i, (_, text) in enumerate(headings(body))
         if (aid := existing_anchor(text)) is not None
     }
+
+
+def _heading_spans(body: str) -> list[tuple[int, int, int, str]]:
+    """(起始行, 結束行(不含), 層級, markup)。markup 為 `=`/`-` 代表 setext
+    標題(佔兩行：文字行 + 底線行)，其餘(`#`...`######`)代表 ATX。
+    行號與層級的真相來源同樣是 markdown-it-py 的 token，不另起掃描。
+    """
+    return [
+        (t.map[0], t.map[1], int(t.tag[1]), t.markup)
+        for t in _tokens(body)
+        if t.type == "heading_open" and t.map
+    ]
+
+
+def _line_ending(line: str) -> str:
+    if line.endswith("\r\n"):
+        return "\r\n"
+    if line.endswith("\n"):
+        return "\n"
+    return ""
 
 
 def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
@@ -139,23 +168,52 @@ def inject(zh_body: str, en_body: str, prev_zh_body: str = "") -> str:
 
     carried = _anchor_map(prev_zh_body) if prev_zh_body else {}
     current = _anchor_map(zh_body)
-    derived = slugify_all([t for _, t in en_h])
 
-    wanted = [
-        current.get(i) or carried.get(i) or derived[i]
-        for i in range(len(en_h))
-    ]
+    # tier 1（zh_body 裡已有的 anchor）優先於 tier 2（沿用自舊版中文檔）。
+    fixed: dict[int, str] = {}
+    for i in range(len(en_h)):
+        aid = current.get(i)
+        if aid is None:
+            aid = carried.get(i)
+        if aid is not None:
+            fixed[i] = aid
+
+    # 衍生（tier 3）前，先把 tier 1/2 已經佔用的 id 保留起來，
+    # 讓 slugify_all 在它們看不到的命名空間裡也不會撞名。
+    reserved = set(fixed.values())
+    derive_idx = [i for i in range(len(en_h)) if i not in fixed]
+    derived = slugify_all([en_h[i][1] for i in derive_idx], reserved=reserved)
+    for i, aid in zip(derive_idx, derived):
+        fixed[i] = aid
+
+    wanted = [fixed[i] for i in range(len(en_h))]
+
+    # 防禦性守衛：就算前面的邏輯都對，也不允許重複的 anchor 靜默流出去
+    # （例如 tier 1 本身在 zh_body 裡就已經有兩個標題共用同一個 id）。
+    seen: set[str] = set()
+    for aid in wanted:
+        if aid in seen:
+            raise DuplicateAnchor(f"重複的 anchor id: {aid!r}")
+        seen.add(aid)
 
     # 行號與層級一律取自共用的區塊解析器，不自己掃 fence。
-    at_line = {ln: (idx, lv) for idx, (ln, lv) in enumerate(heading_lines(zh_body))}
+    spans = _heading_spans(zh_body)
+    at_line = {start: (idx, level, end, markup) for idx, (start, end, level, markup) in enumerate(spans)}
+    # setext 標題的底線行整行丟棄（正規化成 ATX 後底線就不該存在）。
+    setext_underline_lines = {
+        end - 1 for _, end, _, markup in spans if markup in ("=", "-")
+    }
 
+    lines = zh_body.splitlines(keepends=True)
     out = []
-    for i, line in enumerate(zh_body.splitlines(keepends=True)):
+    for i, line in enumerate(lines):
+        if i in setext_underline_lines:
+            continue
         if i not in at_line:
             out.append(line)
             continue
-        idx, level = at_line[i]
+        idx, level, _, _ = at_line[i]
         text = _ANCHOR.sub("", zh_h[idx][1])
-        nl = "\n" if line.endswith("\n") else ""
+        nl = _line_ending(line)
         out.append(f"{'#' * level} {text} {{#{wanted[idx]}}}{nl}")
     return "".join(out)
