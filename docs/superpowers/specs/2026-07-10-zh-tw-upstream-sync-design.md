@@ -248,7 +248,7 @@ inject(zh_body, en_body, prev_zh_body) -> zh_body'
 
 規則 1 是必要的：實測 `slugify` 重現現有 46/48 個 anchor，剩 2 個是人工刻意選定的不同值（標題 `Immutable (Frozen) State` 配 `{#immutable-frozen-object}`；標題 `Time` 配 `{#clock}`）。**anchor 是已發佈的 URL，是對外契約，不是衍生值。**
 
-規則 2 將覆蓋率從 34 檔擴及全部，且新 anchor 與上游英文站一致。
+規則 2 將覆蓋率從 35 檔擴及全部，且新 anchor 與上游英文站一致。
 
 ### `glossary.py`
 
