@@ -34,12 +34,12 @@ def blob_sha(ref: str, path: str) -> str | None:
 
 def tracked_files(ref: str) -> list[str]:
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", ref, *DIRS],
+        ["git", "ls-tree", "-r", "--name-only", "-z", ref, *DIRS],
         capture_output=True, text=True, check=True,
     )
     return [
-        f for f in r.stdout.split()
-        if f.endswith(".md") or f in SIDEBAR_FILES
+        f for f in r.stdout.rstrip('\0').split('\0')
+        if f and (f.endswith(".md") or f in SIDEBAR_FILES)
     ]
 
 
@@ -57,10 +57,10 @@ def orphans(ref: str = "english-main") -> list[str]:
     """manifest 或 zh 分支有、但英文來源已刪除的路徑。"""
     present = set(tracked_files(ref))
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", "HEAD", *DIRS],
+        ["git", "ls-tree", "-r", "--name-only", "-z", "HEAD", *DIRS],
         capture_output=True, text=True, check=True,
     )
-    zh = {f for f in r.stdout.split() if f.endswith(".md")}
+    zh = {f for f in r.stdout.rstrip('\0').split('\0') if f and f.endswith(".md")}
     return sorted((zh | set(load())) - present)
 
 
