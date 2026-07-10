@@ -9,11 +9,17 @@ from scripts.zh_tw import manifest
 def test_manifest_imports_only_stdlib():
     """AST-based import guard: localises which import broke the rule.
 
-    This test is a fast, precise localisation aid. The real guarantee that
-    manifest.py does not import Gemini/backend SDKs is test_detect_runs_without_genai_installed,
-    which proves it at runtime. This AST check catches module names and
-    ImportFrom statements; it does not catch importlib.import_module() with
-    computed names (only the behavioural test would, at runtime).
+    This test is a fast, precise localisation aid for detecting unwanted imports.
+    The real guarantee that manifest.py does not import Gemini/backend SDKs is
+    test_detect_runs_without_genai_installed, which proves it at runtime.
+
+    This AST localiser catches:
+    - Direct imports: `import google.genai` → adds "google"
+    - Absolute ImportFrom: `from google import genai` → adds "google"
+    - Relative imports: `from . import anchors` → adds "anchors"
+
+    It does NOT catch importlib.import_module() with computed names;
+    only the behavioural test catches that at runtime.
     """
     src = Path("scripts/zh_tw/manifest.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
@@ -23,7 +29,10 @@ def test_manifest_imports_only_stdlib():
             for alias in node.names:
                 imported.add(alias.name.split(".")[0])
         elif isinstance(node, ast.ImportFrom):
-            if node.module:
+            if node.level > 0:  # relative import: from . import X or from .. import X
+                for alias in node.names:
+                    imported.add(alias.name.split(".")[0])
+            elif node.module:  # absolute import: from X import Y
                 imported.add(node.module.split(".")[0])
     assert imported == {"json", "subprocess", "pathlib"}
 
