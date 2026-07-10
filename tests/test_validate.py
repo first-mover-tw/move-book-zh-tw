@@ -40,10 +40,15 @@ def test_detects_frontmatter_key_mismatch():
 
 
 def test_detects_dropped_existing_anchor():
+    """gate 6 需要 prev_zh *與* prev_en 同時在場才會檢查身分（見
+    check_file 對 gate 6 的說明）；沒有 prev_en 時無法分辨「翻譯弄丟了
+    anchor」與「上游刪掉了對應章節」，因此這裡也要給 prev_en，讓
+    T 這個英文標題在新舊版之間保持不變，才能真正驗證「消失」被抓到。"""
+    prev_en = '---\ndescription: "d"\n---\n\n# T\n'
     prev = '---\ndescription: "描述"\n---\n\n# 標 {#custom-id}\n'
     en = '---\ndescription: "d"\n---\n\n# T\n'
     zh = '---\ndescription: "描述"\n---\n\n# 標 {#t}\n'
-    errs = validate.check_file(zh, en, prev)
+    errs = validate.check_file(zh, en, prev, prev_en)
     assert any("custom-id" in e for e in errs)
 
 
@@ -143,14 +148,33 @@ def test_gate6_retirement_produces_no_error():
     assert validate.check_file(zh, en, prev_zh, prev_en) == []
 
 
-def test_gate6_falls_back_to_disappearance_check_without_prev_en():
+def test_gate6_abstains_without_prev_en():
+    """D-deadlock repro: without prev_en, inject() correctly declines to carry
+    any anchor forward (index matching would risk the D10 bug). Gate 6 must
+    not then report those same anchors as having disappeared -- its
+    precondition for checking anything is the same as inject()'s precondition
+    for carrying anything: prev_en must be present."""
     prev_en = "# H0\n\n## Alpha\n\n## Beta\n"
     prev_zh = "# H0 {#h0}\n\n## 甲 {#alpha-id}\n\n## 乙 {#beta-id}\n"
     en = "# H0\n\n## Gamma\n"
     zh = "# H0 {#h0}\n\n## 丙\n"
-    errs = validate.check_file(zh, en, prev_zh, "")
-    assert any("alpha-id" in e for e in errs)
-    assert any("beta-id" in e for e in errs)
+    assert validate.check_file(zh, en, prev_zh, "") == []
+
+
+def test_gate6_deadlock_reproduction_no_prev_en():
+    """The exact deadlock from the task spec: a file with anchors and no
+    recoverable prev_en must not be permanently unwritable."""
+    en = '---\ndescription: "Vectors."\n---\n\n# Vector\n\nBody.\n\n## Syntax\n\nMore.\n'
+    prev_zh = '---\ndescription: "描述"\n---\n\n# 甲 {#alpha}\n\n## 乙 {#beta}\n'
+    _, en_body = frontmatter.split(en)
+    _, prev_zh_body = frontmatter.split(prev_zh)
+
+    zh_meta = {"description": "向量相關內容。"}
+    zh_body_translated = "# 向量\n\n內容。\n\n## 語法\n\n更多內容。\n"
+    zh_body = anchors.inject(zh_body_translated, en_body, prev_zh_body, "")
+    zh = frontmatter.join(zh_meta, zh_body)
+
+    assert validate.check_file(zh, en, prev_zh, "") == []
 
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -207,6 +231,33 @@ def test_gate6_real_data_heading_count_drift():
         zh_text = frontmatter.join(zh_meta, zh_body)
 
         errs = validate.check_file(zh_text, en_full, prev_zh_full, prev_en_full)
+        assert not any("anchor" in e for e in errs), (path, errs)
+
+
+def test_gate6_real_deadlocked_files_no_prev_en():
+    """book/testing/{test-scenario,test-utilities,testing-basics}.md were hand-
+    translated from an upstream PR before it merged, are absent from the
+    manifest, and have no English counterpart at the merge-base -- so
+    pipeline._prev_en() returns "". Before this fix, gate 6's disappearance
+    fallback reported every one of their anchors as lost, forever, because
+    inject() correctly refuses to carry anchors without prev_en."""
+    for path in (
+        "book/testing/test-scenario.md",
+        "book/testing/test-utilities.md",
+        "book/testing/testing-basics.md",
+    ):
+        prev_zh_full = _show(PRE_FIX, path)
+        en_full = _show("english-main", path)
+        if not prev_zh_full or not en_full:
+            pytest.skip(f"{path} unavailable in this checkout")
+
+        _, prev_zh_body = frontmatter.split(prev_zh_full)
+        zh_meta, en_body = frontmatter.split(en_full)
+
+        zh_body = anchors.inject(en_body, en_body, prev_zh_body, "")
+        zh_text = frontmatter.join(zh_meta, zh_body)
+
+        errs = validate.check_file(zh_text, en_full, prev_zh_full, "")
         assert not any("anchor" in e for e in errs), (path, errs)
 
 

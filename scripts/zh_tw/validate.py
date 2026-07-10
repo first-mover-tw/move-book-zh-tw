@@ -82,6 +82,9 @@ def simplified_chars(body: str) -> list[tuple[int, str]]:
 def check_file(
     zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
 ) -> list[str]:
+    """gate 6（anchor 身分）需要 prev_zh_text *與* prev_en_text 同時在場才會
+    執行；只要其中一個缺席（尤其是 prev_en_text），gate 6 就完全棄權，不做
+    任何檢查——理由見 gate 6 區塊的註解。"""
     errs: list[str] = []
     zh_meta, zh_body = frontmatter.split(zh_text)
     en_meta, en_body = frontmatter.split(en_text)
@@ -113,6 +116,24 @@ def check_file(
             errs.append(f"frontmatter {key} 未翻譯: {value!r}")
 
     # 6. 既有 anchor 不得消失，也不得被重新指派到別的標題上
+    #
+    # 三種情況，鏡射 anchors._identity_carry 的三個分支（同一份 guard，
+    # 兩邊要一起改）：
+    #   1) prev_zh 與 prev_en 都在，且標題數對齊 → 用身分（slugify_all
+    #      比對）驗證每個既有 anchor 落在正確的新標題上，如下。
+    #   2) prev_zh 與 prev_en 都在，但標題數不對齊 → by-index 的「第 i 個
+    #      中文對應第 i 個英文」假設不成立，什麼都不驗證（與
+    #      _identity_carry 遇到同樣落差時「什麼都不沿用」對稱）。
+    #   3) prev_en 缺席 → 完全棄權，不做任何 gate 6 檢查。這不是「假設最壞
+    #      情況」的舊行為（舊版會把 prev_zh 有、新 zh 沒有的 anchor 一律
+    #      當消失來報錯）；那個假設是錯的，因為 inject() 面對同樣缺席的
+    #      prev_en 時，本來就拒絕沿用任何 anchor（見 _identity_carry），
+    #      所以這裡看到的「消失」其實是 inject 正確的保守選擇，不是一次
+    #      翻譯把 anchor 弄丟。沒有 prev_en，gate 6 沒有身分依據去分辨
+    #      「翻譯弄丟了 anchor」與「上游刪掉了對應章節、anchor 退場」，
+    #      猜測任一邊都可能誤報或漏報，所以直接不猜。
+    #      已發佈 URL 真正依賴的保護在 gate 5（check_links）：只要新 anchor
+    #      id 仍能被連結解析，gate 6 棄權並不會讓壞掉的連結流出去。
     if prev_zh_text and prev_en_text:
         _, prev_zh_body = frontmatter.split(prev_zh_text)
         _, prev_en_body = frontmatter.split(prev_en_text)
@@ -160,19 +181,6 @@ def check_file(
                         f"既有 anchor 被重新指派: {{#{aid}}}（原標題「{en_text_i}」）"
                         f"未出現在對應標題上，實際為 {f'{{#{actual}}}' if actual else '無'}"
                     )
-    elif prev_zh_text:
-        # 沒有英文側可比對身分，退回舊的「消失偵測」。
-        _, prev_body = frontmatter.split(prev_zh_text)
-        prev_ids = {
-            aid for _, t in anchors.headings(prev_body)
-            if (aid := anchors.existing_anchor(t))
-        }
-        now_ids = {
-            aid for _, t in zh_h if (aid := anchors.existing_anchor(t))
-        }
-        for lost in sorted(prev_ids - now_ids):
-            errs.append(f"既有 anchor 消失: {{#{lost}}}")
-
     # 7. glossary
     for bad, n in sorted(glossary.scan(zh_body).items()):
         errs.append(f"違禁詞 {bad} 出現 {n} 次")

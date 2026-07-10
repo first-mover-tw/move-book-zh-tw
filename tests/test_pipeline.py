@@ -158,12 +158,21 @@ def test_assemble_without_prev_en_carries_nothing():
     assert any("not carried forward" in n for n in notes)
 
 
-def test_assemble_raises_when_prev_en_missing_and_anchor_would_be_lost():
-    """assemble 層級：validate 的 gate 6 會把「有 prev_zh、沒有 prev_en」導致的
-    anchor 消失視為錯誤而擋下寫檔 —— 退場是安全的，但仍需要人工核准，
-    不能悄悄流出去。"""
-    with pytest.raises(validate.ValidationError):
-        pipeline.assemble(EN, PREV_ZH, "", FakeBackend())
+def test_assemble_succeeds_when_prev_en_missing_carrying_no_old_anchors():
+    """Deadlock fix at the assemble level: 有 prev_zh、沒有 prev_en 時，
+    inject() 正確地拒絕沿用任何既有 anchor（避免 D10 的位置配對 bug），
+    gate 6 對同樣缺席的 prev_en 棄權，不再把 inject 的保守選擇回報成
+    「anchor 消失」的錯誤。輸出必須成功寫出，且不含 PREV_ZH 裡的舊 id
+    （custom-syntax 是自訂 id，重新衍生絕不可能巧合算出同一個字串，
+    是比 vector/syntax 更乾淨的「沒有沿用」證據）。"""
+    out = pipeline.assemble(EN, PREV_ZH, "", FakeBackend())
+    _, zh_body = frontmatter.split(out)
+    ids = {
+        aid for _, t in anchors.headings(zh_body)
+        if (aid := anchors.existing_anchor(t))
+    }
+    assert "custom-syntax" not in ids  # 舊自訂 id，沒有 prev_en 就不可能沿用得到
+    assert ids == {"vector", "syntax"}  # 兩者皆為對 en 標題文字重新衍生的結果
 
 
 def test_run_on_sidebar_path_fails_clearly():
