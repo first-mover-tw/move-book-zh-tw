@@ -1,4 +1,6 @@
+import itertools
 import subprocess
+from collections import Counter
 from pathlib import Path
 
 from markdown_it import MarkdownIt
@@ -273,6 +275,91 @@ def test_enforce_preserves_missing_trailing_newline():
     out = glossary.enforce(body)
     assert out == "呼叫函式"
     assert not out.endswith("\n")
+
+
+def test_scan_ignores_span_opened_in_prose_closed_inside_fence():
+    # Fuzz-found repro: `` ` `` opens in a paragraph line, and its closing
+    # delimiter lives inside the fence on the next line. _CODE_SPAN used to
+    # run over the whole body and only check the match's *start* against
+    # the protected mask, so this cross-block span swallowed the fence's
+    # backtick as its closer and hid the paragraph's "函數".
+    body = "```函數`\n```"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == "```函式`\n```"
+
+
+def test_scan_ignores_span_opened_in_prose_closed_inside_fence_double_backtick():
+    body = "```函數``\n```"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == "```函式``\n```"
+
+
+def test_scan_finds_both_occurrences_around_fence_crossing_span():
+    body = "函數```函數\n```"
+    assert glossary.scan(body) == {"函數": 2}
+    assert glossary.enforce(body) == "函式```函式\n```"
+
+
+def test_scan_ignores_span_opened_in_prose_with_leading_space_closed_in_fence():
+    body = " x ```函數\n```"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == " x ```函式\n```"
+
+
+def test_scan_ignores_span_opened_in_prose_no_space_closed_in_fence():
+    body = "y```函數\n```"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == "y```函式\n```"
+
+
+def _oracle_banned_counts(body: str, table: dict[str, str]) -> dict[str, int]:
+    """Ground truth: walk markdown-it-py's own token tree. For every
+    ``inline`` token, count banned terms in the ``content`` of every child
+    whose type is *not* ``code_inline``. This is the direct source of
+    truth glossary.scan() must agree with — no regex re-derivation.
+    """
+    counts: Counter[str] = Counter()
+
+    def walk(tokens):
+        for t in tokens:
+            if t.type == "inline":
+                for child in t.children or []:
+                    if child.type != "code_inline":
+                        for bad in table:
+                            n = child.content.count(bad)
+                            if n:
+                                counts[bad] += n
+            if t.children:
+                walk(t.children)
+
+    walk(_MD.parse(body))
+    return dict(counts)
+
+
+def test_scan_agrees_with_markdown_it_fuzz_sweep():
+    """Fuzz test replacing hand-picked differential cases.
+
+    This is the test that would have caught all three inline-code bugs
+    fixed in this file's history (line-based masking assuming single-line
+    spans, non-maximal backtick runs, and a code span crossing a fenced
+    block boundary): it generates every combination of markdown-ish
+    fragments up to length 5 and checks scan() against an oracle built
+    directly from markdown-it's own token tree, rather than against a
+    hand-picked list of bodies someone thought to write down.
+    """
+    table = glossary.load()
+    fragments = ["`", "``", "```", "函數", " x ", "\n", "y"]
+    checked = 0
+    for length in range(2, 6):
+        for combo in itertools.product(fragments, repeat=length):
+            body = "".join(combo)
+            if "\n\n" in body:
+                continue
+            expected = _oracle_banned_counts(body, table)
+            actual = glossary.scan(body, table)
+            assert actual == expected, f"body={body!r} expected={expected} got={actual}"
+            checked += 1
+    assert checked == 18234
 
 
 def test_corpus_banned_term_total_is_126():

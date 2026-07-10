@@ -58,26 +58,47 @@ def _protected_mask(body: str) -> list[bool]:
       真相來源在 anchors.py，這裡不重刻）。
     - inline code span（_CODE_SPAN，字元級，允許跨行）。
 
-    若一個 code span 匹配的起點已經落在 fence/縮排保護區內，就跳過這個
-    匹配 —— 避免用 inline span 的規則去覆寫/延伸區塊結構已經界定好的
-    範圍。
+    inline code span 是「區塊內部」的構造，不可能跨越區塊邊界——一個
+    fenced code block 的內容裡不會有 CommonMark 意義上的 inline code
+    span，反之亦然。之前的作法是讓 _CODE_SPAN 掃過整份 body，只檢查
+    「匹配的起點」有沒有落在 fence/縮排保護區內；這只堵住了起點，堵
+    不住終點：一個在段落裡開頭的反引號，仍然可能在下一行的 fence 內部
+    找到它的收尾反引號，讓這個 span 的匹配範圍整段跨進 fence，反而把
+    fence 內容誤判成「被 code span 保護」、把段落裡的中文誤判成「還在
+    保護區內」而漏檢。修法是把層級關係反過來：先用 anchors.code_lines()
+    把 body 切成「連續非 code 行」的區段，_CODE_SPAN 只在每個區段內部
+    各自執行。這讓「跨越區塊邊界」在結構上變得不可能——因為 regex
+    根本看不到 fence/縮排區的字元，不會去比對它們。
     """
     n = len(body)
     protected = [False] * n
+    lines = body.splitlines(keepends=True)
     code_line_set = anchors.code_lines(body)
-    if code_line_set:
-        offset = 0
-        for i, line in enumerate(body.splitlines(keepends=True)):
-            if i in code_line_set:
-                for j in range(offset, offset + len(line)):
-                    protected[j] = True
-            offset += len(line)
-    for m in _CODE_SPAN.finditer(body):
-        start, end = m.span()
-        if protected[start]:
+
+    offsets = [0] * (len(lines) + 1)
+    for i, line in enumerate(lines):
+        offsets[i + 1] = offsets[i] + len(line)
+
+    for i in range(len(lines)):
+        if i in code_line_set:
+            for j in range(offsets[i], offsets[i + 1]):
+                protected[j] = True
+
+    i = 0
+    n_lines = len(lines)
+    while i < n_lines:
+        if i in code_line_set:
+            i += 1
             continue
-        for j in range(start, end):
-            protected[j] = True
+        j = i
+        while j < n_lines and j not in code_line_set:
+            j += 1
+        seg_start, seg_end = offsets[i], offsets[j]
+        for m in _CODE_SPAN.finditer(body[seg_start:seg_end]):
+            start, end = m.span()
+            for k in range(seg_start + start, seg_start + end):
+                protected[k] = True
+        i = j
     return protected
 
 
