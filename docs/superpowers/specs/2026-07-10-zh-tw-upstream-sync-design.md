@@ -83,7 +83,8 @@
 
 ### D5：整檔重譯會摧毀人工成果
 
-- **55 個自訂 anchor ID**（34 檔）。上游英文檔完全沒有 `{#id}`。目前 97 條內部 anchor 連結中 96 條可解析（唯一「失敗」是 parser 未處理 `?highlight=` query string，實際未斷）。重譯後 anchor 消失 → 連結斷裂。
+- **56 個自訂 anchor ID**（34 檔）。上游英文檔完全沒有 `{#id}`。
+  > 修正：本文件先前記為 55。該數字來自 `\{#[a-z0-9-]+\}` 這個省略了底線的 regex，漏掉 `book/testing/test-utilities.md:31` 的 `{#assert_eq-and-assert_ref_eq}`。`slugify` 刻意保留底線（github-slugger 與 Docusaurus 皆然）。以 `anchors.headings()` 實測為 56。目前 97 條內部 anchor 連結中 96 條可解析（唯一「失敗」是 parser 未處理 `?highlight=` query string，實際未斷）。重譯後 anchor 消失 → 連結斷裂。
 - **374/928 個雙語標題**（`中文 (English)` 格式，覆蓋率 40%）。
 - **經人工反覆調整的術語**（如 Hot Potato 經 `cc6ed707`、`109bef2b` 兩次修改定案為「燙手山芋」）。
 
@@ -340,7 +341,7 @@ PR 3 的第一個步驟：取一個術語密集的長檔（建議 `reference/var
 1. `zh-tw-main` 的 `book` + `reference` 下有 149 個 md 檔，與 `english-main` 路徑集合完全一致（含新增 7 檔、刪除孤兒檔 1 檔）。
 2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 15 檔，第 4 條紅 88 檔，第 7 條紅 126 處，第 8 條紅 4 檔 5 字。
 3. `manifest.stale_files()` 回傳空清單；`manifest.orphans()` 回傳空清單。
-4. 97 條內部 anchor 連結全部可解析（`check_links` 須剝除 `?query` 才不會有假陽性）；55 個既有 anchor 的 ID 值一個都沒變。
+4. 97 條內部 anchor 連結全部可解析（`check_links` 須剝除 `?query` 才不會有假陽性）；56 個既有 anchor 的 ID 值一個都沒變。
 5. 8 條 glossary 違禁詞在正文中出現次數為 0（現況：程式碼區塊外 126 處）。
 6. `npx prettier@3 --check 'book/**/*.md' 'reference/**/*.md'` 通過。
 7. `translate-zh-tw.yml` 手動 dispatch 一次，能真實偵測到過期檔案（非 0）並在無過期檔時正確跳過；detect 步驟失敗時 job 必須紅。

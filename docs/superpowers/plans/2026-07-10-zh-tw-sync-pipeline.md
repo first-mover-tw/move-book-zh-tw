@@ -3101,7 +3101,7 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 1. `zh-tw-main` 的 `book` + `reference` 下有 149 個 md 檔，路徑集合與 `english-main` 完全一致 — `test_file_set_matches_english_main`
 2. `validate.check_file` 對全部 149 檔全綠 — `test_every_file_passes_validation`
 3. `manifest.stale_files()` 與 `manifest.orphans()` 皆為空 — `test_no_stale_files` / `test_no_orphans`
-4. 97 條內部 anchor 連結全部可解析；55 個既有 anchor 的 ID 值一個都沒變 — `test_all_anchor_links_resolve` + `validate` 第 6 條
+4. 97 條內部 anchor 連結全部可解析；56 個既有 anchor 的 ID 值一個都沒變 — `test_all_anchor_links_resolve` + `validate` 第 6 條
 5. 8 條 glossary 違禁詞出現次數為 0（現況 143） — `test_zero_glossary_violations`
 6. `npx prettier@3 --check` 通過 — Task 22 Step 2
 7. `translate-zh-tw.yml` 手動 dispatch 能真實偵測；detect 失敗時 job 紅 — Task 16 Step 3、Task 22 Step 3
