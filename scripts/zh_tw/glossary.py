@@ -9,50 +9,66 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from . import anchors
+
 _DEFAULT = Path(__file__).parent / "glossary.json"
 
-# 保護區：fenced code block 與 inline code
-_PROTECTED = re.compile(r"(```.*?```|`[^`\n]*`)", re.S)
+# inline code 是單行 span，逐行的 regex 遮罩是正確的做法。
+# fence / 縮排 code block 這類跨行的區塊結構一律交給 anchors.code_lines()
+# （markdown-it-py 的 token stream），這裡不再自己刻 fence 偵測迴圈。
+_INLINE_CODE = re.compile(r"`[^`\n]*`")
 
 
 def load(path: str | None = None) -> dict[str, str]:
     return json.loads(Path(path or _DEFAULT).read_text(encoding="utf-8"))
 
 
-def _split_protected(body: str) -> list[tuple[bool, str]]:
-    """回傳 (is_protected, segment) 序列。"""
-    parts, last = [], 0
-    for m in _PROTECTED.finditer(body):
+def _visible_segments(line: str):
+    """回傳單行內 (is_inline_code, segment) 序列，遮罩 inline code。"""
+    last = 0
+    for m in _INLINE_CODE.finditer(line):
         if m.start() > last:
-            parts.append((False, body[last:m.start()]))
-        parts.append((True, m.group(0)))
+            yield False, line[last:m.start()]
+        yield True, m.group(0)
         last = m.end()
-    if last < len(body):
-        parts.append((False, body[last:]))
-    return parts
+    if last < len(line):
+        yield False, line[last:]
 
 
 def enforce(body: str, table: dict[str, str] | None = None) -> str:
     table = table or load()
+    code = anchors.code_lines(body)
+    lines = body.splitlines(keepends=True)
     out = []
-    for protected, seg in _split_protected(body):
-        if not protected:
-            for bad, good in table.items():
-                seg = seg.replace(bad, good)
-        out.append(seg)
+    for i, line in enumerate(lines):
+        if i in code:
+            out.append(line)
+            continue
+        buf = []
+        for is_code, seg in _visible_segments(line):
+            if not is_code:
+                for bad, good in table.items():
+                    seg = seg.replace(bad, good)
+            buf.append(seg)
+        out.append("".join(buf))
     return "".join(out)
 
 
 def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
     table = table or load()
+    code = anchors.code_lines(body)
     counts: Counter[str] = Counter()
-    for protected, seg in _split_protected(body):
-        if protected:
+    lines = body.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if i in code:
             continue
-        for bad in table:
-            n = seg.count(bad)
-            if n:
-                counts[bad] += n
+        for is_code, seg in _visible_segments(line):
+            if is_code:
+                continue
+            for bad in table:
+                n = seg.count(bad)
+                if n:
+                    counts[bad] += n
     return dict(counts)
 
 

@@ -71,6 +71,22 @@ def visible_lines(body: str) -> list[tuple[int, str]]:
     return [(i, l) for i, l in enumerate(body.splitlines()) if i not in hidden]
 
 
+def code_lines(body: str) -> frozenset[int]:
+    """0-based 行號集合，屬於 fence 或縮排 code_block 的行。
+
+    刻意不含 html_block：HTML 註解不是程式碼——草稿裡被註解掉的中文
+    敘述仍應套用術語正規化，一旦之後取消註解，用詞就必須已經是對的。
+    這正是為什麼這個函式不能只是 `visible_lines()` 的補集（visible_lines
+    連 html_block 也一併隱藏）。
+    """
+    _require_body(body)
+    hidden: set[int] = set()
+    for t in _tokens(body):
+        if t.type in ("fence", "code_block") and t.map:
+            hidden.update(range(t.map[0], t.map[1]))
+    return frozenset(hidden)
+
+
 def fence_lines(body: str) -> int:
     """實際會渲染的 fence 分隔行數(不含 HTML 註解內的 fence)。"""
     _require_body(body)
