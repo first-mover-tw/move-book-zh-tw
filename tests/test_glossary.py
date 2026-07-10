@@ -120,6 +120,43 @@ def test_code_span_inside_html_comment_protected_but_prose_replaced():
     assert "會返回" not in out
 
 
+def test_scan_rejects_non_maximal_closing_run():
+    # Review finding repro: `` `函數``` `` 的收尾反引號跑左邊還連著一個
+    # 反引號 —— 不是 maximal run，CommonMark 判定這裡完全沒有 code span，
+    # 「函數」是 prose，必須被掃到、被替換。
+    body = "prose ``函數``` more text"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == "prose ``函式``` more text"
+
+
+def test_scan_rejects_non_maximal_opening_run_variant():
+    body = "a ``x``` y"
+    assert glossary.scan(body) == {}
+    assert glossary.enforce(body) == body
+
+
+def test_scan_rejects_backtick_run_with_trailing_extra_backtick():
+    body = "`x``"
+    assert glossary.scan(body) == {}
+    assert glossary.enforce(body) == body
+
+
+def test_scan_rejects_non_maximal_opening_run():
+    # 開頭側鏡像：`` ``函數` `` 是 2 個開頭反引號 + 1 個收尾反引號，
+    # CommonMark 判定沒有 code span（收尾 run 太短）。可回溯的 `+ 會把
+    # 開頭 run 縮成 1 個硬湊出 span，讓「函數」被靜默豁免；possessive
+    # `++ 禁止回溯，開頭 run 維持 maximal，「函數」是 prose 必須被替換。
+    body = "``函數`"
+    assert glossary.scan(body) == {"函數": 1}
+    assert glossary.enforce(body) == "``函式`"
+
+
+def test_scan_rejects_non_maximal_opening_run_variants():
+    for body in ("``x`", "``unterminated`"):
+        assert glossary.scan(body) == {}
+        assert glossary.enforce(body) == body
+
+
 def _md_code_regions(body: str):
     """回傳 (code_inline 內容集合, fence/code_block 內容集合)，供差分測試比對。"""
     inline_contents = []
@@ -158,6 +195,64 @@ def test_scan_agrees_with_markdown_it_code_regions():
             total_hits = body.count(bad)
             if protected_hits and protected_hits == total_hits:
                 assert counts.get(bad, 0) == 0
+
+
+def _md_prose_text(body: str) -> str:
+    """把所有 inline token 裡「非 code_inline」的 text/純文字節點內容串接起來，
+    當作 markdown-it-py 認定的 prose 真相來源（供差分測試比對 scan()）。
+    """
+    parts: list[str] = []
+
+    def walk(tokens):
+        for t in tokens:
+            if t.type == "code_inline":
+                pass  # 不算 prose
+            elif t.type == "text":
+                parts.append(t.content)
+            elif t.type in ("softbreak", "hardbreak"):
+                parts.append("\n")
+            if t.children:
+                walk(t.children)
+
+    walk(_MD.parse(body))
+    return "".join(parts)
+
+
+def test_scan_agrees_exactly_with_markdown_it_prose_text():
+    # 差分測試：對不含 fence / HTML block 的測資，scan() 回報的每個術語
+    # 次數必須精確等於「markdown-it-py 判定為 inline text（不含
+    # code_inline）」的節點裡該術語出現的次數。這是能同時抓到「code 誤判
+    # 成 prose」（先前那個 bug）與「prose 誤判成 code」（本次修的 bug）
+    # 的測試：oracle 直接來自 token 樹，不靠自己刻的 regex 假設。
+    table = glossary.load()
+    bodies = [
+        "這個函數會返回一個值",
+        "循環中調用變量",
+        "使用 `函數` 這個詞",
+        "呼叫 `函數` 之後函數才會返回\n",
+        "prose `code line one\n函數 line two` more prose\n",
+        "prose ``函數``` more text",
+        "a ``x``` y",
+        "`x``",
+        "``函數`",
+        "``x`",
+        "prose ``函數` still prose 調用\n",
+        "``code ` inside 函數`` 函數",
+        "函數`code`函數\n",
+        "prose `unterminated\n\n函數 after blank line\n",
+        "# 標題裡的函數\n\n段落裡的變量和調用\n",
+        "- 列表項目的函數\n- 第二個調用\n",
+        "> 引用裡的函數\n",
+        "**加粗的函數** 和 *斜體的調用*\n",
+    ]
+    for body in bodies:
+        prose = _md_prose_text(body)
+        counts = glossary.scan(body)
+        for bad in table:
+            expected = prose.count(bad)
+            assert counts.get(bad, 0) == expected, (
+                f"body={body!r} bad={bad!r} expected={expected} got={counts.get(bad, 0)}"
+            )
 
 
 def test_enforce_idempotent():
