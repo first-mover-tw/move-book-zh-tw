@@ -18,6 +18,11 @@
 - `git add` 只加明確指定的檔案，禁止 `git add -A` / `git add .`。
 - 術語表固定為這 8 條，不擴充：`函數→函式`、`調用→呼叫`、`返回→回傳`、`循環→迴圈`、`全局→全域`、`變量→變數`、`遍歷→走訪`、`優化→最佳化`。不動 `類型`、`實例`。
 - 測試中的翻譯後端一律用 fake，不打真實 API。
+- 暫存清單檔一律寫入 session scratchpad，不寫 `/tmp`。每個 shell 步驟開頭先設定：
+  ```bash
+  export SP="/private/tmp/claude-501/-Users-ramonliao-Documents-Code-Project-Web3-BlockchainDev-SUI-First-Mover-TW-move-book/5f7f30a1-5d4e-475c-9570-ddb0ae12915c/scratchpad"
+  ```
+  （`.github/workflows/` 內的 `/tmp/changed_files.txt` 是 CI runner 內部路徑，不適用此規則。）
 
 ## 名詞
 
@@ -1612,7 +1617,15 @@ def test_assemble_raises_when_backend_truncates():
 
 
 def test_tier_a_for_frontmatter_only_delta():
-    assert pipeline.tier("book/404.md") in {"A", "B"}
+    """book/404.md：上游只加了 frontmatter，中英文標題數相符 -> A 層。"""
+    assert pipeline.tier("book/404.md") == "A"
+
+
+def test_tier_b_when_structure_fails_even_if_delta_is_small():
+    """reference/variables.md：上游只動 frontmatter，但中文只有 36 行 / 6 個標題
+    （英文 824 行 / 21 個標題）。結構驗證擋下，強制降級 B 層全譯。
+    這是分層閘門存在的理由 —— 純看 delta 大小會讓那 788 行永遠回不來。"""
+    assert pipeline.tier("reference/variables.md") == "B"
 ```
 
 - [ ] **Step 2: 執行測試確認失敗**
@@ -2532,7 +2545,7 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 ### Task 17: 翻譯品質 A/B（決定 backfill 用的 model）
 
 **Files:**
-- Create: `/tmp/zh-tw-ab/` （不進 repo）
+- Create: `$SP/zh-tw-ab/` （scratchpad，不進 repo）
 
 spec 決策 8：無實測數據，不預先寫死 model。
 
@@ -2543,11 +2556,11 @@ spec 決策 8：無實測數據，不預先寫死 model。
 - [ ] **Step 2: 用兩個 model 各翻一次**
 
 ```bash
-mkdir -p /tmp/zh-tw-ab
+mkdir -p $SP/zh-tw-ab
 git checkout zh-tw-main && git pull --ff-only
 for m in haiku sonnet; do
   ZH_TW_CLAUDE_MODEL=$m uv run --with pyyaml python -m scripts.zh_tw \
-    --backend claude reference/variables.md > /tmp/zh-tw-ab/$m.log 2>&1 || true
+    --backend claude reference/variables.md > $SP/zh-tw-ab/$m.log 2>&1 || true
 done
 ```
 
@@ -2555,7 +2568,7 @@ done
 
 ```bash
 for m in haiku sonnet; do
-  ZH_TW_CLAUDE_MODEL=$m uv run --with pyyaml python - <<'PY' > /tmp/zh-tw-ab/$m.md
+  ZH_TW_CLAUDE_MODEL=$m uv run --with pyyaml python - <<'PY' > $SP/zh-tw-ab/$m.md
 import subprocess, os
 from scripts.zh_tw import pipeline
 from scripts.zh_tw.backends.claude_cli import ClaudeCLIBackend
@@ -2572,7 +2585,7 @@ done
 
 檢查點：術語是否一致、程式碼註解是否翻譯、標題是否為「中文 (English)」格式、是否有截斷。
 
-Run: `wc -l /tmp/zh-tw-ab/haiku.md /tmp/zh-tw-ab/sonnet.md`
+Run: `wc -l $SP/zh-tw-ab/haiku.md $SP/zh-tw-ab/sonnet.md`
 Expected: 兩者行數皆接近英文的 824 行（validate 已保證標題與 fence 數相符）
 
 **這是一個人工決策點。** 把選定的 model 寫進 `scripts/zh_tw/backends/claude_cli.py` 的 `MODEL` 預設值，commit：
@@ -2593,20 +2606,20 @@ A 層內文完全不動，diff 全部集中在 `---` 區塊。這是最安全的
 ```bash
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr2-frontmatter
-uv run --with pyyaml python - > /tmp/tier_a.txt <<'PY'
+uv run --with pyyaml python - > $SP/tier_a.txt <<'PY'
 from scripts.zh_tw import manifest, pipeline
 for p in manifest.stale_files("english-main"):
     if p.endswith(".md") and pipeline.tier(p) == "A":
         print(p)
 PY
-wc -l /tmp/tier_a.txt
+wc -l $SP/tier_a.txt
 ```
 Expected: `47`
 
 - [ ] **Step 2: Dry-run**
 
 ```bash
-xargs -a /tmp/tier_a.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude
+xargs -a $SP/tier_a.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude
 ```
 Expected: `成功 47，失敗 0`
 
@@ -2615,7 +2628,7 @@ Expected: `成功 47，失敗 0`
 - [ ] **Step 3: 實際套用**
 
 ```bash
-xargs -a /tmp/tier_a.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+xargs -a $SP/tier_a.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 ```
 
 - [ ] **Step 4: 確認內文零改動**
@@ -2657,7 +2670,7 @@ Expected: `check_repo` 的連結問題為 0；全部測試通過。
 
 ```bash
 git add scripts/translation-manifest.json
-xargs -a /tmp/tier_a.txt git add --
+xargs -a $SP/tier_a.txt git add --
 git commit -m "docs(zh-tw): sync frontmatter for 47 tier-A files (no body changes)"
 git push -u origin sync/pr2-frontmatter
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
@@ -2678,7 +2691,7 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 ```bash
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr3-broken-files
-uv run --with pyyaml python - > /tmp/broken.txt <<'PY'
+uv run --with pyyaml python - > $SP/broken.txt <<'PY'
 import subprocess
 from scripts.zh_tw import validate
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -2695,14 +2708,14 @@ for p in [f for f in files if f.endswith(".md")]:
     if any("標題層級序列" in e or "fence" in e for e in errs):
         print(p)
 PY
-wc -l /tmp/broken.txt
+wc -l $SP/broken.txt
 ```
 Expected: `19`
 
 - [ ] **Step 2: 全譯（B 層）**
 
 ```bash
-xargs -a /tmp/broken.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+xargs -a $SP/broken.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 ```
 Expected: `成功 19，失敗 0`
 
@@ -2740,7 +2753,7 @@ Expected: `check_repo` 連結問題 0
 
 ```bash
 git add scripts/translation-manifest.json
-xargs -a /tmp/broken.txt git add --
+xargs -a $SP/broken.txt git add --
 git commit -m "fix(zh-tw): restore 19 structurally truncated pages; drop orphaned transfer-restrictions
 
 reference/variables.md was 36 lines against an 824-line English source;
@@ -2773,13 +2786,13 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr4-move-basics
 uv run --with pyyaml python -m scripts.zh_tw --detect \
-  | grep '^book/move-basics/' > /tmp/pr4.txt
-wc -l /tmp/pr4.txt   # Expected: 26
-xargs -a /tmp/pr4.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+  | grep '^book/move-basics/' > $SP/pr4.txt
+wc -l $SP/pr4.txt   # Expected: 26
+xargs -a $SP/pr4.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 uv run --with pyyaml python -m scripts.zh_tw.check_repo
 npx --yes prettier@3 --check 'book/**/*.md'
 git add scripts/translation-manifest.json
-xargs -a /tmp/pr4.txt git add --
+xargs -a $SP/pr4.txt git add --
 git commit -m "docs(zh-tw): sync book/move-basics with upstream"
 git push -u origin sync/pr4-move-basics
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
@@ -2792,13 +2805,13 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr5-programmability
 uv run --with pyyaml python -m scripts.zh_tw --detect \
-  | grep '^book/programmability/' > /tmp/pr5.txt
-wc -l /tmp/pr5.txt   # Expected: 18
-xargs -a /tmp/pr5.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+  | grep '^book/programmability/' > $SP/pr5.txt
+wc -l $SP/pr5.txt   # Expected: 18
+xargs -a $SP/pr5.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 uv run --with pyyaml python -m scripts.zh_tw.check_repo
 npx --yes prettier@3 --check 'book/**/*.md'
 git add scripts/translation-manifest.json
-xargs -a /tmp/pr5.txt git add --
+xargs -a $SP/pr5.txt git add --
 git commit -m "docs(zh-tw): sync book/programmability with upstream"
 git push -u origin sync/pr5-programmability
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
@@ -2811,13 +2824,13 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr6-testing
 uv run --with pyyaml python -m scripts.zh_tw --detect \
-  | grep '^book/testing/' > /tmp/pr6.txt
-wc -l /tmp/pr6.txt   # Expected: 13
-xargs -a /tmp/pr6.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+  | grep '^book/testing/' > $SP/pr6.txt
+wc -l $SP/pr6.txt   # Expected: 13
+xargs -a $SP/pr6.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 uv run --with pyyaml python -m scripts.zh_tw.check_repo
 npx --yes prettier@3 --check 'book/**/*.md'
 git add scripts/translation-manifest.json
-xargs -a /tmp/pr6.txt git add --
+xargs -a $SP/pr6.txt git add --
 git commit -m "docs(zh-tw): sync book/testing chapter with upstream"
 git push -u origin sync/pr6-testing
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
@@ -2836,15 +2849,15 @@ gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
 ```bash
 git checkout zh-tw-main && git pull --ff-only
 git checkout -b sync/pr7-remainder
-uv run --with pyyaml python -m scripts.zh_tw --detect > /tmp/pr7.txt
-wc -l /tmp/pr7.txt
+uv run --with pyyaml python -m scripts.zh_tw --detect > $SP/pr7.txt
+wc -l $SP/pr7.txt
 ```
 Expected: `30`（28 個 md + 2 個 sidebar.yml）
 
 - [ ] **Step 2: 翻譯**
 
 ```bash
-xargs -a /tmp/pr7.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
+xargs -a $SP/pr7.txt uv run --with pyyaml python -m scripts.zh_tw --backend claude --apply
 ```
 Expected: `成功 30，失敗 0`
 
@@ -2878,7 +2891,7 @@ Expected: `check_repo` 回報 0 個問題；`--detect` 回報 `0`
 
 ```bash
 git add scripts/translation-manifest.json
-xargs -a /tmp/pr7.txt git add --
+xargs -a $SP/pr7.txt git add --
 git commit -m "docs(zh-tw): sync remaining chapters and sidebars with upstream"
 git push -u origin sync/pr7-remainder
 gh pr create -R first-mover-tw/move-book-zh-tw --base zh-tw-main \
