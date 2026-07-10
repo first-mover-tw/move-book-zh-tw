@@ -224,14 +224,25 @@ def _identity_carry(
 
     prev_en_texts = [t for _, t in prev_en_h]
 
+    # 身分鍵是 slugify_all(標題文字)，不是原始文字本身。理由：
+    # 1) slugify 本來就對大小寫、標點不敏感，`Error constants` 與
+    #    `Error Constants` 本應視為同一個標題，原始文字比對會誤判成兩個。
+    # 2) slugify_all 的去重尾碼能正確處理「同一份文件裡兩個標題文字完全
+    #    相同」的情況（例如兩個都叫 References），原始文字比對在這種情況下
+    #    只是「湊巧」用貪婪掃描得到相同答案，並非本質正確。
+    # anchor 的身分就該用「推導 anchor 的那個函式」本身來定義；原始文字是
+    # 另一套不一致的身分定義。
+    prev_keys = slugify_all(prev_en_texts)
+    new_keys = slugify_all(en_texts)
+
     matched_prev_idx: set[int] = set()
     carried: dict[int, str] = {}
-    for j, u_text in enumerate(en_texts):
+    for j, u_key in enumerate(new_keys):
         found = None
-        for i, t in enumerate(prev_en_texts):
+        for i, k in enumerate(prev_keys):
             if i in matched_prev_idx:
                 continue
-            if t == u_text:
+            if k == u_key:
                 found = i
                 break
         if found is None:

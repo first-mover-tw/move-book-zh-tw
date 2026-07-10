@@ -404,3 +404,151 @@ def test_inject_real_data_identity_carry_lands_on_correct_heading(
     ]
     assert len(match) == 1, f"{anchor_id!r} 未被沿用到恰好一個標題: {notes}"
     assert match[0].split(" {#")[0] == heading_text
+
+
+# --- Slug-keyed identity (Task 4 refinement) ---
+#
+# 原始文字身分過嚴：標題文字只差大小寫仍是同一個標題，逐字比對卻會誤判
+# 成「消失了」而讓 anchor 退場。身分鍵改成 slugify_all(標題文字)——
+# slugify 本來就對大小寫/標點不敏感，slugify_all 的去重尾碼能正確處理
+# 「同一份文件裡兩個標題文字完全相同」的情況。
+
+
+def test_inject_carries_anchor_across_case_only_rename():
+    """`Error constants` -> `Error Constants`：純大小寫變化，anchor 必須沿用，不能退場。"""
+    prev_en = "# A\n\n# Error constants\n\n# C\n"
+    new_en = "# A\n\n# Error Constants\n\n# C\n"
+    prev_zh = "# 一\n\n# 錯誤常數 {#error-constants}\n\n# 三\n"
+    zh = "# 甲\n\n# 錯誤常數\n\n# 丙\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+    out_headings = anchors.headings(out)
+
+    assert anchors.existing_anchor(out_headings[1][1]) == "error-constants"
+    assert not any("retired" in n for n in notes), notes
+
+
+def test_inject_carries_anchor_across_punctuation_only_rename():
+    """`` `assert!` `` -> `assert!`：純標點/inline-code 差異，slug 相同，anchor 必須沿用。"""
+    assert anchors.slugify("`assert!`") == anchors.slugify("assert!") == "assert"
+
+    prev_en = "# A\n\n# `assert!`\n\n# C\n"
+    new_en = "# A\n\n# assert!\n\n# C\n"
+    prev_zh = "# 一\n\n# 判斷 {#assert}\n\n# 三\n"
+    zh = "# 甲\n\n# 判斷\n\n# 丙\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+    out_headings = anchors.headings(out)
+
+    assert anchors.existing_anchor(out_headings[1][1]) == "assert"
+    assert not any("retired" in n for n in notes), notes
+
+
+def test_inject_duplicate_heading_dedup_key_retires_without_stealing():
+    """身分鍵是 dedup 後的 slug（`references`/`references-1`），不是原始文字。
+
+    舊 English 裡 `References` 出現兩次(索引 0 與 2)，anchor 掛在索引 2
+    （去重後的鍵是 `references-1`）。新 English 只剩一個 `References`。
+    索引 2 的身分在新版找不到對應，必須退場；存活下來的那個 `References`
+    (鍵是 `references`，不是 `references-1`) 不能偷走這個 anchor。
+    """
+    prev_en = "# References\n\n# Layout\n\n# References\n"
+    new_en = "# References\n\n# Other\n"
+    prev_zh = "# 參照甲\n\n# 排版\n\n# 參照乙 {#references-1}\n"
+    zh = "# 參照\n\n# 其他\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+
+    assert "{#references-1}" not in out
+    assert any("references-1" in n and "retired" in n for n in notes), notes
+    out_headings = anchors.headings(out)
+    assert anchors.existing_anchor(out_headings[0][1]) != "references-1"
+
+
+def test_inject_retires_anchor_when_renamed_to_different_slug():
+    """`Create and use an instance` -> `Creating an Instance`：真的改名，slug 也真的不同，仍要退場。"""
+    prev_en = "# A\n\n# Create and use an instance\n\n# C\n"
+    new_en = "# A\n\n# Creating an Instance\n\n# C\n"
+    prev_zh = "# 一\n\n# 建立與使用 {#create-and-use-an-instance}\n\n# 三\n"
+    zh = "# 甲\n\n# 建立實例\n\n# 丙\n"
+
+    out, notes = anchors.inject_report(zh, new_en, prev_zh, prev_en)
+
+    assert "{#create-and-use-an-instance}" not in out
+    assert any(
+        "create-and-use-an-instance" in n and "retired" in n for n in notes
+    ), notes
+
+
+def _tracked_md_files(ref: str) -> list[str]:
+    r = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", "-z", ref, "book", "reference"],
+        capture_output=True, text=True, check=True,
+    )
+    return [f for f in r.stdout.split("\0") if f.endswith(".md")]
+
+
+def _safe_show(ref: str, path: str) -> str | None:
+    r = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, text=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def _safe_body_at(ref: str, path: str) -> str | None:
+    raw = _safe_show(ref, path)
+    if raw is None:
+        return None
+    _, body = frontmatter.split(raw)
+    return body
+
+
+def test_inject_real_data_sweep_carries_45_retires_4():
+    """跨全部 35 個帶 anchor 的中文檔，用 merge-base 英文當 prev_en、
+    english-main 英文當「重新翻譯」的替身，度量 carry-forward 的真實效果。
+
+    slug 鍵應該把 43/6 提升到 45/4——多救回的兩個是純大小寫改名
+    （error-constants、unpacking-a-struct），其餘四個退場都是上游真的
+    改名或刪除章節。跳過 prev_zh/prev_en 標題數不符的檔案(gate 1 的工作，
+    不是這個測試的工作)。
+    """
+    expected_retired = {
+        "book/guides/2024-migration-guide.md::method-aliases",
+        "book/move-basics/references.md::references",
+        "book/move-basics/struct.md::struct",
+        "book/move-basics/struct.md::create-and-use-an-instance",
+    }
+
+    carried = 0
+    retired: set[str] = set()
+
+    for path in _tracked_md_files(_PRE_FIX):
+        zh_raw = _safe_show(_PRE_FIX, path)
+        if not zh_raw or "{#" not in zh_raw:
+            continue
+
+        prev_zh = _safe_body_at(_PRE_FIX, path)
+        prev_en = _safe_body_at(_MERGE_BASE, path)
+        new_en = _safe_body_at("english-main", path)
+        if prev_zh is None or prev_en is None or new_en is None:
+            continue
+
+        prev_zh_h = anchors.headings(prev_zh)
+        prev_en_h = anchors.headings(prev_en)
+        if len(prev_zh_h) != len(prev_en_h):
+            continue  # gate 1 的工作，不是這個測試的工作
+
+        _, notes = anchors.inject_report(new_en, new_en, prev_zh, prev_en)
+
+        prev_anchor_count = sum(
+            1 for _, t in prev_zh_h if anchors.existing_anchor(t) is not None
+        )
+        file_retired = 0
+        for n in notes:
+            if "retired" not in n:
+                continue
+            file_retired += 1
+            aid = n.split("{#", 1)[1].split("}", 1)[0]
+            retired.add(f"{path}::{aid}")
+        carried += prev_anchor_count - file_retired
+
+    assert carried == 45, f"carried={carried}, retired={retired}"
+    assert retired == expected_retired
