@@ -105,6 +105,33 @@
 - `git_hash_object()` 雜湊 **working tree** 檔案。CI 中因先 `git checkout origin/english-main -- <file>` 而正確；但本地執行 `--all` 會雜湊中文檔，將中文 blob SHA 寫入 manifest，永久污染該路徑的 provenance。目前尚未發生。
 - `pyproject.toml` 宣告 `"google>=3.0.0"`，該 PyPI 套件與 `google-genai` 無關，應移除。
 
+### D10：anchor carry-forward 按位置索引配對（實作階段發現）
+
+`inject()` 原以標題序號配對沿用的 anchor。上游 `#223 massive rewrite` 大量增刪標題：35 個含顯式 anchor 的中文檔中，**19 個的英文標題序列已改變，其中 16 個標題數量也變了**（`control-flow.md` 9→11、`struct.md` 5→9、`references.md` 7→12）。位置配對會讓插入點之後的每個 anchor 靜默位移到錯誤的標題。
+
+gate 6 原本只做集合差（`prev_ids - now_ids`），anchor 一個都沒少，守衛全綠。而兩個人工刻意選定、carry-forward 專為其存在的 anchor —— `{#clock}`（`epoch-and-time.md` 4→6）與 `{#immutable-frozen-object}`（`ownership.md` 7→8）—— **都在風險名單內**。
+
+修法：配對改用**身分**而非位置。`inject()` 多收 `prev_en_body`，身分鍵為 `slugify_all(英文標題)`。
+
+> 身分鍵必須是 anchor 本身的推導函式。原始文字會引入第二個、與推導不一致的身分：實測 `Error constants` → `Error Constants`、`Unpacking a struct` → `Unpacking a Struct` 這種只改大小寫的情形，原始文字比對會誤判「標題消失」而退役 anchor。改用 slug 後 carried 43→45、retired 6→4。slug 的去重後綴（`references` / `references-1`）另可正確區分 `references.md` 裡兩個同名為 `References` 的標題。
+
+**退役政策：只警告，不阻斷。** 上游確實改名／刪除章節時該 anchor 本就應失效，英文站也一樣斷。以下 4 條已發佈 URL 會 404，須列入 PR 3 描述：
+
+| 檔案 | 失效的 anchor | 舊英文標題 |
+|---|---|---|
+| `book/guides/2024-migration-guide.md` | `#method-aliases` | `Method Aliases`（併入 `` `use fun` and Method Aliases ``）|
+| `book/move-basics/references.md` | `#references` | `References`（小節，上游刪除）|
+| `book/move-basics/struct.md` | `#struct` | `Struct` |
+| `book/move-basics/struct.md` | `#create-and-use-an-instance` | `Create and use an instance`（改名為 `Creating an Instance`）|
+
+### D11：殘留簡體字（實作階段發現）
+
+glossary 管**詞彙**（函數→函式），但語料庫另有**字形**問題：正文含 5 個簡體字，分佈於 4 檔 —— `witness-pattern.md` 的 `个`、`good-tests.md` 的 `麽`、`functions.md` 的 `况`、`structs.md` 的 `这`/`种`。重譯後模型一樣可能吐出零星簡體字。
+
+偵測用 OpenCC 的 `s2tw`（簡體 → 台灣標準）逐字元比對，**必須配例外表 `{台, 游}`**：`台/臺` 在台灣通用；`游 → 遊` 是 OpenCC 詞組字典（旅游→旅遊）誤用到單字，「上游」的「游」是正確的。加例外表後語料庫零假陽性。
+
+（`s2t` 不可用：它轉向「正統繁體」，把 `了→瞭`、`群→羣`、`才→纔`、`峰→峯` 全部誤報，35/143 檔中招。）
+
 ### D9：上游刪除的檔案不會被傳播
 
 `detect_changed_files()` 只走訪 `english-main` 上存在的檔案，因此上游刪除的路徑永遠不會出現在工作清單中。
@@ -249,8 +276,9 @@ inject(zh_body, en_body, prev_zh_body) -> zh_body'
 | 3 | frontmatter key 集合 == 英文的 key 集合 | 欄位漏抄 |
 | 4 | `description` / `title` 含 CJK | D3 漏譯 |
 | 5 | 所有內部 anchor 連結可解析 | D5 anchor 被洗掉 |
-| 6 | 既有 anchor 未消失、未改變 | URL 契約破壞 |
+| 6 | 既有 anchor 未消失，且仍綁在同一個英文標題（同一 slug 身分）上 | URL 契約破壞、anchor 位移（D10）|
 | 7 | 無 glossary 違禁詞；`prettier --check` 通過 | D4、D7 |
+| 8 | 正文（程式碼區塊外）無簡體字 | D11 字形（glossary 管詞彙，這道管字形）|
 
 ### `.prettierrc`
 
@@ -310,7 +338,7 @@ PR 3 的第一個步驟：取一個術語密集的長檔（建議 `reference/var
 ## 九、驗收條件
 
 1. `zh-tw-main` 的 `book` + `reference` 下有 149 個 md 檔，與 `english-main` 路徑集合完全一致（含新增 7 檔、刪除孤兒檔 1 檔）。
-2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 15 檔，第 4 條紅 88 檔，第 7 條紅 126 處。
+2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 15 檔，第 4 條紅 88 檔，第 7 條紅 126 處，第 8 條紅 4 檔 5 字。
 3. `manifest.stale_files()` 回傳空清單；`manifest.orphans()` 回傳空清單。
 4. 97 條內部 anchor 連結全部可解析（`check_links` 須剝除 `?query` 才不會有假陽性）；55 個既有 anchor 的 ID 值一個都沒變。
 5. 8 條 glossary 違禁詞在正文中出現次數為 0（現況：程式碼區塊外 126 處）。
