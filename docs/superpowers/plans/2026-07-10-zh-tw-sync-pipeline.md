@@ -1755,6 +1755,21 @@ def _show(ref: str, path: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
+def _prev_en(path: str, m: dict[str, str]) -> str:
+    """取回這個中文檔當初賴以翻譯的英文原檔內容。
+
+    manifest 記的是英文 blob SHA。31 筆 provenance 曾經斷掉（Task 13 修復）；
+    仍然取不到時退回 merge-base 的同路徑內容。兩者皆失敗則回傳空字串，
+    inject 會因此不沿用任何 anchor —— 這是安全的降級，位置猜測不是。
+    """
+    sha = m.get(path)
+    if sha:
+        r = subprocess.run(["git", "cat-file", "-p", sha], capture_output=True, text=True)
+        if r.returncode == 0:
+            return r.stdout
+    return _show(MERGE_BASE, path) or ""
+
+
 def _delta_lines(old_sha: str, new_sha: str) -> int:
     r = subprocess.run(
         ["git", "diff", "--numstat", old_sha, new_sha], capture_output=True, text=True
@@ -1800,20 +1815,34 @@ def translate_body(en_text: str, backend: base.Backend, max_lines: int = CHUNK_M
 
 
 def assemble(
-    en_text: str, prev_zh_text: str, backend: base.Backend, max_lines: int = CHUNK_MAX_LINES
+    en_text: str,
+    prev_zh_text: str,
+    prev_en_text: str,
+    backend: base.Backend,
+    max_lines: int = CHUNK_MAX_LINES,
 ) -> str:
+    """prev_en_text 是這個中文檔當初翻譯所依據的英文原檔。
+
+    沒有它，anchors.inject 只能退回「不沿用任何 anchor」；**絕不可**退回位置配對。
+    上游 #223 改動了 19/35 個含 anchor 檔案的標題序列，位置配對會把 anchor 靜默
+    貼到錯誤的標題上，而 gate 6 的集合差看不出來（spec D10）。
+    """
     translated = translate_body(en_text, backend, max_lines)
     zh_meta, zh_body = frontmatter.split(translated)
     _, en_body = frontmatter.split(en_text)
-    _, prev_body = frontmatter.split(prev_zh_text) if prev_zh_text else ({}, "")
+    _, prev_zh_body = frontmatter.split(prev_zh_text) if prev_zh_text else ({}, "")
+    _, prev_en_body = frontmatter.split(prev_en_text) if prev_en_text else ({}, "")
 
-    zh_body = anchors.inject(zh_body, en_body, prev_body)  # 拼接後才注入
+    # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
+    zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
     out = frontmatter.join(zh_meta, zh_body)
 
-    errs = validate.check_file(out, en_text, prev_zh_text)
+    errs = validate.check_file(out, en_text, prev_zh_text, prev_en_text)
     if errs:
         raise validate.ValidationError("; ".join(errs))
+    for n in notes:
+        print(f"  note: {n}")  # anchor 退役等資訊，警告但不阻斷
     return out
 
 
@@ -2391,13 +2420,14 @@ Expected: 7 passed
 在 `scripts/zh_tw/pipeline.py` 的 import 區加入 `from . import sidebar`，並把 `run()` 中的 try 區塊改為：
 
 ```python
+        prev_en = _prev_en(path, m)
         try:
             if path in manifest.SIDEBAR_FILES:
                 out = sidebar.translate(en, prev, backend)
             elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend)
             else:
-                out = assemble(en, prev, backend)
+                out = assemble(en, prev, prev_en, backend)
         except Exception as e:  # noqa: BLE001
             failed[path] = [str(e)]
             continue
