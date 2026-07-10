@@ -39,7 +39,7 @@ class EchoBackend:
         for line in text.strip().splitlines():
             m = re.match(r"^\s*(\d+)\.\s+(.+)$", line)
             if m:
-                out.append(f"{m.group(1)}. 譯{m.group(2)}")
+                out.append(f"{m.group(1)}. 譯{m.group(2)} ({m.group(2)})")
         return "\n".join(out)
 
 
@@ -128,7 +128,9 @@ def test_translate_raises_when_backend_breaks_skeleton():
 
 
 class RealFakeBackend:
-    """用於 real-data 測試：模擬翻譯（避免對 API 依賴），保留編號格式。"""
+    """用於 real-data 測試：模擬翻譯（避免對 API 依賴），保留編號格式，
+    並把原文整段接在括號內，符合「中文 (English)」慣例（strict 逐筆
+    guard 的前提，見 sidebar._validate_new_label_format）。"""
 
     def translate(self, text, *, kind="markdown"):
         out = []
@@ -137,7 +139,7 @@ class RealFakeBackend:
                 continue
             num, rest = line.split(". ", 1)
             if num.strip().isdigit():
-                out.append(f"{num.strip()}. 譯{rest}")
+                out.append(f"{num.strip()}. 譯{rest} ({rest})")
         return "\n".join(out)
 
 
@@ -159,6 +161,34 @@ def test_translate_real_book_sidebar():
     assert all(l.strip() for l in sidebar.labels(out))
 
 
+_SUFFIX = re.compile(r"\([^()]+\)\s*$")
+
+
+@pytest.mark.parametrize("path", ["book/sidebar.yml", "reference/sidebar.yml"])
+def test_translate_real_sidebar_with_fake_backend_has_no_non_conforming_labels(path):
+    """FakeBackend（Task 14 修正後：kind="text" + 編號清單分支會產出
+    「中文 (English)」格式）是 sidebar 呼叫路徑上真正會被 pipeline 用到的
+    fake（見 test_pipeline.test_run_routes_sidebar_through_sidebar_module_
+    not_markdown），必須直接驗證用它跑真實 sidebar 資料時，輸出裡每個
+    label 都符合慣例或是合格的專有名詞，0 個漏後綴。"""
+    from scripts.zh_tw.backends.fake import FakeBackend
+
+    en = _git_show("english-main", path)
+    prev = _git_show("HEAD", path)
+    out = sidebar.translate(en, prev, FakeBackend())
+    en_labels = sidebar.labels(en)
+    out_labels = sidebar.labels(out)
+    # 合格 = 有「中文 (English)」括號後綴，或是逐字等於自己的英文原文
+    # （合格的專有名詞，例如沿用舊譯文的 "BCS"、"Move 2024"）。
+    non_conforming = [
+        ol for el, ol in zip(en_labels, out_labels)
+        if not (_SUFFIX.search(ol) or ol == el)
+    ]
+    assert non_conforming == []
+    assert sidebar.skeleton(out) == sidebar.skeleton(en)
+    assert yaml.safe_load(out) is not None
+
+
 # --- Finding 1: reuse-map key derivation ---------------------------------
 
 
@@ -172,7 +202,7 @@ class RecordingBackend:
         lines = [l for l in text.strip().splitlines() if l.strip() and l.strip()[0].isdigit()]
         sent = [l.split(". ", 1)[-1] if ". " in l else l for l in lines]
         self.calls += sent
-        return "\n".join(f"{i + 1}. 譯{s}" for i, s in enumerate(sent))
+        return "\n".join(f"{i + 1}. 譯{s} ({s})" for i, s in enumerate(sent))
 
 
 @pytest.mark.parametrize(
@@ -256,12 +286,17 @@ def test_apply_quotes_empty_label_roundtrips():
 
 def test_translate_keeps_type_changing_backend_output_as_string():
     """backend 若翻出「123」這種看起來像數字的字，apply 的引號 + translate
-    的 postcondition 要合力保住它是字串，而不是讓輸出被 yaml 解成 int。"""
+    的 postcondition 要合力保住它是字串，而不是讓輸出被 yaml 解成 int。
+
+    英文 label 本身就是 "123"（本來就是「不譯」的合法輸出，等同 BCS 那種
+    專有名詞逐字留原文），backend 原樣回傳，符合嚴格 per-item 的
+    「中文 (English)」guard（dst == src 視為 verbatim 合格）—— 這裡要測的
+    是它下游的 YAML 型別保護，不是 suffix guard 本身。"""
     class TypeChangingBackend:
         def translate(self, text, *, kind="markdown"):
             return "1. 123"
 
-    en_plus = EN + "  - label: Numeric New\n    id: c\n"
+    en_plus = EN + "  - label: \"123\"\n    id: c\n"
     out = sidebar.translate(en_plus, PREV_ZH, TypeChangingBackend())
     parsed = yaml.safe_load(out)
     new_label = parsed["bookSidebar"][2]["label"]
@@ -325,7 +360,7 @@ class EchoingBackend:
         self.payload = text
         lines = [l for l in text.strip().splitlines() if l.strip() and l.strip()[0].isdigit()]
         sent = [l.split(". ", 1)[-1] for l in lines]
-        return "\n".join(f"{i + 1}. 譯{s}" for i, s in enumerate(sent))
+        return "\n".join(f"{i + 1}. 譯{s} ({s})" for i, s in enumerate(sent))
 
 
 def test_translate_sends_sidebar_instruction_to_backend():
@@ -373,9 +408,7 @@ def test_assert_labels_equal_catches_synthetic_value_mismatch():
 
 class DropsSuffix:
     """模擬一個 backend：對其中一個新 label 漏掉「(English)」括號後綴，
-    其餘新 label 都正常。這正是 finding 2 描述的情境 —— 不是整批都不遵循
-    慣例（那樣沒有基準可比對，見 sidebar._validate_new_label_format 的
-    設計說明），而是同一批裡有的符合、有的不符合，才是真正的格式漂移。"""
+    其餘新 label 都正常（部分不符合的 mixed batch）。"""
 
     def translate(self, text, *, kind="markdown"):
         return "1. 全新標籤\n2. 另一個 (Another New)"
@@ -385,6 +418,23 @@ def test_translate_raises_when_new_label_drops_english_suffix():
     en_plus = EN + "  - label: New Label\n    id: new1\n  - label: Another New\n    id: new2\n"
     with pytest.raises(ValueError):
         sidebar.translate(en_plus, PREV_ZH, DropsSuffix())
+
+
+class DropsSuffixOnAllNewLabels:
+    """整批新 label 都漏掉「(English)」括號後綴 —— 這是先前批次一致性
+    relaxation 會放行、但正是最需要擋下來的情境：一個忽略格式指示的
+    真實 backend，最典型的失效模式就是整批統一漏掉後綴（Task 14 verified
+    finding：真實 book/sidebar.yml 用舊 guard 跑出 14 個無後綴 label 卻不
+    拋錯）。嚴格逐筆 guard 必須在這裡拋錯。"""
+
+    def translate(self, text, *, kind="markdown"):
+        return "1. 全新標籤\n2. 另一個"
+
+
+def test_translate_raises_when_all_new_labels_drop_english_suffix():
+    en_plus = EN + "  - label: New Label\n    id: new1\n  - label: Another New\n    id: new2\n"
+    with pytest.raises(ValueError):
+        sidebar.translate(en_plus, PREV_ZH, DropsSuffixOnAllNewLabels())
 
 
 class WellFormedNewLabel:
@@ -399,12 +449,29 @@ def test_translate_accepts_well_formed_new_label():
     assert sidebar.skeleton(out) == sidebar.skeleton(en_plus)
 
 
-def test_validate_new_label_format_skips_when_batch_uniformly_non_conforming():
-    """FakeBackend 這類 structure-preserving fake 會把整批新 label 都變成
-    不含括號的佔位字（見 backends/fake.py），沒有「本來會但這筆漏了」的
-    對照組，直接呼叫 helper 驗證這種全面不符合的情形不會被擋下來。"""
+class VerbatimProperNoun:
+    """backend 正確地把專有名詞原文照抄（不加括號），不應被誤判成
+    「漏掉後綴」——這是合格的輸出，不是格式漂移。"""
+
+    def translate(self, text, *, kind="markdown"):
+        return "1. Move 2024"
+
+
+def test_translate_accepts_verbatim_proper_noun_without_false_raise():
+    en_plus = EN + "  - label: Move 2024\n    id: new1\n"
+    out = sidebar.translate(en_plus, PREV_ZH, VerbatimProperNoun())
+    assert "Move 2024" in out
+    assert sidebar.skeleton(out) == sidebar.skeleton(en_plus)
+
+
+def test_validate_new_label_format_raises_when_batch_uniformly_non_conforming():
+    """Task 14 修正前的 relaxation 只在「同一批裡有的符合、有的不符合」時
+    才拋錯，整批統一不符合（FakeBackend 舊行為那種全面替換）反而會被放行
+    —— 這正是真實 backend 忽略格式指示時最典型的失效模式，是最需要擋下來
+    的情況，不是可以豁免的情況。嚴格 per-item guard 必須在這裡拋錯。"""
     pairs = [("Macro Functions", "中文 中文"), ("Randomness", "中文")]
-    sidebar._validate_new_label_format(pairs)  # 不應拋錯
+    with pytest.raises(ValueError):
+        sidebar._validate_new_label_format(pairs)
 
 
 def test_validate_new_label_format_raises_on_mixed_batch():

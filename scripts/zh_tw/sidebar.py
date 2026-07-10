@@ -174,25 +174,20 @@ def _validate_new_label_format(pairs: list[tuple[str, str]]) -> None:
     會被誤判成「新」而永遠重翻（與 finding 1 的鍵值 bug 同一種後果，
     肇因不同：這裡是格式漂移）。
 
-    但這裡刻意不逐筆要求「一定要有括號」：測試用的 FakeBackend 之類
-    structure-preserving fake 本來就不遵循側邊欄的雙語括號慣例（它把
-    整段英文替換成佔位字），對它逐筆要求括號只會在完全沒有基準可比的
-    情況下製造誤報。真正的訊號是「同一批裡有的符合、有的不符合」——
-    backend 這次呼叫顯然有能力（或被要求）產出正確格式，卻在某幾筆上
-    漏掉，那才是需要擋下來的格式漂移。如果整批都不符合慣例（例如
-    FakeBackend 那種全面替換的 fake），代表這個 backend 這次根本沒有
-    在嘗試這個慣例，沒有基準可比對，略過不擋。
+    嚴格逐筆檢查，沒有批次一致性的例外：一個真實 backend 若沒有遵循
+    「中文 (English)」的格式指示，最典型的失效模式就是整批新 label
+    都漏掉括號後綴 —— 這正是最需要擋下來的情況，不能因為「整批都錯」
+    反而被放行。`_zh_label_key` 對沒有括號的字串會直接回傳原字串本身
+    當 key，所以一個被 backend 正確保留原文的專有名詞（例如 "BCS"、
+    "Move 2024"）在 dst == src 時天生就會通過這個檢查，不需要另外
+    特判 —— 只有 backend 把它翻掉、括號後綴又漏掉時才會真的不符。
     """
-    if not pairs:
-        return
-    conforms = [_zh_label_key(dst) == src for src, dst in pairs]
-    if any(conforms) and not all(conforms):
-        for (src, dst), ok in zip(pairs, conforms):
-            if not ok:
-                raise ValueError(
-                    "新翻譯 label 不符合「中文 (English)」慣例，"
-                    f"下次同步將無法沿用: 英文={src!r} 譯文={dst!r}"
-                )
+    for src, dst in pairs:
+        if _zh_label_key(dst) != src:
+            raise ValueError(
+                "新翻譯 label 不符合「中文 (English)」慣例，"
+                f"下次同步將無法沿用: 英文={src!r} 譯文={dst!r}"
+            )
 
 
 def translate(en_text: str, prev_zh_text: str, backend: Backend) -> str:
