@@ -29,6 +29,9 @@
   斷言我們的判定與 oracle 逐一相符。Task 5 的 inline code 遮蔽連續三輪出現規格落差
   （跨行 span、非極大反引號串、span 越過 fence 邊界），前兩輪靠人工探針才發現，
   第三輪是生成器在幾秒內找到的。手選探針只能覆蓋想得到的情況。
+- **解析 `git ls-tree` 一律用 `-z` 並以 `\0` 切分。** `.split()` 會依任意空白切開，含空格的路徑會靜默裂成兩個
+  看似合理的假路徑；`--name-only` 預設還會把非 ASCII 路徑加引號轉義。這與 D1 的失效形狀相同：不噴錯、輸出看起來對。
+  （`git diff --numstat` 的數字輸出不受此限。）
 - 暫存清單檔一律寫入 session scratchpad，不寫 `/tmp`。每個 shell 步驟開頭先設定：
   ```bash
   export SP="/private/tmp/claude-501/-Users-ramonliao-Documents-Code-Project-Web3-BlockchainDev-SUI-First-Mover-TW-move-book/5f7f30a1-5d4e-475c-9570-ddb0ae12915c/scratchpad"
@@ -459,10 +462,10 @@ def _show(ref: str, path: str) -> str | None:
 
 def _files() -> list[str]:
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", PRE_FIX, "book", "reference"],
+        ["git", "ls-tree", "-r", "--name-only", "-z", PRE_FIX, "book", "reference"],
         capture_output=True, text=True, check=True,
     )
-    return [f for f in r.stdout.split() if f.endswith(".md")]
+    return [f for f in r.stdout.split("\0") if f.endswith(".md")]
 
 
 def test_slugify_reproduces_existing_anchors():
@@ -1006,11 +1009,11 @@ def blob_sha(ref: str, path: str) -> str | None:
 
 def tracked_files(ref: str) -> list[str]:
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", ref, *DIRS],
+        ["git", "ls-tree", "-r", "--name-only", "-z", ref, *DIRS],
         capture_output=True, text=True, check=True,
     )
     return [
-        f for f in r.stdout.split()
+        f for f in r.stdout.split("\0")
         if f.endswith(".md") or f in SIDEBAR_FILES
     ]
 
@@ -1029,10 +1032,10 @@ def orphans(ref: str = "english-main") -> list[str]:
     """manifest 或 zh 分支有、但英文來源已刪除的路徑。"""
     present = set(tracked_files(ref))
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", "HEAD", *DIRS],
+        ["git", "ls-tree", "-r", "--name-only", "-z", "HEAD", *DIRS],
         capture_output=True, text=True, check=True,
     )
-    zh = {f for f in r.stdout.split() if f.endswith(".md")}
+    zh = {f for f in r.stdout.split("\0") if f.endswith(".md")}
     return sorted((zh | set(load())) - present)
 
 
@@ -1324,10 +1327,10 @@ def _show(ref: str, path: str) -> str | None:
 
 def _zh_files() -> list[str]:
     r = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", PRE_FIX, "book", "reference"],
+        ["git", "ls-tree", "-r", "--name-only", "-z", PRE_FIX, "book", "reference"],
         capture_output=True, text=True, check=True,
     )
-    return [f for f in r.stdout.split() if f.endswith(".md")]
+    return [f for f in r.stdout.split("\0") if f.endswith(".md")]
 
 
 @pytest.fixture(scope="module")
@@ -2713,7 +2716,7 @@ from pathlib import Path
 from scripts.zh_tw import frontmatter as fm
 changed = 0
 for p in subprocess.run(["git","diff","--name-only","--","book","reference"],
-                        capture_output=True, text=True).stdout.split():
+                        capture_output=True, text=True).stdout.split("\0"):
     old = subprocess.run(["git","show",f"HEAD:{p}"], capture_output=True, text=True).stdout
     _, old_body = fm.split(old)
     _, new_body = fm.split(Path(p).read_text(encoding="utf-8"))
@@ -2770,8 +2773,8 @@ MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
 def show(ref, p):
     r = subprocess.run(["git","show",f"{ref}:{p}"], capture_output=True, text=True)
     return r.stdout if r.returncode == 0 else None
-files = subprocess.run(["git","ls-tree","-r","--name-only","HEAD","book","reference"],
-                       capture_output=True, text=True).stdout.split()
+files = subprocess.run(["git","ls-tree","-r","--name-only","-z","HEAD","book","reference"],
+                       capture_output=True, text=True).stdout.split("\0")
 for p in [f for f in files if f.endswith(".md")]:
     zh, en = show("HEAD", p), show(MERGE_BASE, p)
     if not zh or not en:
