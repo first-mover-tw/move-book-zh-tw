@@ -8,7 +8,7 @@ import re
 _ANCHOR = re.compile(r"\s*\{#([A-Za-z0-9_-]+)\}\s*$")
 _INLINE_CODE = re.compile(r"`([^`]+)`")
 _LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
-_HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+_HEADING = re.compile(r"^ {0,3}(#{1,6})\s+(.*?)\s*$")
 _FENCE = re.compile(r"^(`{3,}|~{3,})(.*)$")
 
 
@@ -31,14 +31,18 @@ def _scan(body: str) -> list[tuple[int, str | None, bool]]:
 
     for i, line in enumerate(body.splitlines()):
         if state == "fence":
-            stripped = line.strip()
-            m = _FENCE.match(stripped)
-            closes = bool(
-                m
-                and m.group(1)[0] == fence_char
-                and len(m.group(1)) >= fence_len
-                and m.group(2).strip() == ""
-            )
+            # Fence closing marker must have ≤3 leading spaces (CommonMark spec)
+            leading_spaces = len(line) - len(line.lstrip())
+            closes = False
+            if leading_spaces <= 3:
+                stripped = line.lstrip()
+                m = _FENCE.match(stripped)
+                closes = bool(
+                    m
+                    and m.group(1)[0] == fence_char
+                    and len(m.group(1)) >= fence_len
+                    and m.group(2).strip() == ""
+                )
             if closes:
                 state = "normal"
                 result.append((i, None, True))
@@ -56,14 +60,17 @@ def _scan(body: str) -> list[tuple[int, str | None, bool]]:
             line = line[idx + 3:]
 
         # state == "normal"（可能是 comment 剛關閉後的剩餘片段）
-        ls = line.lstrip()
-        mf = _FENCE.match(ls)
-        if mf:
-            state = "fence"
-            fence_char = mf.group(1)[0]
-            fence_len = len(mf.group(1))
-            result.append((i, None, True))
-            continue
+        # Fence opening marker must have ≤3 leading spaces (CommonMark spec)
+        leading_spaces = len(line) - len(line.lstrip())
+        if leading_spaces <= 3:
+            ls = line.lstrip()
+            mf = _FENCE.match(ls)
+            if mf:
+                state = "fence"
+                fence_char = mf.group(1)[0]
+                fence_len = len(mf.group(1))
+                result.append((i, None, True))
+                continue
 
         cidx = line.find("<!--")
         if cidx == -1:
