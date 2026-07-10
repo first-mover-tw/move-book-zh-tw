@@ -6,15 +6,29 @@
 from . import anchors
 
 
+_MAX_HEADING_LEVEL = 6
+
+
 def chunk(body: str, max_lines: int = 250) -> list[str]:
     lines = body.splitlines(keepends=True)
     if len(lines) <= max_lines:
         return [body]
+    return _split(body, max_lines, level=2)
 
-    starts = [i for i, level in anchors.heading_lines(body) if level == 2]
 
-    if not starts:
+def _split(body: str, max_lines: int, level: int) -> list[str]:
+    """遞迴切段：先在 `level` 層級的標題切一刀，任何切完仍超過 max_lines
+    的片段，再往下一層標題遞迴切。層級用完（無更深標題可切）就原樣送出。
+    """
+    lines = body.splitlines(keepends=True)
+    if len(lines) <= max_lines:
         return [body]
+    if level > _MAX_HEADING_LEVEL:
+        return [body]
+
+    starts = [i for i, lv in anchors.heading_lines(body) if lv == level]
+    if not starts:
+        return _split(body, max_lines, level + 1)
 
     bounds = [0, *starts, len(lines)]
     seen, out = set(), []
@@ -23,7 +37,12 @@ def chunk(body: str, max_lines: int = 250) -> list[str]:
             continue
         seen.add((a, b))
         out.append("".join(lines[a:b]))
-    return [c for c in out if c]
+
+    result: list[str] = []
+    for c in out:
+        if c:
+            result.extend(_split(c, max_lines, level + 1))
+    return result
 
 
 def join(chunks: list[str]) -> str:
