@@ -83,8 +83,8 @@
 
 ### D5：整檔重譯會摧毀人工成果
 
-- **56 個自訂 anchor ID**（34 檔）。上游英文檔完全沒有 `{#id}`。
-  > 修正：本文件先前記為 55。該數字來自 `\{#[a-z0-9-]+\}` 這個省略了底線的 regex，漏掉 `book/testing/test-utilities.md:31` 的 `{#assert_eq-and-assert_ref_eq}`。`slugify` 刻意保留底線（github-slugger 與 Docusaurus 皆然）。以 `anchors.headings()` 實測為 56。目前 97 條內部 anchor 連結中 96 條可解析（唯一「失敗」是 parser 未處理 `?highlight=` query string，實際未斷）。重譯後 anchor 消失 → 連結斷裂。
+- **56 個自訂 anchor ID**（35 檔）。上游英文檔完全沒有 `{#id}`。
+  > 修正：本文件先前記為 55。該數字來自 `\{#[a-z0-9-]+\}` 這個省略了底線的 regex，漏掉 `book/testing/test-utilities.md:31` 的 `{#assert_eq-and-assert_ref_eq}`。由於那是該檔唯一的 anchor，檔案數也一併從 34 更正為 35。`slugify` 刻意保留底線（github-slugger 與 Docusaurus 皆然）。以 `anchors.headings()` 實測為 56。目前 97 條內部 anchor 連結中 96 條可解析（唯一「失敗」是 parser 未處理 `?highlight=` query string，實際未斷）。重譯後 anchor 消失 → 連結斷裂。
 - **374/928 個雙語標題**（`中文 (English)` 格式，覆蓋率 40%）。
 - **經人工反覆調整的術語**（如 Hot Potato 經 `cc6ed707`、`109bef2b` 兩次修改定案為「燙手山芋」）。
 
