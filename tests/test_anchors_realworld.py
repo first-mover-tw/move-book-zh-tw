@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from scripts.zh_tw import anchors
+from scripts.zh_tw import anchors, frontmatter
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
 # 修復前的 zh-tw-main tip。釘死不動，否則 backfill 合併後這個測試會因為
@@ -42,7 +42,9 @@ def test_slugify_reproduces_existing_anchors():
         zh, en = _show(PRE_FIX, path), _show(MERGE_BASE, path)
         if not zh or not en or "{#" not in zh:
             continue
-        zh_h, en_h = anchors.headings(zh), anchors.headings(en)
+        _, zh_body = frontmatter.split(zh)
+        _, en_body = frontmatter.split(en)
+        zh_h, en_h = anchors.headings(zh_body), anchors.headings(en_body)
         if len(zh_h) != len(en_h):
             continue  # 結構殘缺檔，由 validate 負責
         for (_, zt), (_, et) in zip(zh_h, en_h):
