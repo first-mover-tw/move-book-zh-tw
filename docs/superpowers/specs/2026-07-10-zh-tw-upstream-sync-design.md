@@ -52,7 +52,9 @@
 
 這些檔案能進 `main` 且 commit 訊息寫「100% content parity」，是因為流程中沒有任何自動檢查在比對中英文結構。
 
-### D3：89/143 檔的 frontmatter `description:` 仍是英文
+### D3：88/143 檔的 frontmatter `description:` 仍是英文
+
+> 修正：初次調查以 `grep '^description:'` 粗掃得出 89，實際以 YAML 解析 + CJK 判定為 **88**。實作計畫以 88 為斷言值。
 
 `SYSTEM_PROMPT` 要求 *"Preserve all Markdown structure"*，模型把 YAML frontmatter 當結構保留，未翻譯其中的散文。`book/move-basics/vector.md` 第 3 行為英文 description、第 8 行為中文內文。
 
@@ -74,6 +76,8 @@
 | 優化 | 最佳化 | 2 |
 
 `類型`（918 次）與 `實例`（75 次）為灰色地帶，本次**不處理**。
+
+> 上表 143 次為含 fenced code block 與 inline code 的原始 grep 數。`glossary.scan` 會跳過程式碼，實際會被驗證關卡擋下的是 **126 處**。實作計畫以 126 為斷言值。
 
 ### D5：整檔重譯會摧毀人工成果
 
@@ -304,10 +308,10 @@ PR 3 的第一個步驟：取一個術語密集的長檔（建議 `reference/var
 ## 九、驗收條件
 
 1. `zh-tw-main` 的 `book` + `reference` 下有 149 個 md 檔，與 `english-main` 路徑集合完全一致（含新增 7 檔、刪除孤兒檔 1 檔）。
-2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 19 檔，第 4 條紅 89 檔。
+2. `validate.py` 對全部 149 檔執行，全綠。修復前的基線為：第 1、2 條紅 19 檔，第 4 條紅 88 檔，第 7 條紅 126 處。
 3. `manifest.stale_files()` 回傳空清單；`manifest.orphans()` 回傳空清單。
-4. 97 條內部 anchor 連結全部可解析；55 個既有 anchor 的 ID 值一個都沒變。
-5. 8 條 glossary 違禁詞在正文中出現次數為 0（現況：143 次）。
+4. 97 條內部 anchor 連結全部可解析（`check_links` 須剝除 `?query` 才不會有假陽性）；55 個既有 anchor 的 ID 值一個都沒變。
+5. 8 條 glossary 違禁詞在正文中出現次數為 0（現況：程式碼區塊外 126 處）。
 6. `npx prettier@3 --check 'book/**/*.md' 'reference/**/*.md'` 通過。
 7. `translate-zh-tw.yml` 手動 dispatch 一次，能真實偵測到過期檔案（非 0）並在無過期檔時正確跳過；detect 步驟失敗時 job 必須紅。
 8. `pnpm build` 成功，Docusaurus 無 broken anchor 警告。
