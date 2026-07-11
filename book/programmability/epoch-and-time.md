@@ -1,61 +1,83 @@
 ---
-description: 'Access time in Sui Move: use epochs for operational periods and Clock for millisecond timestamps in your smart contracts.'
+description:
+  在 Sui Move 中存取時間 (Access Time in Sui Move)：在智慧合約中，操作週期用 epoch (epoch)，毫秒級時間戳記用
+  Clock (Clock)。
 ---
 
-# Epoch 與時間 (Epoch and Time)
+# Epoch 與時間 (Epoch and Time) {#epoch-and-time}
 
-Sui 有兩種存取目前時間的方式：`Epoch` 和 `Time`。前者代表系統中的運作週期，大約每 24 小時更改一次；後者代表自 Unix Epoch 以來的目前時間（毫秒）。兩者都可以在程式中自由存取。
+Sui 提供兩種存取當前時間的方式：**epoch** 與 `Clock` 物件。前者代表系統中的操作週期，大約每 24 小時變更一次。後者則提供自 Unix Epoch 以來的毫秒數時間。兩者皆可在程式中自由存取。
 
-## Epoch (週期)
+## 紀元 (Epoch) {#epoch}
 
-Epoch 用於將系統劃分為不同的運作週期。在一個 epoch 期間，驗證者集 (validator set) 是固定的；然而，在 epoch 邊界，驗證者集可以被更改。Epoch 在共識演算法中起著至關重要的角色，用於確定目前的驗證者集。它們也用作質押 (staking) 機制中的衡量基準。
+Epoch 用於將系統劃分為各個操作週期。在一個 epoch 期間，驗證者集合是固定的；在 epoch 邊界時，驗證者集合可能會變更。Epoch 在共識演算法中扮演關鍵角色，並在質押機制中作為計量單位使用。
 
-可以從 [交易上下文](./transaction-context) 中讀取 Epoch：
+當前的 epoch 可以從[交易上下文 (transaction context)](./transaction-context)讀取：
 
 ```move file=packages/samples/sources/programmability/epoch-and-time.move anchor=epoch
 
 ```
 
-也可以獲取 epoch 開始時的 unix 時間戳：
+也可以取得該 epoch 開始時的 Unix 時間戳記（以毫秒為單位）：
 
 ```move file=packages/samples/sources/programmability/epoch-and-time.move anchor=epoch_start
 
 ```
 
-通常，epoch 用於質押和系統操作，但在自定義場景中，它們可以用於模擬 24 小時週期。如果應用程式依賴於質押邏輯或需要了解目前的驗證者集，則它們至關重要。
+這兩個值都內嵌在交易本身之中，因此讀取它們是免費的，也不需要存取任何物件。
 
-## 時間 (Time) {#clock}
+一般來說，epoch 用於質押與系統操作，但在自訂情境中，也可以用來模擬 24 小時的週期。如果應用程式依賴質押邏輯，或需要知道當前的驗證者集合，epoch 就顯得至關重要。
 
-為了獲得更精確的時間測量，Sui 提供了 `Clock` 物件。它是一個系統物件，由系統在檢查點 (checkpoint) 期間更新，存儲自 Unix Epoch 以來的目前時間（毫秒）。`Clock` 物件定義在 `sui::clock` 模組中，擁有保留地址 `0x6`。
+## 時間 (Time) {#time}
 
-`Clock` 是一個共享物件 (shared object)，但嘗試以可變方式 (mutably) 存取它的交易將會失敗。此限制允許對 `Clock` 物件進行並行存取，這對於保持系統效能非常重要。
+若需要更精確的時間量測，Sui 提供了 `Clock` 物件。它是一個系統物件，每次共識提交時（大約每四分之一秒）都會由系統交易更新，儲存自 Unix Epoch 以來的當前時間（以毫秒為單位）。`Clock` 物件定義於 `sui::clock` 模組中，並具有[保留地址 (reserved address)](./../appendix/reserved-addresses) `0x6`。
+
+Clock 是一個共享物件，但任何嘗試以可變方式存取它的交易都會失敗。這項限制允許對 `Clock` 物件進行平行存取，這對維持效能十分重要。
 
 ```move
 module sui::clock;
 
-/// 單例共享物件，向 Move 呼叫公開時間。
-/// 此物件位於地址 0x6，且只能由進入函式 (entry functions) 讀取（透過不可變參考存取）。
+/// 這是一個對 Move 呼叫公開時間的單例共享物件（Singleton shared object）。這個
+/// 物件位於 address 0x6，且只能透過不可變參考（immutable reference）被
+/// entry functions 讀取（存取）。
 ///
-/// 嘗試透過可變參考或值接收 `Clock` 的進入函式將無法通過校驗，
-/// 誠實的驗證者將不會簽署或執行將 `Clock` 作為輸入參數使用的交易，除非它是透過不可變參考傳遞的。
+/// 若 Entry Functions 試圖以可變參考（mutable reference）或值（value）接受 `Clock`，
+/// 將無法通過驗證，而誠實的 validator
+/// 也不會簽署或執行以 `Clock` 作為
+/// 輸入參數的交易，除非是以不可變參考傳入。
 public struct Clock has key {
     id: UID,
-    /// 時鐘的時間戳，每當共識提交計劃時由系統交易自動設置，
-    /// 或者在測試期間透過 `sui::clock::increment_for_testing` 設置。
+    /// clock 的時間戳記（timestamp），會在每次共識（consensus）完成一次
+    /// schedule 時，由系統交易（system transaction）
+    /// 自動設定，或在測試期間由 `sui::clock::increment_for_testing`
+    /// 設定。
     timestamp_ms: u64,
 }
 ```
 
-`Clock` 模組中僅提供一個公開函式：`timestamp_ms`。它傳回自 Unix Epoch 以來的目前時間（毫秒）。
+在一般用途上，此模組公開了一個函式 —— `timestamp_ms`。它會回傳自 Unix Epoch 以來的當前時間（以毫秒為單位）。
 
 ```move file=packages/samples/sources/programmability/epoch-and-time.move anchor=clock
 
 ```
 
-## 測試 (Testing)
+`Clock` 附帶了幾項實用的保證：在單一交易內，`timestamp_ms` 永遠回傳相同的值；而跨交易時，此值永遠不會減少。然而，由於時鐘只在共識提交時更新，彼此相近執行的交易可能會看到相同的時間戳記。
 
-`Clock` 模組提供了多種用於測試的方法。
+## 測試 (Testing) {#testing}
+
+由於真正的 `Clock` 只能由系統更新，此模組提供了僅供測試使用的函式，用於建立時鐘、設定其數值，以及銷毀它：
 
 ```move file=packages/samples/sources/programmability/epoch-and-time.move anchor=test
 
 ```
+
+## 總結 (Summary) {#summary}
+
+- 當前的 epoch 及其開始時間戳記皆從[交易上下文 (transaction context)](./transaction-context)讀取 —— 免費且在每筆交易中皆可取得；一個 epoch 大約持續 24 小時。
+- 位於保留地址 `0x6` 的 `Clock` 物件提供以毫秒為單位的時間，並在每次共識提交時更新；它只能以不可變方式存取。
+- 在單一交易內，`Clock` 的數值永遠不會改變，而跨交易時它永遠不會減少。
+- 在測試中，可使用 `create_for_testing`、`set_for_testing`、`increment_for_testing` 與 `destroy_for_testing` 來控制時鐘。
+
+## 延伸閱讀 (Further Reading) {#further-reading}
+
+- [sui::clock](https://docs.sui.io/references/framework/sui/clock) 模組文件。

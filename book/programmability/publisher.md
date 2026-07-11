@@ -1,14 +1,16 @@
 ---
-description: 'The Publisher object in Sui: prove package authority to configure Display, transfer policies, and other type-level settings.'
+description:
+  發布者物件 (Publisher object) 在 Sui：證明套件權限，用於配置顯示 (Display)、轉移政策 (transfer
+  policies) 以及其他型別層級設定。
 ---
 
-# 發佈者權限 (Publisher Authority)
+# 發行者授權 (Publisher Authority) {#publisher-authority}
 
-在應用程式設計與開發中，通常需要證明發佈者權限。這在數位資產的背景下尤為重要，發佈者可能需要為其資產啟用或停用某些功能。發佈者物件 (Publisher Object) 是在 [Sui 框架](./sui-framework) 中定義的一種物件，它允許發佈者證明其對於 **某種類型的權限 (authority over a type)**。
+應用程式經常需要證明**是誰發行了某個型別**。這在數位資產的情境中尤其重要，因為發行者可能為其資產啟用或停用某些功能。Publisher 物件定義於 [Sui Framework](./sui-framework) 中，讓發行者能夠證明其對某型別的**授權**。
 
-## 定義
+## 定義 (Definition) {#definition}
 
-發佈者物件定義在 Sui 框架的 `sui::package` 模組中。它是一個非常簡單、非泛型的物件，每個模組只能初始化一次（每個套件可以有多個），用於證明發佈者對某種類型的權限。要領取發佈者物件，發佈者必須向 `package::claim` 函式提供 [一次性見證 (One Time Witness, OTW)](./one-time-witness)。
+Publisher 物件定義於 Sui Framework 的 `sui::package` 模組中。它是一個非常簡單、非泛型的物件，每個模組可初始化一次（每個 package 可初始化多次），用來證明發行者對某型別的授權。若要取得 Publisher 物件，發行者必須向 `package::claim` 函式提供一個 [One Time Witness](./one-time-witness)。
 
 ```move
 module sui::package;
@@ -20,36 +22,50 @@ public struct Publisher has key, store {
 }
 ```
 
-> 如果您不熟悉一次性見證，可以在 [這裡](./one-time-witness) 閱讀更多相關資訊。
-
-以下是在模組中領取 `Publisher` 物件的簡單範例：
+以下是在模組中取得 `Publisher` 物件的簡單範例：
 
 ```move file=packages/samples/sources/programmability/publisher.move anchor=publisher
 
 ```
 
-## 用法
+> 對於常見的取得後即轉移流程，`sui::package` 模組也提供了一個簡便寫法 -
+> `package::claim_and_keep` - 它會在一次呼叫中取得 `Publisher` 物件並將其轉移給發送者。
 
-發佈者物件有兩個相關聯的函式，用於證明發佈者對某種類型的權限：
+## 用法 (Usage) {#usage}
+
+Publisher 物件有兩個相關的函式 - `from_module` 和 `from_package` -
+用來檢查某型別是否定義於此 `Publisher` 所代表的模組或 package 中：
 
 ```move file=packages/samples/sources/programmability/publisher.move anchor=use_publisher
 
 ```
 
-## 發佈者作為管理員角色 (Publisher as Admin Role)
+## 作為管理員角色的 Publisher (Publisher as Admin Role) {#publisher-as-admin-role}
 
-對於小型應用程式或簡單的使用案例，發佈者物件可以用作管理員 [能力 (Capability)](./capability)。雖然在更廣泛的背景下，發佈者物件控制著系統配置，但它也可以用來管理應用程式的狀態。
+對於小型應用程式或簡單的使用情境，Publisher 物件可作為管理員
+[capability](./capability) 使用。雖然在更廣泛的情境中，Publisher 物件掌控著
+系統設定，但它也能用來管理應用程式的狀態。
 
 ```move file=packages/samples/sources/programmability/publisher.move anchor=publisher_as_admin
 
 ```
 
-然而，發佈者缺少 [能力 (Capability)](./capability) 的某些原生特性，例如類型安全和表現力。`admin_action` 的簽名並非十分明確，任何人都可以呼叫。而且由於 `Publisher` 物件是標準化的，如果不執行 `from_module` 檢查，就會存在未經授權存取的風險。因此，將 `Publisher` 物件用作管理員角色時必須謹慎。
+然而，Publisher 物件缺乏
+[Capabilities](./capability) 的一些原生特性，例如型別安全性與表達力。
+`admin_action` 的簽章完全沒有說明所需的授權 - 任何持有*任何* `Publisher` 物件的人
+都可以呼叫此函式，因此授權檢查必須在函式主體內進行。
+而且由於每個已發行的 package 都會產生一個 `Publisher`，若忘記進行 `from_module` 檢查，
+將會使該動作對網路上的每個發行者開放。基於這些原因，在
+使用 `Publisher` 物件作為管理員角色時務必謹慎。
 
-## 在 Sui 上的角色
+## 在 Sui 上的角色 (Role on Sui) {#role-on-sui}
 
-Sui 上的某些功能需要發佈者物件。[物件顯示 (Object Display)](./display) 只能由發佈者建立，而 TransferPolicy —— Kiosk 系統中的一個重要組件 —— 也需要發佈者物件來證明類型的所有權。
+某些 Sui 上的功能需要 Publisher。[Object Display](./display) 可以在
+定義該型別的模組之外，使用 Publisher 來建立，而 TransferPolicy - Kiosk 系統的
+重要元件 - 也需要 Publisher 物件來證明對該型別的擁有權。
 
-## 下一步
+## 下一步 (Next Steps) {#next-steps}
 
-在下一章中，我們將介紹第一個需要發佈者物件的功能：物件顯示 (Object Display) —— 一種為客戶端描述物件並標準化元資料的方法。這是構建使用者友善應用程式的必備功能。
+在下一節中，我們將介紹第一個可以使用 Publisher 物件的功能 - Object
+Display - 一種向客戶端描述物件、並將元資料標準化的方式。這是打造
+使用者友善應用程式時不可或缺的一環。

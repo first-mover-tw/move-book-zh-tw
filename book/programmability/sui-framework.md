@@ -1,78 +1,101 @@
 ---
-description: 'The Sui Framework: built-in modules for storage, coins, display, clock, events, and other Sui-specific features available to every package.'
+description:
+  Sui 框架 (The Sui Framework)：內建模組 (built-in modules)，提供儲存、代幣、顯示、時鐘、事件等每個套件都可使用的
+  Sui 專屬功能。
 ---
 
-# Sui 框架 (Sui Framework)
+# Sui 框架 (Sui Framework) {#sui-framework}
 
-要在 Sui 上進行程式設計，您必須與 Sui 框架互動。它是一組定義了物件、其行為以及如何在系統內與其互動的模組。Sui 框架作為一個套件發佈，且對網路上的任何程式都可用（其地址為 `0x2`）。
+Sui Framework 是 [Package Manifest](./../concepts/manifest) 中預設的依賴集合。它依賴於
+[Standard Library](./../move-basics/standard-library)，並提供 Sui 專屬的功能：儲存操作、原生型別，以及本章其餘內容所建立在其上的模組。
 
-_為了方便起見，我們將 Sui 框架中的模組分成了多個類別。但它們仍然是同一個框架的一部分。_
+_為了方便起見，我們將 Sui Framework 中的模組分成多個類別，但它們仍然是同一個框架的一部分。_
 
-## 核心模組 (Core)
+## 核心 (Core) {#core}
 
 <!-- Custom CSS addition in the theme/custom.css  -->
 <div class="modules-table">
 
-| 模組                                                                                           | 描述                                                 | 章節                                                  |
-| :--------------------------------------------------------------------------------------------- | :--------------------------------------------------- | :---------------------------------------------------- |
-| [sui::address](https://docs.sui.io/references/framework/sui/address)                           | 為 [地址類型](./../move-basics/address) 添加轉換方法 | [地址](./../move-basics/address)                      |
-| [sui::transfer](https://docs.sui.io/references/framework/sui/transfer)                         | 實作物件的存儲操作                                   | [存儲函式](./../storage/storage-functions.md)         |
-| [sui::tx_context](https://docs.sui.io/references/framework/sui/tx_context)                     | 包含 `TxContext` 結構及其讀取方法                    | [交易上下文](./transaction-context)                   |
-| [sui::object](https://docs.sui.io/references/framework/sui/object)                             | 定義建立物件所需的 `UID` 和 `ID` 類型                | [UID 與 ID](./../storage/uid-and-id.md)               |
-| [sui::derived_object](https://docs.sui.io/references/framework/sui/derived_object)             | 允許透過密鑰衍生產生 `UID`                           | [UID 衍生](./../storage/uid-and-id.md#uid-derivation) |
-| [sui::clock](https://docs.sui.io/references/framework/sui/clock)                               | 定義 `Clock` 類型及其方法                            | [Epoch 與時間](./epoch-and-time)                      |
-| [sui::dynamic_field](https://docs.sui.io/references/framework/sui/dynamic_field)               | 實作新增、使用和移除動態欄位的方法                   | [動態欄位](./dynamic-fields)                          |
-| [sui::dynamic_object_field](https://docs.sui.io/references/framework/sui/dynamic_object_field) | 實作新增、使用和移除動態物件欄位的方法               | [動態物件欄位](./dynamic-object-fields)               |
-| [sui::event](https://docs.sui.io/references/framework/sui/event)                               | 允許為鏈外監聽器發送事件                             | [事件](./events)                                      |
-| [sui::package](https://docs.sui.io/references/framework/sui/package)                           | 定義 `Publisher` 類型和套件升級方法                  | [發佈者](./publisher), 套件升級                       |
-| [sui::display](https://docs.sui.io/references/framework/sui/display)                           | 實作 `Display` 物件及其建立與更新方式                | [顯示 (Display)](./display)                           |
+| Module                                                                                         | Description                                              | Chapter                                                     |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
+| [sui::address](https://docs.sui.io/references/framework/sui/address)                           | 為 [address 型別](./../move-basics/address) 新增轉換方法 | [Address](./../move-basics/address)                         |
+| [sui::transfer](https://docs.sui.io/references/framework/sui/transfer)                         | 實作 Object 的儲存操作                                   | [Storage Functions](./../storage/storage-functions.md)      |
+| [sui::tx_context](https://docs.sui.io/references/framework/sui/tx_context)                     | 包含 `TxContext` 結構體以及讀取它的方法                  | [Transaction Context](./transaction-context)                |
+| [sui::object](https://docs.sui.io/references/framework/sui/object)                             | 定義建立物件所需的 `UID` 與 `ID` 型別                    | [UID and ID](./../storage/uid-and-id.md)                    |
+| [sui::derived_object](https://docs.sui.io/references/framework/sui/derived_object)             | 允許透過金鑰衍生產生 `UID`                               | [UID Derivation](./../storage/uid-and-id.md#uid-derivation) |
+| [sui::clock](https://docs.sui.io/references/framework/sui/clock)                               | 定義 `Clock` 型別及其方法                                | [Epoch and Time](./epoch-and-time)                          |
+| [sui::dynamic_field](https://docs.sui.io/references/framework/sui/dynamic_field)               | 實作新增、使用與移除動態欄位的方法                       | [Dynamic Fields](./dynamic-fields)                          |
+| [sui::dynamic_object_field](https://docs.sui.io/references/framework/sui/dynamic_object_field) | 實作新增、使用與移除動態物件欄位的方法                   | [Dynamic Object Fields](./dynamic-object-fields)            |
+| [sui::event](https://docs.sui.io/references/framework/sui/event)                               | 允許發出事件供鏈下監聽器使用                             | [Events](./events)                                          |
+| [sui::package](https://docs.sui.io/references/framework/sui/package)                           | 定義 `Publisher` 型別以及套件升級方法                    | [Publisher](./publisher)                                    |
+| [sui::display](https://docs.sui.io/references/framework/sui/display)                           | 實作 `Display` 物件以及建立與更新它的方式                | [Display](./display)                                        |
 
 </div>
 
-## 集合模組 (Collections)
+## 集合 (Collections) {#collections}
 
 <div class="modules-table">
 
-| 模組                                                                           | 描述                                | 章節                              |
-| :----------------------------------------------------------------------------- | :---------------------------------- | :-------------------------------- |
-| [sui::vec_set](https://docs.sui.io/references/framework/sui/vec_set)           | 實作集合 (set) 類型                 | [集合](./collections)             |
-| [sui::vec_map](https://docs.sui.io/references/framework/sui/vec_map)           | 實作以向量為鍵的映射 (map)          | [集合](./collections)             |
-| [sui::table](https://docs.sui.io/references/framework/sui/table)               | 實作 `Table` 類型及其互動方法       | [動態集合](./dynamic-collections) |
-| [sui::linked_table](https://docs.sui.io/references/framework/sui/linked_table) | 實作 `LinkedTable` 類型及其互動方法 | [動態集合](./dynamic-collections) |
-| [sui::bag](https://docs.sui.io/references/framework/sui/bag)                   | 實作 `Bag` 類型及其互動方法         | [動態集合](./dynamic-collections) |
-| [sui::object_table](https://docs.sui.io/references/framework/sui/object_table) | 實作 `ObjectTable` 類型及其互動方法 | [動態集合](./dynamic-collections) |
-| [sui::object_bag](https://docs.sui.io/references/framework/sui/object_bag)     | 實作 `ObjectBag` 類型及其互動方法   | [動態集合](./dynamic-collections) |
+| Module                                                                         | Description                               | Chapter                                      |
+| ------------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------- |
+| [sui::vec_set](https://docs.sui.io/references/framework/sui/vec_set)           | 實作一種 set 型別                         | [Collections](./collections)                 |
+| [sui::vec_map](https://docs.sui.io/references/framework/sui/vec_map)           | 實作以 vector 為鍵的 map                  | [Collections](./collections)                 |
+| [sui::table](https://docs.sui.io/references/framework/sui/table)               | 實作 `Table` 型別以及與其互動的方法       | [Dynamic Collections](./dynamic-collections) |
+| [sui::linked_table](https://docs.sui.io/references/framework/sui/linked_table) | 實作 `LinkedTable` 型別以及與其互動的方法 | [Dynamic Collections](./dynamic-collections) |
+| [sui::bag](https://docs.sui.io/references/framework/sui/bag)                   | 實作 `Bag` 型別以及與其互動的方法         | [Dynamic Collections](./dynamic-collections) |
+| [sui::object_table](https://docs.sui.io/references/framework/sui/object_table) | 實作 `ObjectTable` 型別以及與其互動的方法 | [Dynamic Collections](./dynamic-collections) |
+| [sui::object_bag](https://docs.sui.io/references/framework/sui/object_bag)     | 實作 `ObjectBag` 型別以及與其互動的方法   | [Dynamic Collections](./dynamic-collections) |
 
 </div>
 
-## 工具模組 (Utilities)
+## 代幣與資產 (Coins and Assets) {#coins-and-assets}
 
 <div class="modules-table">
 
-| 模組                                                               | 描述                                       | 章節                                                |
-| :----------------------------------------------------------------- | :----------------------------------------- | :-------------------------------------------------- |
-| [sui::bcs](https://docs.sui.io/references/framework/sui/bcs)       | 實作 BCS 編碼與解碼功能                    | [二進位規範序列化 (BCS)](./bcs)                     |
-| [sui::borrow](https://docs.sui.io/references/framework/sui/borrow) | 實作「按值借用」的借用機制                 | [燙手山芋 (Hot Potato)](./hot-potato-pattern)       |
-| [sui::hex](https://docs.sui.io/references/framework/sui/hex)       | 實作十六進位編碼與解碼功能                 | -                                                   |
-| [sui::types](https://docs.sui.io/references/framework/sui/types)   | 提供檢查類型是否為 One-Time-Witness 的方法 | [一次性見證 (One-Time Witness)](./one-time-witness) |
+| Module                                                                   | Description                          | Chapter                                |
+| ------------------------------------------------------------------------ | ------------------------------------ | -------------------------------------- |
+| [sui::balance](https://docs.sui.io/references/framework/sui/balance)     | `Balance` 型別 —— 價值的底層儲存方式 | [Balance and Coin](./balance-and-coin) |
+| [sui::coin](https://docs.sui.io/references/framework/sui/coin)           | `Coin` 型別 —— 可轉移的同質化資產    | [Balance and Coin](./balance-and-coin) |
+| [sui::sui](https://docs.sui.io/references/framework/sui/sui)             | SUI 代幣型別                         | [Balance and Coin](./balance-and-coin) |
+| [sui::pay](https://docs.sui.io/references/framework/sui/pay)             | 用於拆分與合併代幣的輔助函式         | -                                      |
+| [sui::deny_list](https://docs.sui.io/references/framework/sui/deny_list) | 用於受監管代幣型別的拒絕清單         | -                                      |
+| [sui::token](https://docs.sui.io/references/framework/sui/token)         | 封閉迴路（closed-loop）代幣標準      | -                                      |
 
 </div>
 
-## 導出的地址 (Exported Addresses)
+## 實用工具 (Utilities) {#utilities}
 
-Sui 框架導出了兩個具名地址：`sui = 0x2` 以及來自 std 依賴項的 `std = 0x1`。
+<div class="modules-table">
 
-```toml
-[addresses]
-sui = "0x2"
+| Module                                                             | Description                                | Chapter                                 |
+| ------------------------------------------------------------------ | ------------------------------------------ | --------------------------------------- |
+| [sui::bcs](https://docs.sui.io/references/framework/sui/bcs)       | 實作 BCS 編碼與解碼函式                    | [Binary Canonical Serialization](./bcs) |
+| [sui::borrow](https://docs.sui.io/references/framework/sui/borrow) | 實作以 _value_ 方式借用的借用機制          | [Hot Potato](./hot-potato-pattern)      |
+| [sui::hex](https://docs.sui.io/references/framework/sui/hex)       | 實作十六進位編碼與解碼函式                 | -                                       |
+| [sui::random](https://docs.sui.io/references/framework/sui/random) | `Random` 物件與安全的鏈上隨機性            | [Randomness](./randomness)              |
+| [sui::types](https://docs.sui.io/references/framework/sui/types)   | 提供檢查型別是否為 One-Time-Witness 的方式 | [One Time Witness](./one-time-witness)  |
 
-# 導自 MoveStdlib 依賴項
-std = "0x1"
-```
+</div>
 
-## 隱式導入 (Implicit Imports) {#implicit-imports}
+該框架也包含本書未涵蓋的模組：商業原語
+（[sui::kiosk](https://docs.sui.io/references/framework/sui/kiosk)、
+[sui::transfer_policy](https://docs.sui.io/references/framework/sui/transfer_policy)）、一組
+密碼學函式（[sui::hash](https://docs.sui.io/references/framework/sui/hash)、
+[sui::ed25519](https://docs.sui.io/references/framework/sui/ed25519)、
+[sui::bls12381](https://docs.sui.io/references/framework/sui/bls12381) 等等），以及一些
+輔助工具，例如 [sui::url](https://docs.sui.io/references/framework/sui/url) 與
+[sui::versioned](https://docs.sui.io/references/framework/sui/versioned)。完整清單請參閱
+[框架文件](https://docs.sui.io/references/framework)。
 
-就像 [標準庫](./../move-basics/standard-library#implicit-imports) 一樣，Sui 框架中的某些模組和類型會被隱式導入。以下是無需顯式使用 `use` 導入即可使用的模組和類型清單：
+## 匯出位址 (Exported Addresses) {#exported-addresses}
+
+Sui Framework 匯出了兩個具名位址：`sui = 0x2`，以及來自 std 依賴的 `std = 0x1`。
+
+## 隱式匯入 (Implicit Imports) {#implicit-imports}
+
+就像 [Standard Library](./../move-basics/standard-library#implicit-imports) 一樣，Sui Framework 中
+有些模組與型別會被隱式匯入。以下是不需明確 `use` 匯入即可使用的模組與
+型別清單：
 
 - sui::object
 - sui::object::ID
@@ -83,4 +106,5 @@ std = "0x1"
 
 ## 原始碼 (Source Code) {#source-code}
 
-Sui 框架的原始碼可在 [Sui 儲存庫](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/sui-framework/sources) 中找到。
+Sui Framework 的原始碼可在
+[Sui repository](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/sui-framework/sources) 中取得。

@@ -373,4 +373,4 @@ def test_corpus_banned_term_total_is_126():
         text = path.read_text(encoding="utf-8")
         _, body = frontmatter.split(text)
         total += sum(glossary.scan(body).values())
-    assert total == 112  # backfill 進度：PR 3 清 10 處、PR 4 清 4 處（126→112）
+    assert total == 108  # backfill 進度：PR 3 清 10、PR 4 清 4、PR 5 清 4（126→108）
