@@ -1,5 +1,5 @@
 ---
-description: "Move 測試工具：assert 巨集、assert_eq、assert_ref_eq 以及用於撰寫表達性單元測試的標準函式庫輔助工具。"
+description: 'Move 測試工具：assert 巨集、assert_eq、assert_ref_eq 以及用於撰寫表達性單元測試的標準函式庫輔助工具。'
 ---
 
 # 單元測試工具 (Unit Test Utilities)
@@ -119,5 +119,4 @@ fun test_ticket_creation() {
 
 在接下來的章節中，我們將介紹 Sui 特定的測試工具和功能。
 
-[stdlib-unit-test]:
-  https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/move-stdlib/sources/unit_test.move
+[stdlib-unit-test]: https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/move-stdlib/sources/unit_test.move

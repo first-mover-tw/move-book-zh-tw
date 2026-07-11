@@ -1,6 +1,5 @@
 ---
-
-description: "Define custom types with struct in Move: create, pack, unpack, and access fields for building data models in Sui smart contracts."
+description: 'Define custom types with struct in Move: create, pack, unpack, and access fields for building data models in Sui smart contracts.'
 ---
 
 # 使用結構定義自定義類型 (Custom Types with Struct)

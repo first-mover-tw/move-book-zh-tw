@@ -1,6 +1,5 @@
 ---
-
-description: "Transfer to Object (TTO) in Sui: send objects to other objects and receive them using the Receiving type in Move."
+description: 'Transfer to Object (TTO) in Sui: send objects to other objects and receive them using the Receiving type in Move.'
 ---
 
 # 接收物件 (Receiving as Object)

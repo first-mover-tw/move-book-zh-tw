@@ -1,6 +1,5 @@
 ---
-
-description: "Install the Move Registry (MVR) CLI to publish, discover, and manage reusable Move packages for Sui development."
+description: 'Install the Move Registry (MVR) CLI to publish, discover, and manage reusable Move packages for Sui development.'
 ---
 
 # 安裝 MVR

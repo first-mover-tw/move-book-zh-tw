@@ -1,6 +1,5 @@
 ---
-
-description: "Type reflection in Move: inspect type names at runtime using std::type_name for dynamic type checks in smart contracts."
+description: 'Type reflection in Move: inspect type names at runtime using std::type_name for dynamic type checks in smart contracts.'
 ---
 
 # 類型反射 (Type Reflection)

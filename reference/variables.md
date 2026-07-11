@@ -1,7 +1,6 @@
 ---
-
 title: 'Local Variables and Scope | Reference'
-description: "Move local variables and scope: let bindings, mutability, type annotations, shadowing, and move semantics reference."
+description: 'Move local variables and scope: let bindings, mutability, type annotations, shadowing, and move semantics reference.'
 ---
 
 # 變數 (Variables)
@@ -37,5 +36,6 @@ Move 中的所有局部變數可以透過 `move` 或 `copy` 使用。
 ### 推斷 (Inference)
 
 編譯器會自動推斷應使用 `move` 還是 `copy`：
+
 - 具有 `copy` 能力的值（和參照）使用 `copy`。
 - 其他所有值使用 `move`。

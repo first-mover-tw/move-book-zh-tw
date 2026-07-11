@@ -1,6 +1,5 @@
 ---
-
-description: "Fast path vs consensus in Sui: how owned objects skip consensus for faster transactions while shared objects require ordering."
+description: 'Fast path vs consensus in Sui: how owned objects skip consensus for faster transactions while shared objects require ordering.'
 ---
 
 # 快速路徑與共識 (Fast Path & Consensus)

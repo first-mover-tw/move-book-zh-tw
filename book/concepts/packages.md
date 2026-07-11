@@ -1,6 +1,5 @@
 ---
-
-description: "Understand Move packages — the unit of code organization containing modules, dependencies, and addresses published on the Sui blockchain."
+description: 'Understand Move packages — the unit of code organization containing modules, dependencies, and addresses published on the Sui blockchain.'
 ---
 
 # 套件 (Package)

@@ -1,6 +1,5 @@
 ---
-
-description: "The init function in Move: run one-time setup code when a module is published on Sui, with rules and best practices."
+description: 'The init function in Move: run one-time setup code when a module is published on Sui, with rules and best practices.'
 ---
 
 # 模組初始化器 (Module Initializer)

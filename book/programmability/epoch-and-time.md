@@ -1,6 +1,5 @@
 ---
-
-description: "Access time in Sui Move: use epochs for operational periods and Clock for millisecond timestamps in your smart contracts."
+description: 'Access time in Sui Move: use epochs for operational periods and Clock for millisecond timestamps in your smart contracts.'
 ---
 
 # Epoch 與時間 (Epoch and Time)
@@ -36,7 +35,7 @@ module sui::clock;
 
 /// 單例共享物件，向 Move 呼叫公開時間。
 /// 此物件位於地址 0x6，且只能由進入函式 (entry functions) 讀取（透過不可變參考存取）。
-/// 
+///
 /// 嘗試透過可變參考或值接收 `Clock` 的進入函式將無法通過校驗，
 /// 誠實的驗證者將不會簽署或執行將 `Clock` 作為輸入參數使用的交易，除非它是透過不可變參考傳遞的。
 public struct Clock has key {

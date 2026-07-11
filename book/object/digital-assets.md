@@ -1,6 +1,5 @@
 ---
-
-description: "How Move handles digital assets natively: from fungible tokens to NFTs, with built-in safety and type-level resource guarantees."
+description: 'How Move handles digital assets natively: from fungible tokens to NFTs, with built-in safety and type-level resource guarantees.'
 ---
 
 # Move — 數位資產的專屬語言 (Move - Language for Digital Assets)

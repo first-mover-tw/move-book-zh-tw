@@ -1,6 +1,5 @@
 ---
-
-description: "Sui storage functions: transfer, share, freeze, and receive objects using the sui::transfer module in Move smart contracts."
+description: 'Sui storage functions: transfer, share, freeze, and receive objects using the sui::transfer module in Move smart contracts.'
 ---
 
 # 存儲函式 (Storage Functions)

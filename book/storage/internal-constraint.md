@@ -1,6 +1,5 @@
 ---
-
-description: "The Sui Verifier internal constraint: why storage operations require the type to be defined in the calling module."
+description: 'The Sui Verifier internal constraint: why storage operations require the type to be defined in the calling module.'
 ---
 
 # Sui 校驗器：內部約束 (Internal Constraint)

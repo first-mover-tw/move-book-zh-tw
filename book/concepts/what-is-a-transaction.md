@@ -1,6 +1,5 @@
 ---
-
-description: "Learn how Sui transactions work: structure, commands, gas payments, and how they change blockchain state through Move function calls."
+description: 'Learn how Sui transactions work: structure, commands, gas payments, and how they change blockchain state through Move function calls.'
 ---
 
 # 交易 (Transaction)

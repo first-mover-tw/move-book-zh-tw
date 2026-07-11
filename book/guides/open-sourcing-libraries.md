@@ -1,6 +1,5 @@
 ---
-
-description: "Guide to open sourcing Move libraries: naming conventions, documentation, testing, and publishing reusable packages for Sui."
+description: 'Guide to open sourcing Move libraries: naming conventions, documentation, testing, and publishing reusable packages for Sui.'
 ---
 
 # 開源庫 (Open Sourcing Libraries)

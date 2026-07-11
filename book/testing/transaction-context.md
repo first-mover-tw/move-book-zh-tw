@@ -1,5 +1,5 @@
 ---
-description: "在 Move 測試中模擬 TxContext：建立虛擬上下文 (dummy context)、設定發送者地址，並生成用於單元測試的新 UID。"
+description: '在 Move 測試中模擬 TxContext：建立虛擬上下文 (dummy context)、設定發送者地址，並生成用於單元測試的新 UID。'
 ---
 
 # 模擬交易上下文 (Simulating Transaction Context)
@@ -149,16 +149,16 @@ fun test_with_full_context() {
 
 ## 總結
 
-| 函式 | 使用場景 |
-| ----------------------------- | --------------------------------------------- |
-| `dummy()` | 用於簡單測試的快速上下文 |
-| `new()` | 自定義發送者、Epoch 或時間戳記 |
-| `new_from_hint()` | 類似 `new`，但從整數生成 tx_hash |
-| `create()` | 完全控制，包括 Gas 參數 |
-| `ids_created()` | 檢查建立的物件數量 |
-| `last_created_object_id()` | 獲取最近建立物件的 ID |
-| `increment_epoch_number()` | 模擬 Epoch 進展 |
-| `increment_epoch_timestamp()` | 模擬時間流逝 |
+| 函式                          | 使用場景                         |
+| ----------------------------- | -------------------------------- |
+| `dummy()`                     | 用於簡單測試的快速上下文         |
+| `new()`                       | 自定義發送者、Epoch 或時間戳記   |
+| `new_from_hint()`             | 類似 `new`，但從整數生成 tx_hash |
+| `create()`                    | 完全控制，包括 Gas 參數          |
+| `ids_created()`               | 檢查建立的物件數量               |
+| `last_created_object_id()`    | 獲取最近建立物件的 ID            |
+| `increment_epoch_number()`    | 模擬 Epoch 進展                  |
+| `increment_epoch_timestamp()` | 模擬時間流逝                     |
 
 ## 延伸閱讀
 

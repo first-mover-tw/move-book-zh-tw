@@ -1,6 +1,5 @@
 ---
-
-description: "The Witness pattern in Move: prove type ownership through struct instantiation for type-safe authorization in Sui smart contracts."
+description: 'The Witness pattern in Move: prove type ownership through struct instantiation for type-safe authorization in Sui smart contracts.'
 ---
 
 # 模式：見證 (Pattern: Witness)
@@ -70,7 +69,7 @@ public fun supply_value<T>(supply: &Supply<T>): u64 {
 
 在上面的範例（借用自 [Sui 框架](./sui-framework) 的 [`balance` 模組][balance-framework]）中，`Supply` 是一个泛型結構，只能透過提供類型 `T` 的見證來建構。見證按值接收並被「丟棄」——因此 `T` 必須具有 [drop](./../move-basics/drop-ability) 能力。
 
-[balance-framework]: https://docs.sui.io/references/framework/sui/balance 
+[balance-framework]: https://docs.sui.io/references/framework/sui/balance
 
 實例化後的 `Supply<T>` 之後可以用於鑄造新的 `Balance<T>`，其中 `T` 是該供應量的類型。
 

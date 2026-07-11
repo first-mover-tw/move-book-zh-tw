@@ -1,6 +1,5 @@
 ---
-
-description: "Migrate your Move code to the 2024 edition: updated syntax, new features, method syntax, and step-by-step migration instructions."
+description: 'Migrate your Move code to the 2024 edition: updated syntax, new features, method syntax, and step-by-step migration instructions.'
 ---
 
 # Move 2024 遷移指南 (Move 2024 Migration Guide)

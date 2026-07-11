@@ -1,5 +1,5 @@
 ---
-description: "在 Move 測試中使用系統物件：建立和操作 Clock、Random 和 DenyList 以測試時間、隨機性和拒絕列表。"
+description: '在 Move 測試中使用系統物件：建立和操作 Clock、Random 和 DenyList 以測試時間、隨機性和拒絕列表。'
 ---
 
 # 在測試中建立和使用系統物件 (Creating and Using System Objects in Tests)
@@ -230,12 +230,12 @@ fun test_take_by_id() {
 
 ## 總結
 
-| 物件 | 建立方式 | 測試專用功能 |
-| ------------------ | --------------------------------------- | ------------------------------------------ |
-| `Clock` | `clock::create_for_testing(ctx)` | `increment_for_testing`, `set_for_testing` |
-| `Random` | `random::create_for_testing(ctx)` | `update_randomness_state_for_testing` |
-| `RandomGenerator` | `random::new_generator_for_testing()` | `new_generator_from_seed_for_testing` |
-| `DenyList` | `deny_list::create_for_testing(ctx)` | `new_for_testing` |
-| `Coin<T>` | `coin::mint_for_testing<T>(value, ctx)` | `burn_for_testing` |
-| `Balance<T>` | `balance::create_for_testing<T>(value)` | `destroy_for_testing` |
-| 所有系統物件 | `scenario.create_system_objects()` | 建立 Clock, Random, DenyList |
+| 物件              | 建立方式                                | 測試專用功能                               |
+| ----------------- | --------------------------------------- | ------------------------------------------ |
+| `Clock`           | `clock::create_for_testing(ctx)`        | `increment_for_testing`, `set_for_testing` |
+| `Random`          | `random::create_for_testing(ctx)`       | `update_randomness_state_for_testing`      |
+| `RandomGenerator` | `random::new_generator_for_testing()`   | `new_generator_from_seed_for_testing`      |
+| `DenyList`        | `deny_list::create_for_testing(ctx)`    | `new_for_testing`                          |
+| `Coin<T>`         | `coin::mint_for_testing<T>(value, ctx)` | `burn_for_testing`                         |
+| `Balance<T>`      | `balance::create_for_testing<T>(value)` | `destroy_for_testing`                      |
+| 所有系統物件      | `scenario.create_system_objects()`      | 建立 Clock, Random, DenyList               |

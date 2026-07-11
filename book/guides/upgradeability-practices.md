@@ -1,6 +1,5 @@
 ---
-
-description: "Best practices for upgrading Move packages on Sui: maintain compatibility, plan for versioning, and avoid breaking changes."
+description: 'Best practices for upgrading Move packages on Sui: maintain compatibility, plan for versioning, and avoid breaking changes.'
 ---
 
 # 升級實踐 (Upgradeability Practices)

@@ -1,6 +1,5 @@
 ---
-
-description: "Reserved addresses on Sui: standard library (0x1), Sui framework (0x2), system objects, and other fixed address assignments."
+description: 'Reserved addresses on Sui: standard library (0x1), Sui framework (0x2), system objects, and other fixed address assignments.'
 ---
 
 # 附錄 B：保留位址

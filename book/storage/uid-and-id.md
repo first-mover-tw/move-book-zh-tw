@@ -1,6 +1,5 @@
 ---
-
-description: "UID and ID in Sui Move: unique object identifiers, how they are created, used for dynamic fields, and guaranteed to be unique."
+description: 'UID and ID in Sui Move: unique object identifiers, how they are created, used for dynamic fields, and guaranteed to be unique.'
 ---
 
 # UID 與 ID (UID and ID)

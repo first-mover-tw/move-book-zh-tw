@@ -1,7 +1,6 @@
 ---
 title: '聰明錯誤 | Reference'
-description:
-  聰明錯誤是一項功能，可在斷言失敗或中止被觸發時提供更具資訊性的錯誤訊息
+description: 聰明錯誤是一項功能，可在斷言失敗或中止被觸發時提供更具資訊性的錯誤訊息
 ---
 
 # 聰明錯誤 (Clever Errors)

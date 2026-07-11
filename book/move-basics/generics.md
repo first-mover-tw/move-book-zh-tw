@@ -1,6 +1,5 @@
 ---
-
-description: "Generics in Move: write reusable functions and types that work with any type parameter, with phantom types and constraints."
+description: 'Generics in Move: write reusable functions and types that work with any type parameter, with phantom types and constraints.'
 ---
 
 # 泛型 (Generics)

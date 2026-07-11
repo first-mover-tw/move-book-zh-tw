@@ -1,6 +1,5 @@
 ---
-
-description: "The evolution of Move from Diem to Sui: how the storage model changed from account-based to the object-based model."
+description: 'The evolution of Move from Diem to Sui: how the storage model changed from account-based to the object-based model.'
 ---
 
 # Move 的演進 (Evolution of Move)

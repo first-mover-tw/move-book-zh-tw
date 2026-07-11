@@ -1,6 +1,5 @@
 ---
-
-description: "The Publisher object in Sui: prove package authority to configure Display, transfer policies, and other type-level settings."
+description: 'The Publisher object in Sui: prove package authority to configure Display, transfer policies, and other type-level settings.'
 ---
 
 # 發佈者權限 (Publisher Authority)

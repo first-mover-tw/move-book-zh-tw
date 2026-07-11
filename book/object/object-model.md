@@ -1,6 +1,5 @@
 ---
-
-description: "What is a Sui Object: unique identifiers, types, ownership, and native operations like transfer and share for on-chain digital assets."
+description: 'What is a Sui Object: unique identifiers, types, ownership, and native operations like transfer and share for on-chain digital assets.'
 ---
 
 # 什麼是物件？ (What is an Object?)
@@ -14,6 +13,7 @@ Sui 中的物件具有以下屬性：
 - **唯一 ID (Unique ID):** 每個物件都有一個唯一的識別碼，使其區別於其他物件。此 ID 在物件建立時產生且不可變。它用於在系統內追蹤和識別物件。
 
 <!-- Note: consider "shared across many entities" -->
+
 - **所有者 (Owner):** 每個物件都與一個所有者相關聯，所有者控制著對物件的變更。Sui 上的所有權可以是某個帳戶專有、全網共享或凍結（僅允許唯讀存取，不能修改或轉移）。我們將在後續部分詳細討論所有權。
 
   請注意，所有權並不控制物件的機密性 — 始終可以從 Move 外部讀取鏈上物件的內容。您絕不應在物件內部存儲未加密的私密資訊。

@@ -1,6 +1,5 @@
 ---
-
-description: "On-chain randomness in Sui: generate secure random values in Move smart contracts using the Random shared object."
+description: 'On-chain randomness in Sui: generate secure random values in Move smart contracts using the Random shared object.'
 ---
 
 # 隨機性 (Randomness)

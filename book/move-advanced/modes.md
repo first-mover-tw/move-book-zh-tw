@@ -1,6 +1,5 @@
 ---
-
-description: "Compilation modes in Move: include unpublishable code in named build modes like debug, benchmark, or spec beyond the built-in test mode."
+description: 'Compilation modes in Move: include unpublishable code in named build modes like debug, benchmark, or spec beyond the built-in test mode.'
 ---
 
 # 模式 (Modes)
@@ -9,11 +8,11 @@ description: "Compilation modes in Move: include unpublishable code in named bui
 
 模式概覽：
 
-* 使用 `#[mode(name, ...)]` 標記項目，或針對內建的 `test` 模式使用縮寫 `#[test_only]`。
-  * `#[test_only]` 屬性是 `#[mode(test)]` 的語法糖。
-* 使用 `--mode <name>`（或針對單元測試使用 `--test`）進行構建。模式清單中包含您所啟用名稱之項目會被編譯 **進來**。模式清單中 **不匹配** 的項目則會被編譯 **掉**。
-* 啟用任何模式後編譯的程式碼都是 **不可發佈** 的。這可以防止偵錯/測試腳手架進入鏈上。
-* **沒有** `#[mode(...)]`/`#[test_only]` 標記的項目始終會被包含。
+- 使用 `#[mode(name, ...)]` 標記項目，或針對內建的 `test` 模式使用縮寫 `#[test_only]`。
+  - `#[test_only]` 屬性是 `#[mode(test)]` 的語法糖。
+- 使用 `--mode <name>`（或針對單元測試使用 `--test`）進行構建。模式清單中包含您所啟用名稱之項目會被編譯 **進來**。模式清單中 **不匹配** 的項目則會被編譯 **掉**。
+- 啟用任何模式後編譯的程式碼都是 **不可發佈** 的。這可以防止偵錯/測試腳手架進入鏈上。
+- **沒有** `#[mode(...)]`/`#[test_only]` 標記的項目始終會被包含。
 
 > 提示：模式是在編譯時期強制執行的過濾器 — 它們不會影響執行時期的位元組碼。將其用於輔助工具、模擬器以及其他永遠不應發佈的模擬 (mock) 類型和函式。
 
@@ -167,5 +166,5 @@ sui move build   # 不帶 --mode, 不帶 --test
 
 ## 參見 (See also)
 
-* Move Book 中的 [測試基礎 (Testing basics)](../move-basics/testing)。
-* Move 參考手冊中的 [模式 (Modes)](/reference/modes)。
+- Move Book 中的 [測試基礎 (Testing basics)](../move-basics/testing)。
+- Move 參考手冊中的 [模式 (Modes)](/reference/modes)。

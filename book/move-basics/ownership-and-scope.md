@@ -1,6 +1,5 @@
 ---
-
-description: "Ownership and scope in Move: how variables are owned, moved, and dropped when they go out of scope in the Move language."
+description: 'Ownership and scope in Move: how variables are owned, moved, and dropped when they go out of scope in the Move language.'
 ---
 
 # 所有權與作用域 (Ownership and Scope)

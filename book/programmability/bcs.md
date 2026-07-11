@@ -1,6 +1,5 @@
 ---
-
-description: "BCS (Binary Canonical Serialization) in Move: encode and decode structured data for on-chain storage and cross-platform communication."
+description: 'BCS (Binary Canonical Serialization) in Move: encode and decode structured data for on-chain storage and cross-platform communication.'
 ---
 
 # 二進位規範序列化 (Binary Canonical Serialization, BCS)
@@ -13,7 +12,7 @@ description: "BCS (Binary Canonical Serialization) in Move: encode and decode st
 
 BCS 是一種支援高達 256 位元的無符號整數、選項 (options)、布林值、單元 (unit，空值)、固定和可變長度序列以及映射 (maps) 的二進位格式。該格式旨在具有確定性，這意味著相同的資料將始終被序列化為相同的位元組。
 
-> 「BCS 不是一種自帶描述 (self-describing) 的格式。因此，為了反序列化訊息，必須提前知道訊息類型和佈局。」 —— 摘自 [README](https://github.com/zefchain/bcs) 
+> 「BCS 不是一種自帶描述 (self-describing) 的格式。因此，為了反序列化訊息，必須提前知道訊息類型和佈局。」 —— 摘自 [README](https://github.com/zefchain/bcs)
 
 整數以小端 (little-endian) 格式存儲，可變長度整數使用可變長度編碼方案進行編碼。序列會以 ULEB128 編碼的長度作為前綴，列舉 (enumerations) 存儲為變體的索引後接資料，而映射則存儲為鍵值對的有序序列。
 

@@ -1,6 +1,5 @@
 ---
-
-description: "The key ability in Move makes a struct an object that can be stored, owned, and transferred on the Sui blockchain."
+description: 'The key ability in Move makes a struct an object that can be stored, owned, and transferred on the Sui blockchain.'
 ---
 
 # 能力：Key (Ability: Key)

@@ -1,6 +1,5 @@
 ---
-
-description: "The Capability pattern in Move: use owned objects as access-control tokens to authorize privileged operations in Sui smart contracts."
+description: 'The Capability pattern in Move: use owned objects as access-control tokens to authorize privileged operations in Sui smart contracts.'
 ---
 
 # 模式：能力 (Pattern: Capability)

@@ -1,6 +1,5 @@
 ---
-
-description: "Dynamic object fields in Sui: attach objects as fields that remain accessible by ID, with differences from regular dynamic fields."
+description: 'Dynamic object fields in Sui: attach objects as fields that remain accessible by ID, with differences from regular dynamic fields.'
 ---
 
 # 動態物件欄位 (Dynamic Object Fields)

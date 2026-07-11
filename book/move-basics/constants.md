@@ -1,6 +1,5 @@
 ---
-
-description: "Constants in Move: how to define immutable module-level values, naming conventions, and supported constant types."
+description: 'Constants in Move: how to define immutable module-level values, naming conventions, and supported constant types.'
 ---
 
 # 常數 (Constants)

@@ -1,6 +1,5 @@
 ---
-
-description: "Learn how to use Sui objects in Move: storage abilities, transfer functions, ownership rules, and object lifecycle management."
+description: 'Learn how to use Sui objects in Move: storage abilities, transfer functions, ownership rules, and object lifecycle management.'
 ---
 
 # 使用物件 (Using Objects)

@@ -1,6 +1,5 @@
 ---
-
-description: "Visibility modifiers in Move: private, public, public(package), and entry functions for controlling access to module members."
+description: 'Visibility modifiers in Move: private, public, public(package), and entry functions for controlling access to module members.'
 ---
 
 # 可見性修飾符

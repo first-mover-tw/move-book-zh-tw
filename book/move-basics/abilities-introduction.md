@@ -1,6 +1,5 @@
 ---
-
-description: "Introduction to Move abilities: copy, drop, key, and store — the system that controls how types behave in smart contracts."
+description: 'Introduction to Move abilities: copy, drop, key, and store — the system that controls how types behave in smart contracts.'
 ---
 
 # 能力：簡介 (Abilities: Introduction)
