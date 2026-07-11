@@ -51,6 +51,15 @@ _ALLOWED_VARIANTS = frozenset({
 
 ALLOWED_VARIANTS = _ALLOWED_VARIANTS
 
+# 詞級白名單：這些字單獨看會被 s2tw 逐字轉換（干→乾/幹、准→準），但在
+# 下列詞裡是合法繁體。不進 _ALLOWED_VARIANTS 做字級豁免 —— 干/准 的簡體
+# 誤用（你在干什麼、瞄准）極常見，字級放行等於關掉這兩個字的偵測。
+# 判定：被攔的字元若落在任一白名單詞的出現範圍內 → 放行。
+_WORD_ALLOWED = {
+    "干": ("若干", "干擾", "干預", "干涉"),
+    "准": ("批准", "准許", "准入", "核准", "獲准", "准駁"),
+}
+
 _S2TW = OpenCC("s2tw")
 
 
@@ -76,6 +85,11 @@ def simplified_chars(body: str) -> list[tuple[int, str]]:
             if ch in _ALLOWED_VARIANTS:
                 continue
             if _S2TW.convert(ch) != ch:
+                words = _WORD_ALLOWED.get(ch)
+                if words and any(
+                    w in line[max(0, j - len(w) + 1) : j + len(w)] for w in words
+                ):
+                    continue
                 out.append((i, ch))
     return out
 

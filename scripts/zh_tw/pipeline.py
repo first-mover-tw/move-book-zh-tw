@@ -73,9 +73,26 @@ def tier(path: str, en_ref: str = "english-main") -> str:
     return "A"
 
 
+CHUNK_RETRIES = 3
+
+
+def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
+    """單一 chunk 翻譯，標題層級序列不符就地重試（PR 3 診斷：sonnet 對長檔
+    穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
+    定位到小範圍）。重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋，
+    fail-closed 不變 —— 這裡是自動修復路徑，不是放寬。"""
+    want = [lv for lv, _ in anchors.headings(chunk_text)]
+    out = ""
+    for _ in range(CHUNK_RETRIES):
+        out = backend.translate(chunk_text)
+        if [lv for lv, _ in anchors.headings(out)] == want:
+            return out
+    return out
+
+
 def translate_body(en_text: str, backend: base.Backend, max_lines: int = CHUNK_MAX_LINES) -> str:
     en_meta, en_body = frontmatter.split(en_text)
-    zh_chunks = [backend.translate(c) for c in chunking.chunk(en_body, max_lines)]
+    zh_chunks = [_translate_chunk(c, backend) for c in chunking.chunk(en_body, max_lines)]
     zh_body = chunking.join(zh_chunks)
 
     zh_meta = dict(en_meta)
@@ -221,7 +238,11 @@ def rebuild_frontmatter_only(
 
 
 def run(
-    paths: list[str], backend_name: str, en_ref: str = "english-main", apply: bool = False
+    paths: list[str],
+    backend_name: str,
+    en_ref: str = "english-main",
+    apply: bool = False,
+    max_lines: int = CHUNK_MAX_LINES,
 ) -> tuple[int, dict[str, list[str]]]:
     backend = base.get(backend_name)
     m = manifest.load()
@@ -240,7 +261,7 @@ def run(
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
             else:
                 prev_en = _prev_en(path, m) if prev else ""
-                out = assemble(en, prev, prev_en, backend)
+                out = assemble(en, prev, prev_en, backend, max_lines)
         except Exception as e:  # noqa: BLE001
             failed[path] = [str(e)]
             continue

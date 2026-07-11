@@ -495,3 +495,59 @@ def test_repair_headings_skips_nested_headings():
     zh = "> ## 迴圈\n"
     en = "## Loops\n"
     assert pipeline._repair_headings(zh, en, FakeBackend()) == zh
+
+
+def test_run_passes_max_lines_to_assemble(monkeypatch):
+    """--max-lines：長檔掉標題時縮小 chunk 的逃生口（PR 3 實測 sonnet 對
+    250 行 chunk 決定性丟 4/53 個標題）。"""
+    captured = {}
+
+    def fake_assemble(en, prev, prev_en, backend, max_lines=pipeline.CHUNK_MAX_LINES):
+        captured["max_lines"] = max_lines
+        return en
+
+    monkeypatch.setattr(pipeline, "assemble", fake_assemble)
+    monkeypatch.setattr(pipeline, "tier", lambda *a, **k: "B")
+    pipeline.run(["reference/constants.md"], "fake", max_lines=60)
+    assert captured["max_lines"] == 60
+
+
+def test_translate_body_retries_chunk_that_drops_headings():
+    """PR 3 診斷：sonnet 對長檔穩定吞小節標題（variables.md 21→16，換
+    chunk 尺寸與整檔重跑都救不了）。chunk 級標題序列檢查 + 重試把失效
+    定位到小範圍 —— 單一 chunk 重試便宜且成功率遠高於整檔賭運氣。"""
+    calls = {"n": 0}
+
+    class FlakyBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "# 一 (One)\n\n內文。\n"  # 吞掉 ## Two
+            return "# 一 (One)\n\n內文。\n\n## 二 (Two)\n\n更多。\n"
+
+    en = '---\ndescription: "d"\n---\n\n# One\n\nbody\n\n## Two\n\nmore\n'
+    out = pipeline.translate_body(en, FlakyBackend())
+    _, body = frontmatter.split(out)
+    assert [lv for lv, _ in anchors.headings(body)] == [1, 2]
+    assert calls["n"] == 2  # 第一次不合格，重試一次成功
+
+
+def test_translate_body_keeps_last_attempt_when_retries_exhausted():
+    """重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋下（fail-closed
+    不變，重試只是加自動修復路徑，不是放寬）。"""
+    calls = {"n": 0}
+
+    class StubbornBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            calls["n"] += 1
+            return "# 一 (One)\n"  # 永遠吞掉 ## Two
+
+    en = '---\ndescription: "d"\n---\n\n# One\n\nbody\n\n## Two\n\nmore\n'
+    out = pipeline.translate_body(en, StubbornBackend())
+    _, body = frontmatter.split(out)
+    assert len(anchors.headings(body)) == 1  # 依然殘缺 —— gate 1 會擋
+    assert calls["n"] == pipeline.CHUNK_RETRIES

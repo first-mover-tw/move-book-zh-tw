@@ -697,3 +697,21 @@ def test_heading_suffix_error_single_heading_cases():
     assert ok("Loops", "Loops")  # 含小寫 verbatim = 未翻
     assert ok("迴圈", "Loops")  # 缺後綴
     assert ok("Loop stuff (Loops)", "Loops")  # 前綴未翻
+
+
+# --- 簡體偵測的詞級白名單：干/准 在特定詞裡是合法繁體 ---
+
+
+def test_simplified_chars_allows_gan_zhun_in_whitelisted_words():
+    """PR 3 實測：sonnet 輸出「若干差異」「收集批准」被 gate 8 決定性擋下，
+    但 干（若干/干擾）與 准（批准/准許）是合法繁體。字級豁免風險太高
+    （干=幹/乾、准=準 的簡體誤用極常見），改詞級白名單。"""
+    assert validate.simplified_chars("這裡有若干差異。\n") == []
+    assert validate.simplified_chars("必須收集批准。\n") == []
+    assert validate.simplified_chars("訊號干擾與獲准進入。\n") == []
+
+
+def test_simplified_chars_still_flags_bare_gan_zhun():
+    """白名單外的 干/准 仍攔：這正是它們的簡體誤用形態。"""
+    assert validate.simplified_chars("你在干什麼。\n")  # 干=幹 的簡體用法
+    assert validate.simplified_chars("瞄准目標。\n")  # 准=準 的簡體用法

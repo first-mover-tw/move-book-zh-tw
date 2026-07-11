@@ -12,6 +12,10 @@ def main() -> int:
     p.add_argument("--backend", default="claude", choices=["fake", "claude", "gemini"])
     p.add_argument("--apply", action="store_true", help="實際寫檔（預設 dry-run）")
     p.add_argument("--limit", type=int, default=0, help="只處理前 N 個檔案，0 為不限")
+    p.add_argument(
+        "--max-lines", type=int, default=pipeline.CHUNK_MAX_LINES,
+        help="翻譯 chunk 上限行數（長檔掉標題時可縮小）",
+    )
     p.add_argument("files", nargs="*")
     a = p.parse_args()
 
@@ -31,7 +35,7 @@ def main() -> int:
         print("沒有需要翻譯的檔案。")
         return 0
 
-    ok, failed = pipeline.run(paths, a.backend, a.english_ref, a.apply)
+    ok, failed = pipeline.run(paths, a.backend, a.english_ref, a.apply, a.max_lines)
     print(f"成功 {ok}，失敗 {len(failed)}")
     for path, errs in failed.items():
         print(f"  {path}: {'; '.join(errs)}", file=sys.stderr)
