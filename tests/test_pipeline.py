@@ -337,3 +337,70 @@ def test_run_a_tier_file_with_legacy_body_defects_succeeds():
     ok, failed = pipeline.run(["reference/constants.md"], "fake")
     assert failed == {}
     assert ok == 1
+
+
+# --- A 層 frontmatter 沿用優先於重算（與 anchor carry-forward 同原則） ---
+#
+# 實測（2026-07-11 第一次 apply）：47 檔中 53 個欄位「舊值已是中文、英文
+# 原文完全沒變」卻被整批重翻，損失既有審定術語（友元 (Friends) → 朋友）。
+
+
+class _ExplodingBackend:
+    def translate(self, text, *, kind="markdown"):
+        raise AssertionError(f"en 未變的欄位不得重翻: {text!r}")
+
+
+def test_rebuild_frontmatter_carries_translation_when_en_unchanged():
+    en = '---\ndescription: "Same."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "既有翻譯。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, _ExplodingBackend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "既有翻譯。"
+
+
+def test_rebuild_frontmatter_retranslates_when_en_changed():
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "新翻譯。"
+
+    prev_en = '---\ndescription: "Old."\n---\n\n# T\n\nText.\n'
+    en = '---\ndescription: "New."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "舊翻譯。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=prev_en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "新翻譯。"
+
+
+def test_rebuild_frontmatter_translates_when_prev_value_untranslated():
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "補上翻譯。"
+
+    en = '---\ndescription: "Same."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "Same."\n---\n\n# 標題 {#t}\n\n內文。\n'  # 未翻，沒有可沿用的
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "補上翻譯。"
+
+
+def test_rebuild_frontmatter_enforces_glossary_on_carried_value():
+    """沿用不是免檢：舊值帶違禁詞（5 檔實測）沿用時決定性修正。"""
+    en = '---\ndescription: "Loops."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "循環概念。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, _ExplodingBackend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈概念。"
+
+
+def test_rebuild_frontmatter_retranslates_when_carried_value_has_simplified():
+    """簡體無決定性修法：舊值帶簡體字就退回重翻，不沿用。"""
+
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "乾淨的新翻譯。"
+
+    en = '---\ndescription: "X."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "这是旧的。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "乾淨的新翻譯。"
