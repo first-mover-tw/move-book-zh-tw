@@ -471,3 +471,27 @@ def test_assemble_raises_when_heading_unrepairable():
 
     with pytest.raises(validate.ValidationError, match="未翻譯"):
         pipeline.assemble(en, "", "", StubbornBackend())
+
+
+def test_repair_headings_strips_anchor_suffix_like_the_judge():
+    """review F1：headings() 回傳的文字含 {#anchor}，判定（heading_suffix_error）
+    有剝、修復沒剝 → 前提漂移，anchor 字面量會被嵌進標題中段。修復必須與
+    判定同一前處理；backend 幻覺出的 anchor 在此丟棄（inject 才是 anchor
+    的唯一權威來源）。"""
+    zh = "## 迴圈 {#loops}\n"
+    en = "## Loops\n"
+    out = pipeline._repair_headings(zh, en, FakeBackend())
+    assert out.splitlines()[0] == "## 迴圈 (Loops)"
+
+    zh2 = "## 迴圈\n"
+    en2 = "## Loops {#loops}\n"
+    out2 = pipeline._repair_headings(zh2, en2, FakeBackend())
+    assert out2.splitlines()[0] == "## 迴圈 (Loops)"
+
+
+def test_repair_headings_skips_nested_headings():
+    """review F2：blockquote/list 容器內的標題整行替換會吃掉容器前綴，
+    讓 inject 的 NestedHeading fail-closed 失效。巢狀標題不修，交給 inject 炸。"""
+    zh = "> ## 迴圈\n"
+    en = "## Loops\n"
+    assert pipeline._repair_headings(zh, en, FakeBackend()) == zh

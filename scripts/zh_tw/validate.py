@@ -242,6 +242,7 @@ def _anchor_ids(text: str) -> set[str]:
 
 
 _ANCHOR_SUFFIX = re.compile(r"\s*\{#[\w-]+\}\s*$")
+ANCHOR_SUFFIX = _ANCHOR_SUFFIX  # 公開別名：pipeline._repair_headings 與判定同一前處理
 # 標題內的 inline code span。單行標題文字用簡單配對即可，不需要
 # glossary.protected_mask 的跨行/巢狀 backtick 處理。
 _HEADING_CODE_SPAN = re.compile(r"`[^`]*`")

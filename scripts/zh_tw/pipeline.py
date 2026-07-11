@@ -146,10 +146,19 @@ def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
 
     lines = zh_body.splitlines(keepends=True)
     for (start, end, level, markup), (_, zh_t), (_, en_t) in zip(spans, zh_h, en_h):
-        if markup not in ("#", "##", "###", "####", "#####", "######") and not markup.startswith("#"):
+        if not markup.startswith("#"):
             continue  # setext 標題（兩行）不在此修，交給 gate
         if end - start != 1:
             continue
+        # 巢狀（blockquote/list 內）標題不修：整行替換會吃掉容器前綴，
+        # 讓 inject 的 NestedHeading fail-closed 失效（review F2）。
+        if not lines[start].lstrip().startswith("#"):
+            continue
+        # 與判定（heading_suffix_error 內部）同一前處理：剝 {#anchor}。
+        # backend 幻覺出的 anchor 在此丟棄 —— inject 才是 anchor 的唯一
+        # 權威來源（review F1：不剝會把 anchor 字面量嵌進標題中段）。
+        zh_t = validate.ANCHOR_SUFFIX.sub("", zh_t)
+        en_t = validate.ANCHOR_SUFFIX.sub("", en_t)
         if validate.heading_suffix_error(zh_t, en_t) is None:
             continue
         en_clean = en_t.strip()
