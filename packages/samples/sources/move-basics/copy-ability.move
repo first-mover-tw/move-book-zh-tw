@@ -11,12 +11,16 @@ public struct Copyable has copy {}
 #[test] fun test_copy() {
 
 // ANCHOR: copyable_test
-let a = Copyable {}; // 允許，因為 Copyable 結構具有 `copy` 能力
-let b = a;   // `a` 被複製到 `b`
-let c = *&b; // 透過解引用運算子進行顯式複製
+let a = Copyable {};
 
-// Copyable 沒有 `drop` 能力，所以每個實例 (a、b 和 c) 必須
-// 被使用或顯式解構。`drop` 能力在下面說明。
+// `a` is copied into `b` implicitly - both are usable afterwards.
+let b = a;
+
+// The `copy` keyword makes the copy explicit.
+let c = copy a;
+
+// `Copyable` does not have the `drop` ability, so every instance -
+// `a`, `b`, and `c` - has to be used. Here, we unpack all of them.
 let Copyable {} = a;
 let Copyable {} = b;
 let Copyable {} = c;

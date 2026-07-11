@@ -6,14 +6,14 @@ module book::addr_vs_cap;
 public struct User has key, store { id: UID }
 
 // ANCHOR: with_address
-/// 未授權存取的錯誤代碼。
+/// Error code for unauthorized access.
 const ENotAuthorized: u64 = 0;
 
-/// 應用程式管理員位址。
+/// The application admin address.
 const APPLICATION_ADMIN: address = @0xa11ce;
 
-/// 在系統中建立新使用者。需要寄件者為應用程式
-/// 管理員。
+/// Creates a new user in the system. Requires the sender to be the application
+/// admin.
 public fun new(ctx: &mut TxContext): User {
     assert!(ctx.sender() == APPLICATION_ADMIN, ENotAuthorized);
     User { id: object::new(ctx) }

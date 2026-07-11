@@ -5,9 +5,9 @@
 // ANCHOR: module_two
 module book::module_two;
 
-use book::module_one; // 從同一套件匯入 module_one
+use book::module_one; // importing module_one from the same package
 
-/// 呼叫 `module_one` 模組中的 `new` 函式。
+/// Calls the `new` function from the `module_one` module.
 public fun create_and_ignore() {
     let _ = module_one::new();
 }

@@ -9,36 +9,47 @@ fun test_abort() {
 // ANCHOR: abort
 let user_has_access = false;
 
-// 如果 `user_has_access` 為 false，則以預定義常數中止
+// abort with a predefined constant if `user_has_access` is false
 if (!user_has_access) {
     abort 1
 };
 // ANCHOR_END: abort
 }
 
+#[test, expected_failure]
+fun test_clean_abort() {
+    // ANCHOR: clean_abort
+    // `abort` can also be used without an explicit abort code.
+    abort
+    // ANCHOR_END: clean_abort
+}
+
 #[test]
 fun show_assert() {
 let user_has_access = true;
 // ANCHOR: assert
-// 如果 `user_has_access` 為 `false`，則以中止碼 0 中止
+// aborts if `user_has_access` is `false` with abort code 0
 assert!(user_has_access, 0);
 
-// 展開為：
+// expands to:
 if (!user_has_access) {
     abort 0
 };
+
+// the abort code can be omitted
+assert!(user_has_access);
 // ANCHOR_END: assert
 }
 
 // ANCHOR: error_const
-/// 使用者無存取權限時的錯誤碼。
+/// Error code for when the user has no access.
 const ENoAccess: u64 = 0;
-/// 嘗試存取不存在的欄位。
+/// Trying to access a field that does not exist.
 const ENoField: u64 = 1;
 
-/// 更新一筆記錄。
+/// Updates a record.
 public fun update_record(/* ... , */ user_has_access: bool, field_exists: bool) {
-    // 現在 assert 會更容易閱讀
+    // asserts are way more readable now
     assert!(user_has_access, ENoAccess);
     assert!(field_exists, ENoField);
 
@@ -50,12 +61,12 @@ public struct User { is_authorized: bool, value: u64 }
 
 // ANCHOR: error_attribute
 #[error]
-const ENotAuthorized: vector<u8> = b"The user is not authorized to perform this action";
+const ENotAuthorized: vector<u8> = "The user is not authorized to perform this action";
 
 #[error]
-const EValueTooLow: vector<u8> = b"The value is too low, it should be at least 10";
+const EValueTooLow: vector<u8> = "The value is too low, it should be at least 10";
 
-/// 代表使用者執行操作。
+/// Performs an action on behalf of the user.
 public fun update_value(user: &mut User, value: u64) {
     assert!(user.is_authorized, ENotAuthorized);
     assert!(value >= 10, EValueTooLow);

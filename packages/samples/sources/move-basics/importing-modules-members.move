@@ -5,10 +5,10 @@
 // ANCHOR: members
 module book::more_imports;
 
-use book::module_one::new;       // 從 `module_one` 模組匯入 `new` 函式
-use book::module_one::Character; // 從 `module_one` 模組匯入 `Character` 結構
+use book::module_one::new;       // imports the `new` function from the `module_one` module
+use book::module_one::Character; // importing the `Character` struct from the `module_one` module
 
-/// 呼叫 `module_one` 模組中的 `new` 函式。
+/// Calls the `new` function from the `module_one` module.
 public fun create_character(): Character {
     new()
 }

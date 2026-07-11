@@ -3,41 +3,56 @@
 
 module book::witness_definition;
 
-// ANCHOR: definition
-/// Witness 的規範定義 - 一個具有 `drop` 能力的類型。
+/// Canonical definition of a witness - a type with the `drop` ability.
 public struct MyWitness has drop {}
-// ANCHOR_END: definition
 
 // ANCHOR: regulated_coin
-/// 一個可實現函式的自訂 RegulatedCoin 類型。
+/// A custom RegulatedCoin type with implementable functions.
 public struct RegulatedCoin<phantom T> has key {
     id: UID,
     value: u64
 }
 
-/// 受保護的函式 - 需要一個 Witness。
-/// 鑄造一個新的 `RegulatedCoin`，具有指定的值。
+/// Protected function - requires a Witness.
+/// Mints a new `RegulatedCoin` with the value.
 public fun mint<T: drop>(_: T, value: u64, ctx: &mut TxContext): RegulatedCoin<T> {
     RegulatedCoin { id: object::new(ctx), value }
 }
 
-/// 受保護的函式 - 需要一個 Witness。
-/// 銷毀 `RegulatedCoin` 並回傳其值。
+/// Protected function - requires a Witness.
+/// Burns the `RegulatedCoin` and returns the value.
 public fun burn<T: drop>(_: T, coin: RegulatedCoin<T>): u64 {
     let RegulatedCoin { id, value } = coin;
     id.delete();
     value
 }
 
-/// 受保護的函式 - 需要一個 Witness。
+/// Protected function - requires a Witness.
 public fun transfer<T: drop>(_: T, coin: RegulatedCoin<T>, to: address) {
     transfer::transfer(coin, to)
 }
 
-/// 公開 API - 不需要 Witness。
+/// Public API - does not require a Witness.
 public fun join<T>(coin: &mut RegulatedCoin<T>, other: RegulatedCoin<T>) {
     let RegulatedCoin { id, value } = other;
     coin.value = coin.value + value;
     id.delete();
 }
 // ANCHOR_END: regulated_coin
+
+#[test_only]
+use std::unit_test::assert_eq;
+
+#[test]
+fun test_regulated_coin() {
+    let ctx = &mut tx_context::dummy();
+
+    // The privileged functions require the `MyWitness` witness.
+    let mut coin = mint(MyWitness {}, 100, ctx);
+    let other = mint(MyWitness {}, 50, ctx);
+
+    // The public `join` function does not.
+    coin.join(other);
+
+    assert_eq!(burn(MyWitness {}, coin), 150);
+}

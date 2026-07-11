@@ -5,10 +5,10 @@
 // ANCHOR: self
 module book::self_imports;
 
-// 匯入 `Character` 結構和 `module_one` 模組
+// imports the `Character` struct, and the `module_one` module
 use book::module_one::{Self, Character};
 
-/// 呼叫 `module_one` 模組中的 `new` 函式。
+/// Calls the `new` function from the `module_one` module.
 public fun create_character(): Character {
     module_one::new()
 }

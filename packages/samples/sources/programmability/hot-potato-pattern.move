@@ -8,11 +8,11 @@ public struct Request {}
 // ANCHOR_END: definition
 
 // ANCHOR: new_request
-/// 構造新的 `Request`
+/// Constructs a new `Request`
 public fun new_request(): Request { Request {} }
 
-/// 解包 `Request`。由於熱馬鈴薯的性質，必須呼叫此函式
-/// 以避免交易中止。
+/// Unpacks the `Request`. Due to the nature of the hot potato, this function
+/// must be called to avoid aborting the transaction.
 public fun confirm_request(request: Request) {
     let Request {} = request;
 }
@@ -23,35 +23,35 @@ public fun confirm_request(request: Request) {
 module book::container_borrow {
 
 // ANCHOR: container_borrow
-/// 嘗試將值回傳至不正確的容器。
+/// Trying to return value to incorrect container.
 const ENotCorrectContainer: u64 = 0;
-/// 嘗試回傳不正確的值。
+/// Trying to return incorrect value.
 const ENotCorrectValue: u64 = 1;
 
-/// 任何具有 `key + store` 的物件的通用容器。Option 類型
-/// 用於允許取出和放回值。
+/// A generic container for any Object with `key + store`. The Option type
+/// is used to allow taking and putting the value back.
 public struct Container<T: key + store> has key {
     id: UID,
     value: Option<T>,
 }
 
-/// 用於確保回傳借用值的熱馬鈴薯結構。
+/// A Hot Potato struct that is used to ensure the borrowed value is returned.
 public struct Promise {
-    /// 借用物件的 ID。確保沒有發生值交換。
+    /// The ID of the borrowed object. Ensures that there wasn't a value swap.
     id: ID,
-    /// 容器的 ID。確保借用的值被回傳至
-    /// 正確的容器。
+    /// The ID of the container. Ensures that the borrowed value is returned to
+    /// the correct container.
     container_id: ID,
 }
 
-/// 允許從容器借用值的函式。
+/// A function that allows borrowing the value from the container.
 public fun borrow_val<T: key + store>(container: &mut Container<T>): (T, Promise) {
     let value = container.value.extract();
     let id = object::id(&value);
     (value, Promise { id, container_id: object::id(container) })
 }
 
-/// 將取出的項目放回容器。
+/// Put the taken item back into the container.
 public fun return_val<T: key + store>(
     container: &mut Container<T>, value: T, promise: Promise
 ) {
@@ -71,16 +71,16 @@ public struct USD has drop {}
 public struct BONUS has drop {}
 
 // ANCHOR: phone_shop
-/// 嘗試用不正確的 `BonusPoints` 或 `USD` 價格購買 `Phone`。
+/// Trying to purchase `Phone` with incorrect price of `BonusPoints` or `USD`.
 const ENotCorrectPrice: u64 = 0;
 
-/// 可在商店購買的 `Phone`。
+/// A `Phone`. Can be purchased in a store.
 public struct Phone has key, store { id: UID }
 
-/// 購買 `Phone` 必須支付的票據。
+/// A ticket that must be paid to purchase the `Phone`.
 public struct Ticket { amount: u64 }
 
-/// 回傳 `Phone` 和購買它必須支付的 `Ticket`。
+/// Return the `Phone` and the `Ticket` that must be paid to purchase it.
 public fun purchase_phone(ctx: &mut TxContext): (Phone, Ticket) {
     (
         Phone { id: object::new(ctx) },
@@ -88,18 +88,18 @@ public fun purchase_phone(ctx: &mut TxContext): (Phone, Ticket) {
     )
 }
 
-/// 客戶可以用 `BonusPoints` 支付 `Phone` 費用。
+/// The customer may pay for the `Phone` with `BonusPoints`.
 public fun pay_in_bonus_points(ticket: Ticket, payment: Coin<BONUS>) {
     let Ticket { amount } = ticket;
     assert!(payment.value() == amount, ENotCorrectPrice);
-    abort // 省略函式的其餘部分
+    abort // omitting the rest of the function
 }
 
-/// 客戶可以用 `USD` 支付 `Phone` 費用。
+/// The customer may pay for the `Phone` with `USD`.
 public fun pay_in_usd(ticket: Ticket, payment: Coin<USD>) {
     let Ticket { amount } = ticket;
     assert!(payment.value() == amount, ENotCorrectPrice);
-    abort // 省略函式的其餘部分
+    abort // omitting the rest of the function
 }
 // ANCHOR_END: phone_shop
 }

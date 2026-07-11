@@ -1,23 +1,23 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-/// 此模組包含一個回傳字串「Hello, World!」的函式。
+/// This module contains a function that returns a string "Hello, World!".
 module book::hello_world_docs;
 
 use std::string::String;
 
-/// 如名稱所說：回傳字串「Hello, World!」。
+/// As the name says: returns a string "Hello, World!".
 public fun hello_world(): String {
-    b"Hello, World!".to_string()
+    "Hello, World!"
 }
 
 #[test_only]
 use std::unit_test::assert_eq;
 
 #[test]
-/// 這是對 `hello_world` 函式的測試。
+/// This is a test for the `hello_world` function.
 fun test_is_hello_world() {
-    let expected = b"Hello, World!".to_string();
+    let expected: String = "Hello, World!";
     let actual = hello_world();
 
     assert_eq!(actual, expected);

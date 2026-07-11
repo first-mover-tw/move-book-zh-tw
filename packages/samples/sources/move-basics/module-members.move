@@ -5,18 +5,15 @@
 // ANCHOR: members
 module book::my_module_with_members;
 
-// 匯入
+// import - brings the `my_module` module into scope
 use book::my_module;
 
-// 一個常數
+// a constant - an immutable, module-private value
 const CONST: u8 = 0;
 
-// 一個結構
+// a struct - a custom data type
 public struct Struct {}
 
-// 方法別名
-public use fun function as Struct.struct_fun;
-
-// 函式
-fun function(_: &Struct) { /* function body */ }
+// a function - a unit of executable code
+fun function() { /* function body */ }
 // ANCHOR_END: members

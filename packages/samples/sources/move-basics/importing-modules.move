@@ -5,9 +5,9 @@
 // ANCHOR: module_one
 module book::module_one;
 
-/// 在同一模組中定義的結構。
+/// Struct defined in the same module.
 public struct Character has drop {}
 
-/// 建立新 `Character` 實例的簡單函式。
+/// Simple function that creates a new `Character` instance.
 public fun new(): Character { Character {} }
 // ANCHOR_END: module_one

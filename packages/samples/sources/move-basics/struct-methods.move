@@ -4,32 +4,32 @@
 // ANCHOR: hero
 module book::hero;
 
-/// 代表英雄的結構體。
+/// A struct representing a hero.
 public struct Hero has drop {
     health: u8,
     mana: u8,
 }
 
-/// 建立新的英雄。
+/// Create a new Hero.
 public fun new(): Hero { Hero { health: 100, mana: 100 } }
 
-/// 施放法術的方法，消耗法力值。
+/// A method which casts a spell, consuming mana.
 public fun heal_spell(hero: &mut Hero) {
     hero.health = hero.health + 10;
     hero.mana = hero.mana - 10;
 }
 
-/// 回傳英雄生命值的方法。
+/// A method which returns the health of the hero.
 public fun health(hero: &Hero): u8 { hero.health }
 
-/// 回傳英雄法力值的方法。
+/// A method which returns the mana of the hero.
 public fun mana(hero: &Hero): u8 { hero.mana }
 
 #[test_only]
 use std::unit_test::assert_eq;
 
 #[test]
-// 測試 `Hero` 結構體的方法。
+// Test the methods of the `Hero` struct.
 fun test_methods() {
     let mut hero = new();
     hero.heal_spell();

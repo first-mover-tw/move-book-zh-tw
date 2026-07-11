@@ -9,24 +9,24 @@ module book::named_address { /* ... */ }
 #[allow(unused_function, unused_const, unused_use)]
 // ANCHOR: members
 module book::my_block_module_with_members {
-    // 匯入
+    // import
     use book::my_module;
 
-    // 一個常數
+    // a constant
     const CONST: u8 = 0;
 
-    // 一個結構
+    // a struct
     public struct Struct {}
 
-    // 方法別名
+    // method alias
     public use fun function as Struct.struct_fun;
 
-    // 函式
+    // function
     fun function(_: &Struct) { /* function body */ }
 }
 
-// 模組區塊允許在同一檔案中定義多個模組，
-// 但這不是推薦的做法
+// module block allows multiple module definitions in the
+// same file but this is not a recommended practice
 module book::another_module_in_the_file {
     // ...
 }
