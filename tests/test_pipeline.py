@@ -90,22 +90,6 @@ def test_backend_dropping_heading_raises():
         pipeline.assemble(en, "", "", DroppingBackend())
 
 
-def test_assemble_raises_when_backend_drops_heading_suffix():
-    """Task 17 A/B 實測到的失效模式：真實 backend（sonnet）對 4/21 標題
-    掉了「中文 (English)」後綴、其中一個整個沒翻，八道 gate 全數放行。
-    gate 9 掛在 assemble 路徑上，這種輸出必須整份炸掉。"""
-    en = '---\ndescription: "d"\n---\n\n# One\n\n## Two\n'
-
-    class SuffixDroppingBackend:
-        def translate(self, text, *, kind="markdown"):
-            if kind == "text":
-                return "中文"
-            return "# 一 (One)\n\n## 二\n"  # 第二個標題掉後綴
-
-    with pytest.raises(validate.ValidationError, match="後綴"):
-        pipeline.assemble(en, "", "", SuffixDroppingBackend())
-
-
 def test_glossary_rewrites_function_term():
     en = '---\ndescription: "d"\n---\n\n# T\n'
 
@@ -406,3 +390,84 @@ def test_delta_lines_zero_for_identical_blobs():
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     assert pipeline._delta_lines(sha, sha) == 0
+
+
+# --- gate 9 的修復 pass：決定性補後綴 / 單標題重譯（enforce 與 gate 同進退） ---
+
+
+def test_repair_headings_appends_missing_suffix_without_backend():
+    class ExplodingBackend2:
+        def translate(self, text, *, kind="markdown"):
+            raise AssertionError("已翻譯只缺後綴的標題不得動用 backend")
+
+    zh = "# 中文標題\n\n內文。\n"
+    en = "# Title\n\nText.\n"
+    out = pipeline._repair_headings(zh, en, ExplodingBackend2())
+    assert "# 中文標題 (Title)\n" in out
+
+
+def test_repair_headings_strips_duplicated_trailing_parens():
+    """實測失效：「標籤與發布 (Tags and Releases) (Git)」直接補後綴會疊床架屋。"""
+    zh = "## 標籤與發布 (Tags and Releases) (Git)\n"
+    en = "## Tags and Releases (Git)\n"
+    out = pipeline._repair_headings(zh, en, FakeBackend())
+    assert out.splitlines()[0] == "## 標籤與發布 (Tags and Releases (Git))"
+
+
+def test_repair_headings_retranslates_verbatim_heading():
+    class HeadingBackend:
+        def translate(self, text, *, kind="markdown"):
+            assert kind == "heading"
+            return f"VecSet 集合 ({text})"
+
+    zh = "## VecSet\n\n內文。\n"
+    en = "## VecSet\n\nText.\n"
+    out = pipeline._repair_headings(zh, en, HeadingBackend())
+    assert out.splitlines()[0] == "## VecSet 集合 (VecSet)"
+
+
+def test_repair_headings_leaves_exempt_and_count_mismatch_alone():
+    class ExplodingBackend3:
+        def translate(self, text, *, kind="markdown"):
+            raise AssertionError("豁免標題不得動用 backend")
+
+    assert pipeline._repair_headings("# BCS\n", "# BCS\n", ExplodingBackend3()) == "# BCS\n"
+    # 數量不符：交給 gate 1，不修
+    zh = "# 一\n"
+    en = "# One\n\n## Two\n"
+    assert pipeline._repair_headings(zh, en, ExplodingBackend3()) == zh
+
+
+def test_assemble_repairs_suffix_dropping_backend():
+    """gate 9 擋的「掉後綴」是決定性可修：修復 pass 補上，assemble 成功。
+    （原 test_assemble_raises_when_backend_drops_heading_suffix 的失效輸入，
+    現在的正確結局是被修好而不是炸掉。）"""
+    en = '---\ndescription: "d"\n---\n\n# One\n\n## Two\n'
+
+    class SuffixDroppingBackend2:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            if kind == "heading":
+                return f"中文 ({text})"
+            return "# 一 (One)\n\n## 二\n"
+
+    out = pipeline.assemble(en, "", "", SuffixDroppingBackend2())
+    _, body = frontmatter.split(out)
+    assert "## 二 (Two)" in body
+
+
+def test_assemble_raises_when_heading_unrepairable():
+    """修復 pass 修不動（重譯仍 verbatim）時 gate 9 仍須擋下——修復不是放寬。"""
+    en = '---\ndescription: "d"\n---\n\n# Scopes\n'
+
+    class StubbornBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            if kind == "heading":
+                return text  # 重譯也 verbatim
+            return "# Scopes\n"
+
+    with pytest.raises(validate.ValidationError, match="未翻譯"):
+        pipeline.assemble(en, "", "", StubbornBackend())

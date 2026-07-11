@@ -3,6 +3,7 @@
 驗證失敗一律 raise，絕不寫檔。
 """
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -105,6 +106,8 @@ def assemble(
     _, prev_zh_body = frontmatter.split(prev_zh_text) if prev_zh_text else ({}, "")
     _, prev_en_body = frontmatter.split(prev_en_text) if prev_en_text else ({}, "")
 
+    # 標題修復在 anchor 注入之前（注入以最終標題文字為準）。
+    zh_body = _repair_headings(zh_body, en_body, backend)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -119,6 +122,54 @@ def assemble(
     for n in notes:
         print(f"  note: {n}")  # anchor 退役等資訊，警告但不阻斷
     return out
+
+
+_TRAILING_PAREN = re.compile(r"\s*[（(]([^()（）]*)[)）]\s*$")
+
+
+def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
+    """gate 9 缺陷的修復 pass（enforce 與 gate 同進退：gate 擋得住的、backend
+    又常犯的缺陷，必須有自動修復路徑，否則是結構性死鎖）。
+
+    - 已翻譯只缺「(English)」後綴 → 決定性補上（Model vs Code 分工：格式化
+      不指望 LLM）；先剝掉結尾與英文標題重複的括號組，避免疊床架屋。
+    - verbatim 未翻 → 單標題重譯（kind="heading"，短輸入可靠得多）。
+    - 修復候選仍過不了 heading_suffix_error 就保留原樣，交給 gate 9 擋。
+    - 標題數不符不修（by-index 配對不成立），交給 gate 1。
+    - 判定與 gate 9 共用 validate.heading_suffix_error（單一權威實作）。
+    """
+    zh_h = anchors.headings(zh_body)
+    en_h = anchors.headings(en_body)
+    spans = anchors._heading_spans(zh_body)
+    if len(zh_h) != len(en_h) or len(spans) != len(zh_h):
+        return zh_body
+
+    lines = zh_body.splitlines(keepends=True)
+    for (start, end, level, markup), (_, zh_t), (_, en_t) in zip(spans, zh_h, en_h):
+        if markup not in ("#", "##", "###", "####", "#####", "######") and not markup.startswith("#"):
+            continue  # setext 標題（兩行）不在此修，交給 gate
+        if end - start != 1:
+            continue
+        if validate.heading_suffix_error(zh_t, en_t) is None:
+            continue
+        en_clean = en_t.strip()
+        if validate.CJK.search(zh_t):
+            base_txt = zh_t.strip()
+            # 剝掉結尾與英文標題重複的括號組（「… (Tags and Releases) (Git)」）
+            while (m := _TRAILING_PAREN.search(base_txt)):
+                inner = m.group(1).strip()
+                stripped = base_txt[: m.start()].rstrip()
+                if inner and stripped and inner.lower() in en_clean.lower():
+                    base_txt = stripped
+                else:
+                    break
+            candidate = f"{base_txt} ({en_clean})"
+        else:
+            candidate = backend.translate(en_clean, kind="heading").strip()
+        if candidate and validate.heading_suffix_error(candidate, en_clean) is None:
+            ending = anchors._line_ending(lines[start])
+            lines[start] = f"{'#' * level} {candidate}{ending}"
+    return "".join(lines)
 
 
 def rebuild_frontmatter_only(

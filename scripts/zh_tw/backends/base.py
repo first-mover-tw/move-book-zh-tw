@@ -9,7 +9,13 @@ SYSTEM_PROMPT = (
     "保留所有 Markdown 結構、連結、圖片與程式碼區塊。\n"
     "不要翻譯程式碼本身，但要翻譯程式碼區塊內的註解。\n"
     "不要增加或刪除任何標題，標題數量必須與原文完全相同。\n"
-    "標題格式為「中文 (English)」，保留原文英文於括號內。\n"
+    "標題翻譯規則（違反任何一條整份重來）：\n"
+    "- 每個標題一律輸出「中文譯文 (英文原文)」，結尾括號內的英文原文必須"
+    "一字不差（含 inline code 反引號、大小寫、標點），不可改寫或翻譯括號內文字。\n"
+    "- 專有名詞或型別名稱的標題也要有中文前綴，例：「## Bag」→"
+    "「## Bag 通用容器 (Bag)」、「## Summary」→「## 總結 (Summary)」、"
+    "「## Running Tests」→「## 執行測試 (Running Tests)」。\n"
+    "- 只有全大寫縮寫標題（如 BCS）可原樣保留、不加括號。\n"
     f"{glossary.prompt_rules()}\n"
     "只回傳翻譯後的 Markdown，不要任何解釋。"
 )
@@ -28,11 +34,26 @@ TEXT_PROMPT = (
 )
 
 
+# kind="heading"（pipeline._repair_headings 的單標題重譯）專用：整份 markdown
+# prompt 下 sonnet 對「VecSet」這類型別名標題常 verbatim 不翻；單標題呼叫 +
+# 明確格式要求可靠得多。
+HEADING_PROMPT = (
+    "你是專業的技術文件翻譯者。請將以下文件標題翻譯成台灣繁體中文，"
+    "輸出格式必須是「中文譯文 (英文原文)」——結尾括號內放英文原文一字不差"
+    "（含 inline code 反引號、大小寫、標點）。\n"
+    "專有名詞或型別名稱也要有中文前綴，例：「Bag」→「Bag 通用容器 (Bag)」、"
+    "「Running Tests」→「執行測試 (Running Tests)」。\n"
+    f"{glossary.prompt_rules()}\n"
+    "只回傳結果，不要任何解釋、不要加引號。"
+)
+
+
 class Backend(Protocol):
-    """kind 的三個合法值與各自的 prompt 契約（新 backend 必須遵守三向分流）：
+    """kind 的四個合法值與各自的 prompt 契約（新 backend 必須遵守分流）：
 
     - "markdown"（預設）：chunk 內文，外包 SYSTEM_PROMPT。
     - "text"：frontmatter title/description 等裸短字串，外包 TEXT_PROMPT。
+    - "heading"：單一標題重譯（修復 pass），外包 HEADING_PROMPT。
     - "sidebar"：sidebar.translate 的 payload，**自帶** SIDEBAR_PROMPT 與
       編號清單 —— backend 不得再外包任何 prompt，否則兩層指令互相矛盾
       （TEXT_PROMPT「單一名詞必翻」vs SIDEBAR_PROMPT「專有名詞維持原文」），

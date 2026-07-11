@@ -12,6 +12,7 @@ from opencc import OpenCC
 from . import anchors, frontmatter, glossary
 
 _CJK = re.compile(r"[一-鿿]")
+CJK = _CJK  # 公開別名：pipeline 的沿用/修復判斷與 gate 4 用同一個 pattern
 #  anchor 字元集對齊 anchors.slugify() 的輸出字元集（\w 含 unicode，加上連字號）。
 # 舊版只允許 ASCII，中文衍生 slug（沒有明確 {#id} 的標題）的連結永遠比對不到，
 # 連 gate 5 的檢查都進不去，等於整批這種連結被靜默放行。
@@ -275,27 +276,33 @@ def check_heading_suffix(zh_text: str, en_text: str) -> list[str]:
 
     errs = []
     for i, ((_, zh_t), (_, en_t)) in enumerate(zip(zh_h, en_h)):
-        zh_t = _ANCHOR_SUFFIX.sub("", zh_t).strip()
-        en_t = _ANCHOR_SUFFIX.sub("", en_t).strip()
-        if zh_t == en_t:
-            if not re.search(r"[a-z]", _HEADING_CODE_SPAN.sub("", en_t)):
-                continue
-            errs.append(f"標題 {i} 未翻譯（verbatim 複製英文原文）: {zh_t!r}")
-            continue
-        want = f"({en_t})"
-        prefix = zh_t[: -len(want)].strip() if zh_t.endswith(want) else ""
-        if not prefix:
-            errs.append(
-                f"標題 {i} 缺「中文 (English)」後綴或後綴值不符: "
-                f"預期以 {want!r} 結尾, 實際 {zh_t!r}"
-            )
-        elif not _CJK.search(prefix) and re.search(
-            r"[a-z]", _HEADING_CODE_SPAN.sub("", prefix)
-        ):
-            # 後綴對了但前綴仍是英文散文 ——「記得格式、忘了翻譯」。
-            # 無 CJK 且無小寫的前綴（縮寫，如 BCS）合法，鏡射 verbatim 豁免。
-            errs.append(f"標題 {i} 前綴未翻譯: {zh_t!r}")
+        err = heading_suffix_error(zh_t, en_t)
+        if err:
+            errs.append(f"標題 {i} {err}")
     return errs
+
+
+def heading_suffix_error(zh_t: str, en_t: str) -> str | None:
+    """gate 9 的單標題判定。check_heading_suffix 的迴圈與
+    pipeline._repair_headings（修復 pass）共用這一份 —— 判定與修復若各自
+    實作，前提漂移就會重演 gate 6/inject 那次的死鎖家族。回 None = 合格。"""
+    zh_t = _ANCHOR_SUFFIX.sub("", zh_t).strip()
+    en_t = _ANCHOR_SUFFIX.sub("", en_t).strip()
+    if zh_t == en_t:
+        if not re.search(r"[a-z]", _HEADING_CODE_SPAN.sub("", en_t)):
+            return None
+        return f"未翻譯（verbatim 複製英文原文）: {zh_t!r}"
+    want = f"({en_t})"
+    prefix = zh_t[: -len(want)].strip() if zh_t.endswith(want) else ""
+    if not prefix:
+        return f"缺「中文 (English)」後綴或後綴值不符: 預期以 {want!r} 結尾, 實際 {zh_t!r}"
+    if not _CJK.search(prefix) and re.search(
+        r"[a-z]", _HEADING_CODE_SPAN.sub("", prefix)
+    ):
+        # 後綴對了但前綴仍是英文散文 ——「記得格式、忘了翻譯」。
+        # 無 CJK 且無小寫的前綴（縮寫，如 BCS）合法，鏡射 verbatim 豁免。
+        return f"前綴未翻譯: {zh_t!r}"
+    return None
 
 
 def check_links(files: dict[str, str]) -> list[str]:

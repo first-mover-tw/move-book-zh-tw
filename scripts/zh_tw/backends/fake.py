@@ -24,6 +24,10 @@ _NUMBERED_LINE = re.compile(r"^\s*(\d+)[.)]\s+(.+?)\s*$")
 
 class FakeBackend:
     def translate(self, text: str, *, kind: str = "markdown") -> str:
+        if kind == "heading":
+            # 模擬合規的單標題重譯：「中文 (English)」（真實 backend 被
+            # HEADING_PROMPT 要求這個格式，fake 也要 —— L5）。
+            return f"{self._substitute(text)} ({text})"
         if kind == "sidebar":
             numbered = [
                 (m.group(1), m.group(2))

@@ -3,7 +3,7 @@
 import os
 import time
 
-from .base import SYSTEM_PROMPT, TEXT_PROMPT
+from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 
 # 這份清單只驗證過在舊腳本裡沿用的 gemini-2.5-flash；
 # gemini-3.0-flash-preview / gemini-2.0-flash-exp 是未經確認的 preview/experimental
@@ -31,7 +31,7 @@ class GeminiBackend:
             # 同 claude_cli：sidebar payload 自帶完整指令，不外包。
             msg = text
         else:
-            system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
+            system = {"text": TEXT_PROMPT, "heading": HEADING_PROMPT}.get(kind, SYSTEM_PROMPT)
             msg = f"{system}\n\n要翻譯的內容：\n\n{text}"
         last: Exception | None = None
         for model in MODELS:

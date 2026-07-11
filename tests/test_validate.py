@@ -684,3 +684,16 @@ def test_check_file_reports_forbidden_word_in_frontmatter_value():
     en = '---\ndescription: "Loops."\n---\n\n# Loops\n'
     zh = '---\ndescription: "循環。"\n---\n\n# 迴圈 {#loops}\n'
     assert any("循環" in e for e in validate.check_file(zh, en))
+
+
+# --- heading_suffix_error：gate 9 的單標題判定（與修復 pass 共用） ---
+
+
+def test_heading_suffix_error_single_heading_cases():
+    ok = validate.heading_suffix_error
+    assert ok("迴圈 (Loops)", "Loops") is None
+    assert ok("BCS", "BCS") is None  # 無小寫豁免
+    assert ok("`copy`", "`copy`") is None  # code span 剝除後無小寫
+    assert ok("Loops", "Loops")  # 含小寫 verbatim = 未翻
+    assert ok("迴圈", "Loops")  # 缺後綴
+    assert ok("Loop stuff (Loops)", "Loops")  # 前綴未翻
