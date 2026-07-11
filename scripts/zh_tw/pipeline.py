@@ -323,6 +323,20 @@ def rebuild_frontmatter_only(
     return out
 
 
+def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
+    """merge-on-save：save 前重新載入 on-disk manifest，只套用本行程處理過
+    的路徑。兩個 apply 行程平行跑時，整檔覆寫會讓後結束者用啟動時的舊
+    快照洗掉先結束者的紀錄（PR 5 實測：2 檔 provenance 回退、被誤判
+    stale，重跑會覆蓋已 merge 的好譯文）。"""
+    fresh = manifest.load()
+    for path in touched:
+        if path in m:
+            fresh[path] = m[path]
+        else:
+            fresh.pop(path, None)
+    manifest.save(fresh)
+
+
 def run(
     paths: list[str],
     backend_name: str,
@@ -333,6 +347,7 @@ def run(
     backend = base.get(backend_name)
     m = manifest.load()
     ok, failed = 0, {}
+    touched: set[str] = set()
 
     for path in paths:
         en = _show(en_ref, path)
@@ -356,8 +371,9 @@ def run(
             Path(path).parent.mkdir(parents=True, exist_ok=True)
             Path(path).write_text(out, encoding="utf-8")
             manifest.record(m, path, en_ref)
+            touched.add(path)
         ok += 1
 
     if apply:
-        manifest.save(m)
+        _save_manifest_updates(m, touched)
     return ok, failed

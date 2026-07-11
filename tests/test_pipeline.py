@@ -718,3 +718,33 @@ def test_repair_headings_retries_llm_path():
     out = pipeline._repair_headings("## Abort\n", "## Abort\n", FlakyHeadingBackend())
     assert out.splitlines()[0] == "## 中止 (Abort)"
     assert calls["n"] == 2
+
+
+def test_run_apply_saves_only_own_updates(tmp_path, monkeypatch):
+    """PR 5 實測的 manifest 競態：兩個 apply 行程平行跑，後結束者用啟動時
+    載入的舊快照整檔覆寫，把先結束者剛記錄的 provenance 洗掉（2 檔被誤判
+    stale，重跑會覆蓋已 merge 的好譯文）。run() 必須在 save 前重新載入
+    on-disk 狀態、只套用自己處理過的路徑。"""
+    import json
+
+    from scripts.zh_tw import manifest as mf
+
+    tmp_manifest = tmp_path / "translation-manifest.json"
+    tmp_manifest.write_text(json.dumps({"other/path.md": "aaa"}), encoding="utf-8")
+    monkeypatch.setattr(mf, "MANIFEST_PATH", tmp_manifest)
+
+    m = mf.load()  # 模擬本行程啟動時載入
+    # 模擬另一個行程在我們執行期間寫入了新紀錄
+    tmp_manifest.write_text(
+        json.dumps({"other/path.md": "aaa", "their/new.md": "bbb"}), encoding="utf-8"
+    )
+    # 本行程記錄自己的檔案後 save
+    m["mine/file.md"] = "ccc"
+    pipeline._save_manifest_updates(m, {"mine/file.md"})
+
+    final = json.loads(tmp_manifest.read_text(encoding="utf-8"))
+    assert final == {
+        "other/path.md": "aaa",
+        "their/new.md": "bbb",  # 別的行程的紀錄不得被洗掉
+        "mine/file.md": "ccc",
+    }
