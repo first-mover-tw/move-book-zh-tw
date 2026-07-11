@@ -76,7 +76,9 @@ def translate_body(en_text: str, backend: base.Backend, max_lines: int = CHUNK_M
     zh_meta = dict(en_meta)
     for key in frontmatter.TRANSLATABLE_KEYS & set(en_meta):
         if isinstance(en_meta[key], str):
-            zh_meta[key] = backend.translate(en_meta[key], kind="text").strip()
+            # enforce 與 check_frontmatter 的值掃描同進退：backend 翻出違禁詞
+            # 是決定性可修的，炸掉會把 B 路徑變成無自動出路的死鎖。
+            zh_meta[key] = glossary.enforce(backend.translate(en_meta[key], kind="text").strip())
     return frontmatter.join(zh_meta, zh_body)
 
 
@@ -116,15 +118,20 @@ def assemble(
 
 
 def rebuild_frontmatter_only(en_text: str, zh_text: str, backend: base.Backend) -> str:
-    """A 層：內文原封不動，只接管上游 frontmatter。"""
+    """A 層：內文原封不動，只接管上游 frontmatter。
+
+    寫檔 gate 只涵蓋本函式生成的部分（結構 + frontmatter）：body 是 legacy
+    舊譯文，拿它的既有違禁詞/簡體當否決會讓 A 層檔 hard-fail 且無自動修復
+    路徑（body 不重譯、tier 也不會降級）——與 tier 只看 check_structure
+    （spec §五）是同一組設計，兩邊一起改才不會死鎖。"""
     en_meta, _ = frontmatter.split(en_text)
     _, zh_body = frontmatter.split(zh_text)
     zh_meta = dict(en_meta)
     for key in frontmatter.TRANSLATABLE_KEYS & set(en_meta):
         if isinstance(en_meta[key], str):
-            zh_meta[key] = backend.translate(en_meta[key], kind="text").strip()
+            zh_meta[key] = glossary.enforce(backend.translate(en_meta[key], kind="text").strip())
     out = frontmatter.join(zh_meta, zh_body)
-    errs = validate.check_file(out, en_text)
+    errs = validate.check_structure(out, en_text) + validate.check_frontmatter(out, en_text)
     if errs:
         raise validate.ValidationError("; ".join(errs))
     return out

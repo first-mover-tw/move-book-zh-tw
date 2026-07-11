@@ -239,14 +239,100 @@ def test_run_validation_error_on_one_file_does_not_stop_others():
     assert ok == 1
 
 
+def _tier_fixture(path):
+    """回傳 (zh@HEAD, en@merge-base)，供測試斷言前置條件仍成立——
+    避免 repo 狀態改變後測試變 vacuous（宣稱的缺陷早已不存在卻照樣綠）。"""
+    import subprocess
+
+    zh = subprocess.run(
+        ["git", "show", f"HEAD:{path}"], capture_output=True, text=True, check=True
+    ).stdout
+    en = subprocess.run(
+        ["git", "show", f"{pipeline.MERGE_BASE}:{path}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return zh, en
+
+
 def test_tier_a_when_only_frontmatter_untranslated():
     """reference/coding-conventions.md：結構一致、delta ≤ 6，唯一缺陷是
     description 未翻 —— 正是 A 層 backfill 要修的東西，不得當降級理由
     （spec §五：A 層前提只看 validate 第 1、2 條）。"""
+    zh, en = _tier_fixture("reference/coding-conventions.md")
+    assert validate.check_structure(zh, en) == []  # 前置：結構一致
+    assert validate.check_file(zh, en)  # 前置：全量 gate 仍有缺陷，測試沒有空轉
     assert pipeline.tier("reference/coding-conventions.md") == "A"
 
 
 def test_tier_a_when_only_body_forbidden_words():
     """reference/constants.md：結構一致，內文帶違禁詞「循環」。內文品質
     缺陷不在 validate 第 1、2 條，不構成降級。"""
+    zh, en = _tier_fixture("reference/constants.md")
+    assert validate.check_structure(zh, en) == []
+    assert any("違禁詞" in e for e in validate.check_file(zh, en))
     assert pipeline.tier("reference/constants.md") == "A"
+
+
+def test_rebuild_frontmatter_only_ignores_legacy_body_defects():
+    """dual-review blocker：A 層檔帶 legacy body 違禁詞時，改前會 hard-fail
+    且無任何自動修復路徑（body 不重譯、tier 又不降級）。body 既有債務
+    不當寫檔否決（比照 gate 9 先例），留待人工/後續 PR。"""
+    en = '---\ndescription: "Constants."\n---\n\n# Constants\n\nText.\n'
+    zh = '---\ndescription: "常數。"\n---\n\n# 常數 {#constants}\n\n這段有循環。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, FakeBackend())
+    _, body = frontmatter.split(out)
+    assert "循環" in body  # body 原封不動，含缺陷
+
+
+def test_rebuild_frontmatter_only_enforces_glossary_on_values():
+    """backend 新翻的 frontmatter 值帶違禁詞 → 決定性修正，不是炸掉
+    （loops.md 的 title 就是「循環」，真實 backend 高機率重現）。"""
+
+    class LoopyBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "循環"
+
+    en = '---\ndescription: "Loops."\n---\n\n# Loops\n\nText.\n'
+    zh = '---\ndescription: "舊。"\n---\n\n# 迴圈 {#loops}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, LoopyBackend())
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈"
+
+
+def test_rebuild_frontmatter_only_rejects_simplified_in_values():
+    """簡體字沒有決定性修法（OpenCC 例外表風險），值裡出現就必須炸掉。"""
+
+    class SimplifiedBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "这是简体"
+
+    en = '---\ndescription: "X."\n---\n\n# X\n\nText.\n'
+    zh = '---\ndescription: "舊。"\n---\n\n# 某 {#x}\n\n內文。\n'
+    with pytest.raises(validate.ValidationError):
+        pipeline.rebuild_frontmatter_only(en, zh, SimplifiedBackend())
+
+
+def test_translate_body_enforces_glossary_on_values():
+    """B 路徑同款漏洞：值翻譯沒過 glossary.enforce，check_file 補上值掃描後
+    會變成 B 路徑的 deadlock —— enforce 與 gate 必須同進退。"""
+
+    class LoopyBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "循環"
+            return "中文內文。\n"
+
+    en = '---\ndescription: "Loops."\n---\n\nBody.\n'
+    out = pipeline.translate_body(en, LoopyBackend())
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈"
+
+
+def test_run_a_tier_file_with_legacy_body_defects_succeeds():
+    """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
+    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。"""
+    ok, failed = pipeline.run(["reference/constants.md"], "fake")
+    assert failed == {}
+    assert ok == 1

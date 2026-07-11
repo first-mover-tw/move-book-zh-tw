@@ -659,3 +659,28 @@ def test_check_structure_flags_heading_and_fence_mismatch():
     errs = validate.check_structure(zh, en)
     assert any("標題層級序列" in e for e in errs)
     assert any("fence" in e for e in errs)
+
+
+# --- A 路徑寫檔 gate：check_frontmatter（gate 3/4 + 新翻值的品質掃描） ---
+
+
+def test_check_frontmatter_scans_translated_values():
+    """frontmatter 值是管線新生成的內容，違禁詞/簡體必須被抓
+    （實測 5 個現有檔的 description/title 帶違禁詞流出，body-only 掃描是漏洞）。"""
+    en = '---\ndescription: "Loops."\ntitle: "Loops"\n---\n\n# Loops\n'
+    zh = '---\ndescription: "循環結構。"\ntitle: "循環"\n---\n\n# 迴圈 {#loops}\n'
+    errs = validate.check_frontmatter(zh, en)
+    assert any("循環" in e for e in errs)
+
+
+def test_check_frontmatter_ignores_legacy_body():
+    """A 層 body 是 legacy 舊譯文，其既有債務不歸 check_frontmatter 管。"""
+    en = '---\ndescription: "C."\n---\n\n# C\n\nText.\n'
+    zh = '---\ndescription: "常數。"\n---\n\n# 常數 {#c}\n\n這段有循環。\n'
+    assert validate.check_frontmatter(zh, en) == []
+
+
+def test_check_file_reports_forbidden_word_in_frontmatter_value():
+    en = '---\ndescription: "Loops."\n---\n\n# Loops\n'
+    zh = '---\ndescription: "循環。"\n---\n\n# 迴圈 {#loops}\n'
+    assert any("循環" in e for e in validate.check_file(zh, en))
