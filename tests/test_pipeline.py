@@ -636,3 +636,13 @@ def test_repair_fence_comments_keeps_original_when_reply_lacks_cjk():
     zh = "```move\n// create a new instance\n```\n"
     out = pipeline._repair_fence_comments(zh, BadBackend())
     assert "// create a new instance" in out  # 壞回覆 → 保留原文
+
+
+def test_repair_fence_comments_skips_move_attributes():
+    """`#[test] // ...` 的 `#` 開頭是 Move 屬性不是註解 —— 送去翻譯若回覆
+    含 CJK 會直接把屬性行改壞（編譯層級的損毀）。屬性行整行跳過；其行內
+    // 註解的翻譯由 chunk 翻譯本身負責。"""
+    b = _CommentBackend()
+    zh = "```move\n#[test] // will fail to compile\n#[test_only]\n```\n"
+    assert pipeline._repair_fence_comments(zh, b) == zh
+    assert b.calls == []

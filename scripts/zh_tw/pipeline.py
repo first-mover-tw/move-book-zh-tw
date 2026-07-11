@@ -206,7 +206,9 @@ def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
     return "".join(lines)
 
 
-_CODE_COMMENT = re.compile(r"^(\s*(?://|///|#)\s*)(.+?)(\s*)$")
+# `#(?!\[)`：`#[test]` 是 Move 屬性不是註解，送翻譯會把屬性行改壞（編譯
+# 層級損毀）；屬性行的行內 // 註解由 chunk 翻譯本身負責。
+_CODE_COMMENT = re.compile(r"^(\s*(?://+|#(?!\[))\s*)(.+?)(\s*)$")
 _COMMENT_SKIP = re.compile(r"ANCHOR|highlight|prettier-ignore|noqa|docs::")
 _LATIN_PROSE = re.compile(r"[a-z]{2,}")
 
