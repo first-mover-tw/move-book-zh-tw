@@ -166,7 +166,7 @@ _SUFFIX = re.compile(r"\([^()]+\)\s*$")
 
 @pytest.mark.parametrize("path", ["book/sidebar.yml", "reference/sidebar.yml"])
 def test_translate_real_sidebar_with_fake_backend_has_no_non_conforming_labels(path):
-    """FakeBackend（Task 14 修正後：kind="text" + 編號清單分支會產出
+    """FakeBackend（Task 14 修正後：kind="sidebar" 編號清單分支會產出
     「中文 (English)」格式）是 sidebar 呼叫路徑上真正會被 pipeline 用到的
     fake（見 test_pipeline.test_run_routes_sidebar_through_sidebar_module_
     not_markdown），必須直接驗證用它跑真實 sidebar 資料時，輸出裡每個
@@ -478,3 +478,19 @@ def test_validate_new_label_format_raises_on_mixed_batch():
     pairs = [("New Label", "全新標籤"), ("Another New", "另一個 (Another New)")]
     with pytest.raises(ValueError):
         sidebar._validate_new_label_format(pairs)
+
+
+def test_sidebar_translate_sends_kind_sidebar():
+    """payload 自帶 SIDEBAR_PROMPT，必須以 kind="sidebar" 呼叫 backend，
+    否則真實 backend 會再外包 TEXT_PROMPT，指令互相矛盾。"""
+    captured = {}
+
+    class CapturingBackend:
+        def translate(self, text, *, kind="markdown"):
+            captured["kind"] = kind
+            m = re.findall(r"^\s*(\d+)[.)]\s+(.+?)\s*$", text, re.M)
+            return "\n".join(f"{i}. 中文 ({label})" for i, label in m)
+
+    en = 'items:\n  - label: "Alpha"\n    href: /a\n'
+    sidebar.translate(en, "", CapturingBackend())
+    assert captured["kind"] == "sidebar"

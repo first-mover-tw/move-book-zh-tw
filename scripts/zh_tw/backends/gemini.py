@@ -27,8 +27,12 @@ class GeminiBackend:
         self._client = genai.Client(api_key=key)
 
     def translate(self, text: str, *, kind: str = "markdown") -> str:
-        system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
-        msg = f"{system}\n\n要翻譯的內容：\n\n{text}"
+        if kind == "sidebar":
+            # 同 claude_cli：sidebar payload 自帶完整指令，不外包。
+            msg = text
+        else:
+            system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
+            msg = f"{system}\n\n要翻譯的內容：\n\n{text}"
         last: Exception | None = None
         for model in MODELS:
             for attempt in range(MAX_RETRIES):

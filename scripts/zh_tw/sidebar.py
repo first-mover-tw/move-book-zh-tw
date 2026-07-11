@@ -202,16 +202,16 @@ def translate(en_text: str, prev_zh_text: str, backend: Backend) -> str:
 
     todo = [l for l in en_labels if l not in carried]
     if todo:
-        # kind="text" 的真實 backend（claude_cli/gemini）已經在自己內部把
-        # SYSTEM_PROMPT 包在文字外面（見 backends/claude_cli.py、gemini.py），
-        # 但那是給 Markdown 用的通用 prompt，沒有交代 sidebar 特有的格式
-        # 要求（保留編號、保留「中文 (English)」括號、專有名詞不譯）。
-        # 把 SIDEBAR_PROMPT 當成一段「編號區塊之前」的說明文字接上去 ——
-        # 純文字不會被 _parse_numbered 的 `^\s*\d+[.)]\s` 誤判成翻譯結果，
-        # 所以不會重演 Deviation 2 那次把說明文字也編號、搞壞解析的問題。
+        # payload 自帶 SIDEBAR_PROMPT（sidebar 特有格式要求：保留編號、
+        # 「中文 (English)」括號、專有名詞不譯），所以用 kind="sidebar"
+        # 告訴 backend 不要再外包任何通用 prompt —— kind="text" 會被包
+        # TEXT_PROMPT，其「單一名詞也必須翻」與這裡的「專有名詞維持原文」
+        # 互相矛盾。SIDEBAR_PROMPT 是「編號區塊之前」的說明文字，不會被
+        # _parse_numbered 的 `^\s*\d+[.)]\s` 誤判成翻譯結果，所以不會
+        # 重演 Deviation 2 那次把說明文字也編號、搞壞解析的問題。
         numbered = "\n".join(f"{i + 1}. {l}" for i, l in enumerate(todo))
         payload = f"{SIDEBAR_PROMPT}\n\n{numbered}"
-        raw = backend.translate(payload, kind="text")
+        raw = backend.translate(payload, kind="sidebar")
         new_pairs = list(zip(todo, _parse_numbered(raw, len(todo))))
         _validate_new_label_format(new_pairs)
         for src, dst in new_pairs:
