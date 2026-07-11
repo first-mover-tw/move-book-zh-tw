@@ -6,16 +6,17 @@ permissions:
 
 on:
   push:
-    branches:
-      - english-main
+    branches: [english-main]
   schedule:
-    - cron: "0 2 * * *"  # Daily at 02:00 UTC
+    - cron: "0 2 * * *" # Daily at 02:00 UTC
   workflow_dispatch:
+
+env:
+  BATCH_SIZE: "5"
 
 jobs:
   translate:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout zh-tw-main
         uses: actions/checkout@v4
@@ -26,67 +27,69 @@ jobs:
       - name: Fetch english-main
         run: git fetch origin english-main
 
+      # Setup MUST precede Detect. The old order ran --detect before pip install,
+      # so the module import failed, 2>/dev/null || true swallowed it, COUNT became
+      # 0, and the job went green while translating nothing for five months.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
+
       - name: Detect files needing translation
         id: detect
         run: |
-          CHANGED=$(python scripts/translate_to_zh_tw.py --detect --english-ref origin/english-main 2>/dev/null || true)
-          echo "Changed files:"
-          echo "$CHANGED"
-          COUNT=$(echo "$CHANGED" | grep -c . || true)
+          set -euo pipefail   # a failing detect must turn the job red, not silently report 0
+          python -m scripts.zh_tw --detect --english-ref origin/english-main \
+            | head -n "$BATCH_SIZE" > /tmp/changed_files.txt
+          COUNT=$(grep -c . /tmp/changed_files.txt || true)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "$CHANGED" > /tmp/changed_files.txt
-
-      - name: Checkout english source files
-        if: steps.detect.outputs.count != '0'
-        run: |
-          # Only checkout the files we will actually translate (first 5)
-          head -5 /tmp/changed_files.txt | while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            git checkout origin/english-main -- "$file" 2>/dev/null || true
-          done
+          echo "Will translate $COUNT file(s):"
+          cat /tmp/changed_files.txt
 
       - name: Skip if no changes
         if: steps.detect.outputs.count == '0'
-        run: echo "No changed .md files, skipping translation."
+        run: echo "No stale files, skipping."
 
-      - name: Setup Python
-        if: steps.detect.outputs.count != '0'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        if: steps.detect.outputs.count != '0'
-        run: pip install google-genai
-
-      - name: Translate changed files
+      - name: Translate
         if: steps.detect.outputs.count != '0'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          cat /tmp/changed_files.txt | head -5 | xargs python scripts/translate_to_zh_tw.py --batch-size 5 --sleep 20
+          set -euo pipefail
+          xargs -a /tmp/changed_files.txt \
+            python -m scripts.zh_tw --backend gemini \
+              --english-ref origin/english-main --apply
+
+      - name: Validate before commit
+        if: steps.detect.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          python -m scripts.zh_tw.check_repo
 
       - name: Commit and push
         if: steps.detect.outputs.count != '0'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B auto/zh-tw-update
+          BRANCH="auto/zh-tw-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
           git add scripts/translation-manifest.json
-          git add $(cat /tmp/changed_files.txt | head -5)
+          xargs -a /tmp/changed_files.txt git add --
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Auto update zh-TW translations (Gemini)"
-          git push -f origin auto/zh-tw-update
+          git push origin "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Open PR into zh-tw-main
-        if: steps.detect.outputs.count != '0'
+        if: steps.detect.outputs.count != '0' && env.BRANCH != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --base zh-tw-main \
-            --head auto/zh-tw-update \
+          gh pr create --base zh-tw-main --head "$BRANCH" \
             --title "Update zh-TW translations (Gemini)" \
-            --body "自動翻譯 english-main 上變動的 Markdown 檔案為繁體中文。請檢查術語與翻譯品質後再合併。" \
-            || echo "PR already exists or no changes"
+            --body "自動翻譯 english-main 上變動的 Markdown 檔案。已通過 check_repo。請檢查術語與翻譯品質後再合併。"
