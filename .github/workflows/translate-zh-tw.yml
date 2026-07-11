@@ -5,10 +5,13 @@ permissions:
   pull-requests: write
 
 on:
+  # No schedule: the backfill model (Claude vs Gemini) is a human decision made
+  # via a local A/B, so this workflow runs only when a human dispatches it or
+  # english-main is pushed. Restore the daily cron once the model is chosen:
+  #   schedule:
+  #     - cron: "0 2 * * *"  # Daily at 02:00 UTC
   push:
     branches: [english-main]
-  schedule:
-    - cron: "0 2 * * *" # Daily at 02:00 UTC
   workflow_dispatch:
 
 env:
