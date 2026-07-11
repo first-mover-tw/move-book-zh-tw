@@ -214,7 +214,13 @@ def check_links(files: dict[str, str]) -> list[str]:
     errs = []
     for path, content in files.items():
         _, body = frontmatter.split(content)
-        for target, anchor in _LINK.findall(body):
+        # 與 gate 8 相同：code（fence / 縮排 / inline span）內的連結是範例
+        # 文字，不是真連結，先遮蔽再掃，否則假陽性會擋寫檔。
+        mask = glossary.protected_mask(body)
+        for m in _LINK.finditer(body):
+            if mask[m.start()]:
+                continue
+            target, anchor = m.group(1), m.group(2)
             target = target.split("?")[0]  # 剝掉 ?highlight=native 這類 query string
             if target == "":
                 tgt = path

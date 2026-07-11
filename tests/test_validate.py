@@ -120,6 +120,34 @@ def test_check_links_derived_slug_dedup_matches_inject():
     assert validate.check_links(files) == []
 
 
+def test_check_links_ignores_links_inside_fenced_code_block():
+    """gate 5 掃連結前必須先遮蔽 code（比照 gate 8）：fence 內的
+    [x](./foo#bar) 是範例文字，不是真連結，不遮蔽會產生假陽性擋寫檔。"""
+    files = {
+        "book/a.md": "# A {#a}\n\n```md\n[x](./nonexistent#bar)\n```\n"
+    }
+    assert validate.check_links(files) == []
+
+
+def test_check_links_ignores_links_inside_inline_code_span():
+    files = {
+        "book/a.md": "# A {#a}\n\n寫成 `[x](./nonexistent#bar)` 這樣。\n"
+    }
+    assert validate.check_links(files) == []
+
+
+def test_check_links_still_checks_prose_link_next_to_code_block():
+    """遮蔽只能吃掉 code 內的連結；同一檔散文裡的壞連結仍要報。"""
+    files = {
+        "book/a.md": (
+            "# A {#a}\n\n```md\n[x](./nonexistent#bar)\n```\n\n[real](./b#missing)\n"
+        ),
+        "book/b.md": "# B {#target}\n",
+    }
+    errs = validate.check_links(files)
+    assert len(errs) == 1 and "missing" in errs[0]
+
+
 # --- Finding 2 / gate 6: anchor reassignment, not just disappearance ---
 
 
