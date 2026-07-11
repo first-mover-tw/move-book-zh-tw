@@ -3,6 +3,7 @@
 驗證失敗一律 raise，絕不寫檔。
 """
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -72,9 +73,39 @@ def tier(path: str, en_ref: str = "english-main") -> str:
     return "A"
 
 
+CHUNK_RETRIES = 3
+
+
+def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
+    """單一 chunk 翻譯，標題層級序列不符就地重試（PR 3 診斷：sonnet 對長檔
+    穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
+    定位到小範圍）。重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋，
+    fail-closed 不變 —— 這裡是自動修復路徑，不是放寬。"""
+    # 驗 gate 1+2 兩個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
+    # 標題照過，join 後卻把下一個 chunk 的標題吞進未閉合 fence（L7 實錄：
+    # variables.md 21→19，單獨翻每個 chunk 都正常）。
+    want = [lv for lv, _ in anchors.headings(chunk_text)]
+    want_fences = anchors.fence_lines(chunk_text)
+    out = ""
+    for _ in range(CHUNK_RETRIES):
+        out = backend.translate(chunk_text)
+        try:
+            ok = (
+                [lv for lv, _ in anchors.headings(out)] == want
+                and anchors.fence_lines(out) == want_fences
+            )
+        except anchors.FrontmatterPassedIn:
+            # backend 幻覺出 YAML frontmatter —— 正是重試該吸收的垃圾輸出，
+            # 不能讓例外逃出去炸掉整檔（review F1）。
+            ok = False
+        if ok:
+            return out
+    return out
+
+
 def translate_body(en_text: str, backend: base.Backend, max_lines: int = CHUNK_MAX_LINES) -> str:
     en_meta, en_body = frontmatter.split(en_text)
-    zh_chunks = [backend.translate(c) for c in chunking.chunk(en_body, max_lines)]
+    zh_chunks = [_translate_chunk(c, backend) for c in chunking.chunk(en_body, max_lines)]
     zh_body = chunking.join(zh_chunks)
 
     zh_meta = dict(en_meta)
@@ -105,6 +136,9 @@ def assemble(
     _, prev_zh_body = frontmatter.split(prev_zh_text) if prev_zh_text else ({}, "")
     _, prev_en_body = frontmatter.split(prev_en_text) if prev_en_text else ({}, "")
 
+    # 標題修復在 anchor 注入之前（注入以最終標題文字為準）。
+    zh_body = _repair_headings(zh_body, en_body, backend)
+    zh_body = _repair_fence_comments(zh_body, backend)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -119,6 +153,129 @@ def assemble(
     for n in notes:
         print(f"  note: {n}")  # anchor 退役等資訊，警告但不阻斷
     return out
+
+
+_TRAILING_PAREN = re.compile(r"\s*[（(]([^()（）]*)[)）]\s*$")
+
+
+def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
+    """gate 9 缺陷的修復 pass（enforce 與 gate 同進退：gate 擋得住的、backend
+    又常犯的缺陷，必須有自動修復路徑，否則是結構性死鎖）。
+
+    - 已翻譯只缺「(English)」後綴 → 決定性補上（Model vs Code 分工：格式化
+      不指望 LLM）；先剝掉結尾與英文標題重複的括號組，避免疊床架屋。
+    - verbatim 未翻 → 單標題重譯（kind="heading"，短輸入可靠得多）。
+    - 修復候選仍過不了 heading_suffix_error 就保留原樣，交給 gate 9 擋。
+    - 標題數不符不修（by-index 配對不成立），交給 gate 1。
+    - 判定與 gate 9 共用 validate.heading_suffix_error（單一權威實作）。
+    """
+    zh_h = anchors.headings(zh_body)
+    en_h = anchors.headings(en_body)
+    spans = anchors._heading_spans(zh_body)
+    if len(zh_h) != len(en_h) or len(spans) != len(zh_h):
+        return zh_body
+
+    lines = zh_body.splitlines(keepends=True)
+    for (start, end, level, markup), (_, zh_t), (_, en_t) in zip(spans, zh_h, en_h):
+        if not markup.startswith("#"):
+            continue  # setext 標題（兩行）不在此修，交給 gate
+        if end - start != 1:
+            continue
+        # 巢狀（blockquote/list 內）標題不修：整行替換會吃掉容器前綴，
+        # 讓 inject 的 NestedHeading fail-closed 失效（review F2）。
+        if not lines[start].lstrip().startswith("#"):
+            continue
+        # 與判定（heading_suffix_error 內部）同一前處理：剝 {#anchor}。
+        # backend 幻覺出的 anchor 在此丟棄 —— inject 才是 anchor 的唯一
+        # 權威來源（review F1：不剝會把 anchor 字面量嵌進標題中段）。
+        zh_t = validate.ANCHOR_SUFFIX.sub("", zh_t)
+        en_t = validate.ANCHOR_SUFFIX.sub("", en_t)
+        if validate.heading_suffix_error(zh_t, en_t) is None:
+            continue
+        en_clean = en_t.strip()
+        if validate.CJK.search(zh_t):
+            base_txt = zh_t.strip()
+            # 剝掉結尾與英文標題重複的括號組（「… (Tags and Releases) (Git)」）
+            while (m := _TRAILING_PAREN.search(base_txt)):
+                inner = m.group(1).strip()
+                stripped = base_txt[: m.start()].rstrip()
+                if inner and stripped and inner.lower() in en_clean.lower():
+                    base_txt = stripped
+                else:
+                    break
+            candidate = f"{base_txt} ({en_clean})"
+        else:
+            candidate = backend.translate(en_clean, kind="heading").strip()
+        if candidate and validate.heading_suffix_error(candidate, en_clean) is None:
+            ending = anchors._line_ending(lines[start])
+            lines[start] = f"{'#' * level} {candidate}{ending}"
+    return "".join(lines)
+
+
+# `#(?!\[)`：`#[test]` 是 Move 屬性不是註解，送翻譯會把屬性行改壞（編譯
+# 層級損毀）；屬性行的行內 // 註解由 chunk 翻譯本身負責。
+_CODE_COMMENT = re.compile(r"^(\s*(?://+|#(?!\[))\s*)(.+?)(\s*)$")
+_COMMENT_SKIP = re.compile(r"ANCHOR|highlight|prettier-ignore|noqa|docs::")
+_LATIN_PROSE = re.compile(r"[a-z]{2,}")
+
+_COMMENT_PROMPT = (
+    "以下是程式碼註解的編號清單。把每一行翻譯成台灣繁體中文"
+    "（保留行內 code 與專有名詞），輸出相同編號的清單，一行對一行，"
+    "不要增減行數，不要任何解釋。\n"
+    f"{glossary.prompt_rules()}"
+)
+
+
+def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
+    """code 內英文散文註解的批次補翻（PR 3 實測 sonnet 對 fence 註解
+    186/213 未翻，語料慣例是翻）。與標題修復同理：LLM 系統性忽略的指令
+    用專用小呼叫補 —— 一檔一個編號清單呼叫（沿用 sidebar 的成熟模式，
+    kind="raw" 不外包 prompt）。
+
+    - 只動 anchors.code_lines 認定的 code 行（單一權威 parser，散文裡的
+      «//» 不會誤傷）；指令行（ANCHOR/highlight/…）與已含 CJK 的跳過。
+    - 回覆行缺 CJK（沒翻或亂答）→ 該行保留原文，fail-open 到「維持現狀」。
+    - 替換只動註解文字，縮排、註解符號、行數、fence 數都不變。
+    """
+    lines = zh_body.splitlines(keepends=True)
+    code = anchors.code_lines(zh_body)
+    todo: list[tuple[int, str, str, str]] = []  # (行號, prefix, text, trailing)
+    for i in sorted(code):
+        if i >= len(lines):
+            continue
+        m = _CODE_COMMENT.match(lines[i].rstrip("\r\n"))
+        if not m:
+            continue
+        prefix, text, trail = m.groups()
+        if _COMMENT_SKIP.search(text) or validate.CJK.search(text):
+            continue
+        if not _LATIN_PROSE.search(text):
+            continue
+        todo.append((i, prefix, text, trail))
+    if not todo:
+        return zh_body
+
+    numbered = "\n".join(f"{n + 1}. {t}" for n, (_, _, t, _) in enumerate(todo))
+    raw = backend.translate(f"{_COMMENT_PROMPT}\n\n{numbered}", kind="raw")
+    replies: dict[int, str] = {}
+    for line in raw.splitlines():
+        m = re.match(r"^\s*(\d+)[.)]\s*(.+?)\s*$", line)  # \s*：容忍「1.譯文」無空格
+        if m:
+            replies[int(m.group(1))] = m.group(2)
+
+    # 完整性守衛（review F2）：backend 合併重複行重新編號時，第 i 條會拿到
+    # 第 i+1 條的譯文 —— fence 內的靜默內容損毀，gate 7/8 遮蔽 code 看不到。
+    # 編號集合不是恰好 {1..n} 就整個 pass 放棄，fail-open 到 no-op。
+    if set(replies) != set(range(1, len(todo) + 1)):
+        return zh_body
+
+    for n, (i, prefix, text, trail) in enumerate(todo, start=1):
+        got = replies[n]
+        if not validate.CJK.search(got) or validate.simplified_chars(got):
+            continue  # 沒翻、亂答或帶簡體（gate 8 遮蔽 code，必須在這裡擋）：保留原文
+        ending = anchors._line_ending(lines[i])
+        lines[i] = f"{prefix}{glossary.enforce(got)}{trail}{ending}"
+    return "".join(lines)
 
 
 def rebuild_frontmatter_only(
@@ -161,7 +318,11 @@ def rebuild_frontmatter_only(
 
 
 def run(
-    paths: list[str], backend_name: str, en_ref: str = "english-main", apply: bool = False
+    paths: list[str],
+    backend_name: str,
+    en_ref: str = "english-main",
+    apply: bool = False,
+    max_lines: int = CHUNK_MAX_LINES,
 ) -> tuple[int, dict[str, list[str]]]:
     backend = base.get(backend_name)
     m = manifest.load()
@@ -180,7 +341,7 @@ def run(
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
             else:
                 prev_en = _prev_en(path, m) if prev else ""
-                out = assemble(en, prev, prev_en, backend)
+                out = assemble(en, prev, prev_en, backend, max_lines)
         except Exception as e:  # noqa: BLE001
             failed[path] = [str(e)]
             continue

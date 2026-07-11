@@ -1,16 +1,44 @@
 ---
-description: 'Guide to open sourcing Move libraries: naming conventions, documentation, testing, and publishing reusable packages for Sui.'
+description: 開源 Move 函式庫指南：命名慣例、文件撰寫、測試,以及發布可重複使用的套件於 Sui。
 ---
 
-# 開源庫 (Open Sourcing Libraries)
+# 開源函式庫 (Open Sourcing Libraries) {#open-sourcing-libraries}
 
-開源庫是為 Move 生態系統做出貢獻的好方法。本指南將幫助您了解如何開源庫、編寫測試以及撰寫文檔。
+開源函式庫是為 Move 生態系做出貢獻的絕佳方式。本指南將協助你了解如何開源函式庫、如何撰寫測試，以及如何為函式庫撰寫文件。
 
-## 常見實踐
+## README {#readme}
 
-- 撰寫 README
-- 使用具名地址
-- 生成文檔 (docgen)
-- 添加範例程式碼 (Examples)
+TODO: readme
 
-（詳細內容請參閱英文原始版本的說明）
+## 具名地址 (Named Addresses) {#named-addresses}
+
+TODO: named address
+
+## 產生文件 (Generating Documentation) {#generating-documentation}
+
+TODO: docgen
+
+## 新增範例 (Adding Examples) {#adding-examples}
+
+當發布一個預期會被使用的套件（例如 NFT 協議或函式庫）時，展示這個套件該如何使用是很重要的。這時範例就派上用場了。Move 並沒有針對範例的特殊功能，不過有一些慣例用來標示範例。首先，只有 sources 會被納入套件的位元組碼中，因此放在其他目錄的程式碼不會被納入，但仍然會被測試！
+
+這也是為什麼把範例放進獨立的 `examples/` 目錄是個好主意。
+
+```bash
+sources/
+    protocol.move
+    library.move
+tests/
+    protocol_test.move
+examples/
+    my_example.move
+Move.toml
+```
+
+## 標籤與發行版本（Git） (Tags and Releases (Git)) {#tags-and-releases-git}
+
+TODO: tags and releases
+
+## 與閉源相容的技巧 (Tricks to allow compatibility with closed source) {#tricks-to-allow-compatibility-with-closed-source}
+
+TODO: compatibility via empty functions with signatures

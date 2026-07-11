@@ -1,35 +1,21 @@
 ---
-description: 'The Sui Object Model explained: theory and concepts behind digital asset representation, ownership, and storage on the Sui blockchain.'
+description: Sui 物件模型解析 (The Sui Object Model Explained)：Sui 區塊鏈上數位資產表示、擁有權與儲存背後的理論與概念。
 ---
 
-# 什麼是物件？ (What is an Object?)
+# 物件模型 (Object Model) {#object-model}
 
-Sui 中的物件模型 (Object Model) 可以視為將數位資產表示為 **物件 (objects)** 的高階抽象。這些物件具有自己的類型和相關行為、唯一的識別碼，並支援原生存儲操作，例如 **轉移 (transfer)** 和 **共享 (share)**。物件模型旨在直觀且易於使用，使開發人員能夠輕鬆實現廣泛的使用案例。
+到目前為止，我們把 Move 當作一種語言在研究：型別、函式與能力，這些操作的值都在單一交易內誕生與消亡。但智能合約唯有在其狀態能夠持久化時才有用。本章介紹**物件模型 (Object Model)**——這是 Sui 對於「鏈上資料如何被儲存、擁有與存取」這個問題所給出的答案。
 
-Sui 中的物件具有以下屬性：
+本章聚焦於理論與概念，為你即將深入研究儲存操作與資源所有權的實務內容做好準備。建議依序閱讀：
 
-- **類型 (Type):** 每個物件都有一個類型，定義了物件的結構和行為。不同類型的物件不能混用或互換，確保物件根據其類型系統被正確使用。
+- [數位資產的語言 (Language for Digital Assets)](./digital-assets) - 為什麼 Move 將資產視為一等公民值，以及哪些特性構成一項資產；
+- [Move 的演進 (Evolution of Move)](./evolution-of-move) - 原本的帳戶式儲存模型如何運作，以及 Sui 為何要取而代之；
+- [什麼是物件？ (What is an Object?)](./object-model) - 作為儲存單位的物件：型別、ID、擁有者、版本與摘要；
+- [所有權 (Ownership)](./ownership) - 物件可被擁有的五種方式，以及各自允許的操作；
+- [快速路徑與共識 (Fast Path and Consensus)](./fast-path-and-consensus) - 所有權如何決定交易的執行方式。
 
-- **唯一 ID (Unique ID):** 每個物件都有一個唯一的識別碼，使其區別於其他物件。此 ID 在物件建立時產生且不可變。它用於在系統內追蹤和識別物件。
+後續章節將直接建立在這些概念之上：[使用物件 (Using Objects)](./../storage) 展示物件在程式碼中如何被定義與管理，而
+[進階可程式化性 (Advanced Programmability)](./../programmability) 涵蓋了建立在其之上的各種功能。
 
-<!-- Note: consider "shared across many entities" -->
-
-- **所有者 (Owner):** 每個物件都與一個所有者相關聯，所有者控制著對物件的變更。Sui 上的所有權可以是某個帳戶專有、全網共享或凍結（僅允許唯讀存取，不能修改或轉移）。我們將在後續部分詳細討論所有權。
-
-  請注意，所有權並不控制物件的機密性 — 始終可以從 Move 外部讀取鏈上物件的內容。您絕不應在物件內部存儲未加密的私密資訊。
-
-- **資料 (Data):** 物件封裝了它們的資料，簡化了管理和操作。資料結構和操作由物件的類型定義。
-
-- **版本 (Version):** 從帳戶到物件的過渡是透過物件版本控制來實現的。傳統上，區塊鏈使用 **nonce** 來防止重放攻擊。在 Sui 中，物件的版本充納了 nonce 的角色，為每個物件防止重放攻擊。
-
-- **摘要 (Digest):** 每個物件都有一個摘要，它是物件資料的雜湊值。摘要用於以密碼學方式驗證物件資料的完整性，並確保其未被篡改。摘要在物件建立時計算，並在物件資料更改時更新。
-
-## 總結 (Summary)
-
-- Sui 中的物件是代表數位資產的高階抽象。
-- 物件具有類型、唯一 ID、所有者、資料、版本和摘要。
-- 物件模型簡化了資產管理並實現了廣泛的使用案例。
-
-## 延伸閱讀
-
-- Sui 文檔中的 [物件模型 (Object Model)](https://docs.sui.io/concepts/object-model)。
+> 本章是物件模型背後概念與原則的高階概覽。若需要更詳細、協定層級的說明，請參閱
+> [Sui 文件](https://docs.sui.io/guides/developer/objects/object-model)。

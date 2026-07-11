@@ -53,11 +53,8 @@ def test_tier_a_for_frontmatter_only_delta():
     assert pipeline.tier("book/404.md") == "A"
 
 
-def test_tier_b_when_structure_fails_even_if_delta_is_small():
-    """reference/variables.md：上游只動 frontmatter，但中文只有 36 行 / 6 個標題
-    （英文 824 行 / 21 個標題）。結構驗證擋下，強制降級 B 層全譯。
-    這是分層閘門存在的理由 —— 純看 delta 大小會讓那 788 行永遠回不來。"""
-    assert pipeline.tier("reference/variables.md") == "B"
+# tier 的結構降級（B-強制）fixture 已絕跡：PR 3 修復了全部 15 個結構殘缺檔。
+# 降級邏輯由 check_structure 合成 unit tests 與 tier 的 A 判定測試覆蓋。
 
 
 # --- additional coverage required by Task 11 brief ---
@@ -88,22 +85,6 @@ def test_backend_dropping_heading_raises():
 
     with pytest.raises(anchors.HeadingMismatch):
         pipeline.assemble(en, "", "", DroppingBackend())
-
-
-def test_assemble_raises_when_backend_drops_heading_suffix():
-    """Task 17 A/B 實測到的失效模式：真實 backend（sonnet）對 4/21 標題
-    掉了「中文 (English)」後綴、其中一個整個沒翻，八道 gate 全數放行。
-    gate 9 掛在 assemble 路徑上，這種輸出必須整份炸掉。"""
-    en = '---\ndescription: "d"\n---\n\n# One\n\n## Two\n'
-
-    class SuffixDroppingBackend:
-        def translate(self, text, *, kind="markdown"):
-            if kind == "text":
-                return "中文"
-            return "# 一 (One)\n\n## 二\n"  # 第二個標題掉後綴
-
-    with pytest.raises(validate.ValidationError, match="後綴"):
-        pipeline.assemble(en, "", "", SuffixDroppingBackend())
 
 
 def test_glossary_rewrites_function_term():
@@ -406,3 +387,316 @@ def test_delta_lines_zero_for_identical_blobs():
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     assert pipeline._delta_lines(sha, sha) == 0
+
+
+# --- gate 9 的修復 pass：決定性補後綴 / 單標題重譯（enforce 與 gate 同進退） ---
+
+
+def test_repair_headings_appends_missing_suffix_without_backend():
+    class ExplodingBackend2:
+        def translate(self, text, *, kind="markdown"):
+            raise AssertionError("已翻譯只缺後綴的標題不得動用 backend")
+
+    zh = "# 中文標題\n\n內文。\n"
+    en = "# Title\n\nText.\n"
+    out = pipeline._repair_headings(zh, en, ExplodingBackend2())
+    assert "# 中文標題 (Title)\n" in out
+
+
+def test_repair_headings_strips_duplicated_trailing_parens():
+    """實測失效：「標籤與發布 (Tags and Releases) (Git)」直接補後綴會疊床架屋。"""
+    zh = "## 標籤與發布 (Tags and Releases) (Git)\n"
+    en = "## Tags and Releases (Git)\n"
+    out = pipeline._repair_headings(zh, en, FakeBackend())
+    assert out.splitlines()[0] == "## 標籤與發布 (Tags and Releases (Git))"
+
+
+def test_repair_headings_retranslates_verbatim_heading():
+    class HeadingBackend:
+        def translate(self, text, *, kind="markdown"):
+            assert kind == "heading"
+            return f"VecSet 集合 ({text})"
+
+    zh = "## VecSet\n\n內文。\n"
+    en = "## VecSet\n\nText.\n"
+    out = pipeline._repair_headings(zh, en, HeadingBackend())
+    assert out.splitlines()[0] == "## VecSet 集合 (VecSet)"
+
+
+def test_repair_headings_leaves_exempt_and_count_mismatch_alone():
+    class ExplodingBackend3:
+        def translate(self, text, *, kind="markdown"):
+            raise AssertionError("豁免標題不得動用 backend")
+
+    assert pipeline._repair_headings("# BCS\n", "# BCS\n", ExplodingBackend3()) == "# BCS\n"
+    # 數量不符：交給 gate 1，不修
+    zh = "# 一\n"
+    en = "# One\n\n## Two\n"
+    assert pipeline._repair_headings(zh, en, ExplodingBackend3()) == zh
+
+
+def test_assemble_repairs_suffix_dropping_backend():
+    """gate 9 擋的「掉後綴」是決定性可修：修復 pass 補上，assemble 成功。
+    （原 test_assemble_raises_when_backend_drops_heading_suffix 的失效輸入，
+    現在的正確結局是被修好而不是炸掉。）"""
+    en = '---\ndescription: "d"\n---\n\n# One\n\n## Two\n'
+
+    class SuffixDroppingBackend2:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            if kind == "heading":
+                return f"中文 ({text})"
+            return "# 一 (One)\n\n## 二\n"
+
+    out = pipeline.assemble(en, "", "", SuffixDroppingBackend2())
+    _, body = frontmatter.split(out)
+    assert "## 二 (Two)" in body
+
+
+def test_assemble_raises_when_heading_unrepairable():
+    """修復 pass 修不動（重譯仍 verbatim）時 gate 9 仍須擋下——修復不是放寬。"""
+    en = '---\ndescription: "d"\n---\n\n# Scopes\n'
+
+    class StubbornBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            if kind == "heading":
+                return text  # 重譯也 verbatim
+            return "# Scopes\n"
+
+    with pytest.raises(validate.ValidationError, match="未翻譯"):
+        pipeline.assemble(en, "", "", StubbornBackend())
+
+
+def test_repair_headings_strips_anchor_suffix_like_the_judge():
+    """review F1：headings() 回傳的文字含 {#anchor}，判定（heading_suffix_error）
+    有剝、修復沒剝 → 前提漂移，anchor 字面量會被嵌進標題中段。修復必須與
+    判定同一前處理；backend 幻覺出的 anchor 在此丟棄（inject 才是 anchor
+    的唯一權威來源）。"""
+    zh = "## 迴圈 {#loops}\n"
+    en = "## Loops\n"
+    out = pipeline._repair_headings(zh, en, FakeBackend())
+    assert out.splitlines()[0] == "## 迴圈 (Loops)"
+
+    zh2 = "## 迴圈\n"
+    en2 = "## Loops {#loops}\n"
+    out2 = pipeline._repair_headings(zh2, en2, FakeBackend())
+    assert out2.splitlines()[0] == "## 迴圈 (Loops)"
+
+
+def test_repair_headings_skips_nested_headings():
+    """review F2：blockquote/list 容器內的標題整行替換會吃掉容器前綴，
+    讓 inject 的 NestedHeading fail-closed 失效。巢狀標題不修，交給 inject 炸。"""
+    zh = "> ## 迴圈\n"
+    en = "## Loops\n"
+    assert pipeline._repair_headings(zh, en, FakeBackend()) == zh
+
+
+def test_run_passes_max_lines_to_assemble(monkeypatch):
+    """--max-lines：長檔掉標題時縮小 chunk 的逃生口（PR 3 實測 sonnet 對
+    250 行 chunk 決定性丟 4/53 個標題）。"""
+    captured = {}
+
+    def fake_assemble(en, prev, prev_en, backend, max_lines=pipeline.CHUNK_MAX_LINES):
+        captured["max_lines"] = max_lines
+        return en
+
+    monkeypatch.setattr(pipeline, "assemble", fake_assemble)
+    monkeypatch.setattr(pipeline, "tier", lambda *a, **k: "B")
+    pipeline.run(["reference/constants.md"], "fake", max_lines=60)
+    assert captured["max_lines"] == 60
+
+
+def test_translate_body_retries_chunk_that_drops_headings():
+    """PR 3 診斷：sonnet 對長檔穩定吞小節標題（variables.md 21→16，換
+    chunk 尺寸與整檔重跑都救不了）。chunk 級標題序列檢查 + 重試把失效
+    定位到小範圍 —— 單一 chunk 重試便宜且成功率遠高於整檔賭運氣。"""
+    calls = {"n": 0}
+
+    class FlakyBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "# 一 (One)\n\n內文。\n"  # 吞掉 ## Two
+            return "# 一 (One)\n\n內文。\n\n## 二 (Two)\n\n更多。\n"
+
+    en = '---\ndescription: "d"\n---\n\n# One\n\nbody\n\n## Two\n\nmore\n'
+    out = pipeline.translate_body(en, FlakyBackend())
+    _, body = frontmatter.split(out)
+    assert [lv for lv, _ in anchors.headings(body)] == [1, 2]
+    assert calls["n"] == 2  # 第一次不合格，重試一次成功
+
+
+def test_translate_body_keeps_last_attempt_when_retries_exhausted():
+    """重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋下（fail-closed
+    不變，重試只是加自動修復路徑，不是放寬）。"""
+    calls = {"n": 0}
+
+    class StubbornBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            calls["n"] += 1
+            return "# 一 (One)\n"  # 永遠吞掉 ## Two
+
+    en = '---\ndescription: "d"\n---\n\n# One\n\nbody\n\n## Two\n\nmore\n'
+    out = pipeline.translate_body(en, StubbornBackend())
+    _, body = frontmatter.split(out)
+    assert len(anchors.headings(body)) == 1  # 依然殘缺 —— gate 1 會擋
+    assert calls["n"] == pipeline.CHUNK_RETRIES
+
+
+def test_translate_chunk_retries_on_fence_mismatch():
+    """L7 組合缺陷實錄：chunk N 輸出掉了收尾 ```，自身標題檢查照過，join
+    後 chunk N+1 的標題全被吞進未閉合 fence（variables.md 21→19，單獨翻
+    每個 chunk 都正常）。chunk 級檢查必須同時驗 gate 1+2 兩個維度。"""
+    calls = {"n": 0}
+
+    class FenceDroppingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "# 一 (One)\n\n```move\nlet x = 1;\n"  # 掉了收尾 ```
+            return "# 一 (One)\n\n```move\nlet x = 1;\n```\n"
+
+    en = "# One\n\n```move\nlet x = 1;\n```\n"
+    out = pipeline._translate_chunk(en, FenceDroppingBackend())
+    assert calls["n"] == 2
+    assert anchors.fence_lines(out) == anchors.fence_lines(en)
+
+
+# --- fence 註解修復 pass：批次翻譯 code 內的英文散文註解 ---
+#
+# PR 3 實測：sonnet 對 fence 註解 186/213 未翻（語料慣例是翻，抽樣舊檔
+# 0/6、0/6、3/5 已翻）。與標題修復同理：LLM 系統性忽略的指令，用專用
+# 小呼叫補—— 批次編號清單一檔一呼叫（沿用 sidebar 的成熟模式）。
+
+
+class _CommentBackend:
+    def __init__(self):
+        self.calls = []
+
+    def translate(self, text, *, kind="markdown"):
+        self.calls.append(kind)
+        import re as _re
+        out = []
+        for line in text.splitlines():
+            m = _re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line)
+            if m:
+                out.append(f"{m.group(1)}. 中文註解（{m.group(2)}）")
+        return "\n".join(out)
+
+
+def test_repair_fence_comments_translates_english_prose():
+    zh = "# 一 (One)\n\n```move\n// create a new instance\nlet x = 1; // and assign it\n```\n"
+    out = pipeline._repair_fence_comments(zh, _CommentBackend())
+    assert "// 中文註解（create a new instance）" in out
+    assert "let x = 1;" in out  # code 本體不動
+    assert anchors.fence_lines(out) == anchors.fence_lines(zh)
+
+
+def test_repair_fence_comments_skips_directives_and_translated():
+    b = _CommentBackend()
+    zh = (
+        "```move\n"
+        "// ANCHOR: main\n"
+        "// highlight-start\n"
+        "// 已翻好的註解\n"
+        "```\n"
+    )
+    out = pipeline._repair_fence_comments(zh, b)
+    assert out == zh
+    assert b.calls == []  # 沒東西要翻就不呼叫 backend
+
+
+def test_repair_fence_comments_ignores_prose_outside_code():
+    b = _CommentBackend()
+    zh = "散文提到 // this is not code 的寫法。\n"
+    assert pipeline._repair_fence_comments(zh, b) == zh
+    assert b.calls == []
+
+
+def test_repair_fence_comments_keeps_original_when_reply_lacks_cjk():
+    class BadBackend:
+        def translate(self, text, *, kind="markdown"):
+            import re as _re
+            return "\n".join(
+                f"{m.group(1)}. still english"
+                for line in text.splitlines()
+                if (m := _re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line))
+            )
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, BadBackend())
+    assert "// create a new instance" in out  # 壞回覆 → 保留原文
+
+
+def test_repair_fence_comments_skips_move_attributes():
+    """`#[test] // ...` 的 `#` 開頭是 Move 屬性不是註解 —— 送去翻譯若回覆
+    含 CJK 會直接把屬性行改壞（編譯層級的損毀）。屬性行整行跳過；其行內
+    // 註解的翻譯由 chunk 翻譯本身負責。"""
+    b = _CommentBackend()
+    zh = "```move\n#[test] // will fail to compile\n#[test_only]\n```\n"
+    assert pipeline._repair_fence_comments(zh, b) == zh
+    assert b.calls == []
+
+
+def test_translate_chunk_treats_hallucinated_frontmatter_as_failed_attempt():
+    """review F1：backend 幻覺出 YAML frontmatter 時，_require_body 的
+    FrontmatterPassedIn 不該逃出重試迴圈炸掉整檔 —— 這正是重試該吸收的
+    垃圾輸出。"""
+    calls = {"n": 0}
+
+    class HallucinatingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "---\ntitle: 變數\n---\n\n# 一 (One)\n"
+            return "# 一 (One)\n"
+
+    out = pipeline._translate_chunk("# One\n", HallucinatingBackend())
+    assert calls["n"] == 2
+    assert out == "# 一 (One)\n"
+
+
+def test_repair_fence_comments_bails_on_reply_numbering_drift():
+    """review F2：backend 合併重複行重新編號時，第 i 條會拿到第 i+1 條的
+    譯文 —— fence 內的靜默內容損毀，所有 gate 都看不到。編號集合不完整
+    就整個 pass 放棄（fail-open 到 no-op）。"""
+
+    class DriftingBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1. 中文一\n3. 中文三"  # 缺 2：編號集合不完整
+
+    zh = "```move\n// alpha comment\n// beta comment\n// gamma comment\n```\n"
+    assert pipeline._repair_fence_comments(zh, DriftingBackend()) == zh
+
+
+def test_repair_fence_comments_accepts_cjk_numbering_without_space():
+    """review F4：中文模型常輸出「1.譯文」無空格 —— 在 F2 的完整性守衛
+    之下放寬分隔符是安全的。"""
+
+    class NoSpaceBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1.建立新實例"
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, NoSpaceBackend())
+    assert "// 建立新實例" in out
+
+
+def test_repair_fence_comments_rejects_simplified_reply():
+    """review F5：本 pass 大規模把 CJK 寫進 code 行，而 gate 8 遮蔽 code
+    —— 簡體回覆必須在這裡擋，否則直通發佈輸出。"""
+
+    class SimplifiedReplyBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1. 创建新实例"
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, SimplifiedReplyBackend())
+    assert "// create a new instance" in out  # 保留原文

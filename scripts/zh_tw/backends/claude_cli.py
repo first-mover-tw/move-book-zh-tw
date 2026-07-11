@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from .base import SYSTEM_PROMPT, TEXT_PROMPT
+from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 
 
 class ClaudeCLIBackend:
@@ -13,12 +13,12 @@ class ClaudeCLIBackend:
         # validate gate 9（check_heading_suffix）擋下不寫檔。
         model = os.environ.get("ZH_TW_CLAUDE_MODEL", "sonnet")
         timeout = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
-        if kind == "sidebar":
+        if kind in ("sidebar", "raw"):
             # sidebar payload 自帶 SIDEBAR_PROMPT 與編號清單，再外包任何
             # prompt 都會產生互相矛盾的指令（見 sidebar.SIDEBAR_PROMPT）。
             prompt = text
         else:
-            system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
+            system = {"text": TEXT_PROMPT, "heading": HEADING_PROMPT}.get(kind, SYSTEM_PROMPT)
             prompt = f"{system}\n\n要翻譯的內容：\n\n{text}"
         r = subprocess.run(
             ["claude", "-p", "--model", model, prompt],

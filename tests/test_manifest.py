@@ -64,15 +64,16 @@ def test_blob_sha_returns_none_for_missing_path():
     assert manifest.blob_sha("english-main", "nope/missing.md") is None
 
 
-def test_orphans_finds_upstream_deleted_file():
-    """D9: 上游在 #223 刪除了 transfer-restrictions.md。"""
-    assert "book/storage/transfer-restrictions.md" in manifest.orphans("english-main")
+def test_no_orphans_remain():
+    """D9 已於 PR 3 解決（transfer-restrictions.md 與其 manifest entry 已刪）。
+    此後任何孤兒出現都代表上游刪檔未同步，應立即處理。"""
+    assert manifest.orphans("english-main") == []
 
 
 def test_stale_files_count_tracks_backfill():
-    """backfill 進度計數器：PR 2（A 層 47 檔）後 151 - 47 = 104。
-    之後每個 backfill PR 遞減此數；收尾 task 應歸零並改寫本測試。"""
-    assert len(manifest.stale_files("english-main")) == 104
+    """backfill 進度計數器：PR 2 後 104；PR 3（結構殘缺 15 檔，其中 13 檔
+    原屬 stale）後 91。之後每個 backfill PR 遞減此數；收尾歸零並改寫本測試。"""
+    assert len(manifest.stale_files("english-main")) == 91
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():
