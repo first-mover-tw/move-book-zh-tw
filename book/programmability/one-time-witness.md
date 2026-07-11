@@ -1,25 +1,63 @@
 ---
-description: 'One Time Witness (OTW) in Sui Move: a type guaranteed to be instantiated only once, used for Publisher and Coin creation.'
+description:
+  Sui Move 中的一次性見證 (One Time Witness, OTW)：保證只能被實例化一次的型別，用於建立 Publisher
+  與 Coin。
 ---
 
-# 一次性見證 (One Time Witness)
+# One Time Witness 一次性見證 (One Time Witness) {#one-time-witness}
 
-雖然一般的 [見證 (Witness)](./witness-pattern) 是靜態證明類型所有權的一種絕佳方式，但在某些情況下，我們需要確保見證僅被實例化一次。這就是「一次性見證 (One Time Witness, OTW)」的用途。
+雖然一般的 [Witness](./witness-pattern) 是靜態證明型別所有權的好方法，但有些情況我們需要確保某個 witness 只會被實例化一次——這正是一次性見證（One Time Witness，OTW）存在的目的。
 
-<!--
-Notes to self:
-  - background first or definition first
- - which one is better?                   - why would someone read this section?
-  - if we removed the OTW from docs, then we should give definition first.      -->
+## 背景 (Background) {#background}
 
-## 定義
+為了了解 OTW 要解決的問題，讓我們試著用現有的工具建構一個簡單的泛型 coin 實作。`TreasuryCap<T>` 控制型別 `T` 的 coin 供應量，而建立一個 `TreasuryCap<T>` 需要 `T` 的 [witness](./witness-pattern)：
 
-OTW 是一種特殊的見證類型，只能使用一次。它無法手動建立，且保證在每個模組中都是唯一的。如果一個類型遵循以下規則，Sui 適配器 (Adapter) 就會將其視為 OTW：
+```move
+module book::simple_coin;
 
-1. 僅具有 `drop` 能力。
-2. 沒有任何欄位。
-3. 不是泛型類型。
-4. 名稱與模組名稱相同，但全為大寫字母。
+/// 控制 Coin 的供給。
+public struct TreasuryCap<phantom T> has key, store {
+    id: UID,
+    total_supply: u64,
+}
+
+/// 用 witness 建立一個新的 `TreasuryCap`。
+/// 有漏洞：沒有任何機制阻止呼叫者用同一個 witness
+/// 建立多個 `TreasuryCap<T>`！
+public fun new<T: drop>(_witness: T, ctx: &mut TxContext): TreasuryCap<T> {
+    TreasuryCap { id: object::new(ctx), total_supply: 0 }
+}
+```
+
+一般的 witness 證明了呼叫模組擁有型別 `T`，但它並不能證明這個 witness 曾經——或未來將——被建構了_幾次_。一個不誠實的開發者可以直接呼叫 `new` 兩次，把第二個 treasury 留給自己：
+
+```move
+module book::simple_coin_cheater;
+
+/// Coin witness……被用了兩次。>_<
+public struct MOVE has drop {}
+
+fun init(ctx: &mut TxContext) {
+    let treasury = book::simple_coin::new(MOVE {}, ctx);
+    let secret_treasury = book::simple_coin::new(MOVE {}, ctx);
+
+    transfer::public_transfer(treasury, ctx.sender());
+    transfer::public_transfer(secret_treasury, ctx.sender());
+}
+```
+
+對於任何要決定是否信任以這種方式建構出來的 coin 的人來說，有一整份清單需要稽核：確認針對給定的 `T` 只存在一個 `TreasuryCap`、確認該模組沒有後門可以發行更多、以及確認未來的升級不會新增這樣的後門。這些條件沒有一個能在 Move 程式碼內被檢查——要驗證它們，必須信任作者，並且反覆仔細審查原始碼。
+
+為了消除這種信任需求，Sui 引入了一次性見證——一種由系統本身保證只會被實例化恰好一次、且可在執行期檢查的 witness。
+
+## 定義 (Definition) {#definition}
+
+OTW 是一種特殊的 witness，只能被使用一次。它無法手動建立，並且保證在每個模組中都是唯一的。只要符合以下規則，Sui 執行環境就會將某個型別視為 OTW：
+
+1. 只具有 `drop` 能力。
+2. 沒有欄位。
+3. 不是泛型型別。
+4. 以全大寫字母命名，且與模組同名。
 
 以下是 OTW 的範例：
 
@@ -27,115 +65,20 @@ OTW 是一種特殊的見證類型，只能使用一次。它無法手動建立�
 
 ```
 
-OTW 無法手動建構，任何嘗試建構它的程式碼都會導致編譯錯誤。OTW 可以作為 [模組初始化器 (module initializer)](./module-initializer) 的第一個參數接收。由於 `init` 函式在每個模組中僅被呼叫一次，因此保證了 OTW 僅被實例化一次。
+OTW 無法手動建構，任何嘗試這麼做的程式碼都會導致編譯錯誤。OTW 可以作為 [模組初始化函式](./module-initializer) 的第一個引數被接收。而由於 `init` 函式在每個模組中只會被呼叫一次，因此可以保證 OTW 也只會被實例化一次。
 
-## 強制執行 OTW
+## 強制檢查 OTW (Enforcing the OTW) {#enforcing-the-otw}
 
-要檢查一個類型是否為 OTW，[Sui 框架](./sui-framework) 的 `sui::types` 模組提供了一個特殊的函式 `is_one_time_witness`，可以用來驗證該類型是否為 OTW。
+要檢查某個型別是否為 OTW，[Sui Framework](./sui-framework) 的 `sui::types` 模組提供了一個特殊函式 `is_one_time_witness`。這是上述規則在執行期的對應：一個預期接收 OTW 的函式庫函式應該呼叫它，以確保收到的 witness 是真正的一次性 witness，而不是一個只是具有 `drop` 能力的一般型別。
 
 ```move file=packages/samples/sources/programmability/one-time-witness.move anchor=usage
 
 ```
 
-<!-- ## Background
+正是這一行 `assert!` 修正了 [背景](#background) 小節中的 coin 範例的問題：如果 `simple_coin::new` 要求的是 OTW 而非一般的 witness，那麼 cheater 模組中的第二次呼叫就會失敗，因為 OTW 實例只會存在一次——也就是第一次呼叫時。
 
-Before we get to actual definition of the OTW, let's consider a simple example. We want to build a generic implementation of a Coin type, which can be initialized with a witness. A instance of a witness `T` is used to create a new `TreasuryCap<T>` which is then used to mint a new `Coin<T>`.
-```move
-module book::simple_coin {
+## 總結 (Summary) {#summary}
 
-    /// Controls the supply of the Coin.
-    public struct TreasuryCap<phantom T> has key, store {
-        id: UID,
-        total_supply: u64,
-    }
+OTW 模式是確保某個型別只被使用一次的絕佳方法。大多數開發者只需要知道如何定義與接收 OTW，而檢查與強制執行則主要是函式庫與框架需要關心的事。舉例來說，`sui::coin` 模組在 `coin::create_currency` 方法中要求提供 OTW，藉此強制 `coin::TreasuryCap` 只會被建立一次——這正好解決了我們在 [背景](#background) 小節中描述的問題。
 
-    /// The Coin type where the `T` is a witness.
-    public struct Coin<phantom T> has key, store {
-        id: UID,
-        value: u64,
-    }
-
-    /// Create a new TreasuryCap with a witness.
-    /// Vulnerable: we can create multiple TreasuryCap<T> with the same witness.
-    public fun new<T: drop>(_: T, ctx: &mut TxContext): TreasuryCap<T> {
-        TreasuryCap { id: object::new(ctx), total_supply: 0 }
-    }
-
-    /// We use a regular witness to authorize the minting.
-    public fun mint<T>(
-        treasury: &mut TreasuryCap<T>,
-        value: u64,
-        ctx: &mut TxContext
-    ) {
-        treasury.total_supply = treasury.total_supply + value;
-        Coin { id: object::new(ctx), value }
-    }
-}
-```
-
-A dishonest developer would be able to create multiple `TreasuryCap`s with the same witness, and mint more `Coin`s than expected. Here is an example of such a malicious module:
-```move
-module book::simple_coin_cheater {
-    /// The Coin witness.
-    public struct Move has drop {}
-
-    /// Initialize the TreasuryCap with the Move witness.
-    /// ...and do it twice! >_<
-    fun init(ctx: &mut TxContext) {
-        let treasury_cap = book::simple_coin::new(Move {}, ctx);
-        let secret_treasury = book::simple_coin::new(Move {}, ctx);
-
-        transfer::public_transfer(treasury_cap, ctx.sender())
-        transfer::public_transfer(secret_treasury, ctx.sender())
-    }
-}
-
-```
-
-The example above has no protection against issuing multiple `TreasuryCap`s with the same witness, and in real-world application, this creates a problem of trust. If it was a human decision to support a Coin based on this implementation, they would have to make sure that:
-- there is only one `TreasuryCap` for a given `T`.
-- the module cannot be upgraded to issue more `TreasuryCap`s.
-- the module code does not contain any backdoors to issue more `TreasuryCap`s.
-
-However, it is not possible to check any of these conditions inside the Move code. And to prevent the need for trust, Sui introduces the OTW pattern.
-## Solving the Coin Problem
-
-To solve the case of multiple `TreasuryCaps`, we can use the OTW pattern. By defining the `COIN_OTW` type as an OTW, we can ensure that the `COIN_OTW` is used only once. The `COIN_OTW` is then used to create a new `TreasuryCap` and mint a new `Coin`.
-```move
-
-With
-
-```move
-module book::coin_otw {
-
-    /// The OTW for the `book::coin_otw` module.
-    struct COIN_OTW has drop {}
-
-    /// Receive the instance of `COIN_OTW` as the first argument.
-    fun init(otw: COIN_OTW, ctx: &mut TxContext) {
-        let treasury_cap = book::simple_coin::new(COIN_OTW {}, ctx);
-        transfer::public_transfer(treasury_cap, ctx.sender())
-    }
-}
-```
-
-
- -->
-
-<!-- ## Case Study: Coin
-
-TODO: add a story behind TreasuryCap and Coin
--->
-
-## 總結
-
-OTW 模式是確保某種類型僅被使用一次的絕佳方式。大多數開發人員應該理解如何定義和接收 OTW，而 OTW 的檢查和強制執行主要出現在函式庫和框架中。例如，`sui::coin` 模組在 `coin::create_currency` 方法中要求傳入 OTW，從而強制確保 `coin::TreasuryCap` 僅被建立一次。
-
-OTW 是一個強大的工具，它為 [發佈者 (Publisher)](./publisher) 物件奠定了基礎，我們將在下一節中介紹。
-
-<!--
-
-## Questions
-- What other ways could be used to prevent multiple `TreasuryCaps`?
-- Are there any other ways to use the OTW?
- -->
+OTW 是一項強大的工具，為 [Publisher](./publisher) 物件奠定了基礎，我們將在下一節介紹它。

@@ -25,11 +25,11 @@ def test_main_over_real_corpus_is_not_yet_clean():
         "book/storage/storage-functions.md: anchor 無法解析 ./../object/ownership#party-objects",
         "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#immutable-frozen-state",
         "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#party-objects",
-        "book/programmability/dynamic-collections.md: anchor 無法解析 ./dynamic-fields#orphaned-dynamic-fields",
-        "book/programmability/dynamic-collections.md: anchor 無法解析 ./dynamic-fields#dynamic-fields-vs-fields",
-        "book/programmability/dynamic-object-fields.md: anchor 無法解析 ./dynamic-fields#definition",
-        "book/programmability/dynamic-object-fields.md: anchor 無法解析 ./dynamic-fields#usage",
-        "book/programmability/dynamic-fields.md: anchor 無法解析 ./../move-basics/struct.md#struct",
+        # PR 5 起：balance-and-coin 忠實翻出上游連結，目標 concepts（PR 7）
+        "book/programmability/balance-and-coin.md: anchor 無法解析 ./../concepts/what-is-a-transaction#commands",
+        # 舊 zh testing 檔連到 zh 自創的 {#clock}（上游從未有；epoch-and-time
+        # 已改用上游的 auto-slug #time）；PR 6 重譯 using-system-objects 自癒
+        "book/testing/using-system-objects.md: anchor 無法解析 ./../programmability/epoch-and-time.md#clock",
         "reference/variables.md: anchor 無法解析 ./functions#return-expression",
     }
     assert set(link_errs) == transitional
@@ -44,8 +44,8 @@ def test_main_over_real_corpus_is_not_yet_clean():
         _, body = frontmatter.split(text)
         simplified_total += len(validate.simplified_chars(body))
 
-    assert glossary_total == 112, glossary_total  # PR 4 再清 4 處（116→112）
-    assert simplified_total == 5, simplified_total
+    assert glossary_total == 108, glossary_total  # PR 5 再清 4 處（112→108）
+    assert simplified_total == 4, simplified_total  # PR 5 清掉 1 字
 
     assert check_repo.main() == 1
 

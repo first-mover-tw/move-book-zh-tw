@@ -718,3 +718,53 @@ def test_repair_headings_retries_llm_path():
     out = pipeline._repair_headings("## Abort\n", "## Abort\n", FlakyHeadingBackend())
     assert out.splitlines()[0] == "## 中止 (Abort)"
     assert calls["n"] == 2
+
+
+def test_run_apply_saves_only_own_updates(tmp_path, monkeypatch):
+    """PR 5 實測的 manifest 競態：兩個 apply 行程平行跑，後結束者用啟動時
+    載入的舊快照整檔覆寫，把先結束者剛記錄的 provenance 洗掉（2 檔被誤判
+    stale，重跑會覆蓋已 merge 的好譯文）。run() 必須在 save 前重新載入
+    on-disk 狀態、只套用自己處理過的路徑。"""
+    import json
+
+    from scripts.zh_tw import manifest as mf
+
+    tmp_manifest = tmp_path / "translation-manifest.json"
+    tmp_manifest.write_text(json.dumps({"other/path.md": "aaa"}), encoding="utf-8")
+    monkeypatch.setattr(mf, "MANIFEST_PATH", tmp_manifest)
+
+    m = mf.load()  # 模擬本行程啟動時載入
+    # 模擬另一個行程在我們執行期間寫入了新紀錄
+    tmp_manifest.write_text(
+        json.dumps({"other/path.md": "aaa", "their/new.md": "bbb"}), encoding="utf-8"
+    )
+    # 本行程記錄自己的檔案後 save
+    m["mine/file.md"] = "ccc"
+    pipeline._save_manifest_updates(m, {"mine/file.md"})
+
+    final = json.loads(tmp_manifest.read_text(encoding="utf-8"))
+    assert final == {
+        "other/path.md": "aaa",
+        "their/new.md": "bbb",  # 別的行程的紀錄不得被洗掉
+        "mine/file.md": "ccc",
+    }
+
+
+def test_repair_inpage_links_restores_english_slugs():
+    """兩個 PR 各自出現（visibility.md、bcs.md×2）：模型把頁內連結的
+    slug 翻譯成中文（#格式-format），目標 anchor 卻是英文 slug（anchor
+    一律衍生自英文標題）。決定性修法：與英文原文的頁內連結按順序配對、
+    取回英文 slug —— 順序配對的前提是兩邊頁內連結數一致，不一致就不修
+    （交給 check_repo 顯形）。"""
+    zh = "# 標題 (T)\n\n見[格式](#格式-format)與[解碼](#解碼-decoding)。\n"
+    en = "# T\n\nSee [Format](#format) and [Decoding](#decoding).\n"
+    out = pipeline._repair_inpage_links(zh, en)
+    assert "(#format)" in out and "(#decoding)" in out
+    assert "#格式" not in out
+
+
+def test_repair_inpage_links_skips_on_count_mismatch_and_code():
+    zh = "```\n[x](#不要動)\n```\n\n[a](#甲)\n"
+    en = "```\n[x](#keep)\n```\n\n[a](#a) 與 [b](#b)\n"
+    out = pipeline._repair_inpage_links(zh, en)
+    assert out == zh  # 頁內連結數不一致（1 vs 2）→ 不修；code 內不算連結
