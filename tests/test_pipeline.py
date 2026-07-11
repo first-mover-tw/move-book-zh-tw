@@ -1,3 +1,4 @@
+import subprocess
 import pytest
 
 from scripts.zh_tw import anchors, frontmatter, manifest, pipeline, validate
@@ -404,3 +405,14 @@ def test_rebuild_frontmatter_retranslates_when_carried_value_has_simplified():
     out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=en)
     meta, _ = frontmatter.split(out)
     assert meta["description"] == "乾淨的新翻譯。"
+
+
+def test_delta_lines_zero_for_identical_blobs():
+    """manifest heal 之後 old_sha == new_sha；`git diff --numstat` 對同一
+    blob 輸出空字串，原本走進 fail-closed 哨兵（10000）→ 已 heal 的檔案
+    全被誤判 B。同 blob 的 delta 就是 0，不需要問 git。"""
+    sha = subprocess.run(
+        ["git", "rev-parse", "english-main:reference/constants.md"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert pipeline._delta_lines(sha, sha) == 0

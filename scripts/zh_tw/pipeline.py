@@ -35,6 +35,10 @@ def _prev_en(path: str, m: dict[str, str]) -> str:
 
 
 def _delta_lines(old_sha: str, new_sha: str) -> int:
+    # 同一 blob 的 delta 是 0；`git diff --numstat` 對它輸出空字串，
+    # 不擋在這裡會掉進下面的 fail-closed 哨兵，把已 heal 的檔案誤判 B。
+    if old_sha == new_sha:
+        return 0
     r = subprocess.run(
         ["git", "diff", "--numstat", old_sha, new_sha], capture_output=True, text=True
     )
