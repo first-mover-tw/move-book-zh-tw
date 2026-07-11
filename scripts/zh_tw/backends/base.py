@@ -28,6 +28,16 @@ TEXT_PROMPT = (
 
 
 class Backend(Protocol):
+    """kind 的三個合法值與各自的 prompt 契約（新 backend 必須遵守三向分流）：
+
+    - "markdown"（預設）：chunk 內文，外包 SYSTEM_PROMPT。
+    - "text"：frontmatter title/description 等裸短字串，外包 TEXT_PROMPT。
+    - "sidebar"：sidebar.translate 的 payload，**自帶** SIDEBAR_PROMPT 與
+      編號清單 —— backend 不得再外包任何 prompt，否則兩層指令互相矛盾
+      （TEXT_PROMPT「單一名詞必翻」vs SIDEBAR_PROMPT「專有名詞維持原文」），
+      且 sidebar 的格式 guard 擋不住這種語意流出。
+    """
+
     def translate(self, text: str, *, kind: str = "markdown") -> str: ...
 
 
