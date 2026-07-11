@@ -14,6 +14,18 @@ SYSTEM_PROMPT = (
     "只回傳翻譯後的 Markdown，不要任何解釋。"
 )
 
+# kind="text"（frontmatter title/description 等短字串）專用。markdown prompt
+# 對單詞技術名詞 title（'Friends | Reference'）會保守不翻，gate 4 攔下後
+# retry 也翻不動 —— 短字串需要明確指示「必須翻、單一名詞也要翻」。
+TEXT_PROMPT = (
+    "你是專業的技術文件翻譯者。請將以下短字串（文件標題或描述）翻譯成台灣繁體中文。\n"
+    "即使只是單一技術名詞也必須翻譯，技術名詞格式為「中文 (English)」，"
+    "保留原文英文於括號內。\n"
+    "若字串含「| Reference」，翻成「| 參考手冊」。\n"
+    f"{glossary.prompt_rules()}\n"
+    "只回傳翻譯結果，不要任何解釋、不要加引號。"
+)
+
 
 class Backend(Protocol):
     def translate(self, text: str, *, kind: str = "markdown") -> str: ...

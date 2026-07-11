@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from .base import SYSTEM_PROMPT
+from .base import SYSTEM_PROMPT, TEXT_PROMPT
 
 
 class ClaudeCLIBackend:
@@ -13,7 +13,8 @@ class ClaudeCLIBackend:
         # validate gate 9（check_heading_suffix）擋下不寫檔。
         model = os.environ.get("ZH_TW_CLAUDE_MODEL", "sonnet")
         timeout = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
-        prompt = f"{SYSTEM_PROMPT}\n\n要翻譯的內容：\n\n{text}"
+        system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
+        prompt = f"{system}\n\n要翻譯的內容：\n\n{text}"
         r = subprocess.run(
             ["claude", "-p", "--model", model, prompt],
             capture_output=True, text=True, timeout=timeout,

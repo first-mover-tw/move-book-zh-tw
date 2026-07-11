@@ -3,7 +3,7 @@
 import os
 import time
 
-from .base import SYSTEM_PROMPT
+from .base import SYSTEM_PROMPT, TEXT_PROMPT
 
 # 這份清單只驗證過在舊腳本裡沿用的 gemini-2.5-flash；
 # gemini-3.0-flash-preview / gemini-2.0-flash-exp 是未經確認的 preview/experimental
@@ -27,7 +27,8 @@ class GeminiBackend:
         self._client = genai.Client(api_key=key)
 
     def translate(self, text: str, *, kind: str = "markdown") -> str:
-        msg = f"{SYSTEM_PROMPT}\n\n要翻譯的內容：\n\n{text}"
+        system = TEXT_PROMPT if kind == "text" else SYSTEM_PROMPT
+        msg = f"{system}\n\n要翻譯的內容：\n\n{text}"
         last: Exception | None = None
         for model in MODELS:
             for attempt in range(MAX_RETRIES):
