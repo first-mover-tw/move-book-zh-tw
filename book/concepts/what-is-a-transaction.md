@@ -1,43 +1,49 @@
 ---
-description: 'Learn how Sui transactions work: structure, commands, gas payments, and how they change blockchain state through Move function calls.'
+description: 了解如何 Sui 交易運作：結構、指令、gas 支付方式，以及如何透過 Move 函式呼叫改變區塊鏈狀態。
 ---
 
-# 交易 (Transaction)
+# Transaction 交易 (Transaction) {#transaction}
 
-交易是區塊鏈世界中的一個基本概念。它是與區塊鏈互動的一種方式。交易用於更改區塊鏈的狀態，而且它們是執行此操作的唯一方式。在 Move 中，交易用於呼叫套件中的函式、部署新套件以及升級現有套件。
+交易是與區塊鏈互動的基本方式。交易用於改變區塊鏈的狀態，而且是唯一能做到這件事的方式。在 Sui 上，一筆交易可以呼叫已發布套件中的函式、部署新套件，以及升級現有套件。
 
-## 交易結構
+## 交易結構 (Transaction Structure) {#transaction-structure}
 
-> 每一筆交易都明確指定了它所操作的物件！
+> 每筆交易都明確指定它所操作的物件！
 
-交易由以下部分組成：
+交易由以下組成：
 
-- 發送者 (sender) —— 「簽署」交易的[帳戶](./what-is-an-account)；
-- 命令列表（或鏈） —— 要執行的操作；
-- 命令輸入 —— 命令的參數：可以是「純粹 (pure)」參數 —— 如數字或字串等簡單數值，或者是「物件 (object)」參數 —— 交易將訪問的物件；
-- Gas 物件 —— 用於支付交易費用的 `Coin` 物件；
-- Gas 價格和預算 (price and budget) —— 交易的成本；
+- 一個 sender —— _簽署_該交易的[帳戶](./what-is-an-account)；
+- 一系列（或一串）指令 —— 要執行的操作；
+- 指令輸入 —— 指令的引數：可以是 `pure` —— 像數字或字串這類簡單值，或是 `object` —— 該交易將存取的物件；
+- 一個 gas 物件 —— 用於支付交易費用的 `Coin` 物件；
+- gas 價格與預算 —— 交易的成本。
 
-## 輸入 (Inputs)
+## 輸入 (Inputs) {#inputs}
 
-交易輸入是交易的參數，分為兩種類型：
+交易輸入是交易的引數，分為兩種類型：
 
-- 純粹參數 (Pure arguments)：這些大多是[原始類型](../move-basics/primitive-types)以及一些額外補充。純粹參數可以是：
+- Pure 引數：這些大多是[基本型別](../move-basics/primitive-types)，並附帶一些額外的補充。一個 pure 引數可以是：
   - [`bool`](../move-basics/primitive-types#booleans)。
-  - [無符號整數](../move-basics/primitive-types#integer-types) (`u8`、`u16`、`u32`、`u64`、`u128`、`u256`)。
+  - [無號整數](../move-basics/primitive-types#integer-types)（`u8`、`u16`、`u32`、`u64`、`u128`、`u256`）。
   - [`address`](../move-basics/address)。
   - [`std::string::String`](../move-basics/string)，UTF8 字串。
   - [`std::ascii::String`](../move-basics/string#ascii-strings)，ASCII 字串。
-  - [`vector<T>`](../move-basics/vector)，其中 `T` 是純粹類型。
-  - [`std::option::Option<T>`](../move-basics/option)，其中 `T` 是純粹類型。
-  - [`std::object::ID`](../storage/uid-and-id)，通常指向一個物件。另請參閱[什麼是物件](../object/object-model)。
-- 物件參數 (Object arguments)：這些是交易將訪問的物件或物件參照。物件參數必須是共享物件、凍結物件或者是交易發送者擁有的物件，交易才能成功。更多資訊請參閱[物件模型](../object)。
+  - [`vector<T>`](../move-basics/vector)，其中 `T` 為 pure 型別。
+  - [`std::option::Option<T>`](../move-basics/option)，其中 `T` 為 pure 型別。
+  - [`sui::object::ID`](../storage/uid-and-id)，通常指向一個物件。另見
+    [What is an Object](../object/object-model)。
+- Object 引數：這些是交易將存取的物件或物件參照。要讓交易成功，object 引數必須是共享物件、凍結物件，或是交易 sender 所擁有的物件。詳見
+  [Object Model](../object)。
 
-## 命令 (Commands)
+## 指令 (Commands) {#commands}
 
-Sui 交易可能由多個命令組成。每個命令可以是一個內建命令（如發佈套件）或對已發佈套件中函式的呼叫。命令按照在交易中列出的順序執行，並且可以使用先前命令的結果來形成一個鏈。交易作為一個整體，要麼成功要麼失敗。
+Sui 交易可能由多個指令組成。每個指令要麼是單一內建指令（例如發布套件），要麼是呼叫已發布套件中的函式。這些指令會依照在交易中列出的順序執行，並且可以使用前面指令的結果，形成一條鏈。交易要麼整體成功，要麼整體失敗。
 
-從圖解上看，一筆交易看起來像這樣（虛擬碼）：
+任何 [`public`](../move-basics/visibility#public-visibility) 函式都可以作為指令被呼叫：把函式設為 `public` 就足以讓使用者在交易中呼叫它，這也是在 Move 中公開功能的預設方式。（另外還有
+[`entry`](../move-basics/visibility#entry-modifier) 修飾詞，它建立的函式*只能*作為交易指令被呼叫——這是一個刻意受限的選項，會在
+[Entry Functions](../move-advanced/entry-functions) 章節中介紹。）
+
+以示意圖表示，一筆交易大致如下（以虛擬程式碼表示）：
 
 ```
 Inputs:
@@ -49,25 +55,31 @@ Commands:
 - TransferObjects(item, sender)
 ```
 
-在這個範例中，交易由三個命令組成：
+在這個範例中，交易由三個指令組成：
 
-1. `SplitCoins` - 一個內建命令，從傳遞的物件（在此範例中為 `Gas` 物件）中拆分出一個新代幣；
-2. `MoveCall` - 呼叫套件 `0xAAA`、模組 `market` 中 `purchase` 函式的命令，其參數為 `payment` 物件；
-3. `TransferObjects` - 一個內建命令，將物件轉移給接收者。
+1. `SplitCoins` —— 一個內建指令，從傳入的物件（在此例中為 `Gas` 物件）分割出一個新的 coin；
+2. `MoveCall` —— 一個指令，使用給定的引數（`payment` 物件）呼叫套件 `0xAAA` 中模組 `market` 的函式 `purchase`；
+3. `TransferObjects` —— 一個內建指令，將物件轉移給接收者。
 
-## 交易效果 (Transaction Effects)
+## 交易效果 (Transaction Effects) {#transaction-effects}
 
-交易效果是交易對區塊鏈狀態所做的更改。更具體地說，交易可以透過以下方式更改狀態：
+交易效果是指一筆交易對區塊鏈狀態所做的改變。更具體地說，交易可以透過以下方式改變狀態：
 
-- 使用 Gas 物件支付交易費用；
+- 使用 gas 物件支付交易費用；
 - 建立、更新或刪除物件；
 - 發出事件；
 
-執行交易的結果由不同部分組成：
+已執行交易的結果由不同部分組成：
 
-- 交易摘要 (Transaction Digest) —— 用於標識交易的交易哈希；
-- 交易數據 (Transaction Data) —— 交易中使用的輸入、命令和 Gas 物件；
-- 交易效果 (Transaction Effects) —— 交易的狀態和「效果」，更具體地說：交易的狀態、物件的更新及其新版本、使用的 Gas 物件、交易的 Gas 成本以及交易發出的事件；
-- 事件 (Events) —— 交易發出的自定義[事件](./../programmability/events)；
-- 物件變更 (Object Changes) —— 對物件所做的更改，包括「所有權變更 (change of ownership)」；
-- 餘額變更 (Balance Changes) —— 交易涉及帳戶總餘額的變更；
+- Transaction Digest —— 用來識別該交易的雜湊值；
+- Transaction Data —— 交易中使用的輸入、指令與 gas 物件；
+- Transaction Effects —— 交易的狀態與「效果」，更具體地說：交易的狀態、物件的更新與其新版本、所使用的 gas 物件、交易的 gas 成本，以及交易所發出的事件；
+- Events —— 交易所發出的自訂[事件](./../programmability/events)；
+- Object Changes —— 對物件所做的變更，包括*所有權的變更*；
+- Balance Changes —— 對參與交易的帳戶總餘額所做的變更。
+
+## 延伸閱讀 (Further Reading) {#further-reading}
+
+- Sui 文件中的[Transactions](https://docs.sui.io/concepts/transactions)。
+- Sui 文件中的[Programmable Transaction Blocks](https://docs.sui.io/concepts/transactions/prog-txn-blocks)。
+- Sui 文件中的[Using Address Balances](https://docs.sui.io/onchain-finance/asset-custody/address-balances/using-address-balances) —— 在沒有 `Coin` 物件的情況下支付 gas 與轉移資金。

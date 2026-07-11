@@ -1,15 +1,20 @@
 ---
-description: 'Understand Sui accounts: how they are generated from private keys, identified by addresses, and support multiple crypto schemes.'
+description:
+  了解 Sui 帳戶 (Sui accounts)：私鑰如何生成帳戶、如何以地址 (address) 識別，以及支援多種加密方案 (crypto
+  schemes)
 ---
 
-# 帳戶 (Account)
+# 帳戶 (Account) {#account}
 
-帳戶是標識用戶的一種方式。帳戶是從私鑰生成的，並透過地址來標識。帳戶可以擁有物件，並可以發送交易。每筆交易都有一個發送者，發送者由[地址](./address)標識。
+帳戶是識別使用者的一種方式。帳戶由私鑰產生，並以[地址](./address)識別。帳戶可以擁有物件，也可以發送交易。每筆交易都有一個發送者，發送者由[地址](./address)識別。
 
-Sui 支持多種密碼學算法用於生成帳戶。目前支持的兩條曲線是 ed25519、secp256k1，還有一種特殊的生成帳戶方式 —— zklogin。密碼學靈活性（Cryptographic agility）是 Sui 的獨特功能，允許在帳戶生成方面具有靈活性。
+帳戶不需要在任何地方建立或註冊：金鑰對一經產生，帳戶即存在，任何有效地址都能在沒有事先設定的情況下接收物件。鏈上並沒有「所有帳戶」的紀錄——一個沒有物件、也沒有交易紀錄的地址，跟一個從未被使用過的地址是無法區分的。
 
-## 進一步閱讀
+Sui 支援多種帳戶簽章方案：ed25519、ECDSA（基於 secp256k1 與 secp256r1 曲線）、passkeys（基於 WebAuthn 標準的裝置驗證器，例如 Face ID、Touch ID 或硬體安全金鑰）、multisig（由多把金鑰組合控制的帳戶），以及 zkLogin（從 Web2 登入衍生出帳戶）。這種*密碼學靈活性*讓 Sui 在帳戶的建立與控制方式上具備了不尋常的彈性。
 
-- [Sui 中的密碼學](https://blog.sui.io/wallet-cryptography-specifications/)，載於 [Sui 部落格](https://blog.sui.io)
-- [密鑰與地址](https://docs.sui.io/concepts/cryptography/transaction-auth/keys-addresses)，載於 [Sui 官方文件](https://docs.sui.io)
-- [簽章](https://docs.sui.io/concepts/cryptography/transaction-auth/signatures)，載於 [Sui 官方文件](https://docs.sui.io)
+## 延伸閱讀 (Further Reading) {#further-reading}
+
+- [Sui 部落格](https://blog.sui.io)中的[〈Sui 密碼學〉](https://blog.sui.io/wallet-cryptography-specifications/)
+- [Sui 文件](https://docs.sui.io)中的[〈金鑰與地址〉](https://docs.sui.io/guides/developer/transactions/transaction-auth/auth-overview)
+- [Sui 文件](https://docs.sui.io)中的[〈簽章〉](https://docs.sui.io/guides/developer/cryptography/signing)
+- [Sui 文件](https://docs.sui.io)中的[〈Passkey〉](https://docs.sui.io/develop/cryptography/passkeys)

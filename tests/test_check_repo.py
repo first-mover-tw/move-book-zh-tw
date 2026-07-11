@@ -13,25 +13,12 @@ def test_main_over_real_corpus_is_not_yet_clean():
     as pinned in tests/test_baseline.py. main() must return 1."""
     files = check_repo.collect()
 
-    # 過渡 404 清單（每個 backfill PR 更新，收尾必須為空）：
-    # - PR 3 新譯文忠實翻出英文新增的跨檔連結，目標檔尚未翻新（英文端
-    #   目標已逐一驗證存在）。PR 4 解掉 vector/struct 兩條。
-    # - dynamic-fields→#struct 是 plan 預告的 anchor 退役 404（上游刪節，
-    #   PR 4 重譯 struct.md 時 {#struct} 退場）；PR 5 重譯 dynamic-fields
-    #   後消失。
+    # 過渡 404 已於 PR 7（backfill 最終批）全數清空 —— 恢復嚴格斷言。
+    # 歷程：PR 3 引入 11 條 → PR 4-7 逐批解掉 + 2 個 legacy anchor 更名
+    # （{#clock}→{#time}、{#immutable-frozen-object}→{#immutable-frozen-state}）
+    # + reference/functions.md 補顯式 {#return-expression}。
     link_errs = validate.check_links(files)
-    transitional = {
-        "book/storage/storage-functions.md: anchor 無法解析 ./store-ability#relation-to-key",
-        "book/storage/storage-functions.md: anchor 無法解析 ./../object/ownership#party-objects",
-        "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#immutable-frozen-state",
-        "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#party-objects",
-        # PR 5 起：balance-and-coin 忠實翻出上游連結，目標 concepts（PR 7）
-        "book/programmability/balance-and-coin.md: anchor 無法解析 ./../concepts/what-is-a-transaction#commands",
-        # PR 6 新譯文忠實翻出上游連結，目標 object/（PR 7）
-        "book/testing/test-scenario.md: anchor 無法解析 ./../object/ownership.md#immutable-frozen-state",
-        "reference/variables.md: anchor 無法解析 ./functions#return-expression",
-    }
-    assert set(link_errs) == transitional
+    assert link_errs == []
 
     glossary_total = 0
     for text in files.values():
@@ -43,7 +30,7 @@ def test_main_over_real_corpus_is_not_yet_clean():
         _, body = frontmatter.split(text)
         simplified_total += len(validate.simplified_chars(body))
 
-    assert glossary_total == 87, glossary_total  # PR 6 清 21 處（108→87，舊 testing 章違禁詞密集）
+    assert glossary_total == 76, glossary_total  # backfill 完成（126→76）；殘留全在 reference/ legacy body
     assert simplified_total == 3, simplified_total  # PR 6 再清 1 字
 
     assert check_repo.main() == 1

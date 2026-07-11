@@ -1,140 +1,104 @@
 ---
-description: 'UID and ID in Sui Move: unique object identifiers, how they are created, used for dynamic fields, and guaranteed to be unique.'
+description: Sui Move 中的 UID 與 ID (UID and ID in Sui Move)：唯一物件識別符 (unique object
+  identifiers) 的建立方式、如何用於動態欄位 (dynamic fields)，以及唯一性的保證。
 ---
 
-# UID 與 ID (UID and ID)
+# UID 與 ID (UID and ID) {#uid-and-id}
 
-Sui 校驗器要求在所有具有 [`key`](./key-ability.md) 能力的類型上使用 `UID` 類型。在這裡，我們將深入探討 `UID` 及其用法。
+在所有具備 [`key`](./key-ability) 能力的型別上，Sui Verifier 都要求使用 `UID` 型別。這裡我們深入探討 `UID` 及其用法。
 
-## 定義
+## 定義 (Definition) {#definition}
 
-`UID` 類型定義在 `sui::object` 模組中，它是 `ID` 的封裝器，而 `ID` 則進一步封裝了 `address` 類型。Sui 上的 UID 保證是唯一的，並且在物件被刪除後不能重複使用。
+`UID` 型別定義於 `sui::object` 模組中，是對 `ID` 的一層包裝，而 `ID` 本身則是對 `address` 型別的包裝。Sui 上的 UID 保證是唯一的，且物件被刪除後不能再被重複使用。
 
 ```move
 module sui::object;
 
-/// UID 是物件的唯一識別碼
+/// UID 是一個物件的唯一識別碼。
 public struct UID has store {
     id: ID
 }
 
-/// ID 是地址的封裝器
-public struct ID has store, drop {
+/// ID 是對 address 的包裝；可自由複製。
+public struct ID has copy, drop, store {
     bytes: address
 }
 ```
 
-## 新 UID 的產生 (Fresh UID Generation)
+注意兩者能力上的差異：`ID` 是單純、可複製的資料——一個能指向任何物件（甚至是不存在的物件）的指標，不需要任何特殊權限。而 `UID` 既不能複製也不能捨棄：它是物件的身分識別，其建立與銷毀都必須是明確、受控的操作。
 
-- `UID` 是從 `tx_hash` 和為每個新 UID 遞增的 `index` 中「衍生 (derived)」出來的。
-- `derive_id` 函式在 `sui::tx_context` 模組中實作，這就是為什麼產生 `UID` 需要 [交易上下文 (TxContext)](./../programmability/transaction-context.md)。
-- Sui 校驗器不允許使用不是在同一個函式中建立的 UID。這防止了 UID 被預先產生或在物件拆包後重複使用。
+## 產生全新的 UID (Fresh UID Generation) {#fresh-uid-generation}
 
-使用 `object::new` 函式建立新的 UID。它接收一個對 `TxContext` 的可變參考，並傳回一個新的 `UID`。
+使用 `object::new(ctx)` 函式可以建立一個新的 `UID`：
 
-```move
-public fun uid(ctx: &mut TxContext) {
-  let id = object::new(ctx); // 從 TxContext 建立一個新的 UID。
-  id.delete(); // 刪除此 UID。
-}
+- `UID` 是從交易摘要（transaction digest）以及該交易中目前為止已建立的 ID 計數器*衍生*而來，每建立一個新的 UID 該計數器就會遞增。
+- 這個計數器存在於交易上下文中，這也是為什麼 UID 的產生需要 [TxContext](./../programmability/transaction-context) 的可變參考。
+- 一個新建立物件的 `id` 欄位必須是*全新*的 UID——也就是在同一筆交易中由 `object::new` 產生的 UID。Sui Verifier 會拒絕使用來自另一個已拆解物件的 UID 來封裝物件——因此一個身分識別絕不能被重複使用，即使是擁有該身分識別的模組本身也不行。
+
+`UID` 作為物件的表徵，使得依附於物件身分識別的功能得以實現。其中最關鍵的功能之一——[動態欄位](./../programmability/dynamic-fields)——之所以可行，正是因為 `UID` 是明確存在的。另一個功能——[轉移至物件](./transfer-to-object)（於本章末介紹）——則允許一個物件接收送往其 ID 的其他物件。
+
+## UID 的生命週期 (UID Lifecycle) {#uid-lifecycle}
+
+`UID` 透過 `object::new` 建立，並透過 `object::delete` 函式刪除。`delete` 函式*依值*消耗 UID，因此只能在物件被[拆解](./../move-basics/struct#unpacking-a-struct)之後呼叫——而只有定義該物件的模組才能執行拆解：
+
+```move file=packages/samples/sources/storage/uid-and-id.move anchor=lifecycle
+
 ```
 
-`UID` 充當物件的代表，並允許定義物件的行為和功能。其中一個關鍵功能 —— [動態欄位 (Dynamic Fields)](./../programmability/dynamic-fields) —— 之所以可行，是因為 `UID` 類型是顯式的。此外，它允許接收發送到其他物件的物件。此功能稱為 [轉移至物件 (Transfer to Object, TTO)](./transfer-to-object.md)，我們稍後將在本章中解釋。
+### 保留 UID (Keeping the UID) {#keeping-the-uid}
+
+物件被拆解後，`UID` 不一定要立即刪除。它可能承載著[動態欄位](./../programmability/dynamic-fields)，或持有透過[轉移至物件](./transfer-to-object)方式送達的物件——若此時刪除 UID，將使這些內容無法再被存取。針對這類情況，可以保留該 UID：將其以一般 `UID` 欄位（而非 `id`！）的形式，儲存在另一個結構體中，直到相關資料處理完畢，UID 才能被安全地刪除。
+
+> 在物件消失後仍保留其 UID 的能力，可實現一種小眾技巧，稱為*刪除證明*（proof of deletion）：回傳的 UID 即為該物件已被銷毀的證據，應用程式可用它來兌換獎勵，或繞過原本作用於該存活物件上的限制。
 
 ## UID 衍生 (UID Derivation) {#uid-derivation}
 
-Sui 允許使用「衍生金鑰 (derivation keys)」從其他 UID 衍生出 UID。此功能在 [`sui::derived_object`][derived-object] 模組中實作，允許產生可預測且確定性的 `UIDs`，以便於鏈下發現。每一對「父項 (parent) + 金鑰 (key)」的 UID 只能產生一次！
+Sui 允許使用*衍生金鑰*（derivation keys）從既有的 UID 衍生出新的 UID。此功能實作於 [`sui::derived_object`][derived-object] 模組中，能產生可預測、確定性的 ID，方便鏈下探索。每一組 parent + key 組合所對應的 UID，只能被領取一次：
 
-```move
-use sui::derived_object;
+```move file=packages/samples/sources/storage/uid-and-id.move anchor=derived
 
-/// 某個核心應用程式物件。
-public struct Base has key { id: UID }
-
-/// 衍生物件。
-public struct Derived has key { id: UID }
-
-/// 使用 `address` 作為 `key` 建立並共享一個新的 `Derived` 物件。
-public fun derive(base: &mut Base, key: address) {
-    let id = derived_object::claim(&mut base.id, key);
-    transfer::share_object(Derived { id })
-}
 ```
 
-衍生地址降低了鏈下索引器 (indexers) 的負載，因為只需存儲父物件的 ID，並使用衍生函式即可獲取衍生 ID。ID 衍生函式是大多數 SDK 的一部分，也存在於 Move 中：
+衍生位址能降低鏈下索引器的負擔：只要知道父物件的 ID，衍生物件的 ID 就可以透過衍生函式計算得出——這類函式存在於大多數 SDK 中，Move 本身也有提供：
 
 ```move
 module sui::derived_object;
 
-/// 檢查 UID 是否是使用 `key` 在 `parent` 處衍生出來的。
+/// 檢查某個 UID 是否是用 `key` 在 `parent` 下衍生出來的。
 public fun exists<K: copy + drop + store>(parent: &UID, key: K): bool;
 
-/// 不管是否已建立，衍生 UID 的內部 `address`。
+/// 衍生出 UID 內部的 `address`，無論它是否已被 claim。
 public fun derive_address<K: copy + drop + store>(parent: ID, key: K): address;
 ```
 
-同樣的衍生功能也被用於為 [動態欄位 (dynamic fields)](./../programmability/dynamic-fields.md) 產生 UID。
+相同的衍生機制也在內部被用來為[動態欄位](./../programmability/dynamic-fields)產生 ID。
 
-## UID 的生命週期
+## ID {#id}
 
-`UID` 類型使用 `object::new` 函式建立，並使用 `object::delete` 函式刪除。`object::delete` 「按值 (by value)」消耗 UID，因此只有在物件 [被拆包 (unpacked)](./../move-basics/struct.md#unpacking-a-struct) 之後才能刪除物件的 UID。
+談到 `UID` 時，也應該一併提及 `ID` 型別。它是對 `address` 的一層可自由複製包裝，用來*指向*某個物件。通常 `ID` 會指向某個實際存在的物件，但這並非強制限制——也沒有任何保證該 ID 一定指向一個存在的物件。
 
-```move
-public struct Character has key { id: UID }
+> ID 可以作為交易參數，在[交易區塊](./../concepts/what-is-a-transaction)中被接收。另外，也可以使用 `to_id()` 函式，從 `address` 值建立出一個 ID。
 
-public fun character(ctx: &mut TxContext) {
-    // 實例化 `Character` 物件。
-    let char = Character { id: object::new(ctx) };
+```move file=packages/samples/sources/storage/uid-and-id.move anchor=conversions
 
-    // 拆包物件以獲取其 UID。
-    let Character { id } = char;
-
-    // 刪除此 UID。
-    id.delete();
-}
 ```
 
-## 保留 UID
+## 全新物件位址 (Fresh Object Address) {#fresh-object-address}
 
-UID 在物件結構被拆包後不需要立即刪除。有時它可能帶有 [動態欄位](./../programmability/dynamic-fields) 或透過 [轉移至物件](./transfer-to-object.md) 轉移給它的物件。在這種情況下，UID 可能會保留並存儲在另一個物件中。
+[`TxContext`](./../programmability/transaction-context) 提供了 `fresh_object_address` 函式，該函式使用與 `object::new` 相同的衍生方式產生一個唯一位址——但不會建立 `UID`。這對於需要為鏈下實體提供唯一識別碼的應用程式相當有用——例如市場應用中的 `order_id`。
 
-## 刪除證明 (Proof of Deletion)
+## 總結 (Summary) {#summary}
 
-返回物件 UID 的能力可以用於一種稱為「刪除證明 (proof of deletion)」的模式。這是一種很少使用的技術，但在某些情況下可能很有用，例如，創作者或應用程式可以透過將已刪除的 ID 更換為某些獎勵來激勵物件的刪除。
+- `UID` 是物件不可複製、不可捨棄的身分識別；`ID` 則是可自由複製的指標。
+- 全新的 UID 來自 `object::new(ctx)`，且絕不能被重複用於新物件。
+- UID 在拆解物件後會透過 `object::delete` 刪除——若仍有資料依附其上，則可以保留。
+- 衍生 UID（`sui::derived_object`）讓物件 ID 具備可預測性，並可在鏈下被探索。
 
-在框架開發中，此方法可以用於忽略/繞過對「獲取 (taking)」物件的某些限制。如果有一個像 Kiosk 那樣對轉移強制執行某些邏輯的容器，則可能存在透過提供刪除證明來跳過檢查的特殊場景。
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-這是目前仍在探索和研究的開放主題之一，可以以多種方式使用。
+- [`sui::object`][object] 模組文件。
+- [`sui::derived_object`][derived-object] 模組文件。
+- Sui 官方文件中的[衍生物件](https://docs.sui.io/guides/developer/objects/derived-objects)。
 
-## ID
-
-在討論 `UID` 時，我們也應該提到 `ID` 類型。它是對 `address` 類型的封裝，用於代表一個地址指標。通常，`ID` 用於指向一個物件，然而，這沒有任何限制，也不保證 `ID` 指向一個現有的物件。
-
-> ID 可以作為 [交易區塊 (Transaction Block)](./../concepts/what-is-a-transaction) 中的交易參數接收。或者，可以使用 `to_id()` 函式從 `address` 數值建立 ID。
-
-```move
-public fun conversion_methods(ctx: &mut TxContext) {
-    let uid: UID = object::new(ctx);
-    let id: ID = uid.to_inner();
-
-    let addr_from_uid: address = uid.to_address();
-    let addr_from_id: address = id.to_address();
-
-    uid.delete();
-}
-```
-
-此範例展示了不同的轉換方法：`UID.to_inner` 建立了底層 `ID` 的副本，而 `UID.to_address` 返回內部地址。另一個非常有用的方法 `ID.to_address` 會從 `ID` 類型中複製內部數值。
-
-## 新物件地址 (Fresh Object Address)
-
-[`TxContext`](./../programmability/transaction-context.md) 提供了 `fresh_object_address` 函式，可用於建立唯一的地址和 `ID` —— 這在某些為使用者動作分配唯一識別碼（例如：市場中的 order_id）的應用程式中非常有用。
-
-## 相關連結
-
-- [`sui::object`][object] 模組文件
-- [`sui::derived_object`][derived-object] 模組文件
-- Sui 文件中的 [衍生物件 (Derived Objects)](https://docs.sui.io/concepts/sui-move-concepts/derived-objects)
-
-[object]: https://docs.sui.io/references/framework/sui_sui/object
-[derived-object]: https://docs.sui.io/references/framework/sui_sui/derived_object
+[object]: https://docs.sui.io/references/framework/sui/object
+[derived-object]: https://docs.sui.io/references/framework/sui/derived_object

@@ -348,7 +348,7 @@ fun double_and_add(x: u64, y: u64): u64 {
 
 這裡的回傳值是 `double_x + double_y` 的結果。
 
-### `return` 表達式
+### `return` 表達式 {#return-expression}
 
 函式會隱式地回傳其主體求得的數值。不過，函式也可以使用顯式的 `return` 表達式：
 

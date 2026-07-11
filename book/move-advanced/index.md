@@ -1,7 +1,13 @@
 ---
-description: 'Advanced Move language features: modes, extended build configurations, and advanced programming techniques for Sui developers.'
+description: Sui 開發者的進階 Move 語言功能：模式 (modes)、擴充建置設定，以及進階程式設計技巧。
 ---
 
-# 進階 Move 用法
+# Advanced Move Usage 進階 Move 使用 (Advanced Move Usage) {#advanced-move-usage}
 
-本章介紹 Move 語言的進階功能，包含適用於進階程式設計的各種延伸行為。這包含語言本身的進階用法，以及套件與建置系統。
+This chapter covers advanced features of the Move language, including various extended behaviors for
+advanced programming. This includes advanced usage of the language itself, plus the package and
+build system.
+
+- [Compilation Modes](./modes) - including unpublishable code in named build modes.
+- [Entry Functions](./entry-functions) - the `entry` modifier and the static hot-potato guarantee
+  that makes it a safe transaction boundary.
