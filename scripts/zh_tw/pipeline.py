@@ -81,11 +81,18 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
     穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
     定位到小範圍）。重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋，
     fail-closed 不變 —— 這裡是自動修復路徑，不是放寬。"""
+    # 驗 gate 1+2 兩個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
+    # 標題照過，join 後卻把下一個 chunk 的標題吞進未閉合 fence（L7 實錄：
+    # variables.md 21→19，單獨翻每個 chunk 都正常）。
     want = [lv for lv, _ in anchors.headings(chunk_text)]
+    want_fences = anchors.fence_lines(chunk_text)
     out = ""
     for _ in range(CHUNK_RETRIES):
         out = backend.translate(chunk_text)
-        if [lv for lv, _ in anchors.headings(out)] == want:
+        if (
+            [lv for lv, _ in anchors.headings(out)] == want
+            and anchors.fence_lines(out) == want_fences
+        ):
             return out
     return out
 

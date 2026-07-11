@@ -551,3 +551,22 @@ def test_translate_body_keeps_last_attempt_when_retries_exhausted():
     _, body = frontmatter.split(out)
     assert len(anchors.headings(body)) == 1  # 依然殘缺 —— gate 1 會擋
     assert calls["n"] == pipeline.CHUNK_RETRIES
+
+
+def test_translate_chunk_retries_on_fence_mismatch():
+    """L7 組合缺陷實錄：chunk N 輸出掉了收尾 ```，自身標題檢查照過，join
+    後 chunk N+1 的標題全被吞進未閉合 fence（variables.md 21→19，單獨翻
+    每個 chunk 都正常）。chunk 級檢查必須同時驗 gate 1+2 兩個維度。"""
+    calls = {"n": 0}
+
+    class FenceDroppingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "# 一 (One)\n\n```move\nlet x = 1;\n"  # 掉了收尾 ```
+            return "# 一 (One)\n\n```move\nlet x = 1;\n```\n"
+
+    en = "# One\n\n```move\nlet x = 1;\n```\n"
+    out = pipeline._translate_chunk(en, FenceDroppingBackend())
+    assert calls["n"] == 2
+    assert anchors.fence_lines(out) == anchors.fence_lines(en)
