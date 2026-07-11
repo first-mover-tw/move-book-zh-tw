@@ -53,11 +53,8 @@ def test_tier_a_for_frontmatter_only_delta():
     assert pipeline.tier("book/404.md") == "A"
 
 
-def test_tier_b_when_structure_fails_even_if_delta_is_small():
-    """reference/variables.md：上游只動 frontmatter，但中文只有 36 行 / 6 個標題
-    （英文 824 行 / 21 個標題）。結構驗證擋下，強制降級 B 層全譯。
-    這是分層閘門存在的理由 —— 純看 delta 大小會讓那 788 行永遠回不來。"""
-    assert pipeline.tier("reference/variables.md") == "B"
+# tier 的結構降級（B-強制）fixture 已絕跡：PR 3 修復了全部 15 個結構殘缺檔。
+# 降級邏輯由 check_structure 合成 unit tests 與 tier 的 A 判定測試覆蓋。
 
 
 # --- additional coverage required by Task 11 brief ---

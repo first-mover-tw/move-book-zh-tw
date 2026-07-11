@@ -14,6 +14,18 @@ DANGLING_SHA = "0" * 40  # 不存在於任何 repo 的假 blob SHA
 # 不可用 live 的 scripts/translation-manifest.json 取代 —— 那份已經被
 # heal --apply 修復過，任何時候讀它都不會再有 30 筆懸空條目。
 PRE_HEAL_MANIFEST_REF = "ba52a152"
+PRE_FIX_ZH_REF = "0d4b8bea"  # heal() 讀 zh@HEAD 做指紋比對；census 必須連 zh 側一起
+# 釘死（L3）：PR 3 修復 book/object/index.md 的結構後，HEAD 指紋改變會讓
+# 30/1 的一次性普查漂成 31/0。
+
+
+def _pin_head(monkeypatch):
+    real_show = heal_manifest._show
+
+    def pinned(ref, path):
+        return real_show(PRE_FIX_ZH_REF if ref == "HEAD" else ref, path)
+
+    monkeypatch.setattr(heal_manifest, "_show", pinned)
 
 
 def _manifest_at(tmp_path, ref):
@@ -36,6 +48,7 @@ def test_heal_census_pinned_to_pre_heal_manifest(tmp_path, monkeypatch):
     """
     tmp_manifest = _manifest_at(tmp_path, PRE_HEAL_MANIFEST_REF)
     monkeypatch.setattr(manifest, "MANIFEST_PATH", tmp_manifest)
+    _pin_head(monkeypatch)
 
     healed, unrecoverable = heal_manifest.heal(dry_run=True)
 
@@ -75,6 +88,7 @@ def test_constructed_dangling_entries_healable_vs_unrecoverable(tmp_path, monkey
         encoding="utf-8",
     )
     monkeypatch.setattr(manifest, "MANIFEST_PATH", tmp_manifest)
+    _pin_head(monkeypatch)  # unrecoverable 判定依賴 zh@HEAD 指紋（PR 3 已修復該檔）
 
     healed, unrecoverable = heal_manifest.heal(dry_run=True)
 

@@ -64,9 +64,10 @@ def test_blob_sha_returns_none_for_missing_path():
     assert manifest.blob_sha("english-main", "nope/missing.md") is None
 
 
-def test_orphans_finds_upstream_deleted_file():
-    """D9: 上游在 #223 刪除了 transfer-restrictions.md。"""
-    assert "book/storage/transfer-restrictions.md" in manifest.orphans("english-main")
+def test_no_orphans_remain():
+    """D9 已於 PR 3 解決（transfer-restrictions.md 與其 manifest entry 已刪）。
+    此後任何孤兒出現都代表上游刪檔未同步，應立即處理。"""
+    assert manifest.orphans("english-main") == []
 
 
 def test_stale_files_count_tracks_backfill():
