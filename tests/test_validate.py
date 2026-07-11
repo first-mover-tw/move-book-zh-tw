@@ -639,3 +639,23 @@ def test_check_links_resolves_directory_style_target():
         "book/sub/index.md": "# Sub {#target}\n",
     }
     assert validate.check_links(files) == []
+
+
+# --- tier 分層依據：spec §五「A 層前提是 validate 第 1、2 條」 ---
+
+
+def test_check_structure_ignores_non_structural_defects():
+    """未翻 frontmatter 與內文違禁詞是 backfill 要修的缺陷，不是結構問題；
+    check_structure 不得回報它們（否則 tier 會把待修檔誤降 B 層全譯）。"""
+    en = '---\ndescription: "Constants."\n---\n\n# Constants\n\nText.\n'
+    zh = '---\ndescription: "Constants."\n---\n\n# 常數 {#constants}\n\n循環與返回。\n'
+    assert validate.check_structure(zh, en) == []
+    assert validate.check_file(zh, en)  # 全量 gate 仍須抓到這些缺陷
+
+
+def test_check_structure_flags_heading_and_fence_mismatch():
+    en = "# One\n\n## Two\n\n```move\nlet x;\n```\n"
+    zh = "# 一\n"
+    errs = validate.check_structure(zh, en)
+    assert any("標題層級序列" in e for e in errs)
+    assert any("fence" in e for e in errs)

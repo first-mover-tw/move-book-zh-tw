@@ -237,3 +237,16 @@ def test_run_validation_error_on_one_file_does_not_stop_others():
     ok, failed = pipeline.run(paths, "fake", apply=False)
     assert "nonexistent/does-not-exist.md" in failed
     assert ok == 1
+
+
+def test_tier_a_when_only_frontmatter_untranslated():
+    """reference/coding-conventions.md：結構一致、delta ≤ 6，唯一缺陷是
+    description 未翻 —— 正是 A 層 backfill 要修的東西，不得當降級理由
+    （spec §五：A 層前提只看 validate 第 1、2 條）。"""
+    assert pipeline.tier("reference/coding-conventions.md") == "A"
+
+
+def test_tier_a_when_only_body_forbidden_words():
+    """reference/constants.md：結構一致，內文帶違禁詞「循環」。內文品質
+    缺陷不在 validate 第 1、2 條，不構成降級。"""
+    assert pipeline.tier("reference/constants.md") == "A"

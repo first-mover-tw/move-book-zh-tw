@@ -79,16 +79,13 @@ def simplified_chars(body: str) -> list[tuple[int, str]]:
     return out
 
 
-def check_file(
-    zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
-) -> list[str]:
-    """gate 6（anchor 身分）的執行前提鏡射 anchors._identity_carry：prev_en_text
-    缺席，或 prev_zh_text 與 prev_en_text 的標題數不對齊，兩種情況都讓 gate 6
-    完全棄權，不做任何檢查（不會退化成別的部分檢查）——理由見 gate 6 區塊的
-    註解。"""
+def check_structure(zh_text: str, en_text: str) -> list[str]:
+    """只跑 gate 1、2（標題層級序列、fence 數）。這是 spec §五 A 層分層的
+    唯一依據：未翻 frontmatter、違禁詞等其餘 gate 是 backfill 要修的缺陷，
+    拿來降級會把待修檔誤送整篇重譯。pipeline.tier 用這個，不要用 check_file。"""
     errs: list[str] = []
-    zh_meta, zh_body = frontmatter.split(zh_text)
-    en_meta, en_body = frontmatter.split(en_text)
+    _, zh_body = frontmatter.split(zh_text)
+    _, en_body = frontmatter.split(en_text)
 
     zh_h = anchors.headings(zh_body)
     en_h = anchors.headings(en_body)
@@ -103,6 +100,22 @@ def check_file(
             f"程式碼 fence 數不符: 中文 {anchors.fence_lines(zh_body)}, "
             f"英文 {anchors.fence_lines(en_body)}"
         )
+    return errs
+
+
+def check_file(
+    zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
+) -> list[str]:
+    """gate 6（anchor 身分）的執行前提鏡射 anchors._identity_carry：prev_en_text
+    缺席，或 prev_zh_text 與 prev_en_text 的標題數不對齊，兩種情況都讓 gate 6
+    完全棄權，不做任何檢查（不會退化成別的部分檢查）——理由見 gate 6 區塊的
+    註解。"""
+    errs: list[str] = list(check_structure(zh_text, en_text))
+    zh_meta, zh_body = frontmatter.split(zh_text)
+    en_meta, en_body = frontmatter.split(en_text)
+
+    zh_h = anchors.headings(zh_body)
+    en_h = anchors.headings(en_body)
 
     # 3. frontmatter key 集合
     if set(zh_meta) != set(en_meta):

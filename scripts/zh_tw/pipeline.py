@@ -61,7 +61,9 @@ def tier(path: str, en_ref: str = "english-main") -> str:
         return "B"
 
     en_old = _show(MERGE_BASE, path)
-    if en_old is None or validate.check_file(zh, en_old):
+    # spec §五：分層只看 gate 1、2。用全量 check_file 會把「description 未翻」
+    # 這種 backfill 本身要修的缺陷當成降級理由（實測誤降 30 檔）。
+    if en_old is None or validate.check_structure(zh, en_old):
         return "B"  # 結構驗證未過（例：reference/variables.md）
     return "A"
 
