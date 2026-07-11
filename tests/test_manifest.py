@@ -70,9 +70,9 @@ def test_orphans_finds_upstream_deleted_file():
 
 
 def test_stale_files_count_tracks_backfill():
-    """backfill 進度計數器：PR 2（A 層 47 檔）後 151 - 47 = 104。
-    之後每個 backfill PR 遞減此數；收尾 task 應歸零並改寫本測試。"""
-    assert len(manifest.stale_files("english-main")) == 104
+    """backfill 進度計數器：PR 2 後 104；PR 3（結構殘缺 15 檔，其中 13 檔
+    原屬 stale）後 91。之後每個 backfill PR 遞減此數；收尾歸零並改寫本測試。"""
+    assert len(manifest.stale_files("english-main")) == 91
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():
