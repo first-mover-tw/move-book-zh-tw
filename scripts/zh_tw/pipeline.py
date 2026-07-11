@@ -89,10 +89,16 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
     out = ""
     for _ in range(CHUNK_RETRIES):
         out = backend.translate(chunk_text)
-        if (
-            [lv for lv, _ in anchors.headings(out)] == want
-            and anchors.fence_lines(out) == want_fences
-        ):
+        try:
+            ok = (
+                [lv for lv, _ in anchors.headings(out)] == want
+                and anchors.fence_lines(out) == want_fences
+            )
+        except anchors.FrontmatterPassedIn:
+            # backend 幻覺出 YAML frontmatter —— 正是重試該吸收的垃圾輸出，
+            # 不能讓例外逃出去炸掉整檔（review F1）。
+            ok = False
+        if ok:
             return out
     return out
 
@@ -251,16 +257,22 @@ def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
 
     numbered = "\n".join(f"{n + 1}. {t}" for n, (_, _, t, _) in enumerate(todo))
     raw = backend.translate(f"{_COMMENT_PROMPT}\n\n{numbered}", kind="raw")
-    replies = {}
+    replies: dict[int, str] = {}
     for line in raw.splitlines():
-        m = re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line)
+        m = re.match(r"^\s*(\d+)[.)]\s*(.+?)\s*$", line)  # \s*：容忍「1.譯文」無空格
         if m:
             replies[int(m.group(1))] = m.group(2)
 
+    # 完整性守衛（review F2）：backend 合併重複行重新編號時，第 i 條會拿到
+    # 第 i+1 條的譯文 —— fence 內的靜默內容損毀，gate 7/8 遮蔽 code 看不到。
+    # 編號集合不是恰好 {1..n} 就整個 pass 放棄，fail-open 到 no-op。
+    if set(replies) != set(range(1, len(todo) + 1)):
+        return zh_body
+
     for n, (i, prefix, text, trail) in enumerate(todo, start=1):
-        got = replies.get(n, "")
-        if not got or not validate.CJK.search(got):
-            continue  # 沒翻或亂答：保留原文
+        got = replies[n]
+        if not validate.CJK.search(got) or validate.simplified_chars(got):
+            continue  # 沒翻、亂答或帶簡體（gate 8 遮蔽 code，必須在這裡擋）：保留原文
         ending = anchors._line_ending(lines[i])
         lines[i] = f"{prefix}{glossary.enforce(got)}{trail}{ending}"
     return "".join(lines)

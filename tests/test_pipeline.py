@@ -646,3 +646,60 @@ def test_repair_fence_comments_skips_move_attributes():
     zh = "```move\n#[test] // will fail to compile\n#[test_only]\n```\n"
     assert pipeline._repair_fence_comments(zh, b) == zh
     assert b.calls == []
+
+
+def test_translate_chunk_treats_hallucinated_frontmatter_as_failed_attempt():
+    """review F1：backend 幻覺出 YAML frontmatter 時，_require_body 的
+    FrontmatterPassedIn 不該逃出重試迴圈炸掉整檔 —— 這正是重試該吸收的
+    垃圾輸出。"""
+    calls = {"n": 0}
+
+    class HallucinatingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "---\ntitle: 變數\n---\n\n# 一 (One)\n"
+            return "# 一 (One)\n"
+
+    out = pipeline._translate_chunk("# One\n", HallucinatingBackend())
+    assert calls["n"] == 2
+    assert out == "# 一 (One)\n"
+
+
+def test_repair_fence_comments_bails_on_reply_numbering_drift():
+    """review F2：backend 合併重複行重新編號時，第 i 條會拿到第 i+1 條的
+    譯文 —— fence 內的靜默內容損毀，所有 gate 都看不到。編號集合不完整
+    就整個 pass 放棄（fail-open 到 no-op）。"""
+
+    class DriftingBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1. 中文一\n3. 中文三"  # 缺 2：編號集合不完整
+
+    zh = "```move\n// alpha comment\n// beta comment\n// gamma comment\n```\n"
+    assert pipeline._repair_fence_comments(zh, DriftingBackend()) == zh
+
+
+def test_repair_fence_comments_accepts_cjk_numbering_without_space():
+    """review F4：中文模型常輸出「1.譯文」無空格 —— 在 F2 的完整性守衛
+    之下放寬分隔符是安全的。"""
+
+    class NoSpaceBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1.建立新實例"
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, NoSpaceBackend())
+    assert "// 建立新實例" in out
+
+
+def test_repair_fence_comments_rejects_simplified_reply():
+    """review F5：本 pass 大規模把 CJK 寫進 code 行，而 gate 8 遮蔽 code
+    —— 簡體回覆必須在這裡擋，否則直通發佈輸出。"""
+
+    class SimplifiedReplyBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "1. 创建新实例"
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, SimplifiedReplyBackend())
+    assert "// create a new instance" in out  # 保留原文
