@@ -205,7 +205,13 @@ def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
                     break
             candidate = f"{base_txt} ({en_clean})"
         else:
-            candidate = backend.translate(en_clean, kind="heading").strip()
+            # 單標題重譯間歇性 verbatim/垃圾（實測 'Abort' 第一次回幻覺、
+            # 第二次即正確）—— 就地驗證重試，與 chunk 重試同哲學。
+            candidate = ""
+            for _ in range(CHUNK_RETRIES):
+                candidate = backend.translate(en_clean, kind="heading").strip()
+                if validate.heading_suffix_error(candidate, en_clean) is None:
+                    break
         if candidate and validate.heading_suffix_error(candidate, en_clean) is None:
             ending = anchors._line_ending(lines[start])
             lines[start] = f"{'#' * level} {candidate}{ending}"
