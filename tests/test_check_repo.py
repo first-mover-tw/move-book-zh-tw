@@ -13,9 +13,12 @@ def test_main_over_real_corpus_is_not_yet_clean():
     as pinned in tests/test_baseline.py. main() must return 1."""
     files = check_repo.collect()
 
-    # PR 3 的新譯文忠實翻出英文新增的跨檔連結，但目標檔（PR 4-7 範圍）
-    # 還是舊譯文、尚無對應 anchor —— 已逐一驗證英文端 8/8 目標存在，
-    # PR 4-7 落地後解掉。釘死清單：目標檔翻新後這裡必須跟著縮小到空。
+    # 過渡 404 清單（每個 backfill PR 更新，收尾必須為空）：
+    # - PR 3 新譯文忠實翻出英文新增的跨檔連結，目標檔尚未翻新（英文端
+    #   目標已逐一驗證存在）。PR 4 解掉 vector/struct 兩條。
+    # - dynamic-fields→#struct 是 plan 預告的 anchor 退役 404（上游刪節，
+    #   PR 4 重譯 struct.md 時 {#struct} 退場）；PR 5 重譯 dynamic-fields
+    #   後消失。
     link_errs = validate.check_links(files)
     transitional = {
         "book/storage/storage-functions.md: anchor 無法解析 ./store-ability#relation-to-key",
@@ -24,10 +27,9 @@ def test_main_over_real_corpus_is_not_yet_clean():
         "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#party-objects",
         "book/programmability/dynamic-collections.md: anchor 無法解析 ./dynamic-fields#orphaned-dynamic-fields",
         "book/programmability/dynamic-collections.md: anchor 無法解析 ./dynamic-fields#dynamic-fields-vs-fields",
-        "book/programmability/collections.md: anchor 無法解析 ./../move-basics/vector#vector-macros",
         "book/programmability/dynamic-object-fields.md: anchor 無法解析 ./dynamic-fields#definition",
         "book/programmability/dynamic-object-fields.md: anchor 無法解析 ./dynamic-fields#usage",
-        "book/programmability/wrapper-type-pattern.md: anchor 無法解析 ./../move-basics/struct.md#positional-structs",
+        "book/programmability/dynamic-fields.md: anchor 無法解析 ./../move-basics/struct.md#struct",
         "reference/variables.md: anchor 無法解析 ./functions#return-expression",
     }
     assert set(link_errs) == transitional
@@ -42,7 +44,7 @@ def test_main_over_real_corpus_is_not_yet_clean():
         _, body = frontmatter.split(text)
         simplified_total += len(validate.simplified_chars(body))
 
-    assert glossary_total == 116, glossary_total  # PR 3 重譯 15 檔的 body 清掉 10 處
+    assert glossary_total == 112, glossary_total  # PR 4 再清 4 處（116→112）
     assert simplified_total == 5, simplified_total
 
     assert check_repo.main() == 1

@@ -71,9 +71,9 @@ def test_no_orphans_remain():
 
 
 def test_stale_files_count_tracks_backfill():
-    """backfill 進度計數器：PR 2 後 104；PR 3（結構殘缺 15 檔，其中 13 檔
-    原屬 stale）後 91。之後每個 backfill PR 遞減此數；收尾歸零並改寫本測試。"""
-    assert len(manifest.stale_files("english-main")) == 91
+    """backfill 進度計數器：PR 2 後 104、PR 3 後 91、PR 4（move-basics 29）
+    後 62。之後每個 backfill PR 遞減此數；收尾歸零並改寫本測試。"""
+    assert len(manifest.stale_files("english-main")) == 62
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():
