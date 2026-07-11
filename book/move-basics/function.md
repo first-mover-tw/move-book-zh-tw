@@ -1,61 +1,84 @@
 ---
-description: 'Functions in Move: declare, call, and return values from functions with support for multiple return values and type parameters.'
+description: '函式 (Functions) in Move: declare, call, and return values from functions
+  with support for multiple return values and type parameters.'
 ---
 
-# 函式 (Functions)
+# 函式 (Functions) {#functions}
 
-函式是 Move 程式的構建塊。它們從 [使用者交易](./../concepts/what-is-a-transaction) 或其他函式中被呼叫，並將可執行的程式碼分組為可重用的單元。函式可以接收參數並傳回一個值。它們在模組層級中使用 `fun` 關鍵字宣告。與任何其他模組成員一樣，預設情況下它們是私有的，只能從模組內部存取。
+函式是 Move 程式的建構模組。它們從
+[使用者交易](./../concepts/what-is-a-transaction)以及其他函式中被呼叫,並將可執行程式碼分組成可重複使用的單元。函式可以接收引數並回傳一個值。它們是以
+`fun` 關鍵字在模組層級宣告的。就像其他任何模組成員一樣,預設情況下
+它們是私有的,只能從模組內部存取;讓它們對其他
+模組可見是[可見性修飾詞 (Visibility Modifiers)](./visibility)章節的主題,將在本章稍後介紹。
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=math
 
 ```
 
-在此範例中，我們定義了一個 `add` 函式，它接收兩個 `u64` 類型的參數並傳回它們的和。同樣位於同一個模組中的 `test_add` 函式是一個呼叫 `add` 的測試函式。該測試使用 `assert!` 巨集將 `add` 的結果與預期值進行比較。如果 `assert!` 內部的條件評估為 false，執行將自動中斷。
+在這個範例中,我們定義了一個函式 `add`,它接收兩個 `u64` 型別的引數並回傳它們的
+總和。位於同一模組中的 `test_add` 函式是一個測試函式,它呼叫 `add`。這個
+測試使用 `assert_eq!` 巨集來比較 `add` 的結果與預期值。如果
+兩個值不同,執行會自動中止。
 
-## 函式宣告
+## 函式宣告 (Function Declaration) {#function-declaration}
 
-> 在 Move 中，函式通常使用 **蛇形命名法 (snake_case)**。這意味著函式名稱應全部小寫，單字之間以底線分隔。例如 `do_something`、`add`、`get_balance`、`is_authorized` 等等。
+> 在 Move 中,函式通常使用 `snake_case` 慣例命名。這代表函式
+> 名稱應全部小寫,單字之間以底線分隔。範例包括
+> `do_something`、`add`、`get_balance`、`is_authorized` 等等。
 
-函式使用 `fun` 關鍵字宣告，後接函式名稱（有效的 Move 識別碼）、括號中的參數清單以及傳回類型。函式主體是一個包含一系列語句和表達式的程式碼區塊。函式主體中的最後一個表達式即為函式的傳回值。
+函式是以 `fun` 關鍵字宣告,後面接著函式名稱(一個有效的 Move
+識別字)、括號中的引數清單,以及一個回傳型別。函式主體是一個
+[區塊 (block)](./expression#blocks),而且就像任何區塊一樣,最後一個沒有分號的表達式就是
+函式的回傳值。`return` 關鍵字允許提前回傳——這會在其他
+[控制流程 (control flow)](./control-flow)表達式中一併說明。
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=return_nothing
 
 ```
 
-## 存取函式
+## 存取函式 (Accessing Functions) {#accessing-functions}
 
-與其他模組成員一樣，函式可以匯入並透過路徑存取。路徑由模組路徑和函式名稱組成，以 `::` 分隔。例如，如果您在 `book` 套件的 `math` 模組中有一個名為 `add` 的函式，其完整路徑將是 `book::math::add`。如果模組已經匯入，您可以像下面的範例一樣直接將其存取為 `math::add`：
+就像其他模組成員一樣,函式可以使用路徑匯入並存取。路徑
+由模組路徑和函式名稱組成,以 :: 分隔。例如,如果你在
+`book` 套件中的 `math` 模組裡有一個名為 `add` 的函式,它的完整路徑會是
+`book::math::add`。如果模組已經被匯入——匯入在
+[匯入模組 (Importing Modules)](./importing-modules)章節中有說明——你可以直接以 `math::add` 存取它,如同
+以下範例:
 
 ```move file=packages/samples/sources/move-basics/function_use.move anchor=use_math
 
 ```
 
-## 多個傳回值
+## 多重回傳值 (Multiple Return Values) {#multiple-return-values}
 
-Move 函式可以傳回多個值，這在您需要從一個函式傳回多個資料片段時特別有用。傳回類型指定為類型的元組 (tuple)，傳回值也作為表達式的元組提供：
+Move 函式可以回傳多個值,當你需要從一個函式回傳
+不只一項資料時,這特別有用。回傳型別以型別的元組(tuple)指定,而
+回傳值則以表達式的元組提供:
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return
 
 ```
 
-具有元組傳回值的函式呼叫結果，必須透過 `let (tuple)` 語法解構成變數：
+具有元組回傳的函式呼叫結果,必須透過
+`let (tuple)` 語法解構到變數中:
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_imm
 
 ```
 
-如果宣告的任何值需要宣告為可變的，則在變數名稱前加上 `mut` 關鍵字：
+如果任何已宣告的值需要宣告為可變的,`mut` 關鍵字要放在
+變數名稱之前:
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_mut
 
 ```
 
-如果某些參數不被使用，可以使用 `_` 符號忽略它們：
+如果有些回傳值不需要使用,可以用 `_` 符號忽略它們:
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return_ignore
 
 ```
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 參考手冊中的 [函式 (Functions)](./../../reference/functions)。
+- Move Reference 中的[函式 (Functions)](./../../reference/functions)。

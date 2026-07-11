@@ -1,14 +1,14 @@
 ---
-description: 'Write and run unit tests in Move using the #[test] attribute, expected failures, and utilities for testing smart contract logic.'
+description: '以撰寫測試（testing）為主軸的技術短句翻譯，不涉及技能觸發。
+
+
+  使用 `#[test]` 屬性（attribute）、預期失敗（expected failures）以及測試工具，在 Move 中撰寫並執行單元測試（unit
+  tests），驗證智能合約邏輯。'
 ---
 
-# 測試 (Testing)
+# Testing 測試 (Testing) {#testing}
 
-測試是軟體開發中至關重要的一環，尤其是在安全性與正確性至上的區塊鏈應用中。在本節中，我們將介紹 Move 測試的基礎知識，包括如何有效地編寫和組織測試。
-
-## `#[test]` 屬性
-
-Move 中的測試是標記有 `#[test]` 屬性的函式。此屬性告訴編譯器該函式是一個測試函式，應該在執行測試時運行。測試函式是普通函式，但它們必須不接收任何參數且沒有傳回值。它們會從位元組碼中排除，且永遠不會被發佈。
+Move 內建測試框架，讓你可以在程式碼旁邊撰寫單元測試。測試是標記 `#[test]` 屬性的函式，會從已發布的位元組碼中排除，並用 `sui move test` 指令執行。此框架透過 `#[expected_failure]` 支援預期失敗，並透過 `#[test_only]` 支援僅測試用的輔助函式。
 
 ```move
 module book::testing;
@@ -16,104 +16,33 @@ module book::testing;
 #[test_only]
 use std::unit_test::assert_eq;
 
-// test 屬性放置在 `fun` 關鍵字之前（可以放在上方，
-// 也可以直接放在 `fun` 關鍵字之前，如 `#[test] fun my_test() { ... }`）
-// 在此範例中，測試的名稱將是 `book::testing::simple_test`。
+// 測試函式不接受任何參數，也不回傳任何東西
 #[test]
 fun simple_test() {
     let sum = 2 + 2;
     assert_eq!(sum, 4);
 }
 
-// 此測試的名稱將是 `book::testing::more_advanced_test`。
-#[test] fun more_advanced_test() {
-    let sum = 2 + 2 + 2;
-    assert_eq!(sum, 4);
-}
-```
-
-## 執行測試
-
-要執行測試，您可以使用 `sui move test` 指令。此指令會首先在 **測試模式** 下編譯套件，然後執行套件中找到的所有測試。在測試模式下，`sources/` 和 `tests/` 目錄中的模組都會被處理並執行其中的測試。
-
-```bash
-$ sui move test
-> UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
-> INCLUDING DEPENDENCY Bridge
-> INCLUDING DEPENDENCY DeepBook
-> INCLUDING DEPENDENCY SuiSystem
-> INCLUDING DEPENDENCY Sui
-> INCLUDING DEPENDENCY MoveStdlib
-> BUILDING book
-> Running Move unit tests
-> ...
-```
-
-<!-- TODO: fill output -->
-
-## 使用 `#[expected_failure]` 測試失敗情況
-
-針對預期失敗的情況，可以使用 `#[expected_failure]` 標記測試。當此屬性添加到 `#[test]` 函式時，會告訴編譯器該測試預期會失敗。當您想測試某個函式在滿足特定條件時是否會失敗，這非常有用。
-
-> 注意：此屬性只能添加到 `#[test]` 函式。
-
-該屬性可以接收一個參數，指定測試失敗時預期傳回的中斷程式碼 (abort code)。如果測試傳回的中斷程式碼與參數中指定的不符，測試將失敗。同樣地，如果執行沒有導致中斷，測試也會失敗。
-
-```move
-module book::testing_failure;
-
-const EInvalidArgument: u64 = 1;
-
-#[test]
-#[expected_failure(abort_code = 0)]
+#[test, expected_failure(abort_code = 0)]
 fun test_fail() {
-    abort 0 // 以程式碼 0 中斷
-}
-
-// 屬性可以組合在一起
-#[test, expected_failure(abort_code = EInvalidArgument)]
-fun test_fail_1() {
-    abort EInvalidArgument // 以程式碼 EInvalidArgument 中斷
+    abort 0
 }
 ```
 
-`abort_code` 參數可以使用測試模組中定義的常數，也可以從其他模組匯入。這是常數唯一可以在其他模組中被使用和「存取」的情況。
+若測試執行到完成則視為通過，若中止（abort）則視為失敗——這正是當 `assert_eq!` 巨集的兩個值不相等時所做的事。對於任意條件，還有更通用的 [`assert!`](./assert-and-abort) 巨集；這兩者都是 Move 測試的主力工具。上面第二個測試反轉了結果：`#[expected_failure(abort_code = 0)]` 只有在測試以給定的錯誤碼中止時才會通過，這是測試錯誤情況的方式。
 
-## 使用 `#[test_only]` 提供測試工具
+## 僅測試用程式碼 (Test-Only Code) {#test-only-code}
 
-在某些情況下，讓測試環境能夠存取某些內部函式或功能會很有幫助。這可以簡化測試過程並實現更徹底的測試。然而，重要的是要記住，這些函式不應包含在最終發佈的套件中。這就是 `#[test_only]` 屬性派上用場的地方。
+`#[test_only]` 屬性將一個模組成員——或整個模組——標記為僅在測試時編譯。測試輔助函式、模擬用建構函式，以及像上面 `std::unit_test` 這樣的匯入，都是用這種方式標記的：已發布的位元組碼不會包含測試機制，而測試則可以存取它們所需的一切，包括公開 API 刻意不曝露的東西。
 
-```move
-module book::testing;
+## 進一步探索 (Explore More) {#explore-more}
 
-#[test_only]
-use std::unit_test::assert_eq;
+本頁僅觸及皮毛。專門的 [Testing 測試](./../testing/index.md) 章節會深入介紹測試情境、覆蓋率報告、gas 效能分析、系統物件的操作，以及撰寫可靠測試的最佳實踐。
 
-// 使用了 `secret` 函式的公開函式。
-public fun multiply_by_secret(x: u64): u64 {
-    x * secret()
-}
+## 下一步 (What's Next) {#whats-next}
 
-/// 不對外公開的私有函式。
-fun secret(): u64 { 100 }
+本頁結束了 Move Basics 章節。你現在已經能夠定義模組與自訂型別、控制值是否可以複製或捨棄、以參考或以值的方式傳遞它們、用模式比對撰寫邏輯、用泛型與巨集將其抽象化——並對這一切進行測試。到目前為止我們暫時擱置的，正是讓 Move on Sui 與眾不同之處：儲存模型。[Object Model 物件模型](./../object/) 章節正是從這裡開始——它介紹了 _objects_（物件），也就是會成為鏈上資產的 Move struct，而其後的章節則會展示如何儲存、擁有並轉移它們。
 
-#[test_only]
-/// 此函式僅供測試目的使用，可用於測試及其他僅限測試的函式中。
-/// 注意可見性 — 對於 `#[test_only]`，通常使用 `public` 可見性。
-public fun secret_for_testing(): u64 {
-    secret()
-}
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-#[test]
-// 在測試環境中，我們可以存取 `secret_for_testing` 函式。
-fun test_multiply_by_secret() {
-    let expected = secret_for_testing() * 2;
-    assert_eq!(multiply_by_secret(2), expected);
-}
-```
-
-標記為 `#[test_only]` 的函式將對測試環境開放，如果其可見性設為 `public`，則也會對其他模組開放。
-
-## 延伸閱讀
-
-- Move 參考手冊中的 [單元測試 (Unit Testing)](/reference/unit-testing)。
+- Move 參考文件中的[Unit Testing 單元測試](./../../reference/unit-testing)。

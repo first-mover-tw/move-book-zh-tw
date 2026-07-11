@@ -1,75 +1,62 @@
 ---
-description: 'Modules are the building blocks of Move: learn how to declare, organize, and compile modules in your Sui smart contracts.'
+description: 模組 (Modules) 是 Move 的建構區塊：學習如何在你的 Sui 智慧合約中宣告、組織與編譯模組。
 ---
 
-# 模組 (Module)
+# 模組 (Module) {#module}
 
-<!--
+模組是 Move 中程式碼組織的基本單位。模組用於將程式碼分組並隔離，模組的所有成員預設對模組外部是私有的。這使得模組成為一個信任邊界：如後續章節所示，只有定義某型別的模組才能建立、修改與銷毀該型別的值。在本節中，你將學習如何定義模組、宣告其成員，以及如何從其他模組存取它。
 
-Chapter: Base Syntax
-Goal: Introduce module keyword.
-Notes:
-    - modules are the base unit of code organization
-    - module members are private by default
-    - types internal to the module have special access rules
-    - only module can pack and unpack its types
+## 模組宣告 (Module Declaration) {#module-declaration}
 
- -->
+模組使用 `module` 關鍵字宣告，後面接套件位址與模組名稱，兩者以 `::` 分隔，接著是分號與模組主體。模組名稱應使用 `snake_case` 風格——全部小寫字母，單詞之間以底線分隔。模組名稱在套件中必須是唯一的。
 
-模組是 Move 中程式碼組織的基本單位。模組用於分組和隔離程式碼，預設情況下，模組的所有成員對該模組而言都是私有的。在本節中，您將學習如何定義模組、宣告其成員，以及如何從其他模組存取它。
+通常，`sources/` 資料夾中的一個檔案包含一個模組。檔案名稱應與模組名稱一致——例如，`donut_shop` 模組應存放在 `donut_shop.move` 檔案中。你可以在
+[程式碼慣例](./../guides/code-quality-checklist) 章節中閱讀更多關於程式碼慣例的內容。
 
-## 模組宣告
-
-使用 `module` 關鍵字後接套件地址、模組名稱、分號及模組主體來宣告模組。模組名稱應使用 **蛇形命名法 (snake_case)** — 即全小寫字母，單字之間以底線分隔。在一個套件中，模組名稱必須是唯一的。
-
-通常，`sources/` 資料夾中的一個檔案包含一個模組。檔案名稱應與模組名稱相匹配 — 例如，`donut_shop` 模組應儲存在 `donut_shop.move` 檔案中。您可以在 [編碼規範](./../guides/code-quality-checklist) 節點中閱讀更多相關資訊。
-
-> 如果您需要在一個檔案中宣告多個模組，則必須使用 [模組區塊 (Module Block)](#module-block) 語法。
+> 如果你需要在一個檔案中宣告多個模組，你必須使用 [模組區塊 (Module Block)](#module-block) 語法。
 
 ```move file=packages/samples/sources/move-basics/module-label.move anchor=module
 
 ```
 
-結構、函式、常數和匯入都是模組的一部份：
+## 位址與具名位址 (Address and Named Address) {#address-and-named-address}
 
-- [結構 (Structs)](./struct)
-- [函式 (Functions)](./function)
-- [常數 (Constants)](./constants)
-- [匯入 (Imports)](./importing-modules)
-- [結構方法 (Struct Methods)](./struct-methods)
-
-## 地址與具名地址 (Address and Named Address)
-
-模組地址可以透過以下兩種方式指定：位址 **常數 (literal)**（不需要 `@` 前綴）或在 [套件清單 (Package Manifest)](./../concepts/manifest) 中指定的 **具名地址**。在下面的範例中，兩者是相同的，因為 `Move.toml` 的 `[addresses]` 部分中有一條 `book = "0x0"` 的紀錄。
+模組位址可以用兩種方式指定：作為位址 _字面量_（不需要 `@` 前綴），或作為
+[套件清單 (Package Manifest)](./../concepts/manifest) 中宣告的套件名稱。
 
 ```move file=packages/samples/sources/move-basics/module.move anchor=address_literal
 
 ```
 
-Move.toml 中的地址部分：
+Move.toml 中的 Package 區段：
 
 ```toml
-# Move.toml
-[addresses]
-book = "0x0"
+[package]
+name = "book"
+edition = "2024"
 ```
 
-## 模組成員
+## 模組成員 (Module Members) {#module-members}
 
-模組成員在模組主體內宣告。為了說明這一點，讓我們定義一個包含結構、函式和常數的簡單模組：
+模組成員在模組主體內宣告。為了說明這點，讓我們定義一個簡單的模組，其中包含一個匯入、一個常數、一個結構體與一個函式：
 
 ```move file=packages/samples/sources/move-basics/module-members.move anchor=members
 
 ```
 
+每個成員都以自己的關鍵字開頭：`use` 將其他模組帶入作用域
+（[匯入模組](./importing-modules)）、`const` 定義一個永遠不變的值
+（[常數](./constants)）、`struct` 宣告一個自訂資料型別（[結構體](./struct)），而 `fun`
+宣告一個函式（[函式](./function)）。目前先不用擔心細節——這些內容在本章中各自都有專門的章節；現在只需要認識這些關鍵字，並知道它們都存在於模組層級即可。
+
 ## 模組區塊 (Module Block) {#module-block}
 
-2024 版本之前的 Move 要求模組的主體必須是一個 **模組區塊** — 即模組的內容需要被大括號 `{}` 包圍。使用區塊語法（而非 **標籤 (label)** 語法）的主要原因是如果您需要在一個檔案中定義多個模組。然而，不建議在實務中使用模組區塊。
+Move 的 2024 版之前的版本要求模組主體必須是一個 _模組區塊_——即模組的內容以大括號 `{}` 包裹。這種區塊語法仍然受到支援，而選擇它而非上述 _標籤_ 語法的唯一理由，是在一個檔案中宣告多個模組——這種情況很少需要，也不是建議的做法。
 
 ```move file=packages/samples/sources/move-basics/module.move anchor=members
 
 ```
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 參考手冊中的 [模組 (Modules)](./../../reference/modules)。
+- Move 參考文件中的 [模組 (Modules)](./../../reference/modules)。

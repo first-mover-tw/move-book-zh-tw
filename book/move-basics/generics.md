@@ -1,97 +1,131 @@
 ---
-description: 'Generics in Move: write reusable functions and types that work with any type parameter, with phantom types and constraints.'
+description:
+  泛型 (Generics) in Move：撰寫可重複使用的函式與型別，適用於任何型別參數，並包含幻影型別 (Phantom Types)
+  與限制條件。
 ---
 
-# 泛型 (Generics)
+# 泛型 (Generics) {#generics}
 
-泛型是一種定義可以與任何類型協同工作的類型或函式的方式。當您想編寫一個可以與不同類型一起使用的函式，或者想定義一個可以容納任何其他類型的類型時，這非常有用。泛型是 Move 中許多進階功能的基礎，包括集合、抽象實作等。
+Generics 是一種定義型別或函式的方式，讓它能與任何型別搭配運作，而不是綁定單一特定型別。你在本章中其實已經用過 generics，只是可能沒有注意到：[vector](./vector) 型別就是泛型的——單一定義即可容納任何型別的元素——[Option](./option) 也是，它能包裝任何值。Generics 是集合、抽象實作以及 Move 許多進階功能的基礎。
 
-## 在標準庫中
+## Generics 解決的問題 (The Problem Generics Solve) {#the-problem-generics-solve}
 
-在本章中我們已經提到了 [向量 (vector)](./vector) 類型，它是一種可以容納任何其他類型的泛型。標準庫中另一個泛型類型的例子是 [選項 (Option)](./option) 類型，它用於表示一個可能存在也可能不存在的值。
+假設我們需要一個能包裝單一 `u64` 值的型別。很簡單：
 
-## 泛型語法 (Generic Syntax)
+```move
+public struct U64Container has drop {
+    value: u64,
+}
+```
 
-要定義泛型類型或函式，類型特徵需要具有包含在角括號 (`<` 和 `>`) 中的泛型參數清單。泛型參數之間以逗號分隔。
+但如果我們也需要包裝一個 `bool` 呢？還有 `String`？還有我們自己的 struct？每個版本除了 `value` 欄位的型別之外都完全相同，而每個處理容器的函式也都需要為每個版本重複撰寫一次：
+
+```move
+public struct BoolContainer has drop { value: bool }
+public struct StringContainer has drop { value: String }
+// ...每個想儲存的型別都要一個新的 struct
+```
+
+Generics 正是為了解決這個問題：我們只定義容器**一次**，用一個佔位符取代具體型別，並在使用該型別時再填入實際型別。
+
+## Generic 語法 (Generic Syntax) {#generic-syntax}
+
+要定義泛型型別或函式，在名稱後面加上一組以角括號（`<` 和 `>`）括住的**型別參數**列表。多個型別參數以逗號分隔。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=container
 
 ```
 
-在上面的範例中，`Container` 是一個具有單一類型參數 `T` 的泛型類型，該容器的 `value` 欄位儲存 `T`。`new` 函式是一個具有單一類型參數 `T` 的泛型函式，它傳回一個包含給定值的 `Container`。泛型類型必須使用具體類型進行初始化，且泛型函式必須使用具體類型進行呼叫，儘管在某些情況下 Move 編譯器可以推斷出正確的類型。
+在上面的範例中，`Container` 是一個帶有單一型別參數 `T` 的泛型型別，容器的 `value` 欄位儲存型別為 `T` 的值。`T` 並不是真實的型別——它是一個佔位符，代表「某個型別，稍後再指定」。`new` 函式是帶有相同型別參數的泛型函式，它會回傳一個帶有給定值的 `Container<T>`。
+
+> 依照慣例，型別參數以單一大寫字母命名——`T`、`U`、`K`、`V`。不過，也可以使用任何合法的名稱：例如標準函式庫就將 `vector` 的型別參數命名為 `Element`。
+
+## 使用泛型型別 (Using Generic Types) {#using-generic-types}
+
+當我們建立泛型型別的實例時，佔位符會被替換為具體型別。每次替換都會產生一個不同的型別：`Container<u8>`、`Container<bool>` 與 `Container<String>` 雖然來自同一個定義，卻是三種不同的型別。
+
+具體型別可以明確寫出，或在大多數情況下由編譯器推斷：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_container
 
 ```
 
-在測試函式 `test_container` 中，我們演示了三種建立具有 `u8` 值的新 `Container` 的等效方法。因為數值常值具有歧義類型，我們必須在某處指定數字常值的類型（在容器的類型、`new` 的參數或數字常值本身之中）；一旦我們指定了其中之一，編譯器就可以推斷出其他部分。
+測試的前三行是等價的——每一行都建立了一個 `Container<u8>`。因為數字字面值的型別是模糊的，我們必須在某處指定該數字的型別：在變數的型別標註中、在 `new` 的明確型別引數中，或是在字面值本身。只要給定其中一項，編譯器就能推斷出其餘部分。對於型別不模糊的值，例如 `bool` 或 `String`，則完全不需要任何標註。
 
-## 多個類型參數
+## 多個型別參數 (Multiple Type Parameters) {#multiple-type-parameters}
 
-您可以定義具有多個類型參數的類型或函式。類型參數之間以逗號分隔。
+型別或函式可以有多個以逗號分隔的型別參數：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=pair
 
 ```
 
-在上面的範例中，`Pair` 是一個具有兩個類型參數 `T` 和 `U` 的泛型類型，而 `new_pair` 函式是一個具有兩個類型參數 `T` 和 `U` 的泛型函式。該函式傳回一個具有給定值的 `Pair`。類型參數的順序很重要，應與類型特徵中類型參數的順序相匹配。
+在上面的範例中，`Pair` 是一個帶有兩個型別參數 `T` 和 `U` 的泛型型別，`new_pair` 函式會建立一個帶有給定值的 `Pair`。
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_pair
 
 ```
 
-如果我們添加另一個在 `new_pair` 函式中交換類型參數的實例，並嘗試比較這兩個類型，我們會發現類型特徵是不同的，且無法進行比較。
+型別參數的順序很重要。`Pair<u8, bool>` 與 `Pair<bool, u8>` 是兩個不同、互不相容的型別——即使它們是由相同的定義建構出來，並儲存相同的資料：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_pair_swap
 
 ```
 
-由於 `pair1` 和 `pair2` 的類型不同，比較 `pair1 == pair2` 將無法編譯。
+由於 `pair1` 與 `pair2` 的型別不同，`pair1 == pair2` 這樣的比較將無法編譯。這些值只能在拆解之後逐欄位比較。
 
-## 為什麼需要泛型？
+## 為何使用 Generics？ (Why Generics?) {#why-generics}
 
-在上面的範例中，我們重點介紹了實體化泛型類型和呼叫泛型函式以建立這些類型的實例。然而，泛型真正的實力在於它們定義基礎泛型類型的共享行為，然後獨立於具體類型來使用它的能力。這在處理集合、抽象實作和 Move 中的其他進階功能時特別有用。
+到目前為止，我們專注於機制層面：如何定義泛型型別並建立其實例。Generics 真正的威力在於能夠只定義一次共用的資料與行為，並讓型別的一部分保持可變。考慮一個 `User` 型別，其中 `name` 與 `age` 欄位始終相同，但不同的應用程式需要附加不同的額外資料：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=user
 
 ```
 
-在上面的範例中，`User` 是一個具有單一類型參數 `T` 的泛型類型，具有共享欄位 `name`、`age` 以及泛型的 `metadata` 欄位（可以儲存任何類型）。無論 `metadata` 是什麼，`User` 的所有實例都將包含相同的欄位和方法。
+為 `User<T>` 定義的函式無論 `metadata` 是什麼型別都能運作——它們操作共用欄位，並不需要知道 `T` 的具體型別：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=update_user
 
 ```
 
-## 幽靈類型參數 (Phantom Type Parameters)
+```move file=packages/samples/sources/move-basics/generics.move anchor=test_user
 
-在某些情況下，您可能希望定義一個具有在該類型的欄位或方法中未使用的類型參數的泛型類型。這被稱為 **幽靈類型參數 (phantom type parameter)**。當您想要定義一個可以容納任何其他類型的類型，但又想對類型參數強制執行某些約束時，幽靈類型參數非常有用。
+```
+
+在上面的測試中，一個 `User` 實例將 `u64` 儲存為其中繼資料，另一個則儲存 `bool`，但兩者都能透過同一個只定義一次的 `update_name` 函式來更新。
+
+## 虛擬型別參數 (Phantom Type Parameters) {#phantom-type-parameters}
+
+有時候，型別參數只需要作為一個**標籤**使用，而不需要儲存該型別的任何值。考慮一個 `Coin` 型別：實際資料只是一個數值 `value`，對每一種貨幣都相同。然而，一枚美元硬幣與一枚歐元硬幣絕不能混淆——在編譯器眼中它們應該是不同的型別。為了表達這一點，該型別參數會被宣告為 `phantom`——一個不出現在任何欄位中的參數：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=phantom
 
 ```
 
-這裡的 `Coin` 類型不包含任何使用類型參數 `T` 的欄位或方法。它被用來區分不同類型的代幣，並對類型參數 `T` 強制執行某些約束。
+> Move 要求每個一般型別參數都必須用於 struct 的欄位中。由於 `T` 並未儲存在 `Coin` 的任何地方，它必須以 `phantom` 關鍵字標記。
+
+貨幣接著可以被定義為空的 struct——它們不攜帶任何資料，存在的目的僅僅是作為標籤使用：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_phantom
 
 ```
 
-在上面的範例中，我們演示了如何建立兩個具有不同幽靈類型參數 `USD` 和 `EUR` 的不同 `Coin` 實例。類型參數 `T` 未用於 `Coin` 類型的欄位或方法中，但它用於區分不同類型的代幣。這有助於確保 `USD` 和 `EUR` 代幣不會被錯誤地混淆。
+即使 `Coin<USD>` 與 `Coin<EUR>` 儲存的資料完全相同，它們仍是不同的型別，而預期其中一種型別的函式將不會接受另一種型別。這種模式在實際應用中被廣泛使用：舉例來說，[Sui Framework](./../programmability/sui-framework) 中的 `Coin` 型別正是以這種方式定義的。
 
-## 類型參數的約束 (Constraints on Type Parameters) {#constraints-on-type-parameters}
+## 型別參數的約束 (Constraints on Type Parameters) {#constraints-on-type-parameters}
 
-可以約束類型參數以使其具備某些能力。這在您需要內部類型允許某些行為（如 _copy_ 或 _drop_）時非常有用。約束類型參數的語法為 `T: <能力> + <能力>`。
+預設情況下，型別參數接受**任何**型別。然而，有時內部型別必須允許特定行為，例如可被複製或捨棄，為此可以將型別參數約束為具有特定[能力 (abilities)](./abilities-introduction)。語法為 `T: <ability> + <ability>`：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=constraints
 
 ```
 
-Move 編譯器將強制執行類型參數 `T` 具有指定的能力。如果類型參數不具備指定的能力，則程式碼將無法編譯。
+約束是具體型別必須遵守的承諾：Move 編譯器只允許用具有 [drop](./drop-ability) 能力的型別來實例化 `Droppable<T>`，並且只允許用同時具有 [copy](./copy-ability) 與 `drop` 能力的型別來實例化 `CopyableDroppable<T>`。不具備這些能力的型別將無法通過編譯：
 
 ```move file=packages/samples/sources/move-basics/generics.move anchor=test_constraints
 
 ```
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 參考手冊中的 [泛型](./../../reference/generics)。
+- Move Reference 中的[Generics](./../../reference/generics)。

@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import tempfile
 
 from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 
@@ -20,10 +21,24 @@ class ClaudeCLIBackend:
         else:
             system = {"text": TEXT_PROMPT, "heading": HEADING_PROMPT}.get(kind, SYSTEM_PROMPT)
             prompt = f"{system}\n\n要翻譯的內容：\n\n{text}"
-        r = subprocess.run(
-            ["claude", "-p", "--model", model, prompt],
-            capture_output=True, text=True, timeout=timeout,
-        )
+        # cwd 必須是中性目錄：claude CLI 會載入 cwd 的專案 context
+        # （CLAUDE.md、SessionStart hook 注入的 tasks/progress.md）。在本
+        # 專案目錄執行時模型看得到「翻譯管線工程」上下文，會間歇性放棄
+        # 翻譯、改成扮演工程師回答（實測 'Abort' 回「Bug 找到了…」）。
+        neutral = tempfile.mkdtemp(prefix="zh-tw-translate-")
+        try:
+            # stdin=DEVNULL：claude -p 對非 tty 的 stdin 會整段讀進當輸入，
+            # 從 heredoc/管線呼叫本 backend 時，殘留的 stdin（例如呼叫者
+            # 自己的 python script）會被當成翻譯內容的一部分 —— 實測模型
+            # 回「疑似程式碼注入，未執行」。批次 xargs 跑不炸是因為 xargs
+            # 恰好耗盡了 stdin。
+            r = subprocess.run(
+                ["claude", "-p", "--model", model, prompt],
+                capture_output=True, text=True, timeout=timeout, cwd=neutral,
+                stdin=subprocess.DEVNULL,
+            )
+        finally:
+            os.rmdir(neutral)
         if r.returncode != 0:
             raise RuntimeError(f"claude CLI 失敗: {r.stderr[:400]}")
         out = r.stdout.strip()

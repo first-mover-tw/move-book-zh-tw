@@ -478,3 +478,33 @@ def test_fake_backend_numbered_branch_dispatches_on_kind_sidebar():
         f"1. {FakeBackend()._substitute('Label One')} (Label One)",
         f"2. {FakeBackend()._substitute('Label Two')} (Label Two)",
     ]
+
+
+def test_claude_cli_backend_runs_outside_project_cwd(monkeypatch):
+    """claude CLI 會載入 cwd 的專案 context（CLAUDE.md、SessionStart hook
+    注入的 tasks/progress.md）—— 在本專案目錄執行時，模型看得到「翻譯管線
+    工程」的上下文，間歇性放棄翻譯、改成扮演工程師回答（實測 'Abort' 回
+    「Bug 找到了…根因：HEADING_PRO…」）。翻譯呼叫必須在中性目錄執行。"""
+    import os
+
+    from scripts.zh_tw.backends import claude_cli
+
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        cwd = kwargs.get("cwd")
+        captured["cwd_ok"] = (
+            cwd is not None
+            and os.path.isdir(cwd)  # 呼叫當下必須存在（結束後會被清掉）
+            and not os.path.exists(os.path.join(cwd, "CLAUDE.md"))
+            and not os.path.exists(os.path.join(cwd, "tasks"))
+        )
+        captured["stdin"] = kwargs.get("stdin")
+        return subprocess.CompletedProcess(argv, 0, stdout="翻譯", stderr="")
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
+    claude_cli.ClaudeCLIBackend().translate("hello")
+
+    assert captured["cwd_ok"]
+    # stdin 必須斷開：claude -p 會把非 tty 的殘留 stdin 整段讀進當輸入
+    assert captured["stdin"] == subprocess.DEVNULL

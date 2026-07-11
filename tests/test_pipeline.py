@@ -700,3 +700,21 @@ def test_repair_fence_comments_rejects_simplified_reply():
     zh = "```move\n// create a new instance\n```\n"
     out = pipeline._repair_fence_comments(zh, SimplifiedReplyBackend())
     assert "// create a new instance" in out  # 保留原文
+
+
+def test_repair_headings_retries_llm_path():
+    """單標題重譯間歇性 verbatim/垃圾（實測 'Abort' 第一次回幻覺文字、
+    第二次即正確）——LLM 路徑比照 chunk 重試就地驗證重試。"""
+    calls = {"n": 0}
+
+    class FlakyHeadingBackend:
+        def translate(self, text, *, kind="markdown"):
+            assert kind == "heading"
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "執行結果：亂七八糟的幻覺輸出"
+            return f"中止 ({text})"
+
+    out = pipeline._repair_headings("## Abort\n", "## Abort\n", FlakyHeadingBackend())
+    assert out.splitlines()[0] == "## 中止 (Abort)"
+    assert calls["n"] == 2

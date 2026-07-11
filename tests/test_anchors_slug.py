@@ -86,7 +86,14 @@ def test_headings_references_still_seven():
     """references.md 的 fence 數量是偶數（沒有奇偶錯位的警訊），確認修好
     comment-aware 掃描後，這個原本就解析正確的檔案不會被改壞。
     """
-    body = (_REPO_ROOT / "book/move-basics/references.md").read_text(encoding="utf-8")
+    # 釘死在 PRE_FIX（0d4b8bea）：這是 parser 回歸測試，讀 working tree
+    # 會被 backfill 重譯改動（PR 4 後該檔升到 12 個標題）。
+    import subprocess
+
+    body = subprocess.run(
+        ["git", "show", "0d4b8bea:book/move-basics/references.md"],
+        capture_output=True, text=True, check=True,
+    ).stdout
     _, body = frontmatter.split(body)
     result = anchors.headings(body)
     assert len(result) == 7

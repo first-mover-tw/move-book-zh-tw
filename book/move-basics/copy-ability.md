@@ -1,50 +1,56 @@
 ---
-description: 'The copy ability in Move enables value duplication. Learn how to add copy to custom types and understand its role in resource safety.'
+description:
+  複製能力 (copy ability) 使值可以被複製。學習如何為自訂型別新增 copy，並了解它在資源安全 (resource safety)
+  中扮演的角色。
 ---
 
-# 能力：複製 (Copy)
+# Abilities: 複製能力 (Abilities: Copy) {#abilities-copy}
 
-在 Move 中，類型上的 **copy** 能力表示該類型的實例或值可以被複製或複製。雖然在使用數字或其他原始類型時預設提供了此行為，但對於自定義類型，這並非預設行為。Move 旨在表達數位資產 and 資源，而控制複製資源的能力是資源模型的一個核心原則。然而，Move 類型系統允許您為自定義類型添加 **copy** 能力：
+在[所有權與作用域](./ownership-and-scope)一節中，我們看到基本型別的值是**複製**而非移動的：把一個數字賦值給新變數，兩個變數都還能用。`copy` 能力正是實現這個行為的關鍵——雖然它內建於基本型別中，但對自訂型別而言**並非**預設行為。Move 的設計目的是表達數位資產與資源，而一個可以被任意複製的資源就稱不上是資源了。因此，複製是型別必須明確選擇加入的能力：
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copyable
 
 ```
 
-在上面的範例中，我們定義了一個具有 **copy** 能力的自定義類型 `Copyable`。這意味著 `Copyable` 的實例可以被隱式或顯式地複製。
+一旦型別擁有 `copy` 能力，只要原本會發生移動、且原始值之後仍被需要的地方，它的值就會被複製——這是隱含發生的，不需要任何特殊語法。`copy` 關鍵字可以用來明確表示這個複製動作：
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copyable_test
 
 ```
 
-在上面的範例中，`a` 被隱式複製到 `b`，然後使用解參照 (dereference) 運算子顯式複製到 `c`。如果 `Copyable` 不具備 **copy** 能力，程式碼將無法編譯，且 Move 編譯器會發出錯誤。
+在上面的範例中，`a` 被隱含地複製到 `b`——編譯器發現 `a` 之後還會被使用，因此複製了這個值而不是移動它。接著 `a` 又用 `copy` 關鍵字明確地複製到 `c`。經過這三次賦值後，會有三個獨立的 `Copyable` 實例——而每一個都必須被個別處理。
 
-> 注意：在 Move 中，使用空括號進行解構通常用於消耗未使用的變數，特別是對於不具備 drop 能力的類型。這可以防止由於值在沒有明確使用的情況下超出作用域而導致的編譯器錯誤。此外，Move 在解構時需要類型名稱（例如 `let Copyable {} = a;` 中的 `Copyable`），因為它強制執行嚴格的類型和所有權規則。
+> 請注意範例最後的拆解：`Copyable` 擁有 `copy`，但沒有 `drop`，所以每個實例——包括每一份複製——都必須被使用，測試中拆解了全部三個實例。複製一個值並不會繞過使用規則；它只是產生了更多需要遵守這些規則的值。
 
-## 複製與捨棄 (Copying and Drop)
+## 複製與丟棄能力 (Copying and Drop) {#copying-and-drop}
 
-`copy` 能力與 [`drop` 能力](./drop-ability) 密切相關。如果一個類型具有 **copy** 能力，它很可能也應該具有 `drop` 能力。這是因為當實例不再需要時，需要具備 **drop** 能力來清理資源。如果一個類型僅具備 **copy**，管理其實例會變得更為複雜，因為實例必須被明確使用或消耗。
+如範例所示，只有 `copy` 而沒有 `drop` 是相當不方便的組合：允許複製，但每一份複製仍然需要明確處理。這正是為什麼這兩種能力幾乎總是成對出現——一個複製成本低廉的值，實務上通常也適合被捨棄。攜帶純粹資料（而非資產）的型別，通常會同時宣告這兩種能力：
 
 ```move file=packages/samples/sources/move-basics/copy-ability.move anchor=copy_drop
 
 ```
 
-Move 中的所有原始類型其行為就像它們同時具備 **copy** 和 **drop** 能力。這意味著它們可以被複製和捨棄，且 Move 編譯器會為它們處理記憶體管理。
+所有基本型別的行為都彷彿擁有 `copy` 和 `drop`：它們在賦值時被複製，並且可以毫不猶豫地被捨棄——這一切都由編譯器負責管理。
 
-## 具備 `copy` 能力的類型
+複製並不是讓程式的多個部分讀取同一個值的唯一方式。在[參考](./references)一節中，我們會說明如何**借用**一個值來完全避免複製；以及[解參考運算子](./references#dereferencing) `*` 如何將一個參考轉回一份複製，而這只允許用於擁有 `copy` 能力的型別。
 
-Move 中的所有原生類型都具備 `copy` 能力。這包括：
+## 擁有 `copy` 能力的型別 (Types with the `copy` Ability) {#types-with-the-copy-ability}
 
-- [布林值 (bool)](./../move-basics/primitive-types#booleans)
-- [無號整數 (unsigned integers)](./../move-basics/primitive-types#integer-types)
-- [向量 (vector)](./../move-basics/vector)
-- [地址 (address)](./../move-basics/address)
+Move 中所有原生型別都擁有 `copy` 能力，這包括：
 
-標準庫中定義的所有類型同樣具備 `copy` 能力。這包括：
+- [`bool`](./../move-basics/primitive-types#booleans)
+- [無號整數](./../move-basics/primitive-types#integer-types)
+- 當 `T` 擁有 `copy` 時的 [`vector<T>`](./../move-basics/vector)
+- [`address`](./../move-basics/address)
 
-- [選項 (Option)](./../move-basics/option)
-- [字串 (String)](./../move-basics/string)
-- [類型名稱 (TypeName)](./../move-basics/type-reflection)
+標準函式庫中定義的所有型別也都擁有 `copy` 能力，這包括：
 
-## 延伸閱讀
+- 當 `T` 擁有 `copy` 時的 [`Option<T>`](./../move-basics/option)
+- [`String`](./../move-basics/string)
+- [`TypeName`](./../move-basics/type-reflection)
 
-- Move 參考手冊中的 [類型能力 (Type Abilities)](./../../reference/abilities)。
+正如[`drop`](./drop-ability#types-with-the-drop-ability)一節所述，容器型別只有在其內容物本身可複製時才是可複製的：`vector<T>` 只有在 `T` 本身允許複製的前提下才能被複製。
+
+## 延伸閱讀 (Further Reading) {#further-reading}
+
+- Move 參考文件中的[型別能力 (Type Abilities)](./../../reference/abilities)。
