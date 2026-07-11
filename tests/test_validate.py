@@ -148,6 +148,89 @@ def test_check_links_still_checks_prose_link_next_to_code_block():
     assert len(errs) == 1 and "missing" in errs[0]
 
 
+# --- F2 / gate 9: body 標題必須帶「中文 (English)」後綴（僅新翻譯路徑） ---
+
+
+def test_heading_suffix_passes_when_value_matches_english():
+    zh = "# 區域變數 (Local Variables) {#x}\n\n## `let` 綁定 (`let` bindings)\n"
+    en = "# Local Variables\n\n## `let` bindings\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
+def test_heading_suffix_reports_dropped_suffix():
+    zh = "# 區域變數 (Local Variables) {#x}\n\n## 何時需要標註型別\n"
+    en = "# Local Variables\n\n## When annotations are necessary\n"
+    errs = validate.check_heading_suffix(zh, en)
+    assert len(errs) == 1 and "When annotations are necessary" in errs[0]
+
+
+def test_heading_suffix_reports_wrong_value_not_just_presence():
+    """L2：驗值不驗形。括號在、值錯（配到別的標題文字）必須報。"""
+    zh = "# 區域變數 (Scope) {#x}\n"
+    en = "# Local Variables\n"
+    errs = validate.check_heading_suffix(zh, en)
+    assert len(errs) == 1 and "Local Variables" in errs[0]
+
+
+def test_heading_suffix_allows_untranslated_proper_noun():
+    zh = "# BCS {#bcs}\n"
+    en = "# BCS\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
+def test_heading_suffix_allows_untranslated_pure_code_heading():
+    zh = "## `copy` {#copy}\n"
+    en = "## `copy`\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
+def test_heading_suffix_rejects_untranslated_prefix_with_correct_suffix():
+    """「記得格式、忘了翻譯」的相鄰變體：後綴值正確但前綴仍是英文散文。
+    合法前綴要嘛含 CJK（一般譯文），要嘛去 code 後無小寫（縮寫，如
+    BCS (Binary Canonical Serialization)）。"""
+    en = "## Scopes\n"
+    assert len(validate.check_heading_suffix("## Scopes (Scopes) {#s}\n", en)) == 1
+    assert len(validate.check_heading_suffix("## Le scope (Scopes) {#s}\n", en)) == 1
+
+
+def test_heading_suffix_allows_acronym_prefix_without_cjk():
+    zh = "# BCS (Binary Canonical Serialization) {#bcs}\n"
+    en = "# Binary Canonical Serialization\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
+def test_heading_suffix_rejects_verbatim_prose_heading():
+    """Task 17 A/B 的另一半失效模式：sonnet 把「Scopes」整個沒翻、verbatim
+    複製。zh == en 豁免只能給「去 inline code 後無小寫」的標題（專有名詞、
+    縮寫、純 code —— english-main 實測 1154 個標題中僅 14 個），含小寫散文
+    的標題 verbatim 複製 = 沒翻譯，必須報。"""
+    zh = "## Scopes {#scopes}\n"
+    en = "## Scopes\n"
+    errs = validate.check_heading_suffix(zh, en)
+    assert len(errs) == 1 and "Scopes" in errs[0]
+
+
+def test_heading_suffix_handles_english_heading_with_parens():
+    zh = "# 中文 (Foo (bar)) {#x}\n"
+    en = "# Foo (bar)\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
+def test_heading_suffix_rejects_empty_prefix():
+    """只有 (English) 沒有譯文，等於沒翻，必須報。"""
+    zh = "# (Local Variables) {#x}\n"
+    en = "# Local Variables\n"
+    assert len(validate.check_heading_suffix(zh, en)) == 1
+
+
+def test_heading_suffix_abstains_on_count_mismatch():
+    """by-index 配對只在標題數一致時成立；不一致由 gate 1 負責報錯，
+    本 gate 棄權（鏡射 gate 6 對 by-index 前提的處理）。"""
+    zh = "# 甲 {#a}\n"
+    en = "# A\n\n## B\n"
+    assert validate.check_heading_suffix(zh, en) == []
+
+
 # --- Finding 2 / gate 6: anchor reassignment, not just disappearance ---
 
 

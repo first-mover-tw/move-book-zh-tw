@@ -208,6 +208,64 @@ def _anchor_ids(text: str) -> set[str]:
     return ids
 
 
+_ANCHOR_SUFFIX = re.compile(r"\s*\{#[\w-]+\}\s*$")
+# 標題內的 inline code span。單行標題文字用簡單配對即可，不需要
+# glossary.protected_mask 的跨行/巢狀 backtick 處理。
+_HEADING_CODE_SPAN = re.compile(r"`[^`]*`")
+
+
+def check_heading_suffix(zh_text: str, en_text: str) -> list[str]:
+    """9. 新翻譯的 body 標題必須是「中文 (English)」，後綴值等於對應的英文
+    標題文字（驗值不驗形；只驗「有括號」擋不住配錯標題的後綴）。
+
+    只掛在 pipeline.assemble（新翻譯）路徑，不進 check_file：legacy corpus
+    有 110/147 檔、473 個標題無後綴（2026-07-11 實測），掛進 check_file 會
+    讓 A 層 rebuild_frontmatter_only（body 原封不動是舊譯文）整批被擋。
+    sidebar 的 label 有自己的守衛（sidebar._validate_new_label_format），
+    不歸這裡管。
+
+    棄權前提鏡射 gate 6 對 by-index 假設的處理：標題數不一致時「第 i 個
+    中文標題對應第 i 個英文標題」不成立，本 gate 完全棄權——數量不符本身
+    由 gate 1（標題層級序列）負責報錯，檔案不會因為本 gate 棄權而漏網。
+
+    zh == en 的豁免只給「去 inline code 後無 ASCII 小寫」的標題（專有名詞、
+    縮寫、純 code，如 "BCS"、"`copy`"；english-main 實測 1154 個標題中僅
+    14 個）。含小寫散文的標題 verbatim 複製等於整個沒翻 —— 這是 Task 17
+    A/B 觀測到的真實 backend 失效模式（sonnet 對 "Scopes"），無條件豁免
+    zh == en 會讓它從八道 gate 加本 gate 全數漏網。
+    """
+    _, zh_body = frontmatter.split(zh_text)
+    _, en_body = frontmatter.split(en_text)
+    zh_h = anchors.headings(zh_body)
+    en_h = anchors.headings(en_body)
+    if len(zh_h) != len(en_h):
+        return []
+
+    errs = []
+    for i, ((_, zh_t), (_, en_t)) in enumerate(zip(zh_h, en_h)):
+        zh_t = _ANCHOR_SUFFIX.sub("", zh_t).strip()
+        en_t = _ANCHOR_SUFFIX.sub("", en_t).strip()
+        if zh_t == en_t:
+            if not re.search(r"[a-z]", _HEADING_CODE_SPAN.sub("", en_t)):
+                continue
+            errs.append(f"標題 {i} 未翻譯（verbatim 複製英文原文）: {zh_t!r}")
+            continue
+        want = f"({en_t})"
+        prefix = zh_t[: -len(want)].strip() if zh_t.endswith(want) else ""
+        if not prefix:
+            errs.append(
+                f"標題 {i} 缺「中文 (English)」後綴或後綴值不符: "
+                f"預期以 {want!r} 結尾, 實際 {zh_t!r}"
+            )
+        elif not _CJK.search(prefix) and re.search(
+            r"[a-z]", _HEADING_CODE_SPAN.sub("", prefix)
+        ):
+            # 後綴對了但前綴仍是英文散文 ——「記得格式、忘了翻譯」。
+            # 無 CJK 且無小寫的前綴（縮寫，如 BCS）合法，鏡射 verbatim 豁免。
+            errs.append(f"標題 {i} 前綴未翻譯: {zh_t!r}")
+    return errs
+
+
 def check_links(files: dict[str, str]) -> list[str]:
     """5. 所有內部 anchor 連結可解析。files: 路徑 -> 內容。"""
     index = {p: _anchor_ids(c) for p, c in files.items()}

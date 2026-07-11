@@ -113,7 +113,7 @@ def test_claude_cli_backend_constructs_expected_argv(monkeypatch):
     assert argv[0] == "claude"
     assert argv[1] == "-p"
     assert argv[2] == "--model"
-    assert argv[3] == "haiku"
+    assert argv[3] == "sonnet"  # Task 17 A/B 選定的預設 model
     assert "hello" in argv[4]
     assert claude_cli.SYSTEM_PROMPT in argv[4]
     assert captured["kwargs"]["timeout"] == 600
@@ -125,7 +125,8 @@ def test_claude_cli_backend_reads_model_env_after_import(monkeypatch):
     (Defect 2)。"""
     from scripts.zh_tw.backends import claude_cli
 
-    monkeypatch.setenv("ZH_TW_CLAUDE_MODEL", "sonnet")
+    # 覆蓋值必須異於預設值（sonnet），否則本測試驗不出 env 有生效。
+    monkeypatch.setenv("ZH_TW_CLAUDE_MODEL", "opus")
 
     captured = {}
 
@@ -136,7 +137,7 @@ def test_claude_cli_backend_reads_model_env_after_import(monkeypatch):
     monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
     claude_cli.ClaudeCLIBackend().translate("hello")
 
-    assert captured["argv"][3] == "sonnet"
+    assert captured["argv"][3] == "opus"
 
 
 def test_claude_cli_backend_honours_timeout_env(monkeypatch):

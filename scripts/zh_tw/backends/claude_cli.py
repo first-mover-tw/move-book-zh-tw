@@ -8,7 +8,10 @@ from .base import SYSTEM_PROMPT
 
 class ClaudeCLIBackend:
     def translate(self, text: str, *, kind: str = "markdown") -> str:
-        model = os.environ.get("ZH_TW_CLAUDE_MODEL", "haiku")
+        # Task 17 A/B（2026-07-11，reference/variables.md，見 tasks/notes.md）：
+        # sonnet 譯文品質與台灣用語較好且快一倍；它掉標題後綴的失效模式由
+        # validate gate 9（check_heading_suffix）擋下不寫檔。
+        model = os.environ.get("ZH_TW_CLAUDE_MODEL", "sonnet")
         timeout = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
         prompt = f"{SYSTEM_PROMPT}\n\n要翻譯的內容：\n\n{text}"
         r = subprocess.run(

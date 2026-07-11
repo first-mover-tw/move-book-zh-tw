@@ -103,6 +103,9 @@ def assemble(
     out = frontmatter.join(zh_meta, zh_body)
 
     errs = validate.check_file(out, en_text, prev_zh_text, prev_en_text)
+    # gate 9 只掛這裡（新翻譯），不進 check_file：A 層的 body 是 legacy
+    # 舊譯文（110/147 檔無後綴），掛進去會整批誤擋 —— 見 gate 9 docstring。
+    errs += validate.check_heading_suffix(out, en_text)
     if errs:
         raise validate.ValidationError("; ".join(errs))
     for n in notes:

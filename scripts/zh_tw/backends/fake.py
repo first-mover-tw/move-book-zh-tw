@@ -39,19 +39,50 @@ class FakeBackend:
                 )
         return self._substitute(text)
 
+    # 標題行要模擬合規 backend 的「中文 (English)」格式（validate gate 9 驗
+    # 後綴值 == 英文標題文字）。fake 存在是為了模擬真實 backend，真實 backend
+    # 被 SYSTEM_PROMPT 要求產出這個格式，所以 fake 也要 —— 不是放寬守衛去
+    # 遷就 fake（Task 14 / lessons L5 的教訓）。
+    _HEADING = re.compile(r"^(#+)\s+(.*?)\s*$")
+    _EXPLICIT_ANCHOR = re.compile(r"\s*(\{#[\w-]+\})\s*$")
+
     def _substitute(self, text: str) -> str:
         mask = glossary.protected_mask(text)
-        n = len(text)
+        lines = text.splitlines(keepends=True)
+        out = []
+        pos = 0
+        for line in lines:
+            protected = pos < len(mask) and mask[pos]
+            m = None if protected else self._HEADING.match(line.rstrip("\n"))
+            if m:
+                hashes, title = m.group(1), m.group(2)
+                am = self._EXPLICIT_ANCHOR.search(title)
+                anchor = f" {am.group(1)}" if am else ""
+                if am:
+                    title = title[: am.start()].rstrip()
+                nl = "\n" if line.endswith("\n") else ""
+                out.append(f"{hashes} {self._latin(title)} ({title}){anchor}{nl}")
+            else:
+                out.append(self._sub_masked(line, mask, pos))
+            pos += len(line)
+        return "".join(out)
+
+    def _sub_masked(self, line: str, mask: list[bool], start: int) -> str:
+        n = len(line)
         out = []
         i = 0
         while i < n:
-            protected = mask[i]
+            protected = start + i < len(mask) and mask[start + i]
             j = i
-            while j < n and mask[j] == protected:
+            while j < n and (start + j < len(mask) and mask[start + j]) == protected:
                 j += 1
-            seg = text[i:j]
+            seg = line[i:j]
             if not protected:
-                seg = re.sub(r"[A-Za-z]{2,}", "中文", seg)
+                seg = self._latin(seg)
             out.append(seg)
             i = j
         return "".join(out)
+
+    @staticmethod
+    def _latin(text: str) -> str:
+        return re.sub(r"[A-Za-z]{2,}", "中文", text)

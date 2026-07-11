@@ -28,7 +28,7 @@ def test_glossary_enforced_on_output():
         def translate(self, text, *, kind="markdown"):
             if kind == "text":
                 return "中文"
-            return "# 標題\n\n這個函數會返回值\n"
+            return "# 標題 (T)\n\n這個函數會返回值\n"
 
     out = pipeline.assemble(en, "", "", BadBackend())
     _, zh_body = frontmatter.split(out)
@@ -89,6 +89,22 @@ def test_backend_dropping_heading_raises():
         pipeline.assemble(en, "", "", DroppingBackend())
 
 
+def test_assemble_raises_when_backend_drops_heading_suffix():
+    """Task 17 A/B 實測到的失效模式：真實 backend（sonnet）對 4/21 標題
+    掉了「中文 (English)」後綴、其中一個整個沒翻，八道 gate 全數放行。
+    gate 9 掛在 assemble 路徑上，這種輸出必須整份炸掉。"""
+    en = '---\ndescription: "d"\n---\n\n# One\n\n## Two\n'
+
+    class SuffixDroppingBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "中文"
+            return "# 一 (One)\n\n## 二\n"  # 第二個標題掉後綴
+
+    with pytest.raises(validate.ValidationError, match="後綴"):
+        pipeline.assemble(en, "", "", SuffixDroppingBackend())
+
+
 def test_glossary_rewrites_function_term():
     en = '---\ndescription: "d"\n---\n\n# T\n'
 
@@ -96,7 +112,7 @@ def test_glossary_rewrites_function_term():
         def translate(self, text, *, kind="markdown"):
             if kind == "text":
                 return "中文"
-            return "# 標題\n\n這是一個函數\n"
+            return "# 標題 (T)\n\n這是一個函數\n"
 
     out = pipeline.assemble(en, "", "", FuncBackend())
     assert "函式" in out
