@@ -333,6 +333,7 @@ def test_translate_body_enforces_glossary_on_values():
 def test_run_a_tier_file_with_legacy_body_defects_succeeds():
     """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
     整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。"""
+    assert pipeline.tier("reference/constants.md") == "A"  # 釘住走的是 A 路徑
     ok, failed = pipeline.run(["reference/constants.md"], "fake")
     assert failed == {}
     assert ok == 1

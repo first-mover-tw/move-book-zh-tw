@@ -48,6 +48,21 @@ def main() -> int:
             print(f"{path}: 簡體殘留字 {ch!r}（第 {line + 1} 行）", file=sys.stderr)
             simplified_total += 1
 
+    # frontmatter 可翻譯欄位的值另掃一輪：實測 5 個檔的違禁詞藏在
+    # description/title 裡，body-only 掃描對它們回報假乾淨。
+    for path, text in sorted(files.items()):
+        meta, _ = frontmatter.split(text)
+        for key in sorted(frontmatter.TRANSLATABLE_KEYS & set(meta)):
+            value = meta[key]
+            if not isinstance(value, str):
+                continue
+            for bad, n in sorted(glossary.scan(value).items()):
+                print(f"{path}: frontmatter {key} 違禁詞 {bad} x{n}", file=sys.stderr)
+                glossary_total += n
+            for _line, ch in validate.simplified_chars(value):
+                print(f"{path}: frontmatter {key} 簡體殘留字 {ch!r}", file=sys.stderr)
+                simplified_total += 1
+
     print(
         f"連結問題 {len(link_errs)} 個，違禁詞共 {glossary_total} 處，"
         f"簡體殘留字共 {simplified_total} 個",

@@ -58,3 +58,23 @@ def test_clean_file_set_passes_the_underlying_checks():
 
     errs = link_errs
     assert (1 if (errs or glossary_total or simplified_total) else 0) == 0
+
+
+def test_main_catches_forbidden_word_in_frontmatter_value(monkeypatch, capsys):
+    """check_repo 是「語料乾淨」的批次守門員：實測 5 個現有檔的違禁詞
+    藏在 description/title 值裡，body-only 掃描會對它們回 0（假乾淨）。"""
+    files = {
+        "book/a.md": '---\ntitle: "循環"\ndescription: "乾淨。"\n---\n\n# 標題 {#t}\n\n乾淨內文。\n'
+    }
+    monkeypatch.setattr(check_repo, "collect", lambda: files)
+    assert check_repo.main() == 1
+    assert "循環" in capsys.readouterr().err
+
+
+def test_main_catches_simplified_char_in_frontmatter_value(monkeypatch, capsys):
+    files = {
+        "book/a.md": '---\ntitle: "这个标题"\n---\n\n# 標題 {#t}\n\n乾淨內文。\n'
+    }
+    monkeypatch.setattr(check_repo, "collect", lambda: files)
+    assert check_repo.main() == 1
+    assert "簡體" in capsys.readouterr().err
