@@ -1,22 +1,24 @@
 ---
-description: 'Sui Move 測試中的 Gas 分析：測量計算成本、比較實作，並使用 sui analyze-trace 分析追蹤紀錄。'
+description:
+  在 Move 測試中分析 gas 使用量 (Profile Gas Usage in Move Tests)：測量運算成本、比較不同實作方式，並使用
+  sui analyze-trace 分析追蹤紀錄
 ---
 
-# Gas 分析 (Gas Profiling)
+# Gas 效能分析 (Gas Profiling) {#gas-profiling}
 
-了解 Gas 消耗有助於優化你的 Move 程式碼並估算交易成本。Move 測試框架提供了內建工具來測量測試執行期間的 Gas 使用量。除此之外，還提供了一個特殊的工具 `sui analyze-trace` 用於更徹底地分析 Gas 使用量。
+理解 gas 消耗有助於最佳化你的 Move 程式碼並估算交易成本。Move 測試框架提供內建工具來測量測試執行過程中的 gas 使用量。除此之外，還有一個專門的工具 `sui analyze-trace` 可用於更深入地分析 gas 使用情形。
 
-> `-s` 顯示的統計數據僅反映**計算單位 (computation units)** —— 它們不包括存儲成本。此外，編譯器計算單位並不直接對應於實際的鏈上 Gas 費用；它們顯示相對的計算複雜度，有助於比較不同實作。要獲得實際 Gas 成本，請將你的套件發布到測試網並測量真實交易。
+> `-s` 顯示的統計數據只反映**計算單位（computation units）**——不包含儲存成本。此外，編譯器的計算單位並不會直接對應到實際的鏈上 gas 費用；它們顯示的是相對的計算複雜度，適合用來比較不同實作之間的差異。若要取得實際的 gas 成本，請將你的套件發佈到 testnet 並測量實際交易。
 
-## 簡單測量：測試統計
+## 簡易測量：測試統計 (Simple Measurement: Test Statistics) {#simple-measurement-test-statistics}
 
-使用 `-s` 或 `--statistics` 標誌與 `sui move test` 一起使用，以查看每個測試的執行時間和 Gas 消耗：
+使用 `sui move test` 搭配 `-s` 或 `--statistics` 旗標，可以看到每個測試的執行時間與 gas 消耗量：
 
 ```bash
 sui move test -s
 ```
 
-輸出顯示一個包含三列的表格：
+輸出會顯示一個包含三欄的表格：
 
 ```table
 Test Statistics:
@@ -24,52 +26,56 @@ Test Statistics:
 ┌────────────────────────────────────────────────────────┬────────────┬───────────────────────────┐
 │                       Test Name                        │    Time    │         Gas Used          │
 ├────────────────────────────────────────────────────────┼────────────┼───────────────────────────┤
-│ book::my_module::test_simple_operation                 │   0.003    │             1             │
+│ book::my_module::test_simple_operation                 │   0.006    │          998001           │
 ├────────────────────────────────────────────────────────┼────────────┼───────────────────────────┤
-│ book::my_module::test_complex_operation                │   0.011    │            59             │
+│ book::my_module::test_complex_operation                │   0.007    │          998068           │
 ├────────────────────────────────────────────────────────┼────────────┼───────────────────────────┤
-│ book::my_module::test_with_objects                     │   0.008    │            25             │
+│ book::my_module::test_with_objects                     │   0.006    │          998001           │
 └────────────────────────────────────────────────────────┴────────────┴───────────────────────────┘
 
 Test result: OK. Total tests: 3; passed: 3; failed: 0
 ```
 
-- **Test Name**：測試函式的完全限定名稱
-- **Time**：執行時間 (秒)
-- **Gas Used**：測試消耗的 Gas 單位
+- **Test Name**：測試函式的完整限定名稱
+- **Time**：以秒為單位的執行時間
+- **Gas Used**：測試消耗的 gas 單位
 
-## CSV 輸出
+> 每個測試的總量都包含一筆很大的固定基礎成本——即使是空的測試，也會回報約 998000 個 gas 單位。比較測試時，應觀察它們總量之間的差異，而非絕對數值。
 
-為了進行程式化分析或匯入試算表，請使用 `csv` 選項：
+## CSV 輸出 (CSV Output) {#csv-output}
+
+若要進行程式化分析或匯入試算表，可使用 `csv` 選項：
 
 ```bash
 sui move test -s csv
 ```
 
-這會產生逗號分隔的輸出：
+這會產生以逗號分隔的輸出：
 
 ```
-test_name,time_ns,gas_used
-book::my_module::test_simple_operation,3381750,1
-book::my_module::test_complex_operation,8454125,59
-book::my_module::test_with_objects,3905625,25
+name,nanos,gas
+book::my_module::test_simple_operation,5992125,998001
+book::my_module::test_complex_operation,6870583,998068
+book::my_module::test_with_objects,6022917,998001
 ```
 
-時間以奈秒 (nanoseconds) 為單位，這允許在比較相似操作時進行更精確的測量。
+時間單位為奈秒，能在比較相似操作時提供更精確的測量。
 
-## Gas 限制
+## Gas 上限 (Gas Limits) {#gas-limits}
 
-使用 `-i` 或 `--gas-limit` 標誌來設定測試的最大 Gas 預算。超過此限制的測試將會超時：
+使用 `-i` 或 `--gas-limit` 旗標可為測試設定最大 gas 預算。超過此上限的測試會逾時：
 
 ```bash
-sui move test -i 50
+sui move test -i 1000
 ```
 
-當測試超過 Gas 限制時的輸出：
+> 此上限是以內部執行 gas 單位來衡量的，並不會與 `Gas Used` 欄位中的數值一對一對應——一個回報約 998000 gas 的簡單測試，在上限為 1000 的情況下依然能輕鬆通過。
+
+當測試超過 gas 上限時的輸出：
 
 ```
-[ PASS    ] book::my_module::test_simple_operation
 [ TIMEOUT ] book::my_module::test_complex_operation
+[ PASS    ] book::my_module::test_simple_operation
 [ PASS    ] book::my_module::test_with_objects
 
 Test failures:
@@ -79,17 +85,20 @@ Failures in book::my_module:
 ┌── test_complex_operation ──────
 │ Test timed out
 └──────────────────
+
+Test result: FAILED. Total tests: 3; passed: 2; failed: 1
 ```
 
-這對於以下情況很有用：
+這在以下情況很有用：
 
-- **識別昂貴的操作**：找出消耗意外 Gas 量的測試
-- **強制執行 Gas 預算**：確保關鍵路徑保持在可接受的限制內
-- **測試 Gas 耗盡**：驗證你的程式碼是否正確處理 Gas 耗盡的情況 (參見 [預期失敗](./testing-basics.md#expected-failures))
+- **找出昂貴的操作**：找出消耗超乎預期 gas 量的測試
+- **強制執行 gas 預算**：確保關鍵路徑維持在可接受的範圍內
+- **測試 gas 耗盡情形**：驗證你的程式碼能正確處理 gas 用盡的情境（參見
+  [預期失敗 (Expected Failures)](./testing-basics.md#expected-failures)）
 
-## 比較實作
+## 比較不同實作 (Comparing Implementations) {#comparing-implementations}
 
-使用統計數據來比較不同實作之間的 Gas 消耗：
+使用統計資料來比較不同實作之間的 gas 消耗：
 
 ```move
 module book::comparison;
@@ -108,79 +117,84 @@ public fun sum_formula(n: u64): u64 {
 
 #[test]
 fun test_sum_loop() {
-    let result = sum_loop(100);
-    assert_eq!(result, 4950);
+    let result = sum_loop(1000);
+    assert_eq!(result, 499500);
 }
 
 #[test]
 fun test_sum_formula() {
-    let result = sum_formula(100);
-    assert_eq!(result, 4950);
+    let result = sum_formula(1000);
+    assert_eq!(result, 499500);
 }
 ```
 
-使用統計數據執行揭示了差異：
+搭配統計功能執行後可看出差異：
 
 ```bash
-sui move test -s comparison
+sui move test comparison -s
 ```
 
 ```table
 ┌────────────────────────────────────┬────────────┬───────────────────────────┐
 │           Test Name                │    Time    │         Gas Used          │
 ├────────────────────────────────────┼────────────┼───────────────────────────┤
-│ book::comparison::test_sum_loop    │   0.005    │            201            │
+│ book::comparison::test_sum_loop    │   0.003    │          998078           │
 ├────────────────────────────────────┼────────────┼───────────────────────────┤
-│ book::comparison::test_sum_formula │   0.002    │             3             │
+│ book::comparison::test_sum_formula │   0.001    │          998001           │
 └────────────────────────────────────┴────────────┴───────────────────────────┘
 ```
 
-## 追蹤分析 (Trace Analysis)
+迴圈在基礎成本之上額外花費了 77 個 gas 單位，而公式則沒有增加任何可測量的成本。
 
-為了更深入的剖析，你可以從測試中生成執行追蹤，並使用 [speedscope](https://www.speedscope.app/) 將其視覺化。這會顯示按函式調用細分的 Gas 消耗火焰圖 (flamegraph)，使你可以輕鬆找出 Gas 實際花費在哪裡。
+## 追蹤分析 (Trace Analysis) {#trace-analysis}
 
-### 步驟 1：生成追蹤
+若要進行更深入的效能分析，可以從測試中產生執行追蹤（trace），並使用
+[speedscope](https://www.speedscope.app/) 將其視覺化。這會顯示依函式呼叫拆解的 gas 消耗火焰圖，讓你能輕易找出 gas 究竟花在哪裡。
 
-使用 `--trace` 標誌執行測試以產生追蹤檔案：
+### 步驟一：產生追蹤 (Step 1: Generate Traces) {#step-1-generate-traces}
+
+使用 `--trace` 旗標執行測試以產生追蹤檔案：
 
 ```bash
 sui move test --trace
 ```
 
-追蹤檔案會寫入套件構建資料夾內的 `traces/` 目錄中。
+追蹤檔案會被寫入套件根目錄下的 `traces/` 目錄（與 `Move.toml` 同層）。
 
-### 步驟 2：生成 Gas 設定檔 (Gas Profile)
+### 步驟二：產生 Gas 效能分析報告 (Step 2: Generate a Gas Profile) {#step-2-generate-a-gas-profile}
 
-使用 `sui analyze-trace` 和 `gas-profile` 子命令將追蹤轉換為設定檔：
+使用 `sui analyze-trace` 搭配 `gas-profile` 子指令，將追蹤檔轉換為效能分析報告：
 
 ```bash
 sui analyze-trace -p traces/<TRACE_FILE> gas-profile
 ```
 
-這會在當前目錄中輸出一個 `gas_profile_<TRACE_FILE>.json` 檔案。你可以使用 `-o` 標誌指定不同的輸出目錄：
+這會在目前目錄下輸出一個 `gas_profile_<TRACE_FILE>.json` 檔案。你可以用 `-o` 旗標指定不同的輸出目錄，該旗標須放在 `gas-profile` 子指令之前：
 
 ```bash
-sui analyze-trace -p traces/<TRACE_FILE> gas-profile -o ./profiles
+sui analyze-trace -p traces/<TRACE_FILE> -o ./profiles gas-profile
 ```
 
-### 步驟 3：使用 Speedscope 視覺化
+### 步驟三：使用 Speedscope 視覺化 (Step 3: Visualize with Speedscope) {#step-3-visualize-with-speedscope}
 
-安裝 [speedscope](https://www.speedscope.app/) 並打開設定檔：
+安裝 [speedscope](https://www.speedscope.app/) 並開啟效能分析報告：
 
 ```bash
 npm install -g speedscope
 speedscope gas_profile_<TRACE_FILE>.json
 ```
 
-Speedscope 提供三種視圖：
+Speedscope 提供三種檢視方式：
 
-- **Time Order (時間順序)**：按調用順序從左到右顯示調用堆疊。條形寬度對應於 Gas 消耗。
-- **Left Heavy (左側加重)**：將重複的調用分組在一起，按總 Gas 消耗排序 —— 對於查找最昂貴的程式碼路徑很有用。
-- **Sandwich (三明治)**：列出每個函式的 Gas 消耗，包含 **Total** (包括被調用的函式) 和 **Self** (僅函式本身) 列。
+- **Time Order**：由左至右依呼叫順序顯示呼叫堆疊。長條寬度對應 gas 消耗量。
+- **Left Heavy**：將重複的呼叫分組，依總 gas 消耗量排序——適合用來找出最昂貴的程式碼路徑。
+- **Sandwich**：列出每個函式的 gas 消耗量，包含 **Total**（含被呼叫的函式）與
+  **Self**（僅該函式本身）兩欄。
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- [執行測試](./testing-basics.md) - 基本測試執行和預期失敗
-- [測試工具](./test-utilities.md) - 斷言巨集和測試輔助工具
+- [執行測試 (Running Tests)](./testing-basics.md) - 基本測試執行與預期失敗
+- [測試工具 (Test Utilities)](./test-utilities.md) - 斷言巨集與測試輔助工具
 - [集合 (Collections)](./../programmability/collections.md) - 選擇高效的資料結構
-- [追蹤分析](https://docs.sui.io/references/cli/trace-analysis) - Sui CLI 追蹤分析參考
+- [追蹤分析 (Trace Analysis)](https://docs.sui.io/references/cli/trace-analysis) - Sui CLI 追蹤分析
+  參考文件

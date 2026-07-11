@@ -71,9 +71,9 @@ def test_no_orphans_remain():
 
 
 def test_stale_files_count_tracks_backfill():
-    """backfill 進度計數器：PR 2 後 104、PR 3 後 91、PR 4 後 62、PR 5
-    （programmability 18 + 競態修復回填 2）後 42。收尾歸零並改寫本測試。"""
-    assert len(manifest.stale_files("english-main")) == 42
+    """backfill 進度計數器：PR 2→104、PR 3→91、PR 4→62、PR 5→42、
+    PR 6（testing 13）→29。收尾歸零並改寫本測試。"""
+    assert len(manifest.stale_files("english-main")) == 29
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():

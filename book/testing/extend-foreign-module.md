@@ -1,14 +1,24 @@
 ---
-description: '在 Move 測試中擴充外部模組：向外部套件添加測試專用函式，以建立測試數據和模擬物件。'
+description:
+  在 Move 測試中擴充外部模組 (Extend foreign modules in Move tests)：為外部套件新增僅供測試使用的函式，用於建立測試資料與模擬物件
+  (mock objects)。
 ---
 
-# 擴充模組 (Extending Modules)
+# Extending Modules 擴充模組 (Extending Modules) {#extending-modules}
 
-在測試依賴於外部套件的程式碼時，你經常需要為這些套件中定義的型別建立測試數據。然而，許多函式庫不提供測試工具，讓你無法建構測試所需的物件。模組擴充透過允許你向外部模組添加測試專用 (test-only) 函式來解決這個問題。
+在測試依賴外部套件的程式碼時,你經常需要為這些套件中定義的型別建立測試資料。然而,許多函式庫並未提供測試工具,導致你無法建構測試所需的物件。模組擴充功能(Module extensions)透過允許你為外部模組新增僅供測試使用的函式,解決了這個問題。
 
-## 問題
+> 此功能目前僅在 `2024.alpha` edition 中提供。
+> 若要使用,你需要在 `Move.toml` 中指定 edition:
+>
+> ```toml
+> [package]
+> edition = "2024.alpha"
+> ```
 
-考慮一個使用 [Pyth Network](https://pyth.network/) 進行價格餵價的應用程式。你的程式碼依賴於 Pyth 套件中的 `PriceInfoObject` 來獲取資產價格：
+## 問題所在 (The Problem) {#the-problem}
+
+考慮一個使用 [Pyth Network](https://pyth.network/) 取得價格資訊的應用程式。你的程式碼依賴 Pyth 套件中的 `PriceInfoObject` 來取得資產價格:
 
 ```move
 module app::trading;
@@ -16,7 +26,7 @@ module app::trading;
 use pyth::price_info::PriceInfoObject;
 use pyth::price::{Self, Price};
 
-/// 使用來自 Pyth 預言機的當前價格執行交易
+/// 使用來自 Pyth oracle 的當前價格執行交易
 public fun execute_trade(/* ... */ price_info: &PriceInfoObject, amount: u64): u64 {
     let price = get_price(price_info);
     // ... 使用價格的交易邏輯
@@ -24,40 +34,41 @@ public fun execute_trade(/* ... */ price_info: &PriceInfoObject, amount: u64): u
 }
 
 fun get_price(price_info: &PriceInfoObject): u64 {
-    // 從預言機物件中提取價格
+    // 從 oracle 物件中提取價格
     // ...
     0 // 佔位符
 }
 ```
 
-要測試 `execute_trade`，你需要一個 `PriceInfoObject`。但 Pyth 的 Sui 實作沒有提供 `create_price_info_for_testing` 函式 —— 獲取 `PriceInfoObject` 的唯一方法是透過實際的預言機更新，這在單元測試中是不切實際的。
+要測試 `execute_trade`,你需要一個 `PriceInfoObject`。但 Pyth 的 Sui 實作並未提供 `create_price_info_for_testing` 函式——取得 `PriceInfoObject` 的唯一方式是透過實際的 oracle 更新,而這在單元測試中並不實際可行。
 
-如果沒有擴充，你的選擇很有限：
+沒有擴充功能的情況下,你的選項相當有限:
 
-- 跳過依賴價格的邏輯測試 (危險)
-- Fork 並修改 Pyth 套件 (維護負擔)
+- 略過測試依賴價格的邏輯(危險)
+- Fork 並修改 Pyth 套件(維護負擔)
 
-## 什麼是擴充？
+## 什麼是擴充功能? (What is an Extension?) {#what-is-an-extension}
 
-擴充允許你向現有模組添加函式 —— 即使是來自外部套件的模組。擴充後的函式可以存取該模組的私有型別，並且可以建立、讀取或修改它們。這是使用 `extend` 關鍵字來表達的：
+擴充功能允許你為既有模組——即使是來自外部套件的模組——新增函式。被擴充的函式可以存取該模組的私有型別,並能建立、讀取或修改它們。這是用 `extend` 關鍵字來表達的:
 
 ```move
 #[test_only]
 extend module pyth::price_info;
 
-// 現在你可以定義能夠存取 pyth::price_info 私有型別和函式的函式了
+// 現在你可以定義能夠存取
+// pyth::price_info 私有型別與函式的函式
 ```
 
-擴充具有以下特點：
+擴充功能具有以下特性:
 
-- **僅限添加**：擴充只能添加新的宣告；它們不能修改或刪除目標模組中的現有項目
-- **套件本地性**：它們不會影響下游依賴或原始套件。只有在根套件中定義的擴充才會被應用 —— 依賴項中的擴充會被忽略
-- **模式限制**：擴充需要模式屬性，最常見的是用於測試的 `#[test_only]`
-- **強大**：它們具有對被擴充模組內部的完全存取權限，就像程式碼直接寫在該模組中一樣
+- **僅限新增**:擴充功能只能新增新的宣告;它們不能修改或移除目標模組中的既有項目
+- **侷限於你的套件**:它們不會影響下游依賴或原始套件。只有定義在根套件(root package)中的擴充功能才會被套用——依賴套件中的擴充功能會被忽略
+- **模式限制**:擴充功能需要一個模式屬性(mode attribute),最常見的是用於測試的 `#[test_only]`
+- **功能強大**:它們對被擴充模組的內部具有完整存取權,就如同這些程式碼是直接寫在該模組中一樣
 
-## 解決 Pyth 問題
+## 解決 Pyth 問題 (Solving the Pyth Problem) {#solving-the-pyth-problem}
 
-以下是如何使用擴充為 `PriceInfoObject` 建立測試輔助工具。首先，建立一個擴充檔案：
+以下說明如何使用擴充功能為 `PriceInfoObject` 建立測試輔助函式。首先,建立一個擴充檔案:
 
 ```move
 // tests/extensions/pyth_price_info_ext.move
@@ -75,7 +86,7 @@ public fun new_price_info_object_for_testing(
 }
 ```
 
-現在你可以撰寫適當的單元測試：
+現在你可以撰寫正規的單元測試:
 
 ```move
 #[test_only]
@@ -89,7 +100,7 @@ use std::unit_test::{Self, assert_eq};
 fun test_execute_trade_with_price() {
     let ctx = &mut tx_context::dummy();
 
-    // 使用我們的擴充建立測試價格數據
+    // 使用我們的擴充功能建立測試價格資料
     let price_info = price_info::new_price_info_object_for_testing(
         /* ... */
         ctx,
@@ -104,9 +115,9 @@ fun test_execute_trade_with_price() {
 }
 ```
 
-## 專案結構
+## 專案結構 (Project Structure) {#project-structure}
 
-將擴充組織在專用資料夾中是一個好的做法：
+將擴充功能整理在專屬的資料夾中是良好的實務作法:
 
 ```
 my_project/
@@ -119,48 +130,47 @@ my_project/
 └── Move.toml
 ```
 
-這將測試工具與生產程式碼分開，並清楚表明哪些模組已被擴充。
+這使測試工具與正式程式碼保持分離,並清楚標示哪些模組已被擴充。
 
-## 擴充你自己的模組
+## 擴充你自己的模組 (Extending Your Own Modules) {#extending-your-own-modules}
 
-擴充不僅限於外部套件 —— 你也可以擴充自己套件中的模組。這對於添加測試輔助工具很有用，而無需使用 `#[test_only]` 函式弄亂你的生產程式碼：
+擴充功能不僅限於外部套件——你也可以擴充自己套件中的模組。這對於新增測試輔助函式而不讓正式程式碼中充斥 `#[test_only]` 函式很有幫助:
 
 ```move
 #[test_only]
 extend module app::trading;
 
-/// 用於檢查內部狀態的測試輔助工具
+/// 用於檢查內部狀態的測試輔助函式
 public fun get_internal_value(/* ... */): u64 {
     // 為測試存取私有欄位
 }
 
 #[test]
 fun test_internal_invariant() {
-    // 測試可以與擴充中的輔助工具並存
+    // 測試可以與輔助函式一同存在於擴充功能中
 }
 ```
 
-## 其他使用案例
+## 其他使用情境 (Other Use Cases) {#other-use-cases}
 
-除了預言機 Mock 之外，擴充還適用於：
+除了 oracle mock 之外,擴充功能還適用於:
 
-- **建立和銷毀具有私有欄位的物件**：當依賴項未公開其型別的建構子時
-- **透過公開存取器暴露內部狀態**：當你需要在測試中驗證內部不變量 (internal invariants) 時
-- **模擬行為**：當你需要模擬難以正常達到的特定狀態時
-- **測試錯誤條件**：當你需要建立無效狀態以測試錯誤處理時
+- **建立與銷毀具有私有欄位的物件**:當依賴套件未曝露其型別的建構函式時
+- **透過公開存取函式曝露內部狀態**:當你需要在測試中驗證內部不變數(invariant)時
+- **模擬行為**:當你需要模擬難以在正常情況下觸及的特定狀態時
+- **測試錯誤情況**:當你需要建立無效狀態以測試錯誤處理時
 
-## 限制
+## 限制 (Limitations) {#limitations}
 
-擴充有一些需要注意的重要限制：
+擴充功能有一些需要注意的重要限制:
 
-- **需要模式屬性**：擴充必須具有像 `#[test_only]` 這樣的模式屬性。使用 `#[test_only]` 時，擴充僅在執行 `sui move test` 時起作用，無法在生產構建中使用。
-- **僅限添加**：你只能添加新的宣告 (函式、型別、常數、use 語句)。你不能修改、覆蓋或遮蔽目標模組中的現有項目。
-- **僅限根套件**：只有在你的根套件中定義的擴充才會被應用。如果依賴項定義了擴充，它們在你的構建中會被忽略。
-- **版本相容性**：擴充程式碼受制於與目標模組相同的版本 (edition) 功能。如果目標模組使用較舊的版本，你的擴充程式碼必須與該版本相容。
-- **版本要求**：擴充需要 `2024.alpha` 版本或更高版本。確保你的 `Move.toml` 指定了相容的版本。
+- **需要模式屬性**:擴充功能必須具有像 `#[test_only]` 這樣的模式屬性。使用 `#[test_only]` 時,擴充功能只在執行 `sui move test` 時運作,無法用於正式環境的建置。
+- **僅限新增**:你只能新增新的宣告(函式、型別、常數、use 陳述式)。你無法修改、覆寫或遮蔽(shadow)目標模組中的既有項目。
+- **僅限根套件**:只有定義在你根套件中的擴充功能才會被套用。若某個依賴套件定義了擴充功能,在你的建置中會被忽略。
+- **Edition 相容性**:擴充功能程式碼受目標模組相同的 edition 功能所限制。若目標模組使用較舊的 edition,你的擴充功能程式碼必須與該 edition 相容。
+- **Edition 要求**:擴充功能目前僅在 `2024.alpha` edition 中提供。請確認你的 `Move.toml` 已指定該 edition。
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- [模組擴充 | 參考](./../../reference/extensions) - 擴充語法和語義的詳細規範
-- [在 Sui 中整合 Pyth](https://docs.pyth.network/price-feeds/core/use-real-time-data/pull-integration/sui)
-- [應用程式範例：預言機](https://docs.sui.io/guides/developer/app-examples/oracle)
+- [Module Extensions | Reference](./../../reference/extensions) - 擴充功能語法與語意的詳細規格
+- [Integrating Pyth in Sui](https://docs.pyth.network/price-feeds/core/use-real-time-data/pull-integration/sui)

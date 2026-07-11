@@ -132,5 +132,18 @@
   "book/move-basics/internal-permit.md": "72d4d97132ad7043ffa2e6616c907d17e07cd072",
   "book/move-basics/macros.md": "5c864c65c2180ef851a1decb3ab3be4bf00fbfed",
   "book/programmability/address-balances.md": "0fb2d799ef8e3e3f7e88ad69478f2162fab471df",
-  "book/programmability/package-upgrades.md": "4fb0adc22426ca4abc6f30d93f2fd8f48d6e86b1"
+  "book/programmability/package-upgrades.md": "4fb0adc22426ca4abc6f30d93f2fd8f48d6e86b1",
+  "book/testing/random-test.md": "b7a0bec6b3b60ab200f531427deca06027f3c569",
+  "book/testing/testing-basics.md": "42e54c3c89dfd011942e45a21b8f19070d14bea8",
+  "book/testing/good-tests.md": "a3daa581ade4dbb49589fdafc9894b9f175536e7",
+  "book/testing/extend-foreign-module.md": "bf1b8346a4ca0bb8be3b632af5bce00c1d22c8d0",
+  "book/testing/test-scenario.md": "85274a85bf9e0282446b682d9a635b878f3422f0",
+  "book/testing/using-system-objects.md": "bc536991f8f4c7e08d2117ea9744307a74f1a71c",
+  "book/testing/index.md": "801c4f91f5bd2ed4801ae0bdd2d02152dd432004",
+  "book/testing/gas-profiling.md": "32ad38ee6208b16f30b5e5a211c105544d475cdd",
+  "book/testing/transaction-context.md": "6944b15bf0e4343be81ff31d62cf3f72031e8df2",
+  "book/testing/linting.md": "533d34a6b64f5bc49081f8310366cda159bf6bd2",
+  "book/testing/test-utilities.md": "dc4c89d519cda56bc7b570da4715c8975c68be03",
+  "book/testing/builder-pattern.md": "4862e3325889afabf8bf2d0f5c82b532ffe3f652",
+  "book/testing/coverage.md": "c41dfcd3095906349ad11ccf199b91778abc0ea7"
 }

@@ -27,9 +27,8 @@ def test_main_over_real_corpus_is_not_yet_clean():
         "book/object/fast-path-and-consensus.md: anchor 無法解析 ./ownership#party-objects",
         # PR 5 起：balance-and-coin 忠實翻出上游連結，目標 concepts（PR 7）
         "book/programmability/balance-and-coin.md: anchor 無法解析 ./../concepts/what-is-a-transaction#commands",
-        # 舊 zh testing 檔連到 zh 自創的 {#clock}（上游從未有；epoch-and-time
-        # 已改用上游的 auto-slug #time）；PR 6 重譯 using-system-objects 自癒
-        "book/testing/using-system-objects.md: anchor 無法解析 ./../programmability/epoch-and-time.md#clock",
+        # PR 6 新譯文忠實翻出上游連結，目標 object/（PR 7）
+        "book/testing/test-scenario.md: anchor 無法解析 ./../object/ownership.md#immutable-frozen-state",
         "reference/variables.md: anchor 無法解析 ./functions#return-expression",
     }
     assert set(link_errs) == transitional
@@ -44,8 +43,8 @@ def test_main_over_real_corpus_is_not_yet_clean():
         _, body = frontmatter.split(text)
         simplified_total += len(validate.simplified_chars(body))
 
-    assert glossary_total == 108, glossary_total  # PR 5 再清 4 處（112→108）
-    assert simplified_total == 4, simplified_total  # PR 5 清掉 1 字
+    assert glossary_total == 87, glossary_total  # PR 6 清 21 處（108→87，舊 testing 章違禁詞密集）
+    assert simplified_total == 3, simplified_total  # PR 6 再清 1 字
 
     assert check_repo.main() == 1
 
