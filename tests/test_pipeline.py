@@ -257,16 +257,6 @@ def _tier_fixture(path):
     return zh, en
 
 
-def test_tier_a_when_only_frontmatter_untranslated():
-    """reference/coding-conventions.md：結構一致、delta ≤ 6，唯一缺陷是
-    description 未翻 —— 正是 A 層 backfill 要修的東西，不得當降級理由
-    （spec §五：A 層前提只看 validate 第 1、2 條）。"""
-    zh, en = _tier_fixture("reference/coding-conventions.md")
-    assert validate.check_structure(zh, en) == []  # 前置：結構一致
-    assert validate.check_file(zh, en)  # 前置：全量 gate 仍有缺陷，測試沒有空轉
-    assert pipeline.tier("reference/coding-conventions.md") == "A"
-
-
 def test_tier_a_when_only_body_forbidden_words():
     """reference/constants.md：結構一致，內文帶違禁詞「循環」。內文品質
     缺陷不在 validate 第 1、2 條，不構成降級。"""

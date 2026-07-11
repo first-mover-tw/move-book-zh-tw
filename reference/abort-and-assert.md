@@ -1,6 +1,9 @@
 ---
-title: '終止與斷言 (Abort and Assert) | 參考手冊'
-description: "Move 終止與斷言參考手冊：使用錯誤程式碼停止執行、使用 assert! 強制執行條件，以及處理交易失敗。"
+title: 終止與斷言 (Abort and Assert) | 參考手冊
+description:
+  'Move 中止與斷言參考手冊：以錯誤代碼中止執行、用 assert! 強制條件、處理交易失敗 (Move abort and assert
+  reference: halt execution with error codes, enforce conditions with assert!, and
+  handle transaction failures)'
 ---
 
 # 終止與斷言 (Abort and Assert)

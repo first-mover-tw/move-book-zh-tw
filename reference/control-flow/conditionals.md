@@ -1,6 +1,7 @@
 ---
-title: '條件表達式 (Conditional Expressions) | 參考手冊'
-description: "Move 條件表達式參考手冊：if、else 和 if-else 語法，包含類型規則和基於表達式的語義。"
+title: 條件表達式 (Conditional Expressions) | 參考手冊
+description: Move 條件式運算式參考 (Move Conditional Expressions Reference)：if、else 與 if-else
+  語法，含型別規則與以運算式為基礎的語意。
 ---
 
 # 條件 `if` 表達式

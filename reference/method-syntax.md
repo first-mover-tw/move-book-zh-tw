@@ -1,6 +1,6 @@
 ---
-title: '方法語法 (Method Syntax) | 參考手冊'
-description: "Move 方法語法參考：使用點號標記法呼叫函式、接收者型別、自動借用、以及方法解析。"
+title: 方法語法 (Method Syntax) | 參考手冊
+description: Move 方法語法參考手冊：以點號表示法呼叫函式，涵蓋接收者型別、自動借用與方法解析。
 ---
 
 # 方法 (Methods)

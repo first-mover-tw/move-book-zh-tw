@@ -1,6 +1,8 @@
 ---
-title: '向量 (Vector) | 參考手冊'
-description: "Move 向量類型參考手冊：建立、存取、push、pop、銷毀向量，以及使用帶有完整 API 文件的向量常值。"
+title: 向量 (Vector) | 參考手冊
+description:
+  向量型別參考手冊 (Vector Type Reference)：說明如何建立、存取、push、pop、銷毀向量 (vector)，並提供含完整
+  API 文件的向量字面值 (vector literal) 用法。
 ---
 
 # 向量 (Vector)
@@ -15,9 +17,9 @@ description: "Move 向量類型參考手冊：建立、存取、push、pop、銷
 
 可以使用 `vector` 常值建立任何類型的向量。
 
-| 語法 | 類型 | 描述 |
-| --------------------- | ----------------------------------------------------------------------------- | ------------------------------------------ |
-| `vector[]` | `vector[]: vector<T>`，其中 `T` 是任何單一非引用類型 | 空向量 |
+| 語法                  | 類型                                                                       | 描述                                |
+| --------------------- | -------------------------------------------------------------------------- | ----------------------------------- |
+| `vector[]`            | `vector[]: vector<T>`，其中 `T` 是任何單一非引用類型                       | 空向量                              |
 | `vector[e1, ..., en]` | `vector[e1, ..., en]: vector<T>`，其中 `e_i: T` 且 `0 < i <= n` 且 `n > 0` | 具有 `n` 個元素的向量（長度為 `n`） |
 
 在這些情況下，`vector` 的類型是推斷出來的，要麼從元素類型推斷，要麼從向量的使用方式推斷。如果無法推斷類型，或者僅為了增加清晰度，可以明確指定類型：
@@ -40,7 +42,7 @@ vector<T>[e1, ..., en]: vector<T>
 
 Move 中向量的一個常見用法是表示「位元組陣列 (byte arrays)」，以 `vector<u8>` 表示。這些數值通常用於加密目的，例如公鑰或雜湊結果。這些數值非常常見，因此提供了特定語法使其更具可讀性，而不必使用 `vector[]` 並以數字形式指定每個單獨的 `u8` 數值。
 
-目前支援兩種類型的 `vector<u8>` 常值：*位元組字串 (byte strings)* 和 *十六進制字串 (hex strings)*。
+目前支援兩種類型的 `vector<u8>` 常值：_位元組字串 (byte strings)_ 和 _十六進制字串 (hex strings)_。
 
 #### 位元組字串 (Byte Strings)
 
@@ -48,15 +50,15 @@ Move 中向量的一個常見用法是表示「位元組陣列 (byte arrays)」�
 
 這些是 ASCII 編碼的字串，允許轉義序列 (escape sequences)。目前支援的轉義序列為：
 
-| 轉義序列 | 描述 |
-| --------------- | ---------------------------------------------- |
-| `\n`            | 換行 (New line 或 Line feed) |
-| `\r`            | 回車 (Carriage return) |
-| `\t`            | 製表符 (Tab) |
-| `\\`            | 反斜線 (Backslash) |
-| `\0`            | 空字元 (Null) |
-| `\"`            | 引號 (Quote) |
-| `\xHH`          | 十六進制轉義，插入十六進制位元組序列 `HH` |
+| 轉義序列 | 描述                                      |
+| -------- | ----------------------------------------- |
+| `\n`     | 換行 (New line 或 Line feed)              |
+| `\r`     | 回車 (Carriage return)                    |
+| `\t`     | 製表符 (Tab)                              |
+| `\\`     | 反斜線 (Backslash)                        |
+| `\0`     | 空字元 (Null)                             |
+| `\"`     | 引號 (Quote)                              |
+| `\xHH`   | 十六進制轉義，插入十六進制位元組序列 `HH` |
 
 #### 十六進制字串 (Hex Strings)
 
@@ -83,22 +85,22 @@ fun byte_and_hex_strings() {
 
 `vector` 透過 Move 標準函數庫中的 `std::vector` 模組支援以下操作：
 
-| 函式 | 描述 | 是否終止 (Aborts?) |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `vector::empty<T>(): vector<T>` | 建立一個可以存儲 `T` 類型數值的空向量 | 永不 |
-| `vector::singleton<T>(t: T): vector<T>` | 建立一個長度為 1 且包含 `t` 的向量 | 永不 |
-| `vector::push_back<T>(v: &mut vector<T>, t: T)` | 將 `t` 添加到 `v` 的末端 | 永不 |
-| `vector::pop_back<T>(v: &mut vector<T>): T` | 移除並回傳 `v` 中的最後一個元素 | 如果 `v` 為空 |
-| `vector::borrow<T>(v: &vector<T>, i: u64): &T` | 回傳索引 `i` 處 `T` 的不可變引用 | 如果 `i` 超出範圍 |
-| `vector::borrow_mut<T>(v: &mut vector<T>, i: u64): &mut T` | 回傳索引 `i` 處 `T` 的可變引用 | 如果 `i` 超出範圍 |
-| `vector::destroy_empty<T>(v: vector<T>)` | 刪除 `v` | 如果 `v` 不為空 |
-| `vector::append<T>(v1: &mut vector<T>, v2: vector<T>)` | 將 `v2` 中的元素添加到 `v1` 的末端 | 永不 |
-| `vector::contains<T>(v: &vector<T>, e: &T): bool` | 如果 `e` 在向量 `v` 中，則回傳 true。否則回傳 false | 永不 |
-| `vector::swap<T>(v: &mut vector<T>, i: u64, j: u64)` | 交換向量 `v` 中索引為 `i` 和 `j` 的元素 | 如果 `i` 或 `j` 超出範圍 |
-| `vector::reverse<T>(v: &mut vector<T>)` | 就地 (in place) 反轉向量 `v` 中元素的順序 | 永不 |
-| `vector::index_of<T>(v: &vector<T>, e: &T): (bool, u64)` | 如果 `e` 在向量 `v` 的索引 `i` 處，則回傳 `(true, i)`。否則回傳 `(false, 0)` | 永不 |
-| `vector::remove<T>(v: &mut vector<T>, i: u64): T` | 移除向量 `v` 的第 `i` 個元素，位移所有後續元素。這是 O(n) 操作並保持元素順序 | 如果 `i` 超出範圍 |
-| `vector::swap_remove<T>(v: &mut vector<T>, i: u64): T` | 將向量 `v` 的第 `i` 個元素與最後一個元素交換，然後彈出該元素。這是 O(1) 操作，但不保持元素順序 | 如果 `i` 超出範圍 |
+| 函式                                                       | 描述                                                                                           | 是否終止 (Aborts?)       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------ |
+| `vector::empty<T>(): vector<T>`                            | 建立一個可以存儲 `T` 類型數值的空向量                                                          | 永不                     |
+| `vector::singleton<T>(t: T): vector<T>`                    | 建立一個長度為 1 且包含 `t` 的向量                                                             | 永不                     |
+| `vector::push_back<T>(v: &mut vector<T>, t: T)`            | 將 `t` 添加到 `v` 的末端                                                                       | 永不                     |
+| `vector::pop_back<T>(v: &mut vector<T>): T`                | 移除並回傳 `v` 中的最後一個元素                                                                | 如果 `v` 為空            |
+| `vector::borrow<T>(v: &vector<T>, i: u64): &T`             | 回傳索引 `i` 處 `T` 的不可變引用                                                               | 如果 `i` 超出範圍        |
+| `vector::borrow_mut<T>(v: &mut vector<T>, i: u64): &mut T` | 回傳索引 `i` 處 `T` 的可變引用                                                                 | 如果 `i` 超出範圍        |
+| `vector::destroy_empty<T>(v: vector<T>)`                   | 刪除 `v`                                                                                       | 如果 `v` 不為空          |
+| `vector::append<T>(v1: &mut vector<T>, v2: vector<T>)`     | 將 `v2` 中的元素添加到 `v1` 的末端                                                             | 永不                     |
+| `vector::contains<T>(v: &vector<T>, e: &T): bool`          | 如果 `e` 在向量 `v` 中，則回傳 true。否則回傳 false                                            | 永不                     |
+| `vector::swap<T>(v: &mut vector<T>, i: u64, j: u64)`       | 交換向量 `v` 中索引為 `i` 和 `j` 的元素                                                        | 如果 `i` 或 `j` 超出範圍 |
+| `vector::reverse<T>(v: &mut vector<T>)`                    | 就地 (in place) 反轉向量 `v` 中元素的順序                                                      | 永不                     |
+| `vector::index_of<T>(v: &vector<T>, e: &T): (bool, u64)`   | 如果 `e` 在向量 `v` 的索引 `i` 處，則回傳 `(true, i)`。否則回傳 `(false, 0)`                   | 永不                     |
+| `vector::remove<T>(v: &mut vector<T>, i: u64): T`          | 移除向量 `v` 的第 `i` 個元素，位移所有後續元素。這是 O(n) 操作並保持元素順序                   | 如果 `i` 超出範圍        |
+| `vector::swap_remove<T>(v: &mut vector<T>, i: u64): T`     | 將向量 `v` 的第 `i` 個元素與最後一個元素交換，然後彈出該元素。這是 O(1) 操作，但不保持元素順序 | 如果 `i` 超出範圍        |
 
 <!-- TODO we should just link out to generated stdlib docs? Maybe?  -->
 

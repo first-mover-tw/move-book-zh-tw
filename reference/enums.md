@@ -1,6 +1,6 @@
 ---
-title: '列舉 (Enumerations) | 參考'
-description: "Move 列舉參考：定義變體、模式匹配與 match、能力以及列舉特定操作。"
+title: 列舉 (Enumerations) | 參考
+description: Move 列舉型別參考手冊：定義變體型別、使用 match 進行模式比對、能力，以及列舉特有的操作。
 ---
 
 # 列舉 (Enumerations)

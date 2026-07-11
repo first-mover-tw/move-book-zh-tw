@@ -1,6 +1,8 @@
 ---
-title: '地址 (Address) | 參考手冊'
-description: "Move 地址類型參考手冊：256 位元識別碼、命名地址、十六進制常值以及地址相關操作。"
+title: 地址 (Address) | 參考手冊
+description:
+  Move 位址型別參考手冊 (Move address type reference)：256 位元識別碼 (256-bit identifiers)、命名位址
+  (named addresses)、十六進位常值 (hex literals)、位址相關運算 (address-related operations)。
 ---
 
 # 地址 (Address)
@@ -11,7 +13,7 @@ description: "Move 地址類型參考手冊：256 位元識別碼、命名地址
 
 儘管 `address` 在底層是一個 256 位元的整數，但 Move 地址被刻意設計為不透明的 —— 它們不能從整數建立，不支援算術運算，也不能被修改。Move 的特定部署可能有 `native` (原生) 函式來切換其中一些操作（例如，從位元組 `vector<u8>` 建立 `address`），但這些不屬於 Move 語言本身。
 
-雖然存在執行階段的高地址數值（類型為 `address` 的數值），但它們 *不能* 用於在執行階段存取模組。
+雖然存在執行階段的高地址數值（類型為 `address` 的數值），但它們 _不能_ 用於在執行階段存取模組。
 
 ## 地址及其語法
 

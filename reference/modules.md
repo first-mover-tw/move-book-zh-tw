@@ -1,6 +1,6 @@
 ---
-title: '模組 (Modules) | 參考手冊'
-description: "Move 模組參考手冊：宣告模組、定義類型與函數、控制可見度，以及在套件中組織程式碼。"
+title: 模組 (Modules) | 參考手冊
+description: Move 模組參考手冊 (Move Module Reference)：宣告模組、定義型別與函式、控制可見性，並在套件中組織程式碼。
 ---
 
 # 模組 (Modules)

@@ -1,6 +1,6 @@
 ---
-title: '帶標籤的控制流 (Labeled Control Flow) | 參考手冊'
-description: "Move 帶標籤的控制流參考手冊：命名循環和區塊、帶標籤的 break，以及從命名區塊 return。"
+title: 帶標籤的控制流 (Labeled Control Flow) | 參考手冊
+description: Move 具名控制流程參考手冊：named loops and blocks（具名迴圈與區塊）、帶標籤的 break、從具名區塊 return。
 ---
 
 # 帶標籤的控制流 (Labeled Control Flow)
@@ -67,6 +67,7 @@ let x = 'outer: loop {
 
 > 使用巨集 (Macros) 而非循環 (Loops) 是一種更好的方式，同樣地，使用 `return` 來控制流程。
 > 就像上面的函式 `sum_until_threshold`，可以使用 `macro` 重寫：
+
 ```move
 fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
     'outer: {

@@ -1,6 +1,8 @@
 ---
-title: '控制流 (Control Flow) | 參考手冊'
-description: "Move 控制流參考手冊：if 表達式、while 和 for 循環、帶標籤的區塊、模式匹配以及提前回傳。"
+title: 控制流 (Control Flow) | 參考手冊
+description:
+  Move 控制流程參考手冊 (Control Flow Reference)：if 表達式、while 與 for 迴圈、標籤區塊 (labeled
+  blocks)、模式比對 (pattern matching)，以及提前回傳 (early returns)。
 ---
 
 # 控制流 (Control Flow)

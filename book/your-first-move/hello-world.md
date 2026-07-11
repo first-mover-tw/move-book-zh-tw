@@ -1,6 +1,7 @@
 ---
-
-description: "Create your first Move package on Sui: learn the project structure, write a module, compile code, and run tests with the Move CLI."
+description:
+  在 Sui 上建立你的第一個 Move 套件 (package)：學習專案結構、撰寫模組 (module)、編譯程式碼，並使用 Move
+  CLI 執行測試。
 ---
 
 # 哈囉，世界！
@@ -123,6 +124,7 @@ Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 
 為了展示這些功能，讓我們將 _sources/hello_world.move_ 檔案的內容替換為以下內容：
 
 ```move file=packages/hello_world/sources/hello_world.move anchor=source
+
 ```
 
 在編譯期間，程式碼被建置，但不會執行。編譯後的套件只包含可以由其他模組或在交易中呼叫的函數。我們將在[概念](./../concepts/index.md)章節中解釋這些概念。但現在，讓我們看看當我們執行 _sui move build_ 時會發生什麼。
@@ -158,6 +160,7 @@ BUILDING hello_world
 將 `tests/hello_world_tests.move` 的內容替換為以下內容：
 
 ```move file=packages/hello_world/tests/hello_world_tests.move anchor=test
+
 ```
 
 這裡我們匯入了 `hello_world` 模組，並呼叫其 `hello_world` 函數來測試輸出確實是字串 "Hello, World!"。現在，既然我們已經準備好測試，就讓我們以測試模式編譯套件並執行測試。Move CLI 為此提供了 `test` 指令：

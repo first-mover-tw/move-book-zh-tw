@@ -69,8 +69,10 @@ def test_orphans_finds_upstream_deleted_file():
     assert "book/storage/transfer-restrictions.md" in manifest.orphans("english-main")
 
 
-def test_stale_files_is_nonempty_before_backfill():
-    assert len(manifest.stale_files("english-main")) == 151
+def test_stale_files_count_tracks_backfill():
+    """backfill 進度計數器：PR 2（A 層 47 檔）後 151 - 47 = 104。
+    之後每個 backfill PR 遞減此數；收尾 task 應歸零並改寫本測試。"""
+    assert len(manifest.stale_files("english-main")) == 104
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():

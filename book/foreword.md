@@ -1,6 +1,7 @@
 ---
-
-description: "The design philosophy behind Move: security by default, expressiveness, and intuitive resource management for smart contracts."
+description:
+  安全預設 (security by default)、表達力 (expressiveness) 與直覺的資源管理 (intuitive resource
+  management)，這是 Move 智慧合約背後的設計哲學。
 ---
 
 # 前言
@@ -15,11 +16,11 @@ description: "The design philosophy behind Move: security by default, expressive
 
 Move 的核心技術要素包括：
 
--   透過可程式化**物件**，為數位資產提供安全、熟悉且靈活的抽象層。
--   一個豐富的**能力**系統（受線性型別啟發），賦予程式設計師對數值如何被建立、銷毀、儲存、複製和轉移的極致控制權。
--   一個具備強大封裝特性的**模組**系統，可在保持控制的同時實現程式碼重複使用。
--   **動態欄位**，用於在物件之間建立階層式關係。
--   **可程式化交易區塊**（PTB），以實現由 Move 驅動的 API 的原子性客戶端組合。
+- 透過可程式化**物件**，為數位資產提供安全、熟悉且靈活的抽象層。
+- 一個豐富的**能力**系統（受線性型別啟發），賦予程式設計師對數值如何被建立、銷毀、儲存、複製和轉移的極致控制權。
+- 一個具備強大封裝特性的**模組**系統，可在保持控制的同時實現程式碼重複使用。
+- **動態欄位**，用於在物件之間建立階層式關係。
+- **可程式化交易區塊**（PTB），以實現由 Move 驅動的 API 的原子性客戶端組合。
 
 Move 於 2018 年作為 Facebook Libra 專案的一部分而誕生。它在 2019 年公開亮相，第一個由 Move 驅動的網路於 2020 年啟動。截至 2024 年 4 月，已有許多由 Move 驅動的區塊鏈投入生產，還有數個正在開發中。Move 是一種內嵌語言，具有平台無關的核心，這意味著它在每個使用它的鏈中都會呈現出略微不同的特性。
 

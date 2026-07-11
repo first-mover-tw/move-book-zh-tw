@@ -1,6 +1,6 @@
 ---
-title: '常數 (Constants) | 參考'
-description: "Move 常數參考：定義編譯期值、支援的類型、命名規則及在模組中的用法。"
+title: 常數 (Constants) | 參考
+description: Move 常數 (Move Constants) 參考手冊：定義編譯時期值、支援的型別、命名規則，以及在模組 (module) 中的用法。
 ---
 
 # 常數 (Constants)

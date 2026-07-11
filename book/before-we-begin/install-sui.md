@@ -1,6 +1,8 @@
 ---
+description: '安裝 Sui 二進位檔與 Move 編譯器 (Sui binary and Move compiler)
 
-description: "Install the Sui binary and Move compiler using suiup, Homebrew, or Chocolatey to start developing Move smart contracts."
+
+  使用 suiup、Homebrew 或 Chocolatey 安裝 Sui 二進位檔與 Move 編譯器，開始開發 Move 智慧合約。'
 ---
 
 # 安裝 Sui
