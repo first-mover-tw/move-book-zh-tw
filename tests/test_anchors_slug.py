@@ -62,14 +62,25 @@ def test_headings_reports_level():
     assert anchors.headings("### Deep\n") == [(3, "Deep")]
 
 
+def _pinned(path):
+    """parser 回歸測試的 fixture 一律釘 PRE_FIX（0d4b8bea）：讀 working tree
+    會被 backfill 重譯改動（L3）。"""
+    import subprocess
+
+    text = subprocess.run(
+        ["git", "show", f"0d4b8bea:{path}"], capture_output=True, text=True, check=True
+    ).stdout
+    _, body = frontmatter.split(text)
+    return body
+
+
 def test_headings_one_time_witness_html_commented_fences_and_headings():
     """book/programmability/one-time-witness.md 有 11 個 fence marker 行（奇數），
     因為第 41-124 行被包在一個 HTML comment 裡，內含 7 個。該 comment 內還藏著
     兩個看起來像標題的行（`## Solving the Coin Problem`、`## Questions`），
     但它們永遠不會被渲染出來，headings() 必須忽略它們。
     """
-    body = (_REPO_ROOT / "book/programmability/one-time-witness.md").read_text(encoding="utf-8")
-    _, body = frontmatter.split(body)
+    body = _pinned("book/programmability/one-time-witness.md")
     result = anchors.headings(body)
     texts = [t for _, t in result]
     assert texts == [
@@ -212,14 +223,12 @@ def test_visible_lines_excludes_fence_indented_and_html_block():
 
 
 def test_fence_lines_one_time_witness():
-    body = (_REPO_ROOT / "book/programmability/one-time-witness.md").read_text(encoding="utf-8")
-    _, body = frontmatter.split(body)
+    body = _pinned("book/programmability/one-time-witness.md")
     assert anchors.fence_lines(body) == 4
 
 
 def test_headings_one_time_witness_body_only():
-    body = (_REPO_ROOT / "book/programmability/one-time-witness.md").read_text(encoding="utf-8")
-    _, body = frontmatter.split(body)
+    body = _pinned("book/programmability/one-time-witness.md")
     texts = [t for _, t in anchors.headings(body)]
     assert texts == [
         "一次性見證 (One Time Witness)",

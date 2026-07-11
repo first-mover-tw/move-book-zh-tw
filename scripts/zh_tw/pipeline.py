@@ -139,6 +139,7 @@ def assemble(
     # 標題修復在 anchor 注入之前（注入以最終標題文字為準）。
     zh_body = _repair_headings(zh_body, en_body, backend)
     zh_body = _repair_fence_comments(zh_body, backend)
+    zh_body = _repair_inpage_links(zh_body, en_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -282,6 +283,38 @@ def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
         ending = anchors._line_ending(lines[i])
         lines[i] = f"{prefix}{glossary.enforce(got)}{trail}{ending}"
     return "".join(lines)
+
+
+_INPAGE_LINK = re.compile(r"\]\(#([^)#\s]+)\)")
+
+
+def _repair_inpage_links(zh_body: str, en_body: str) -> str:
+    """頁內連結 slug 的決定性修復：模型會把 `](#format)` 翻成 `](#格式-format)`，
+    但 anchor 一律衍生自英文標題 slug（visibility.md、bcs.md 兩個 PR 各自
+    實測）。與英文原文的頁內連結按出現順序配對、取回英文 slug；順序配對
+    的前提是兩邊頁內連結數一致，不一致就不修（fail-open，check_repo 的
+    gate 5 會顯形）。code 內的連結經 protected_mask 排除。"""
+
+    def collect(body: str) -> list[tuple[int, int, str]]:
+        mask = glossary.protected_mask(body)
+        out = []
+        for m in _INPAGE_LINK.finditer(body):
+            if m.start() < len(mask) and mask[m.start()]:
+                continue
+            out.append((m.start(1), m.end(1), m.group(1)))
+        return out
+
+    zh_links = collect(zh_body)
+    en_links = collect(en_body)
+    if len(zh_links) != len(en_links) or not zh_links:
+        return zh_body
+    parts, pos = [], 0
+    for (a, b, _), (_, _, en_slug) in zip(zh_links, en_links):
+        parts.append(zh_body[pos:a])
+        parts.append(en_slug)
+        pos = b
+    parts.append(zh_body[pos:])
+    return "".join(parts)
 
 
 def rebuild_frontmatter_only(

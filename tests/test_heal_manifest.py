@@ -104,6 +104,7 @@ def test_healed_entry_written_with_merge_base_blob_sha(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     monkeypatch.setattr(manifest, "MANIFEST_PATH", tmp_manifest)
+    _pin_head(monkeypatch)  # PR 4 重譯 vector.md 後 HEAD 指紋不再匹配 merge-base
 
     healed, unrecoverable = heal_manifest.heal(dry_run=False)
 

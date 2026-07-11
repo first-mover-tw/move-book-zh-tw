@@ -748,3 +748,23 @@ def test_run_apply_saves_only_own_updates(tmp_path, monkeypatch):
         "their/new.md": "bbb",  # 別的行程的紀錄不得被洗掉
         "mine/file.md": "ccc",
     }
+
+
+def test_repair_inpage_links_restores_english_slugs():
+    """兩個 PR 各自出現（visibility.md、bcs.md×2）：模型把頁內連結的
+    slug 翻譯成中文（#格式-format），目標 anchor 卻是英文 slug（anchor
+    一律衍生自英文標題）。決定性修法：與英文原文的頁內連結按順序配對、
+    取回英文 slug —— 順序配對的前提是兩邊頁內連結數一致，不一致就不修
+    （交給 check_repo 顯形）。"""
+    zh = "# 標題 (T)\n\n見[格式](#格式-format)與[解碼](#解碼-decoding)。\n"
+    en = "# T\n\nSee [Format](#format) and [Decoding](#decoding).\n"
+    out = pipeline._repair_inpage_links(zh, en)
+    assert "(#format)" in out and "(#decoding)" in out
+    assert "#格式" not in out
+
+
+def test_repair_inpage_links_skips_on_count_mismatch_and_code():
+    zh = "```\n[x](#不要動)\n```\n\n[a](#甲)\n"
+    en = "```\n[x](#keep)\n```\n\n[a](#a) 與 [b](#b)\n"
+    out = pipeline._repair_inpage_links(zh, en)
+    assert out == zh  # 頁內連結數不一致（1 vs 2）→ 不修；code 內不算連結
