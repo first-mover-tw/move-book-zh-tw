@@ -36,9 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
-          cache: 'pnpm'
+          cache: true
+          cache_dependency_path: site/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm i
         working-directory: ./site

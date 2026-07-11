@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[allow(unused_use, unused_field, unused_variable)]
-module book::dynamic_collections {
+module book::dynamic_collections;
+
 use std::string::String;
 
 // ANCHOR: bag_struct
-/// 從 `sui::bag` 模組匯入。
+/// Imported from the `sui::bag` module.
 use sui::bag::{Self, Bag};
 
-/// 以結構欄位形式使用 `Bag` 的範例。
+/// An example of a `Bag` as a struct field.
 public struct Carrier has key {
     id: UID,
     bag: Bag
@@ -25,33 +26,35 @@ let ctx = &mut tx_context::dummy();
 // ANCHOR: bag_usage
 let mut bag = bag::new(ctx);
 
-// bag 有 `length` 函式來取得元素個數
+// bag has the `length` function to get the number of elements
 assert_eq!(bag.length(), 0);
 
-bag.add(b"my_key", b"my_value".to_string());
+// the type of the value is defined at insertion; here it is a `String`
+let value: String = "my_value";
+bag.add(b"my_key", value);
 
-// 長度已變更為 1
+// length has changed to 1
 assert_eq!(bag.length(), 1);
 
-// 依序：`borrow`、`borrow_mut` 及 `remove`
-// 必須指定值的類型
+// in order: `borrow`, `borrow_mut` and `remove`
+// the value type must be specified
 let field_ref: &String = &bag[b"my_key"];
 let field_mut: &mut String = &mut bag[b"my_key"];
 let field: String = bag.remove(b"my_key");
 
-// 長度回到 0 - 我們可以解包
+// length is back to 0 - we can unpack
 bag.destroy_empty();
 // ANCHOR_END: bag_usage
 }
 
 // ANCHOR: table_struct
-/// 從 `sui::table` 模組匯入。
+/// Imported from the `sui::table` module.
 use sui::table::{Self, Table};
 
-/// 具有 `store` 的某個記錄類型
+/// Some record type with `store`
 public struct Record has store { /* ... */ }
 
-/// 以結構欄位形式使用 `Table` 的範例。
+/// An example of a `Table` as a struct field.
 public struct UserRegistry has key {
     id: UID,
     table: Table<address, Record>
@@ -62,40 +65,79 @@ public struct UserRegistry has key {
 let ctx = &mut tx_context::dummy();
 
 // ANCHOR: table_usage
-// Table 需要在初始化時明確指定鍵和值的類型參數。
-// ...但只需在初始化時指定一次。
+// Table requires explicit type parameters for the key and value
+// ...but does it only once in initialization.
 let mut table = table::new<address, String>(ctx);
 
-// table 有 `length` 函式來取得元素個數
+// table has the `length` function to get the number of elements
 assert_eq!(table.length(), 0);
 
-table.add(@0xa11ce, b"my_value".to_string());
-table.add(@0xb0b, b"another_value".to_string());
+table.add(@0xa11ce, "my_value");
+table.add(@0xb0b, "another_value");
 
-// 長度已變更為 2
+// length has changed to 2
 assert_eq!(table.length(), 2);
 
-// 依序：`borrow`、`borrow_mut` 及 `remove`
+// in order: `borrow`, `borrow_mut` and `remove`
 let value_ref = &table[@0xa11ce];
 let value_mut = &mut table[@0xa11ce];
 
-// 移除兩個值
+// removing both values
 let _value = table.remove(@0xa11ce);
 let _another_value = table.remove(@0xb0b);
 
-// 長度回到 0 - 我們可以解包
+// length is back to 0 - we can unpack
 table.destroy_empty();
 // ANCHOR_END: table_usage
 }
 
+// ANCHOR: object_table_struct
+/// Imported from the `sui::object_table` module.
+use sui::object_table::{Self, ObjectTable};
+
+/// A profile is an object - it has the `key` and `store` abilities.
+public struct Profile has key, store {
+    id: UID,
+    name: String,
+}
+
+/// An example of an `ObjectTable` as a struct field.
+public struct ProfileRegistry has key {
+    id: UID,
+    profiles: ObjectTable<address, Profile>
+}
+// ANCHOR_END: object_table_struct
+
+#[test] fun test_object_table() {
+let ctx = &mut tx_context::dummy();
+
+// ANCHOR: object_table_usage
+let mut profiles = object_table::new<address, Profile>(ctx);
+
+// the interface is the same as the regular `Table`
+profiles.add(@0xa11ce, Profile {
+    id: object::new(ctx),
+    name: "Alice",
+});
+
+// the stored object keeps its `ID` and can be looked up without its type
+let profile_id = profiles.value_id(@0xa11ce); // Option<ID>
+
+// objects cannot be dropped - remove the entry before destroying the table
+let profile = profiles.remove(@0xa11ce);
+profiles.destroy_empty();
+// ANCHOR_END: object_table_usage
+std::unit_test::destroy(profile);
+}
+
 // ANCHOR: linked_table_struct
-/// 從 `sui::linked_table` 模組匯入。
+/// Imported from the `sui::linked_table` module.
 use sui::linked_table::{Self, LinkedTable};
 
-/// 具有 `store` 的某個權限類型
+/// Some record type with `store`
 public struct Permissions has store { /* ... */ }
 
-/// 以結構欄位形式使用 `LinkedTable` 的範例。
+/// An example of a `LinkedTable` as a struct field.
 public struct AdminRegistry has key {
     id: UID,
     linked_table: LinkedTable<address, Permissions>
@@ -106,31 +148,30 @@ public struct AdminRegistry has key {
 let ctx = &mut tx_context::dummy();
 
 // ANCHOR: linked_table_usage
-// LinkedTable 需要在初始化時明確指定鍵和值的類型參數。
-// ...但只需在初始化時指定一次。
+// LinkedTable requires explicit type parameters for the key and value
+// ...but does it only once in initialization.
 let mut linked_table = linked_table::new<address, String>(ctx);
 
-// linked_table 有 `length` 函式來取得元素個數
+// linked_table has the `length` function to get the number of elements
 assert_eq!(linked_table.length(), 0);
 
-linked_table.push_front(@0xa0a, b"first_value".to_string());
-linked_table.push_back(@0xb1b, b"second_value".to_string());
-linked_table.push_back(@0xc2c, b"third_value".to_string());
+linked_table.push_front(@0xa0a, "first_value");
+linked_table.push_back(@0xb1b, "second_value");
+linked_table.push_back(@0xc2c, "third_value");
 
-// 長度已變更為 3
+// length has changed to 3
 assert_eq!(linked_table.length(), 3);
 
-// 依序：`borrow`、`borrow_mut` 及 `remove`
+// in order: `borrow`, `borrow_mut` and `remove`
 let first_value_ref = &linked_table[@0xa0a];
 let second_value_mut = &mut linked_table[@0xb1b];
 
-// 按鍵移除，從開始或從末尾
+// remove by key, from the beginning or from the end
 let _second_value = linked_table.remove(@0xb1b);
 let (_first_addr, _first_value) = linked_table.pop_front();
 let (_third_addr, _third_value) = linked_table.pop_back();
 
-// 長度回到 0 - 我們可以解包
+// length is back to 0 - we can unpack
 linked_table.destroy_empty();
 // ANCHOR_END: linked_table_usage
-}
 }
