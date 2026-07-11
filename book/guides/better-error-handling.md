@@ -1,6 +1,5 @@
 ---
-
-description: "Improve error handling in Move smart contracts: use descriptive abort codes and error constants for better debugging on Sui."
+description: 'Improve error handling in Move smart contracts: use descriptive abort codes and error constants for better debugging on Sui.'
 ---
 
 # 更好的錯誤處理 (Better Error Handling)

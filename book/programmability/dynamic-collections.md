@@ -1,6 +1,5 @@
 ---
-
-description: "Dynamic collections in Sui: Bag, Table, ObjectBag, ObjectTable, and LinkedTable built on dynamic fields for flexible storage."
+description: 'Dynamic collections in Sui: Bag, Table, ObjectBag, ObjectTable, and LinkedTable built on dynamic fields for flexible storage.'
 ---
 
 # 動態集合 (Dynamic Collections)

@@ -1,6 +1,5 @@
 ---
-
-description: "TxContext in Sui Move: access sender address, transaction digest, epoch, and generate unique IDs in your smart contracts."
+description: 'TxContext in Sui Move: access sender address, transaction digest, epoch, and generate unique IDs in your smart contracts.'
 ---
 
 # 交易上下文 (Transaction Context)
@@ -9,7 +8,8 @@ description: "TxContext in Sui Move: access sender address, transaction digest, 
 
 交易上下文透過 `TxContext` 結構提供給程式使用。該結構定義在 [`sui::tx_context`][tx-context-framework] 模組中，並包含以下欄位：
 
-[tx-context-framework]: https://docs.sui.io/references/framework/sui/tx_context 
+[tx-context-framework]: https://docs.sui.io/references/framework/sui/tx_context
+
 ```move
 module sui::tx_context;
 

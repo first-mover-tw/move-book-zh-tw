@@ -1,6 +1,6 @@
 ---
-title: '巨集函式 (Macro Functions) | 參考手冊'
-description: "Move 巨集函式參考手冊：編譯時展開、Lambda 參數、類型參數以及巨集的方法語法。"
+title: 巨集函式 (Macro Functions) | 參考手冊
+description: Move 巨集函式參考手冊 (Move macro functions reference)：編譯時期展開、Lambda 參數、型別參數與巨集的方法語法。
 ---
 
 # 巨集函式 (Macro Functions)

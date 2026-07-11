@@ -1,6 +1,6 @@
 ---
-title: '布林值 (Bool) | 參考手冊'
-description: "Move 布林類型參考手冊：true 和 false 常值、邏輯運算子（and、or、not）以及布林表達式語義。"
+title: 布林值 (Bool) | 參考手冊
+description: 布林值型別參考 (bool)：true 與 false 字面值、邏輯運算子 (and, or, not)，以及布林表達式語意。
 ---
 
 # 布林值 (Bool)
@@ -17,11 +17,11 @@ description: "Move 布林類型參考手冊：true 和 false 常值、邏輯運�
 
 `bool` 支援三種邏輯操作：
 
-| 語法 | 描述 | 等效表達式 |
-| ------------------------- | ---------------------------- | ------------------------------------------------------------------- |
-| `&&`                      | 短路邏輯與 (logical and) | `p && q` 等同於 `if (p) q else false` |
-| <code>&vert;&vert;</code> | 短路邏輯或 (logical or) | <code>p &vert;&vert; q</code> 等同於 `if (p) true else q` |
-| `!`                       | 邏輯非 (logical negation) | `!p` 等同於 `if (p) false else true` |
+| 語法                      | 描述                      | 等效表達式                                                |
+| ------------------------- | ------------------------- | --------------------------------------------------------- |
+| `&&`                      | 短路邏輯與 (logical and)  | `p && q` 等同於 `if (p) q else false`                     |
+| <code>&vert;&vert;</code> | 短路邏輯或 (logical or)   | <code>p &vert;&vert; q</code> 等同於 `if (p) true else q` |
+| `!`                       | 邏輯非 (logical negation) | `!p` 等同於 `if (p) false else true`                      |
 
 ### 控制流
 

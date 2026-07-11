@@ -1,5 +1,5 @@
 ---
-description: "The Move Book 致謝：感謝 The Rust Book、貢獻者與 Move 社群。"
+description: 'The Move Book 致謝：感謝 The Rust Book、貢獻者與 Move 社群。'
 ---
 
 # 附錄 F：致謝 (Acknowledgements)

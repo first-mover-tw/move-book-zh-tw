@@ -1,6 +1,5 @@
 ---
-
-description: "Struct methods in Move: use receiver syntax to call functions on struct instances with dot notation for cleaner code."
+description: 'Struct methods in Move: use receiver syntax to call functions on struct instances with dot notation for cleaner code.'
 ---
 
 # 結構方法 (Struct Methods)

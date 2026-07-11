@@ -1,6 +1,5 @@
 ---
-
-description: "The Hot Potato pattern in Move: a struct with no abilities that must be consumed in the same transaction, enforcing workflow completion."
+description: 'The Hot Potato pattern in Move: a struct with no abilities that must be consumed in the same transaction, enforcing workflow completion.'
 ---
 
 # 模式：Hot Potato (燙手山芋)

@@ -1,6 +1,7 @@
 ---
-title: '索引語法 (Index Syntax) | 參考'
-description: "Move 索引語法參考：使用中括號標記法搭配 #[syntax(index)] 屬性，為自訂型別提供直觀的存取模式。"
+title: 索引語法 (Index Syntax) | 參考
+description: 'Move 索引語法參考 (Move Index Syntax Reference)：對自訂型別使用 bracket notation，搭配
+  #[syntax(index)] attribute 以達成直覺的存取模式。'
 ---
 
 # 索引語法 (Index Syntax)
@@ -93,7 +94,7 @@ fun borrow_first(input: &Vs): &u64 {
     &input.vs[0].v[0]
     // 轉換為 `vector::borrow(&vector::borrow(&input.vs, 0).v, 0)`
 }
-````
+```
 
 ### 索引函式接受靈活的引數 (Index Functions Take Flexible Arguments)
 

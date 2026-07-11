@@ -1,5 +1,5 @@
 ---
-description: "為 Move 測試生成程式碼覆蓋率報告：使用 --coverage 標誌和 sui move coverage 來識別未測試的程式碼路徑。"
+description: '為 Move 測試生成程式碼覆蓋率報告：使用 --coverage 標誌和 sui move coverage 來識別未測試的程式碼路徑。'
 ---
 
 # 生成覆蓋率報告 (Generating Coverage Reports)
@@ -127,15 +127,15 @@ sui move coverage bytecode --module <MODULE_NAME>
 
 ## 總結
 
-| 命令 | 描述 |
-| --- | --- |
-| `sui move test --coverage` | 執行測試並收集覆蓋率數據 |
-| `sui move test --coverage --trace` | 執行帶有追蹤數據的測試 (LCOV 需要) |
-| `sui move coverage summary` | 顯示每個模組的覆蓋率百分比 |
-| `sui move coverage summary --summarize-functions` | 顯示按函式細分的覆蓋率 |
-| `sui move coverage summary --csv` | 以 CSV 格式輸出覆蓋率摘要 |
-| `sui move coverage source --module <NAME>` | 顯示模組的逐行覆蓋率 |
-| `sui move coverage lcov` | 生成 LCOV 報告 (`lcov.info`) |
-| `sui move coverage lcov --differential-test <TEST>` | 顯示僅由測試覆蓋的行 |
-| `sui move coverage lcov --only-test <TEST>` | 生成單個測試的覆蓋率 |
-| `sui move coverage bytecode --module <NAME>` | 顯示針對反組譯字節碼的覆蓋率 |
+| 命令                                                | 描述                               |
+| --------------------------------------------------- | ---------------------------------- |
+| `sui move test --coverage`                          | 執行測試並收集覆蓋率數據           |
+| `sui move test --coverage --trace`                  | 執行帶有追蹤數據的測試 (LCOV 需要) |
+| `sui move coverage summary`                         | 顯示每個模組的覆蓋率百分比         |
+| `sui move coverage summary --summarize-functions`   | 顯示按函式細分的覆蓋率             |
+| `sui move coverage summary --csv`                   | 以 CSV 格式輸出覆蓋率摘要          |
+| `sui move coverage source --module <NAME>`          | 顯示模組的逐行覆蓋率               |
+| `sui move coverage lcov`                            | 生成 LCOV 報告 (`lcov.info`)       |
+| `sui move coverage lcov --differential-test <TEST>` | 顯示僅由測試覆蓋的行               |
+| `sui move coverage lcov --only-test <TEST>`         | 生成單個測試的覆蓋率               |
+| `sui move coverage bytecode --module <NAME>`        | 顯示針對反組譯字節碼的覆蓋率       |

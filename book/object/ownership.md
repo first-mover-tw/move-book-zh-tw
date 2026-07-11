@@ -1,6 +1,5 @@
 ---
-
-description: "Object ownership types in Sui: single owner, shared state, immutable objects, and object-owned objects explained with examples."
+description: 'Object ownership types in Sui: single owner, shared state, immutable objects, and object-owned objects explained with examples.'
 ---
 
 # 所有權 (Ownership)

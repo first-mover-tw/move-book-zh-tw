@@ -1,6 +1,5 @@
 ---
-
-description: "Design for the fast path in Sui: structure owned vs shared objects to maximize transaction parallelism and performance."
+description: 'Design for the fast path in Sui: structure owned vs shared objects to maximize transaction parallelism and performance.'
 ---
 
 # 快速路徑 (Fast Path)

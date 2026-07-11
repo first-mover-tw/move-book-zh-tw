@@ -1,6 +1,5 @@
 ---
-
-description: "Core Sui and Move concepts: packages, accounts, transactions, addresses, and how data is stored on the Sui blockchain."
+description: 'Core Sui and Move concepts: packages, accounts, transactions, addresses, and how data is stored on the Sui blockchain.'
 ---
 
 # 概念 (Concepts)

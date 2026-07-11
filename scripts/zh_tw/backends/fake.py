@@ -5,16 +5,14 @@ glossary.protected_mask()（它本身建立在 anchors.code_lines() 之上）。
 FakeBackend 只收 chunk body 或裸字串（kind="text"，沒有 frontmatter），
 所以 protected_mask() 不會因為看到 frontmatter 而炸掉。
 
-sidebar 呼叫 backend 時走的是 kind="text"，payload 是一段編號清單
-（見 sidebar.SIDEBAR_PROMPT 之後接的 "1. Label\n2. Label"）。這與
-frontmatter 欄位那種「裸字串、非編號」的 kind="text" 用法（見
-pipeline.translate_body）不同形狀，必須用內容而非單靠 kind 分流：
-只有偵測到編號清單時才走 sidebar 專用分支，其餘 kind="text" 仍走
-一般的 Latin→中文替換，不影響既有 frontmatter 測試。sidebar 分支
-把每個 label 原文整段接在括號內回傳（"中文譯文 (Original Label)"），
-讓 FakeBackend 成為 sidebar.translate 那個「中文 (English)」格式
-guard 眼中忠實的假 backend，不必為了遷就它而放寬 production 的
-guard（Task 14 的教訓）。
+sidebar 呼叫 backend 時走 kind="sidebar"，payload 是 SIDEBAR_PROMPT
+接編號清單（"1. Label\n2. Label"）；frontmatter 欄位是「裸字串、
+非編號」的 kind="text"（見 pipeline.translate_body）。兩者以 kind
+分流（真實 backend 對 sidebar 不外包 prompt、對 text 外包 TEXT_PROMPT，
+fake 對應地走編號分支/替換分支）。sidebar 分支把每個 label 原文整段
+接在括號內回傳（"中文譯文 (Original Label)"），讓 FakeBackend 成為
+sidebar.translate 那個「中文 (English)」格式 guard 眼中忠實的假
+backend，不必為了遷就它而放寬 production 的 guard（Task 14 的教訓）。
 """
 
 import re
@@ -26,7 +24,7 @@ _NUMBERED_LINE = re.compile(r"^\s*(\d+)[.)]\s+(.+?)\s*$")
 
 class FakeBackend:
     def translate(self, text: str, *, kind: str = "markdown") -> str:
-        if kind == "text":
+        if kind == "sidebar":
             numbered = [
                 (m.group(1), m.group(2))
                 for line in text.splitlines()

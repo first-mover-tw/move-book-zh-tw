@@ -1,6 +1,6 @@
 ---
-title: '導入與別名 (Uses and Aliases) | 參考手冊'
-description: "Move 導入與別名參考手冊：導入模組、建立別名、分組導入以及解決命名衝突。"
+title: 導入與別名 (Uses and Aliases) | 參考手冊
+description: 使用 Move 的 use 和別名參考手冊：匯入模組、建立別名、群組匯入、解決命名衝突。
 ---
 
 # 導入與別名 (Uses and Aliases)

@@ -1,6 +1,6 @@
 ---
-title: 'Sui 物件 (Object) | 參考手冊'
-description: "Sui 物件參考手冊：key 能力如何定義物件、UID 的要求，以及 Sui 區塊鏈上的物件存儲。"
+title: Sui 物件 (Object) | 參考手冊
+description: Sui 物件參考手冊 (Sui Object Reference)：key 能力如何定義物件、UID 需求，以及物件在 Sui 區塊鏈上的儲存方式。
 ---
 
 # Sui 物件 (Sui Objects)

@@ -1,6 +1,6 @@
 ---
-title: '已棄用：友元 (Friends) | Reference'
-description: "Move 友元參考（已棄用）：在 Move 2024 中由 public(package) 可見性取代的舊版友元語法。"
+title: 已棄用：友元 (Friends) | Reference
+description: Move 好友參考手冊 (已淘汰)：被 Move 2024 中 public(package) 可見性取代的舊版 friend 語法。
 ---
 
 # 已棄用：友元 (DEPRECATED: Friends)

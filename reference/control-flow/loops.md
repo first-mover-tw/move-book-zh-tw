@@ -1,6 +1,8 @@
 ---
-title: '循環 (Loops) | 參考手冊'
-description: "Move 循環結構參考手冊：while 循環、loop 表達式、for 循環、break、continue 以及迭代模式。"
+title: 迴圈 (Loops) | 參考手冊
+description:
+  迴圈語法參考 (Loop Constructs Reference)：涵蓋 while 迴圈、loop 表達式、for 迴圈、break、continue
+  以及走訪模式。
 ---
 
 # Move 中的循環結構
@@ -36,6 +38,7 @@ fun foo() {
 
 > 使用巨集 (Macros) 而非循環 (Loops) 來實現更簡潔、更具可讀性的目的是一種更好的方式。
 > 本文僅以上述函式 `sum` 為例來體驗巨集函式的魅力：
+
 ```move
 fun sum(n: u64): u64 {
     vector::tabulate!(n, |i| i + 1).fold!(0, |sum, num| sum + num)

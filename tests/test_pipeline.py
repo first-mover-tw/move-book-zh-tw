@@ -1,3 +1,4 @@
+import subprocess
 import pytest
 
 from scripts.zh_tw import anchors, frontmatter, manifest, pipeline, validate
@@ -237,3 +238,171 @@ def test_run_validation_error_on_one_file_does_not_stop_others():
     ok, failed = pipeline.run(paths, "fake", apply=False)
     assert "nonexistent/does-not-exist.md" in failed
     assert ok == 1
+
+
+def _tier_fixture(path):
+    """回傳 (zh@HEAD, en@merge-base)，供測試斷言前置條件仍成立——
+    避免 repo 狀態改變後測試變 vacuous（宣稱的缺陷早已不存在卻照樣綠）。"""
+    import subprocess
+
+    zh = subprocess.run(
+        ["git", "show", f"HEAD:{path}"], capture_output=True, text=True, check=True
+    ).stdout
+    en = subprocess.run(
+        ["git", "show", f"{pipeline.MERGE_BASE}:{path}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return zh, en
+
+
+def test_tier_a_when_only_body_forbidden_words():
+    """reference/constants.md：結構一致，內文帶違禁詞「循環」。內文品質
+    缺陷不在 validate 第 1、2 條，不構成降級。"""
+    zh, en = _tier_fixture("reference/constants.md")
+    assert validate.check_structure(zh, en) == []
+    assert any("違禁詞" in e for e in validate.check_file(zh, en))
+    assert pipeline.tier("reference/constants.md") == "A"
+
+
+def test_rebuild_frontmatter_only_ignores_legacy_body_defects():
+    """dual-review blocker：A 層檔帶 legacy body 違禁詞時，改前會 hard-fail
+    且無任何自動修復路徑（body 不重譯、tier 又不降級）。body 既有債務
+    不當寫檔否決（比照 gate 9 先例），留待人工/後續 PR。"""
+    en = '---\ndescription: "Constants."\n---\n\n# Constants\n\nText.\n'
+    zh = '---\ndescription: "常數。"\n---\n\n# 常數 {#constants}\n\n這段有循環。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, FakeBackend())
+    _, body = frontmatter.split(out)
+    assert "循環" in body  # body 原封不動，含缺陷
+
+
+def test_rebuild_frontmatter_only_enforces_glossary_on_values():
+    """backend 新翻的 frontmatter 值帶違禁詞 → 決定性修正，不是炸掉
+    （loops.md 的 title 就是「循環」，真實 backend 高機率重現）。"""
+
+    class LoopyBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "循環"
+
+    en = '---\ndescription: "Loops."\n---\n\n# Loops\n\nText.\n'
+    zh = '---\ndescription: "舊。"\n---\n\n# 迴圈 {#loops}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, LoopyBackend())
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈"
+
+
+def test_rebuild_frontmatter_only_rejects_simplified_in_values():
+    """簡體字沒有決定性修法（OpenCC 例外表風險），值裡出現就必須炸掉。"""
+
+    class SimplifiedBackend:
+        def translate(self, text, *, kind="markdown"):
+            return "这是简体"
+
+    en = '---\ndescription: "X."\n---\n\n# X\n\nText.\n'
+    zh = '---\ndescription: "舊。"\n---\n\n# 某 {#x}\n\n內文。\n'
+    with pytest.raises(validate.ValidationError):
+        pipeline.rebuild_frontmatter_only(en, zh, SimplifiedBackend())
+
+
+def test_translate_body_enforces_glossary_on_values():
+    """B 路徑同款漏洞：值翻譯沒過 glossary.enforce，check_file 補上值掃描後
+    會變成 B 路徑的 deadlock —— enforce 與 gate 必須同進退。"""
+
+    class LoopyBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "循環"
+            return "中文內文。\n"
+
+    en = '---\ndescription: "Loops."\n---\n\nBody.\n'
+    out = pipeline.translate_body(en, LoopyBackend())
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈"
+
+
+def test_run_a_tier_file_with_legacy_body_defects_succeeds():
+    """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
+    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。"""
+    assert pipeline.tier("reference/constants.md") == "A"  # 釘住走的是 A 路徑
+    ok, failed = pipeline.run(["reference/constants.md"], "fake")
+    assert failed == {}
+    assert ok == 1
+
+
+# --- A 層 frontmatter 沿用優先於重算（與 anchor carry-forward 同原則） ---
+#
+# 實測（2026-07-11 第一次 apply）：47 檔中 53 個欄位「舊值已是中文、英文
+# 原文完全沒變」卻被整批重翻，損失既有審定術語（友元 (Friends) → 朋友）。
+
+
+class _ExplodingBackend:
+    def translate(self, text, *, kind="markdown"):
+        raise AssertionError(f"en 未變的欄位不得重翻: {text!r}")
+
+
+def test_rebuild_frontmatter_carries_translation_when_en_unchanged():
+    en = '---\ndescription: "Same."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "既有翻譯。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, _ExplodingBackend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "既有翻譯。"
+
+
+def test_rebuild_frontmatter_retranslates_when_en_changed():
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "新翻譯。"
+
+    prev_en = '---\ndescription: "Old."\n---\n\n# T\n\nText.\n'
+    en = '---\ndescription: "New."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "舊翻譯。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=prev_en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "新翻譯。"
+
+
+def test_rebuild_frontmatter_translates_when_prev_value_untranslated():
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "補上翻譯。"
+
+    en = '---\ndescription: "Same."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "Same."\n---\n\n# 標題 {#t}\n\n內文。\n'  # 未翻，沒有可沿用的
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "補上翻譯。"
+
+
+def test_rebuild_frontmatter_enforces_glossary_on_carried_value():
+    """沿用不是免檢：舊值帶違禁詞（5 檔實測）沿用時決定性修正。"""
+    en = '---\ndescription: "Loops."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "循環概念。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, _ExplodingBackend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "迴圈概念。"
+
+
+def test_rebuild_frontmatter_retranslates_when_carried_value_has_simplified():
+    """簡體無決定性修法：舊值帶簡體字就退回重翻，不沿用。"""
+
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            return "乾淨的新翻譯。"
+
+    en = '---\ndescription: "X."\n---\n\n# T\n\nText.\n'
+    zh = '---\ndescription: "这是旧的。"\n---\n\n# 標題 {#t}\n\n內文。\n'
+    out = pipeline.rebuild_frontmatter_only(en, zh, Backend(), prev_en_text=en)
+    meta, _ = frontmatter.split(out)
+    assert meta["description"] == "乾淨的新翻譯。"
+
+
+def test_delta_lines_zero_for_identical_blobs():
+    """manifest heal 之後 old_sha == new_sha；`git diff --numstat` 對同一
+    blob 輸出空字串，原本走進 fail-closed 哨兵（10000）→ 已 heal 的檔案
+    全被誤判 B。同 blob 的 delta 就是 0，不需要問 git。"""
+    sha = subprocess.run(
+        ["git", "rev-parse", "english-main:reference/constants.md"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert pipeline._delta_lines(sha, sha) == 0

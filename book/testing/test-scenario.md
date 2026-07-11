@@ -1,5 +1,5 @@
 ---
-description: "Sui Move 中的測試場景 (Test Scenario)：模擬多交易流程、測試物件轉移，並在測試中驗證共享物件的行為。"
+description: 'Sui Move 中的測試場景 (Test Scenario)：模擬多交易流程、測試物件轉移，並在測試中驗證共享物件的行為。'
 ---
 
 # 測試場景 (Test Scenario)
@@ -366,16 +366,16 @@ fun test_transaction_effects() {
 
 ### 可用的效果欄位
 
-| 方法 | 回傳值 | 描述 |
-| -------------------------- | --------------------- | ------------------------------------ |
-| `created()` | `vector<ID>` | 在此交易中建立的物件 |
-| `written()` | `vector<ID>` | 在此交易中修改的物件 |
-| `deleted()` | `vector<ID>` | 在此交易中刪除的物件 |
-| `transferred_to_account()` | `VecMap<ID, address>` | 轉移到地址的物件 |
-| `transferred_to_object()` | `VecMap<ID, ID>` | 轉移到其他物件的物件 |
-| `shared()` | `vector<ID>` | 在此交易中共享的物件 |
-| `frozen()` | `vector<ID>` | 在此交易中凍結的物件 |
-| `num_user_events()` | `u64` | 發出的事件數量 |
+| 方法                       | 回傳值                | 描述                 |
+| -------------------------- | --------------------- | -------------------- |
+| `created()`                | `vector<ID>`          | 在此交易中建立的物件 |
+| `written()`                | `vector<ID>`          | 在此交易中修改的物件 |
+| `deleted()`                | `vector<ID>`          | 在此交易中刪除的物件 |
+| `transferred_to_account()` | `VecMap<ID, address>` | 轉移到地址的物件     |
+| `transferred_to_object()`  | `VecMap<ID, ID>`      | 轉移到其他物件的物件 |
+| `shared()`                 | `vector<ID>`          | 在此交易中共享的物件 |
+| `frozen()`                 | `vector<ID>`          | 在此交易中凍結的物件 |
+| `num_user_events()`        | `u64`                 | 發出的事件數量       |
 
 ## 系統物件 (System Objects)
 
@@ -497,21 +497,21 @@ fun test_token_transfer_flow() {
 
 ## 總結
 
-| 函式 | 用途 |
-| --------------------------- | -------------------------------------- |
-| `begin(sender)` | 開始一個新場景 |
-| `end(scenario)` | 結束場景並獲取最終效果 |
-| `next_tx(scenario, sender)` | 前進到下一筆交易 |
-| `ctx(scenario)` | 獲取 `TxContext` 的可變引用 |
-| `take_from_sender<T>` | 從發送者取出擁有物件 |
-| `return_to_sender(obj)` | 將物件歸還給發送者 |
-| `take_shared<T>` | 取出共享物件 |
-| `return_shared(obj)` | 歸還共享物件 |
-| `take_immutable<T>` | 取出不可變物件 |
-| `return_immutable(obj)` | 歸還不可變物件 |
-| `create_system_objects` | 建立 Clock, Random, DenyList |
-| `next_epoch` | 前進到下一個 Epoch |
-| `later_epoch(ms, sender)` | 推進 Epoch 和時間 |
+| 函式                        | 用途                         |
+| --------------------------- | ---------------------------- |
+| `begin(sender)`             | 開始一個新場景               |
+| `end(scenario)`             | 結束場景並獲取最終效果       |
+| `next_tx(scenario, sender)` | 前進到下一筆交易             |
+| `ctx(scenario)`             | 獲取 `TxContext` 的可變引用  |
+| `take_from_sender<T>`       | 從發送者取出擁有物件         |
+| `return_to_sender(obj)`     | 將物件歸還給發送者           |
+| `take_shared<T>`            | 取出共享物件                 |
+| `return_shared(obj)`        | 歸還共享物件                 |
+| `take_immutable<T>`         | 取出不可變物件               |
+| `return_immutable(obj)`     | 歸還不可變物件               |
+| `create_system_objects`     | 建立 Clock, Random, DenyList |
+| `next_epoch`                | 前進到下一個 Epoch           |
+| `later_epoch(ms, sender)`   | 推進 Epoch 和時間            |
 
 ## 延伸閱讀
 

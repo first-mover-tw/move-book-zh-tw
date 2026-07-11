@@ -1,6 +1,7 @@
 ---
-
-description: "Glossary of Move and Sui terminology: fast path, parallel execution, internal types, and other key concepts defined."
+description:
+  Move 與 Sui 術語表 (Glossary of Move and Sui terminology)：涵蓋快速路徑 (fast path)、平行執行
+  (parallel execution)、內部型別 (internal types) 及其他核心概念定義。
 ---
 
 # 附錄 A: 術語表

@@ -1,5 +1,5 @@
 ---
-description: "Move 測試基礎：使用 #[test] 屬性撰寫測試、使用預期失敗 (expected failures)，以及在模組中組織測試專用 (test-only) 程式碼。"
+description: 'Move 測試基礎：使用 #[test] 屬性撰寫測試、使用預期失敗 (expected failures)，以及在模組中組織測試專用 (test-only) 程式碼。'
 ---
 
 # 測試基礎 (Testing Basics)
@@ -172,15 +172,15 @@ public fun create_test_scenario(): u64 { 42 }
 
 ## 常用的 CLI 選項
 
-| 選項 | 描述 |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `<filter>` | 僅執行符合過濾條件的測試 (位置參數) |
-| `--coverage` | 收集覆蓋率資訊 (參見 [覆蓋率](./coverage.md)) |
-| `--trace` | 為覆蓋率 LCOV 輸出生成追蹤紀錄 |
-| `--statistics` | 顯示執行統計資訊，包括 Gas 使用量 (參見 [Gas 分析](./gas-profiling.md)) |
-| `--threads <n>` | 平行測試執行的執行緒數量 |
-| `--rand-num-iters <n>` | [隨機測試](./random-test.md) 的迭代次數 |
-| `--seed <n>` | 用於可重現隨機測試運行的種子 |
+| 選項                   | 描述                                                                    |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `<filter>`             | 僅執行符合過濾條件的測試 (位置參數)                                     |
+| `--coverage`           | 收集覆蓋率資訊 (參見 [覆蓋率](./coverage.md))                           |
+| `--trace`              | 為覆蓋率 LCOV 輸出生成追蹤紀錄                                          |
+| `--statistics`         | 顯示執行統計資訊，包括 Gas 使用量 (參見 [Gas 分析](./gas-profiling.md)) |
+| `--threads <n>`        | 平行測試執行的執行緒數量                                                |
+| `--rand-num-iters <n>` | [隨機測試](./random-test.md) 的迭代次數                                 |
+| `--seed <n>`           | 用於可重現隨機測試運行的種子                                            |
 
 ## 測試輸出
 

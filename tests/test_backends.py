@@ -355,3 +355,126 @@ def test_gemini_backend_returns_text_on_success(monkeypatch):
     b._client = _StubClient()
 
     assert b.translate("hello") == "翻譯結果"
+
+
+# --- kind="text" 專用 prompt（短字串：frontmatter title/description） ----
+#
+# 實測（2026-07-11，47 檔 A 層 dry-run）：markdown prompt 對單詞技術名詞
+# title（'Friends | Reference'、'Address | Reference'）會保守不翻，
+# gate 4 攔下後 retry 也翻不動 —— 需要明確指示「短字串也必須翻」。
+
+
+def test_claude_cli_backend_uses_text_prompt_for_kind_text(monkeypatch):
+    from scripts.zh_tw.backends import base, claude_cli
+
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0, stdout="友元 (Friends) | 參考手冊", stderr="")
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
+    claude_cli.ClaudeCLIBackend().translate("Friends | Reference", kind="text")
+
+    prompt = captured["argv"][4]
+    assert base.TEXT_PROMPT in prompt
+    assert base.SYSTEM_PROMPT not in prompt
+
+
+def test_claude_cli_backend_uses_markdown_prompt_by_default(monkeypatch):
+    from scripts.zh_tw.backends import base, claude_cli
+
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0, stdout="翻譯", stderr="")
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
+    claude_cli.ClaudeCLIBackend().translate("# Heading\n\nbody\n")
+
+    assert base.SYSTEM_PROMPT in captured["argv"][4]
+
+
+def test_gemini_backend_uses_text_prompt_for_kind_text(monkeypatch):
+    from scripts.zh_tw.backends import base, gemini
+
+    captured = {}
+
+    class _Resp:
+        text = "友元 (Friends) | 參考手冊"
+
+    class _Models:
+        def generate_content(self, model, contents):
+            captured["contents"] = contents
+            return _Resp()
+
+    class _StubClient:
+        models = _Models()
+
+    b = object.__new__(gemini.GeminiBackend)
+    b._client = _StubClient()
+    b.translate("Friends | Reference", kind="text")
+
+    assert base.TEXT_PROMPT in captured["contents"]
+    assert base.SYSTEM_PROMPT not in captured["contents"]
+
+
+# --- kind="sidebar"：payload 自帶 SIDEBAR_PROMPT，backend 不得再外包 ----
+#
+# dual-review finding：sidebar payload 若走 kind="text" 會被 TEXT_PROMPT
+# 外包，兩層指令矛盾（TEXT_PROMPT「單一名詞必翻」vs SIDEBAR_PROMPT
+# 「BCS 等專有名詞維持原文」），且這種語意流出 _validate_new_label_format
+# 擋不住。
+
+
+def test_claude_cli_backend_no_wrap_for_kind_sidebar(monkeypatch):
+    from scripts.zh_tw.backends import base, claude_cli
+
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0, stdout="1. 中文 (Label)", stderr="")
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", fake_run)
+    payload = "自帶完整指令的 payload\n\n1. Label"
+    claude_cli.ClaudeCLIBackend().translate(payload, kind="sidebar")
+
+    assert captured["argv"][4] == payload
+    assert base.TEXT_PROMPT not in captured["argv"][4]
+    assert base.SYSTEM_PROMPT not in captured["argv"][4]
+
+
+def test_gemini_backend_no_wrap_for_kind_sidebar(monkeypatch):
+    from scripts.zh_tw.backends import base, gemini
+
+    captured = {}
+
+    class _Resp:
+        text = "1. 中文 (Label)"
+
+    class _Models:
+        def generate_content(self, model, contents):
+            captured["contents"] = contents
+            return _Resp()
+
+    class _StubClient:
+        models = _Models()
+
+    b = object.__new__(gemini.GeminiBackend)
+    b._client = _StubClient()
+    payload = "自帶完整指令的 payload\n\n1. Label"
+    b.translate(payload, kind="sidebar")
+
+    assert captured["contents"] == payload
+
+
+def test_fake_backend_numbered_branch_dispatches_on_kind_sidebar():
+    from scripts.zh_tw.backends.fake import FakeBackend
+
+    out = FakeBackend().translate("說明\n\n1. Label One\n2. Label Two", kind="sidebar")
+    assert out.splitlines() == [
+        f"1. {FakeBackend()._substitute('Label One')} (Label One)",
+        f"2. {FakeBackend()._substitute('Label Two')} (Label Two)",
+    ]

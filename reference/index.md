@@ -1,6 +1,6 @@
 ---
-
-description: "The official Move language reference: comprehensive documentation of syntax, types, abilities, functions, and all language features."
+description: 官方 Move 語言參考手冊（The official Move language reference）：涵蓋語法 (syntax)、型別
+  (types)、能力 (abilities)、函式 (functions) 及所有語言功能的完整文件。
 ---
 
 # Move 參考手冊 (The Move Reference)

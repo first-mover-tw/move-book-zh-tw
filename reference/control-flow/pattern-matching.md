@@ -1,6 +1,6 @@
 ---
-title: '模式匹配 (Pattern Matching) | 參考手冊'
-description: "Move 模式匹配參考手冊：match 表達式、解構、守衛 (guards)、萬用字元以及窮舉匹配規則。"
+title: 模式匹配 (Pattern Matching) | 參考手冊
+description: Move 模式比對參考手冊 (Move pattern matching reference)：match 表達式、解構、守衛、萬用字元與窮盡比對規則。
 ---
 
 # 模式匹配 (Pattern Matching)
@@ -50,17 +50,17 @@ match (表達式) {
 
 模式用於匹配數值。模式可以是：
 
-| 模式 | 描述 |
-| -------------------- | ---------------------------------------------------------------------- |
-| 字面值 (Literal) | 字面數值，例如 `1`, `true`, `@0x1` |
-| 常數 (Constant) | 常數值，例如 `MyConstant` |
-| 變數 (Variable) | 變數，例如 `x`, `y`, `z` |
-| 萬用字元 (Wildcard) | 萬用字元，例如 `_` |
-| 建構子 (Constructor) | 建構子模式，例如 `MyStruct { x, y }`, `MyEnum::Variant(x)` |
-| At 模式 (@-pattern) | At 模式，例如 `x @ MyEnum::Variant(..)` |
-| Or 模式 (Or-pattern) | Or 模式，例如 `MyEnum::Variant(..) \| MyEnum::OtherVariant(..)` |
-| 多數量萬用字元 | 多數量萬用字元，例如 `MyEnum::Variant(..)` |
-| 可變綁定 (Mutable-binding)| 可變綁定模式，例如 `mut x` |
+| 模式                       | 描述                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| 字面值 (Literal)           | 字面數值，例如 `1`, `true`, `@0x1`                              |
+| 常數 (Constant)            | 常數值，例如 `MyConstant`                                       |
+| 變數 (Variable)            | 變數，例如 `x`, `y`, `z`                                        |
+| 萬用字元 (Wildcard)        | 萬用字元，例如 `_`                                              |
+| 建構子 (Constructor)       | 建構子模式，例如 `MyStruct { x, y }`, `MyEnum::Variant(x)`      |
+| At 模式 (@-pattern)        | At 模式，例如 `x @ MyEnum::Variant(..)`                         |
+| Or 模式 (Or-pattern)       | Or 模式，例如 `MyEnum::Variant(..) \| MyEnum::OtherVariant(..)` |
+| 多數量萬用字元             | 多數量萬用字元，例如 `MyEnum::Variant(..)`                      |
+| 可變綁定 (Mutable-binding) | 可變綁定模式，例如 `mut x`                                      |
 
 Move 中的模式具有以下語法規律：
 
@@ -423,7 +423,7 @@ match_with_guard(1); // 回傳 2
 match_with_guard(0); // 回傳 3
 ```
 
-守衛表達式在求值期間可以引用模式中綁定的變數。但請注意，無論匹配模式為何 —— 即使變數上有可變性規範，或者模式是按值匹配的 —— *變數在守衛中僅作為不可變引用可用*。
+守衛表達式在求值期間可以引用模式中綁定的變數。但請注意，無論匹配模式為何 —— 即使變數上有可變性規範，或者模式是按值匹配的 —— _變數在守衛中僅作為不可變引用可用_。
 
 ```move
 fun incr(x: &mut u64) {

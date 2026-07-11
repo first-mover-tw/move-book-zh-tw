@@ -1,6 +1,5 @@
 ---
-
-description: "How to import modules in Move using the use keyword: single imports, grouped imports, member imports, and resolving naming conflicts."
+description: 'How to import modules in Move using the use keyword: single imports, grouped imports, member imports, and resolving naming conflicts.'
 ---
 
 # 匯入模組 (Importing Modules)

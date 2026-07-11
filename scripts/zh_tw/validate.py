@@ -79,16 +79,13 @@ def simplified_chars(body: str) -> list[tuple[int, str]]:
     return out
 
 
-def check_file(
-    zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
-) -> list[str]:
-    """gate 6（anchor 身分）的執行前提鏡射 anchors._identity_carry：prev_en_text
-    缺席，或 prev_zh_text 與 prev_en_text 的標題數不對齊，兩種情況都讓 gate 6
-    完全棄權，不做任何檢查（不會退化成別的部分檢查）——理由見 gate 6 區塊的
-    註解。"""
+def check_structure(zh_text: str, en_text: str) -> list[str]:
+    """只跑 gate 1、2（標題層級序列、fence 數）。這是 spec §五 A 層分層的
+    唯一依據：未翻 frontmatter、違禁詞等其餘 gate 是 backfill 要修的缺陷，
+    拿來降級會把待修檔誤送整篇重譯。pipeline.tier 用這個，不要用 check_file。"""
     errs: list[str] = []
-    zh_meta, zh_body = frontmatter.split(zh_text)
-    en_meta, en_body = frontmatter.split(en_text)
+    _, zh_body = frontmatter.split(zh_text)
+    _, en_body = frontmatter.split(en_text)
 
     zh_h = anchors.headings(zh_body)
     en_h = anchors.headings(en_body)
@@ -103,6 +100,19 @@ def check_file(
             f"程式碼 fence 數不符: 中文 {anchors.fence_lines(zh_body)}, "
             f"英文 {anchors.fence_lines(en_body)}"
         )
+    return errs
+
+
+def check_frontmatter(zh_text: str, en_text: str) -> list[str]:
+    """gate 3、4 + 對可翻譯欄位「值」掃違禁詞/簡體（gate 7、8 的 frontmatter 版）。
+
+    這是 A 路徑（pipeline.rebuild_frontmatter_only）的寫檔 gate 之一：A 層的
+    body 是 legacy 舊譯文，其既有債務不當寫檔否決（比照 gate 9 不進 check_file
+    的先例）；但 frontmatter 值是管線每次新生成的內容，必須受完整品質檢查
+    ——實測 5 個現有檔的 description/title 帶違禁詞流出，body-only 掃描擋不住。"""
+    errs: list[str] = []
+    zh_meta, _ = frontmatter.split(zh_text)
+    en_meta, _ = frontmatter.split(en_text)
 
     # 3. frontmatter key 集合
     if set(zh_meta) != set(en_meta):
@@ -113,8 +123,30 @@ def check_file(
         value = zh_meta[key]
         if not isinstance(value, str):
             errs.append(f"frontmatter {key} 不是字串: {value!r}")
-        elif not _CJK.search(value):
+            continue
+        if not _CJK.search(value):
             errs.append(f"frontmatter {key} 未翻譯: {value!r}")
+        for bad, n in sorted(glossary.scan(value).items()):
+            errs.append(f"frontmatter {key} 違禁詞 {bad} 出現 {n} 次")
+        for _line, ch in simplified_chars(value):
+            errs.append(f"frontmatter {key} 簡體殘留字 {ch!r}")
+    return errs
+
+
+def check_file(
+    zh_text: str, en_text: str, prev_zh_text: str = "", prev_en_text: str = ""
+) -> list[str]:
+    """gate 6（anchor 身分）的執行前提鏡射 anchors._identity_carry：prev_en_text
+    缺席，或 prev_zh_text 與 prev_en_text 的標題數不對齊，兩種情況都讓 gate 6
+    完全棄權，不做任何檢查（不會退化成別的部分檢查）——理由見 gate 6 區塊的
+    註解。"""
+    errs: list[str] = list(check_structure(zh_text, en_text))
+    errs += check_frontmatter(zh_text, en_text)
+    _, zh_body = frontmatter.split(zh_text)
+    _, en_body = frontmatter.split(en_text)
+
+    zh_h = anchors.headings(zh_body)
+    en_h = anchors.headings(en_body)
 
     # 6. 既有 anchor 不得消失，也不得被重新指派到別的標題上
     #

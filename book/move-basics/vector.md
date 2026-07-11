@@ -1,6 +1,5 @@
 ---
-
-description: "Vectors in Move: create, manipulate, and iterate over dynamic collections with push, pop, and destroy operations."
+description: 'Vectors in Move: create, manipulate, and iterate over dynamic collections with push, pop, and destroy operations.'
 ---
 
 # 向量 (Vector)

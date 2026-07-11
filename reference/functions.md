@@ -1,6 +1,8 @@
 ---
-title: '函式 (Functions) | 參考手冊'
-description: "Move 函式參考手冊：宣告、可見性修飾符、進入點函式 (entry functions)、回傳值以及呼叫慣例。"
+title: 函式 (Functions) | 參考手冊
+description:
+  Move 函式參考手冊 (Move Functions Reference)：宣告、可見性修飾詞 (Visibility Modifiers)、entry
+  函式、回傳值與呼叫慣例。
 ---
 
 # 函式 (Functions)

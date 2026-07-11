@@ -1,5 +1,5 @@
 ---
-description: "Move 測試的 Builder 模式：建構具有合理預設值的複雜測試物件，並使用方法鏈 (method chaining) 撰寫可讀的測試。"
+description: 'Move 測試的 Builder 模式：建構具有合理預設值的複雜測試物件，並使用方法鏈 (method chaining) 撰寫可讀的測試。'
 ---
 
 # 模式：Builder (Builder Pattern)
@@ -123,7 +123,5 @@ fun test_epoch_dependent_logic() {
 - Builders 減少了測試樣板代碼 (boilerplate)，並將測試與目標結構體的變更隔離開來。
 - 將此模式保留給測試工具，在這些工具中可讀性比 Gas 成本更重要。
 
-[validator-builder]:
-  https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-system/tests/builders/validator_builder.move
-[tx-context-builder]:
-  https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move
+[validator-builder]: https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-system/tests/builders/validator_builder.move
+[tx-context-builder]: https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move

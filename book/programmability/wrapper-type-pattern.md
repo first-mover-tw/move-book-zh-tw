@@ -1,6 +1,5 @@
 ---
-
-description: "The Wrapper type pattern in Move: create restricted or extended versions of existing types by wrapping them in new structs."
+description: 'The Wrapper type pattern in Move: create restricted or extended versions of existing types by wrapping them in new structs.'
 ---
 
 # 模式：封裝類型 (Wrapper Type Pattern)

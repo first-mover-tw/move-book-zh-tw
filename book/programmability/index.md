@@ -1,6 +1,5 @@
 ---
-
-description: "Advanced Sui programmability: patterns, events, dynamic fields, capabilities, BCS serialization, and design patterns in Move."
+description: 'Advanced Sui programmability: patterns, events, dynamic fields, capabilities, BCS serialization, and design patterns in Move.'
 ---
 
 # 進階程式設計 (Advanced Programmability)

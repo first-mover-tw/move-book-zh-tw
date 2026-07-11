@@ -1,6 +1,5 @@
 ---
-
-description: "Set up your Move development environment: install Sui, configure your IDE, and learn about the Move 2024 edition."
+description: 設定你的 Move 開發環境（Development Environment）：安裝 Sui、設定 IDE、並認識 Move 2024 版本（Edition）。
 ---
 
 # 開始之前

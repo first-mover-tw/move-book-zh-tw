@@ -1,6 +1,6 @@
 ---
-title: '能力 (Abilities) | 參考手冊'
-description: "Move 能力參考手冊：copy, drop, store 與 key —— 關於數值如何使用、存儲、複製與丟棄的規則。"
+title: 能力 (Abilities) | 參考手冊
+description: Move 能力（abilities）參考手冊：copy、drop、store 與 key — 決定數值如何被使用、儲存、複製與捨棄的規則。
 ---
 
 # 能力 (Abilities)

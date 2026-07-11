@@ -1,6 +1,5 @@
 ---
-
-description: "Build and publish a todo list app on Sui: create an account, deploy a Move package, and send transactions via the CLI."
+description: 'Build and publish a todo list app on Sui: create an account, deploy a Move package, and send transactions via the CLI.'
 ---
 
 # 你好，Sui！

@@ -1,6 +1,5 @@
 ---
-
-description: "The Option type in Move: represent optional values safely, with methods for creating, checking, extracting, and destroying options."
+description: 'The Option type in Move: represent optional values safely, with methods for creating, checking, extracting, and destroying options.'
 ---
 
 # 選項 (Option)

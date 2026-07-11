@@ -1,6 +1,6 @@
 ---
-title: '編譯模式 (Compilation Modes) | 參考'
-description: "Move 編譯模式參考：定義具名建置模式、篩選宣告及設定模式特定的編譯。"
+title: 編譯模式 (Compilation Modes) | 參考
+description: 編譯模式參考手冊：定義具名建置模式（named build mode）、篩選宣告、以及設定模式專屬編譯。
 ---
 
 # 編譯模式 (Compilation Modes)
@@ -41,6 +41,7 @@ module <addr_opt>::<ident> {
     <decl>
 }
 ```
+
 > **注意**：`#[test_only]` 完全等同於 `#[mode(test)]`。
 
 ## 模式名稱 (Mode Names)
@@ -51,8 +52,8 @@ module <addr_opt>::<ident> {
 
 令 `M` 為建置的啟用模式集合。令 `S(m)` 為宣告 `m` 上列出的模式集合，其中 `#[test_only]` 貢獻 `{test}`，未標註的宣告具有 `S(x) = ∅`。宣告 x 被包含在編譯單元中當且僅當以下其中一項為真：
 
-* `S(x) = ∅` （未標註）
-* `S(x) ∩ M ≠ ∅`：（標註被包含）
+- `S(x) = ∅` （未標註）
+- `S(x) ∩ M ≠ ∅`：（標註被包含）
 
 即：未標註的宣告始終被包含；標註的宣告當且僅當其列出的至少一個名稱在建置中啟用時才被包含，否則被排除。
 

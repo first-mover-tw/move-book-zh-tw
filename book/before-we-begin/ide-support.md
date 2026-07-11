@@ -1,6 +1,6 @@
 ---
-
-description: "Configure VSCode or IntelliJ IDEA for Move development with syntax highlighting, error checking, and code formatting extensions."
+description: 在 VSCode 或 IntelliJ IDEA 中配置 Move 開發環境 (Configuring Move Development
+  in VSCode or IntelliJ IDEA)，包含語法高亮、錯誤檢查與程式碼格式化擴充套件
 ---
 
 # 設定您的 IDE

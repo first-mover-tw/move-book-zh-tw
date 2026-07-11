@@ -1,5 +1,7 @@
 ---
-description: "如何為 The Move Book 做出貢獻：提交 pull request、回報問題，以及協助改善 Move 程式語言指南。"
+description:
+  貢獻《Move Book》指南 (How to Contribute to The Move Book)：提交合併請求 (Pull Requests)、回報問題，協助改進
+  Move 程式語言指南。
 ---
 
 # 附錄 E：貢獻 (Contributing)

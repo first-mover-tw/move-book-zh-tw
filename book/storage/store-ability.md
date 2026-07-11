@@ -1,6 +1,5 @@
 ---
-
-description: "The store ability in Move allows types to be used as fields in objects and enables public transfer and storage operations on Sui."
+description: 'The store ability in Move allows types to be used as fields in objects and enables public transfer and storage operations on Sui.'
 ---
 
 # 能力：Store (Ability: Store)

@@ -1,6 +1,5 @@
 ---
-
-description: "Move primitive types: booleans, unsigned integers (u8 to u256), addresses, and type casting for blockchain smart contracts."
+description: 'Move primitive types: booleans, unsigned integers (u8 to u256), addresses, and type casting for blockchain smart contracts.'
 ---
 
 # 原生類型 (Primitive Types)
@@ -79,13 +78,13 @@ Move 支援各種大小的無號整數，從 8 位元到 256 位元。整數類�
 
 Move 支援整數的標準算術運算：加法、減法、乘法、除法和取模（餘數）。這些運算的語法如下：
 
-| 語法 | 運算                | 在以下情況中斷                         |
-| ---- | ------------------- | -------------------------------------- |
-| +    | 加法                | 結果對於該整數類型而言太大             |
-| -    | 減法                | 結果小於零                             |
-| \*   | 乘法                | 結果對於該整數類型而言太大             |
-| %    | 取模 (餘數)         | 除數為 0                               |
-| /    | 截斷除法 (整除)     | 除數為 0                               |
+| 語法 | 運算            | 在以下情況中斷             |
+| ---- | --------------- | -------------------------- |
+| +    | 加法            | 結果對於該整數類型而言太大 |
+| -    | 減法            | 結果小於零                 |
+| \*   | 乘法            | 結果對於該整數類型而言太大 |
+| %    | 取模 (餘數)     | 除數為 0                   |
+| /    | 截斷除法 (整除) | 除數為 0                   |
 
 > 更多運算（包含位元運算），請參考 [Move 參考手冊](./../../reference/primitive-types/integers#bitwise)。
 

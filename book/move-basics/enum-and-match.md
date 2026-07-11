@@ -1,6 +1,5 @@
 ---
-
-description: "Enums and pattern matching in Move: define variant types, use match expressions, and handle multiple cases in smart contracts."
+description: 'Enums and pattern matching in Move: define variant types, use match expressions, and handle multiple cases in smart contracts.'
 ---
 
 # 列舉與模式匹配 (Enums and Match)

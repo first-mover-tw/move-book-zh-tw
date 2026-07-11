@@ -1,6 +1,5 @@
 ---
-
-description: "Understand Sui accounts: how they are generated from private keys, identified by addresses, and support multiple crypto schemes."
+description: 'Understand Sui accounts: how they are generated from private keys, identified by addresses, and support multiple crypto schemes.'
 ---
 
 # 帳戶 (Account)

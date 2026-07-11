@@ -1,5 +1,5 @@
 ---
-description: "Sui 上的 Move 智能合約測試：單元測試、測試場景、覆蓋率報告、Gas 分析和最佳實踐。"
+description: 'Sui 上的 Move 智能合約測試：單元測試、測試場景、覆蓋率報告、Gas 分析和最佳實踐。'
 ---
 
 # 測試 (Testing)

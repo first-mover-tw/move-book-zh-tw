@@ -1,6 +1,5 @@
 ---
-
-description: "Collection types in Sui Move: VecSet, VecMap, and other vector-based data structures from the Sui Framework."
+description: 'Collection types in Sui Move: VecSet, VecMap, and other vector-based data structures from the Sui Framework.'
 ---
 
 # 集合 (Collections)

@@ -1,6 +1,8 @@
 ---
-title: '原生類型 (Primitive Types) | 參考手冊'
-description: "Move 原生類型參考手冊：整數、布林值、地址、向量、引用、元組以及單元類型概覽。"
+title: 原生類型 (Primitive Types) | 參考手冊
+description:
+  Move 基本型別參考手冊：整數 (integers)、布林值 (booleans)、位址 (addresses)、向量 (vectors)、參考
+  (references)、元組 (tuples) 與單位型別 (unit type) 概覽。
 ---
 
 # 原生類型 (Primitive Types)

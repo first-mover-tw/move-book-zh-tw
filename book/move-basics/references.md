@@ -1,6 +1,5 @@
 ---
-
-description: "References in Move: immutable and mutable borrows, the borrow checker, and how to safely pass values without transferring ownership."
+description: 'References in Move: immutable and mutable borrows, the borrow checker, and how to safely pass values without transferring ownership.'
 ---
 
 # 參照 (References)

@@ -1,6 +1,5 @@
 ---
-
-description: "One Time Witness (OTW) in Sui Move: a type guaranteed to be instantiated only once, used for Publisher and Coin creation."
+description: 'One Time Witness (OTW) in Sui Move: a type guaranteed to be instantiated only once, used for Publisher and Coin creation.'
 ---
 
 # 一次性見證 (One Time Witness)
@@ -40,7 +39,7 @@ OTW 無法手動建構，任何嘗試建構它的程式碼都會導致編譯錯�
 
 <!-- ## Background
 
-Before we get to actual definition of the OTW, let's consider a simple example. We want to build a generic implementation of a Coin type, which can be initialized with a witness. A instance of a witness `T` is used to create a new `TreasuryCap<T>` which is then used to mint a new `Coin<T>`.                             
+Before we get to actual definition of the OTW, let's consider a simple example. We want to build a generic implementation of a Coin type, which can be initialized with a witness. A instance of a witness `T` is used to create a new `TreasuryCap<T>` which is then used to mint a new `Coin<T>`.
 ```move
 module book::simple_coin {
 
@@ -74,7 +73,7 @@ module book::simple_coin {
 }
 ```
 
-A dishonest developer would be able to create multiple `TreasuryCap`s with the same witness, and mint more `Coin`s than expected. Here is an example of such a malicious module:                        
+A dishonest developer would be able to create multiple `TreasuryCap`s with the same witness, and mint more `Coin`s than expected. Here is an example of such a malicious module:
 ```move
 module book::simple_coin_cheater {
     /// The Coin witness.
@@ -85,7 +84,7 @@ module book::simple_coin_cheater {
     fun init(ctx: &mut TxContext) {
         let treasury_cap = book::simple_coin::new(Move {}, ctx);
         let secret_treasury = book::simple_coin::new(Move {}, ctx);
-             
+
         transfer::public_transfer(treasury_cap, ctx.sender())
         transfer::public_transfer(secret_treasury, ctx.sender())
     }
@@ -93,15 +92,15 @@ module book::simple_coin_cheater {
 
 ```
 
-The example above has no protection against issuing multiple `TreasuryCap`s with the same witness, and in real-world application, this creates a problem of trust. If it was a human decision to support a Coin based on this implementation, they would have to make sure that:        
+The example above has no protection against issuing multiple `TreasuryCap`s with the same witness, and in real-world application, this creates a problem of trust. If it was a human decision to support a Coin based on this implementation, they would have to make sure that:
 - there is only one `TreasuryCap` for a given `T`.
 - the module cannot be upgraded to issue more `TreasuryCap`s.
 - the module code does not contain any backdoors to issue more `TreasuryCap`s.
-  
-However, it is not possible to check any of these conditions inside the Move code. And to prevent the need for trust, Sui introduces the OTW pattern.           
+
+However, it is not possible to check any of these conditions inside the Move code. And to prevent the need for trust, Sui introduces the OTW pattern.
 ## Solving the Coin Problem
 
-To solve the case of multiple `TreasuryCaps`, we can use the OTW pattern. By defining the `COIN_OTW` type as an OTW, we can ensure that the `COIN_OTW` is used only once. The `COIN_OTW` is then used to create a new `TreasuryCap` and mint a new `Coin`.                              
+To solve the case of multiple `TreasuryCaps`, we can use the OTW pattern. By defining the `COIN_OTW` type as an OTW, we can ensure that the `COIN_OTW` is used only once. The `COIN_OTW` is then used to create a new `TreasuryCap` and mint a new `Coin`.
 ```move
 
 With
@@ -125,7 +124,7 @@ module book::coin_otw {
 
 <!-- ## Case Study: Coin
 
-TODO: add a story behind TreasuryCap and Coin                                   
+TODO: add a story behind TreasuryCap and Coin
 -->
 
 ## 總結
@@ -138,5 +137,5 @@ OTW 是一個強大的工具，它為 [發佈者 (Publisher)](./publisher) 物�
 
 ## Questions
 - What other ways could be used to prevent multiple `TreasuryCaps`?
-- Are there any other ways to use the OTW?                                      
+- Are there any other ways to use the OTW?
  -->

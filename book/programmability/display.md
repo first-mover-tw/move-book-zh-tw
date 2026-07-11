@@ -1,6 +1,5 @@
 ---
-
-description: "Object Display in Sui: define rich metadata templates for your objects using the Display standard for wallets and explorers."
+description: 'Object Display in Sui: define rich metadata templates for your objects using the Display standard for wallets and explorers.'
 ---
 
 # 物件顯示 (Object Display)
@@ -72,6 +71,7 @@ public struct Display<phantom T: key> has key, store {
 目前，Display 支援簡單的字串插值 (string interpolation)，並可以在其模板中使用結構體欄位（及路徑）。語法非常簡單 —— `{path}` 會被該路徑下欄位的數值替換。路徑是由句點分隔的欄位名稱列表，如果是巢狀欄位，則從根物件開始。
 
 ```move file=packages/samples/sources/programmability/display.move anchor=nested
+
 ```
 
 上述 `LittlePony` 類型的 Display 可以定義如下：

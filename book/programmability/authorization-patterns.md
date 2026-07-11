@@ -1,5 +1,6 @@
 ---
-description: "Sui Move 中的授權模式：比較能力模式、見證者模式與基於物件的存取控制，實現智能合約安全性。"
+description: '授權模式在 Sui Move 中的比較 (Comparing Authorization Patterns in Sui Move):
+  capabilities、witnesses 與物件層級存取控制 (object-based access control) 於智能合約安全性的應用。'
 ---
 
 # 授權模式 (Authorization Patterns)

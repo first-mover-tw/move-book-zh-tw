@@ -1,5 +1,6 @@
 ---
-description: "關於 Move 與 Sui 的學術著作：借用檢查器、資源安全性與 Move 程式的形式化驗證論文。"
+description: 學術論文 (Academic Publications)：Move 與 Sui 的學術論文，涵蓋 borrow checker、資源安全
+  (Resource Safety) 與 Move 程式的形式化驗證 (Formal Verification)。
 ---
 
 # 附錄 D：著作 (Publications)

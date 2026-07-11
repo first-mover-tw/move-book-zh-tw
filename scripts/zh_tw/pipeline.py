@@ -35,6 +35,10 @@ def _prev_en(path: str, m: dict[str, str]) -> str:
 
 
 def _delta_lines(old_sha: str, new_sha: str) -> int:
+    # 同一 blob 的 delta 是 0；`git diff --numstat` 對它輸出空字串，
+    # 不擋在這裡會掉進下面的 fail-closed 哨兵，把已 heal 的檔案誤判 B。
+    if old_sha == new_sha:
+        return 0
     r = subprocess.run(
         ["git", "diff", "--numstat", old_sha, new_sha], capture_output=True, text=True
     )
@@ -61,7 +65,9 @@ def tier(path: str, en_ref: str = "english-main") -> str:
         return "B"
 
     en_old = _show(MERGE_BASE, path)
-    if en_old is None or validate.check_file(zh, en_old):
+    # spec §五：分層只看 gate 1、2。用全量 check_file 會把「description 未翻」
+    # 這種 backfill 本身要修的缺陷當成降級理由（實測誤降 30 檔）。
+    if en_old is None or validate.check_structure(zh, en_old):
         return "B"  # 結構驗證未過（例：reference/variables.md）
     return "A"
 
@@ -74,7 +80,9 @@ def translate_body(en_text: str, backend: base.Backend, max_lines: int = CHUNK_M
     zh_meta = dict(en_meta)
     for key in frontmatter.TRANSLATABLE_KEYS & set(en_meta):
         if isinstance(en_meta[key], str):
-            zh_meta[key] = backend.translate(en_meta[key], kind="text").strip()
+            # enforce 與 check_frontmatter 的值掃描同進退：backend 翻出違禁詞
+            # 是決定性可修的，炸掉會把 B 路徑變成無自動出路的死鎖。
+            zh_meta[key] = glossary.enforce(backend.translate(en_meta[key], kind="text").strip())
     return frontmatter.join(zh_meta, zh_body)
 
 
@@ -113,16 +121,40 @@ def assemble(
     return out
 
 
-def rebuild_frontmatter_only(en_text: str, zh_text: str, backend: base.Backend) -> str:
-    """A 層：內文原封不動，只接管上游 frontmatter。"""
+def rebuild_frontmatter_only(
+    en_text: str, zh_text: str, backend: base.Backend, prev_en_text: str = ""
+) -> str:
+    """A 層：內文原封不動，只接管上游 frontmatter。
+
+    寫檔 gate 只涵蓋本函式生成的部分（結構 + frontmatter）：body 是 legacy
+    舊譯文，拿它的既有違禁詞/簡體當否決會讓 A 層檔 hard-fail 且無自動修復
+    路徑（body 不重譯、tier 也不會降級）——與 tier 只看 check_structure
+    （spec §五）是同一組設計，兩邊一起改才不會死鎖。
+
+    欄位值沿用優先於重算（與 anchors 的 carry-forward 同原則）：英文原文
+    未變且既有值已是中文的欄位，沿用舊值（過 glossary.enforce）——第一次
+    apply 實測 53 個欄位被白重翻，損失既有審定術語（友元 → 朋友）。舊值
+    帶簡體字（無決定性修法）或沿用前提不成立時，退回重翻。"""
     en_meta, _ = frontmatter.split(en_text)
-    _, zh_body = frontmatter.split(zh_text)
+    zh_meta_old, zh_body = frontmatter.split(zh_text)
+    prev_en_meta, _ = frontmatter.split(prev_en_text) if prev_en_text else ({}, "")
     zh_meta = dict(en_meta)
     for key in frontmatter.TRANSLATABLE_KEYS & set(en_meta):
-        if isinstance(en_meta[key], str):
-            zh_meta[key] = backend.translate(en_meta[key], kind="text").strip()
+        if not isinstance(en_meta[key], str):
+            continue
+        old = zh_meta_old.get(key)
+        if (
+            prev_en_meta.get(key) == en_meta[key]
+            and isinstance(old, str)
+            and validate._CJK.search(old)
+        ):
+            carried = glossary.enforce(old)
+            if not validate.simplified_chars(carried) and not glossary.scan(carried):
+                zh_meta[key] = carried
+                continue
+        zh_meta[key] = glossary.enforce(backend.translate(en_meta[key], kind="text").strip())
     out = frontmatter.join(zh_meta, zh_body)
-    errs = validate.check_file(out, en_text)
+    errs = validate.check_structure(out, en_text) + validate.check_frontmatter(out, en_text)
     if errs:
         raise validate.ValidationError("; ".join(errs))
     return out
@@ -145,7 +177,7 @@ def run(
             if path in manifest.SIDEBAR_FILES:
                 out = sidebar.translate(en, prev, backend)
             elif prev and tier(path, en_ref) == "A":
-                out = rebuild_frontmatter_only(en, prev, backend)
+                out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
             else:
                 prev_en = _prev_en(path, m) if prev else ""
                 out = assemble(en, prev, prev_en, backend)

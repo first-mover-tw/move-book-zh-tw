@@ -1,6 +1,5 @@
 ---
-
-description: "Emit and subscribe to events in Sui Move: notify off-chain listeners about on-chain activity in your smart contracts."
+description: 'Emit and subscribe to events in Sui Move: notify off-chain listeners about on-chain activity in your smart contracts.'
 ---
 
 # 事件 (Events)

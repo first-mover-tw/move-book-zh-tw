@@ -1,6 +1,5 @@
 ---
-
-description: "Learn Move language fundamentals: types, modules, functions, structs, abilities, generics, and control flow for Sui smart contracts."
+description: 'Learn Move language fundamentals: types, modules, functions, structs, abilities, generics, and control flow for Sui smart contracts.'
 ---
 
 # Move 基礎 (Move Basics)

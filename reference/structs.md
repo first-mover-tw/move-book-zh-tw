@@ -1,6 +1,8 @@
 ---
-title: '結構體 (Structs) | 參考手冊'
-description: "Move 結構體參考手冊：定義自定義類型、位置欄位與命名欄位、能力 (abilities)、可見性 (visibility) 以及資源語義 (resource semantics)。"
+title: 結構體 (Structs) | 參考手冊
+description:
+  Move struct 參考手冊：定義自訂型別 (type)、位置與具名欄位、能力 (ability)、可見性 (visibility)
+  與資源語意 (resource semantics)。
 ---
 
 # 結構體與資源 (Structs and Resources)

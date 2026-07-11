@@ -1,6 +1,5 @@
 ---
-
-description: "Functions in Move: declare, call, and return values from functions with support for multiple return values and type parameters."
+description: 'Functions in Move: declare, call, and return values from functions with support for multiple return values and type parameters.'
 ---
 
 # 函式 (Functions)

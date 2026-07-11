@@ -1,6 +1,5 @@
 ---
-
-description: "The address type in Move: literals, named addresses, conversion functions, and how addresses identify accounts and packages on Sui."
+description: 'The address type in Move: literals, named addresses, conversion functions, and how addresses identify accounts and packages on Sui.'
 ---
 
 # 位址類型

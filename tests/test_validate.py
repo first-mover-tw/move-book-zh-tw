@@ -639,3 +639,48 @@ def test_check_links_resolves_directory_style_target():
         "book/sub/index.md": "# Sub {#target}\n",
     }
     assert validate.check_links(files) == []
+
+
+# --- tier 分層依據：spec §五「A 層前提是 validate 第 1、2 條」 ---
+
+
+def test_check_structure_ignores_non_structural_defects():
+    """未翻 frontmatter 與內文違禁詞是 backfill 要修的缺陷，不是結構問題；
+    check_structure 不得回報它們（否則 tier 會把待修檔誤降 B 層全譯）。"""
+    en = '---\ndescription: "Constants."\n---\n\n# Constants\n\nText.\n'
+    zh = '---\ndescription: "Constants."\n---\n\n# 常數 {#constants}\n\n循環與返回。\n'
+    assert validate.check_structure(zh, en) == []
+    assert validate.check_file(zh, en)  # 全量 gate 仍須抓到這些缺陷
+
+
+def test_check_structure_flags_heading_and_fence_mismatch():
+    en = "# One\n\n## Two\n\n```move\nlet x;\n```\n"
+    zh = "# 一\n"
+    errs = validate.check_structure(zh, en)
+    assert any("標題層級序列" in e for e in errs)
+    assert any("fence" in e for e in errs)
+
+
+# --- A 路徑寫檔 gate：check_frontmatter（gate 3/4 + 新翻值的品質掃描） ---
+
+
+def test_check_frontmatter_scans_translated_values():
+    """frontmatter 值是管線新生成的內容，違禁詞/簡體必須被抓
+    （實測 5 個現有檔的 description/title 帶違禁詞流出，body-only 掃描是漏洞）。"""
+    en = '---\ndescription: "Loops."\ntitle: "Loops"\n---\n\n# Loops\n'
+    zh = '---\ndescription: "循環結構。"\ntitle: "循環"\n---\n\n# 迴圈 {#loops}\n'
+    errs = validate.check_frontmatter(zh, en)
+    assert any("循環" in e for e in errs)
+
+
+def test_check_frontmatter_ignores_legacy_body():
+    """A 層 body 是 legacy 舊譯文，其既有債務不歸 check_frontmatter 管。"""
+    en = '---\ndescription: "C."\n---\n\n# C\n\nText.\n'
+    zh = '---\ndescription: "常數。"\n---\n\n# 常數 {#c}\n\n這段有循環。\n'
+    assert validate.check_frontmatter(zh, en) == []
+
+
+def test_check_file_reports_forbidden_word_in_frontmatter_value():
+    en = '---\ndescription: "Loops."\n---\n\n# Loops\n'
+    zh = '---\ndescription: "循環。"\n---\n\n# 迴圈 {#loops}\n'
+    assert any("循環" in e for e in validate.check_file(zh, en))

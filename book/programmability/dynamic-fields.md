@@ -1,6 +1,5 @@
 ---
-
-description: "Dynamic fields in Sui: attach heterogeneous key-value data to objects at runtime, bypassing object size limits."
+description: 'Dynamic fields in Sui: attach heterogeneous key-value data to objects at runtime, bypassing object size limits.'
 ---
 
 # 動態欄位 (Dynamic Fields)

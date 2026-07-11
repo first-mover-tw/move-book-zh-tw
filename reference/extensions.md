@@ -1,6 +1,8 @@
 ---
-title: '模組擴展 (Module Extensions) | Reference'
-description: "Move 模組擴展參考：從外部套件向現有模組添加測試專用或模式限定的宣告。"
+title: 模組擴展 (Module Extensions) | Reference
+description:
+  Move 模組擴充參考手冊 (Move module extensions reference)：為既有模組新增僅限測試或模式限定的宣告，用於外部套件
+  (package)。
 ---
 
 # 模組擴展 (Module Extensions)
@@ -106,11 +108,11 @@ extend module p<address>::<identifier>;
 
 在兩種情況下：
 
-* 擴展必須定義一個模式屬性。
-* `<address>::<identifier>` 是套件和模組名稱。
-* 模組元素與標準[模組](modules)中的相同。
-* 擴展區塊在啟用的模式下被編譯到目標模組中。
-* `<address>::<identifier>` 必須解析為當前構建中的現有模組。
+- 擴展必須定義一個模式屬性。
+- `<address>::<identifier>` 是套件和模組名稱。
+- 模組元素與標準[模組](modules)中的相同。
+- 擴展區塊在啟用的模式下被編譯到目標模組中。
+- `<address>::<identifier>` 必須解析為當前構建中的現有模組。
 
 ## 應用擴展
 

@@ -1,6 +1,8 @@
 ---
-title: '泛型 (Generics) | 參考手冊'
-description: "Move 泛型參考手冊：類型參數、約束 (Constraints)、虛像類型 (Phantom Types)，以及函式與結構體的參數化多型 (Parametric Polymorphism)。"
+title: 泛型 (Generics) | 參考手冊
+description:
+  Move 泛型參考手冊 (Move generics reference)：函式與結構的型別參數 (type parameters)、約束
+  (constraints)、幻影型別 (phantom types) 與參數多型 (parametric polymorphism)。
 ---
 
 # 泛型 (Generics)

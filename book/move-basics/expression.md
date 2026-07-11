@@ -1,6 +1,5 @@
 ---
-
-description: "Expressions in Move: literals, function calls, blocks, and how almost everything returns a value in the Move language."
+description: 'Expressions in Move: literals, function calls, blocks, and how almost everything returns a value in the Move language.'
 ---
 
 # 表達式 (Expression)

@@ -1,6 +1,5 @@
 ---
-
-description: "Write and run unit tests in Move using the #[test] attribute, expected failures, and utilities for testing smart contract logic."
+description: 'Write and run unit tests in Move using the #[test] attribute, expected failures, and utilities for testing smart contract logic.'
 ---
 
 # 測試 (Testing)

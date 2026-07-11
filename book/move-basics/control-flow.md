@@ -1,6 +1,5 @@
 ---
-
-description: "Control flow in Move: if/else expressions, while and loop constructs, break, continue, and return statements."
+description: 'Control flow in Move: if/else expressions, while and loop constructs, break, continue, and return statements.'
 ---
 
 # 流程控制 (Control Flow)

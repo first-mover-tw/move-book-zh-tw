@@ -1,6 +1,5 @@
 ---
-
-description: "Advanced Move language features: modes, extended build configurations, and advanced programming techniques for Sui developers."
+description: 'Advanced Move language features: modes, extended build configurations, and advanced programming techniques for Sui developers.'
 ---
 
 # 進階 Move 用法

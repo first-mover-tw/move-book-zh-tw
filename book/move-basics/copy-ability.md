@@ -1,6 +1,5 @@
 ---
-
-description: "The copy ability in Move enables value duplication. Learn how to add copy to custom types and understand its role in resource safety."
+description: 'The copy ability in Move enables value duplication. Learn how to add copy to custom types and understand its role in resource safety.'
 ---
 
 # 能力：複製 (Copy)
