@@ -132,6 +132,7 @@ def assemble(
 
     # 標題修復在 anchor 注入之前（注入以最終標題文字為準）。
     zh_body = _repair_headings(zh_body, en_body, backend)
+    zh_body = _repair_fence_comments(zh_body, backend)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -202,6 +203,64 @@ def _repair_headings(zh_body: str, en_body: str, backend: base.Backend) -> str:
         if candidate and validate.heading_suffix_error(candidate, en_clean) is None:
             ending = anchors._line_ending(lines[start])
             lines[start] = f"{'#' * level} {candidate}{ending}"
+    return "".join(lines)
+
+
+_CODE_COMMENT = re.compile(r"^(\s*(?://|///|#)\s*)(.+?)(\s*)$")
+_COMMENT_SKIP = re.compile(r"ANCHOR|highlight|prettier-ignore|noqa|docs::")
+_LATIN_PROSE = re.compile(r"[a-z]{2,}")
+
+_COMMENT_PROMPT = (
+    "以下是程式碼註解的編號清單。把每一行翻譯成台灣繁體中文"
+    "（保留行內 code 與專有名詞），輸出相同編號的清單，一行對一行，"
+    "不要增減行數，不要任何解釋。\n"
+    f"{glossary.prompt_rules()}"
+)
+
+
+def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
+    """code 內英文散文註解的批次補翻（PR 3 實測 sonnet 對 fence 註解
+    186/213 未翻，語料慣例是翻）。與標題修復同理：LLM 系統性忽略的指令
+    用專用小呼叫補 —— 一檔一個編號清單呼叫（沿用 sidebar 的成熟模式，
+    kind="raw" 不外包 prompt）。
+
+    - 只動 anchors.code_lines 認定的 code 行（單一權威 parser，散文裡的
+      «//» 不會誤傷）；指令行（ANCHOR/highlight/…）與已含 CJK 的跳過。
+    - 回覆行缺 CJK（沒翻或亂答）→ 該行保留原文，fail-open 到「維持現狀」。
+    - 替換只動註解文字，縮排、註解符號、行數、fence 數都不變。
+    """
+    lines = zh_body.splitlines(keepends=True)
+    code = anchors.code_lines(zh_body)
+    todo: list[tuple[int, str, str, str]] = []  # (行號, prefix, text, trailing)
+    for i in sorted(code):
+        if i >= len(lines):
+            continue
+        m = _CODE_COMMENT.match(lines[i].rstrip("\r\n"))
+        if not m:
+            continue
+        prefix, text, trail = m.groups()
+        if _COMMENT_SKIP.search(text) or validate.CJK.search(text):
+            continue
+        if not _LATIN_PROSE.search(text):
+            continue
+        todo.append((i, prefix, text, trail))
+    if not todo:
+        return zh_body
+
+    numbered = "\n".join(f"{n + 1}. {t}" for n, (_, _, t, _) in enumerate(todo))
+    raw = backend.translate(f"{_COMMENT_PROMPT}\n\n{numbered}", kind="raw")
+    replies = {}
+    for line in raw.splitlines():
+        m = re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line)
+        if m:
+            replies[int(m.group(1))] = m.group(2)
+
+    for n, (i, prefix, text, trail) in enumerate(todo, start=1):
+        got = replies.get(n, "")
+        if not got or not validate.CJK.search(got):
+            continue  # 沒翻或亂答：保留原文
+        ending = anchors._line_ending(lines[i])
+        lines[i] = f"{prefix}{glossary.enforce(got)}{trail}{ending}"
     return "".join(lines)
 
 

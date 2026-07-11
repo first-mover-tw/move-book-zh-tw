@@ -570,3 +570,69 @@ def test_translate_chunk_retries_on_fence_mismatch():
     out = pipeline._translate_chunk(en, FenceDroppingBackend())
     assert calls["n"] == 2
     assert anchors.fence_lines(out) == anchors.fence_lines(en)
+
+
+# --- fence 註解修復 pass：批次翻譯 code 內的英文散文註解 ---
+#
+# PR 3 實測：sonnet 對 fence 註解 186/213 未翻（語料慣例是翻，抽樣舊檔
+# 0/6、0/6、3/5 已翻）。與標題修復同理：LLM 系統性忽略的指令，用專用
+# 小呼叫補—— 批次編號清單一檔一呼叫（沿用 sidebar 的成熟模式）。
+
+
+class _CommentBackend:
+    def __init__(self):
+        self.calls = []
+
+    def translate(self, text, *, kind="markdown"):
+        self.calls.append(kind)
+        import re as _re
+        out = []
+        for line in text.splitlines():
+            m = _re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line)
+            if m:
+                out.append(f"{m.group(1)}. 中文註解（{m.group(2)}）")
+        return "\n".join(out)
+
+
+def test_repair_fence_comments_translates_english_prose():
+    zh = "# 一 (One)\n\n```move\n// create a new instance\nlet x = 1; // and assign it\n```\n"
+    out = pipeline._repair_fence_comments(zh, _CommentBackend())
+    assert "// 中文註解（create a new instance）" in out
+    assert "let x = 1;" in out  # code 本體不動
+    assert anchors.fence_lines(out) == anchors.fence_lines(zh)
+
+
+def test_repair_fence_comments_skips_directives_and_translated():
+    b = _CommentBackend()
+    zh = (
+        "```move\n"
+        "// ANCHOR: main\n"
+        "// highlight-start\n"
+        "// 已翻好的註解\n"
+        "```\n"
+    )
+    out = pipeline._repair_fence_comments(zh, b)
+    assert out == zh
+    assert b.calls == []  # 沒東西要翻就不呼叫 backend
+
+
+def test_repair_fence_comments_ignores_prose_outside_code():
+    b = _CommentBackend()
+    zh = "散文提到 // this is not code 的寫法。\n"
+    assert pipeline._repair_fence_comments(zh, b) == zh
+    assert b.calls == []
+
+
+def test_repair_fence_comments_keeps_original_when_reply_lacks_cjk():
+    class BadBackend:
+        def translate(self, text, *, kind="markdown"):
+            import re as _re
+            return "\n".join(
+                f"{m.group(1)}. still english"
+                for line in text.splitlines()
+                if (m := _re.match(r"^\s*(\d+)[.)]\s+(.+?)\s*$", line))
+            )
+
+    zh = "```move\n// create a new instance\n```\n"
+    out = pipeline._repair_fence_comments(zh, BadBackend())
+    assert "// create a new instance" in out  # 壞回覆 → 保留原文

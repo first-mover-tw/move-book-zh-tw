@@ -54,7 +54,8 @@ class Backend(Protocol):
     - "markdown"（預設）：chunk 內文，外包 SYSTEM_PROMPT。
     - "text"：frontmatter title/description 等裸短字串，外包 TEXT_PROMPT。
     - "heading"：單一標題重譯（修復 pass），外包 HEADING_PROMPT。
-    - "sidebar"：sidebar.translate 的 payload，**自帶** SIDEBAR_PROMPT 與
+    - "raw" / "sidebar"：payload **自帶完整指令**（raw = 通用；sidebar =
+      sidebar.translate 專用，payload 帶 SIDEBAR_PROMPT 與
       編號清單 —— backend 不得再外包任何 prompt，否則兩層指令互相矛盾
       （TEXT_PROMPT「單一名詞必翻」vs SIDEBAR_PROMPT「專有名詞維持原文」），
       且 sidebar 的格式 guard 擋不住這種語意流出。

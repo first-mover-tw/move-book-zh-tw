@@ -13,7 +13,7 @@ class ClaudeCLIBackend:
         # validate gate 9（check_heading_suffix）擋下不寫檔。
         model = os.environ.get("ZH_TW_CLAUDE_MODEL", "sonnet")
         timeout = int(os.environ.get("ZH_TW_TIMEOUT", "600"))
-        if kind == "sidebar":
+        if kind in ("sidebar", "raw"):
             # sidebar payload 自帶 SIDEBAR_PROMPT 與編號清單，再外包任何
             # prompt 都會產生互相矛盾的指令（見 sidebar.SIDEBAR_PROMPT）。
             prompt = text

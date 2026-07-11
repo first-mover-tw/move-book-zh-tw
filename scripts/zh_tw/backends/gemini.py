@@ -27,7 +27,7 @@ class GeminiBackend:
         self._client = genai.Client(api_key=key)
 
     def translate(self, text: str, *, kind: str = "markdown") -> str:
-        if kind == "sidebar":
+        if kind in ("sidebar", "raw"):
             # 同 claude_cli：sidebar payload 自帶完整指令，不外包。
             msg = text
         else:
