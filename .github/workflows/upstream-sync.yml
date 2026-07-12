@@ -1,0 +1,89 @@
+name: Sync english-main from upstream
+
+# 每日輪詢 MystenLabs/move-book（GitHub Actions 無法訂閱外部 repo 事件，
+# 輪詢是標準解）。無新 commit 時 ~10 秒結束、零 API 成本；有新 commit 才
+# merge 進 english-main 並 dispatch 翻譯 workflow。
+#
+# 兩個「絕不靜默」設計（前車之鑑：偵測失敗被吞掉，五個月綠燈零翻譯）：
+# - merge 衝突：job 轉紅 + 開 issue（帶 upstream-sync-conflict label，去重）。
+# - GITHUB_TOKEN 的 push 不會觸發其他 workflow 的 push trigger（GitHub
+#   遞迴防護），所以這裡顯式 `gh workflow run` dispatch 翻譯；translate
+#   自己的每日 cron 是第二道保險。
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # 每日 01:00 UTC；translate 的 cron 在 03:00 接棒
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout english-main
+        uses: actions/checkout@v4
+        with:
+          ref: english-main
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/MystenLabs/move-book.git
+          git fetch upstream main
+
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          set -euo pipefail
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "上游無新 commit。"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+            echo "上游新 commit："
+            git log --oneline HEAD..upstream/main | head -20
+          fi
+
+      - name: Merge upstream into english-main and push
+        if: steps.check.outputs.new == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git merge --no-edit upstream/main; then
+            git merge --abort
+            echo "::error::merge 衝突，需要人工處理（見自動開立的 issue）"
+            exit 1
+          fi
+          git push origin english-main
+
+      - name: Dispatch translate workflow
+        if: steps.check.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run translate-zh-tw.yml --ref zh-tw-main
+
+      - name: Open conflict issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # label 不存在時 gh issue create 會直接失敗（review F1：repo 只有
+          # 預設 label），先冪等建立。
+          gh label create upstream-sync-conflict \
+            --description "upstream merge 衝突，需人工處理" --force || true
+          EXISTING=$(gh issue list --label upstream-sync-conflict --state open --json number --jq length)
+          if [ "$EXISTING" = "0" ]; then
+            gh issue create \
+              --title "upstream-sync：english-main merge 失敗，需要人工處理" \
+              --label upstream-sync-conflict \
+              --body "自動同步 MystenLabs/move-book → english-main 失敗（多半是 merge 衝突）。請人工 merge 後 push english-main；翻譯 workflow 會自動接手。run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "已有未關閉的 conflict issue，不重複開。"
+          fi
