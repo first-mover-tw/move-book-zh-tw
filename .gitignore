@@ -22,3 +22,4 @@ progress.md
 
 # superpowers scratch
 .superpowers/
+.env.local

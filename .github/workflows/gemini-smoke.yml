@@ -1,0 +1,35 @@
+name: Gemini backend smoke test
+
+# 手動 dispatch：驗證 GEMINI_API_KEY 有效、model 清單存在、backend 輸出
+# 含 CJK。不寫任何檔案，不開 PR —— 純煙霧測試。
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: zh-tw-main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
+      - name: Translate one sentence via GeminiBackend
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          from scripts.zh_tw.backends import base
+          out = base.get("gemini").translate("Structs are user-defined types.", kind="text")
+          print("輸出:", out.strip())
+          assert re.search(r"[一-鿿]", out), "輸出不含 CJK —— 翻譯失敗"
+          print("GEMINI SMOKE OK")
+          PY
