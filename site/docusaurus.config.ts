@@ -13,6 +13,20 @@ export default {
   // Future compatibility flags.
   future: { v4: true },
 
+  // Docusaurus 3.10 + future.v4 disables the MDX v1 compat layer by default.
+  // The corpus relies on {#custom-id} heading anchors and <!-- --> comments,
+  // so keep the compat options explicitly enabled.
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
+    mdx1Compat: {
+      comments: true,
+      admonitions: true,
+      headingIds: true,
+    },
+  },
+
   url: 'http://first-mover-tw.com',
   baseUrl: '/',
 
@@ -22,7 +36,6 @@ export default {
 
   // Relax or throw on broken links, options are: 'warn', 'throw'.
   onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'throw',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you

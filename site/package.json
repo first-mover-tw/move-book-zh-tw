@@ -15,29 +15,30 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@docusaurus/core": "3.8.1",
-    "@docusaurus/plugin-client-redirects": "^3.8.1",
-    "@docusaurus/plugin-google-gtag": "^3.8.1",
-    "@docusaurus/preset-classic": "3.8.1",
-    "@docusaurus/theme-classic": "^3.8.1",
-    "@docusaurus/theme-common": "^3.8.1",
-    "@easyops-cn/docusaurus-search-local": "^0.51.0",
-    "@mdx-js/react": "^3.0.0",
-    "clsx": "^2.0.0",
-    "copy-text-to-clipboard": "^3.2.0",
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/plugin-client-redirects": "^3.10.2",
+    "@docusaurus/plugin-google-gtag": "^3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/theme-classic": "^3.10.2",
+    "@docusaurus/theme-common": "^3.10.2",
+    "@easyops-cn/docusaurus-search-local": "^0.51.1",
+    "@mdx-js/react": "^3.1.1",
+    "clsx": "^2.1.1",
+    "copy-text-to-clipboard": "^3.2.2",
     "html2canvas": "^1.4.1",
-    "prism-react-renderer": "^2.3.0",
+    "prism-react-renderer": "^2.4.1",
     "prismjs": "^1.30.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "remark-code-import": "^1.2.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.8.1",
-    "@docusaurus/tsconfig": "3.8.1",
-    "@docusaurus/types": "3.8.1",
-    "typescript": "~5.6.2"
+    "@docusaurus/faster": "3.10.2",
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/tsconfig": "3.10.2",
+    "@docusaurus/types": "3.10.2",
+    "typescript": "~5.6.3"
   },
   "browserslist": {
     "production": [
@@ -53,6 +54,12 @@
   },
   "engines": {
     "node": ">=18.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "serialize-javascript@<7.0.5": ">=7.0.5 <8",
+      "uuid@<11.1.1": ">=11.1.1 <12"
+    }
   },
   "packageManager": "pnpm@9.15.2+sha512.93e57b0126f0df74ce6bff29680394c0ba54ec47246b9cf321f0121d8d9bb03f750a705f24edc3c1180853afd7c2c3b94196d0a3d53d3e069d9e2793ef11f321"
 }
