@@ -516,7 +516,7 @@ fun test_token_transfer_flow() {
 | `begin(sender)`             | 開始一個新場景               |
 | `end(scenario)`             | 結束場景並取得最終效果       |
 | `next_tx(scenario, sender)` | 前進到下一筆交易             |
-| `ctx(scenario)`             | 取得 `TxContext` 的可變參照  |
+| `ctx(scenario)`             | 取得 `TxContext` 的可變參考  |
 | `take_from_sender<T>`       | 從 sender 取得擁有的物件     |
 | `return_to_sender(obj)`     | 將物件回傳給 sender          |
 | `take_shared<T>`            | 取得共享物件                 |

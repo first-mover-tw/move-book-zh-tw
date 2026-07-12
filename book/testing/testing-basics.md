@@ -103,7 +103,7 @@ fun test_wrong_error_code() {
 
 ### 來自其他模組的 Abort 代碼 (Abort Codes from Other Modules) {#abort-codes-from-other-modules}
 
-`abort_code` 引數也可以透過寫出完整路徑，來參照定義在其他模組中的常數 - 包括
+`abort_code` 引數也可以透過寫出完整路徑，來參考定義在其他模組中的常數 - 包括
 [Standard Library](./../move-basics/standard-library) 與
 [Sui Framework](./../programmability/sui-framework)。可見性在這裡並不重要：該屬性可以指名依賴項的私有常數。這是測試某個預期會在依賴項 _內部_ 失敗的函式的方式：
 

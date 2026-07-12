@@ -58,9 +58,9 @@ hello_world
 
 ### 清單文件 (Manifest)
 
-`Move.toml` 檔案，又稱為[套件清單文件](./../concepts/manifest.md)，包含套件的定義和配置設定。Move 編譯器使用它來管理套件中繼資料、獲取依賴項並註冊具名位址。我們將在[概念](./../concepts/index.md)章節中詳細解釋它。
+`Move.toml` 檔案，又稱為[套件清單文件](./../concepts/manifest.md)，包含套件的定義和配置設定。Move 編譯器使用它來管理套件中繼資料、獲取依賴項並註冊具名地址。我們將在[概念](./../concepts/index.md)章節中詳細解釋它。
 
-> 預設情況下，該套件有一個具名位址——套件的名稱。
+> 預設情況下，該套件有一個具名地址——套件的名稱。
 
 ```toml
 [addresses]
@@ -80,7 +80,7 @@ module hello_world::hello_world;
 
 > `/*` 和 `*/` 是 Move 中的註解分隔符號。它們之間的所有內容都會被編譯器忽略，可用於文件或備註。我們在[基本語法](./../move-basics/comments.md)中解釋了所有註解程式碼的方法。
 
-註解掉的程式碼是一個模組定義，它以關鍵字 `module` 開頭，後面跟著一個具名位址（或位址文字），以及模組名稱。模組名稱是模組的唯一識別符號，並且在套件內必須是唯一的。模組名稱用於從其他模組或交易中引用該模組。
+註解掉的程式碼是一個模組定義，它以關鍵字 `module` 開頭，後面跟著一個具名地址（或地址文字），以及模組名稱。模組名稱是模組的唯一識別符號，並且在套件內必須是唯一的。模組名稱用於從其他模組或交易中參考該模組。
 
 <!-- And the module name has to be a valid Move identifier: alphanumeric with underscores to separate words. A common convention is to call modules (and functions) in snake_case - all lowercase, with underscores. Coding conventions are important for readability and maintainability of the code, we summarize them in the Coding Conventions section. -->
 
@@ -88,7 +88,7 @@ module hello_world::hello_world;
 
 `tests/` 目錄包含套件測試。編譯器在常規建置過程中會排除這些檔案，但在 _test_ 和 _dev_ 模式下會使用它們。測試是用 Move 編寫的，並標記有 `#[test]` 屬性。測試可以分組在單獨的模組中（通常稱為 _module_name_tests.move_），或在它們所測試的模組內部。
 
-模組、匯入、常數和函數可以用 `#[test_only]` 進行註解。此屬性用於將模組、函數或匯入從建置過程中排除。當您想為測試添加輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
+模組、匯入、常數和函式可以用 `#[test_only]` 進行註解。此屬性用於將模組、函式或匯入從建置過程中排除。當您想為測試加入輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
 
 _hello_world_tests.move_ 檔案包含一個註解掉的測試模組模板：
 
@@ -119,7 +119,7 @@ fun test_hello_world_fail() {
 
 ## 編譯套件
 
-Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 位元組碼。它僅包含有關模組、其成員和類型所需的資訊，並排除註解和一些識別符（例如，常數的識別符）。
+Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 位元組碼。它僅包含有關模組、其成員和型別所需的資訊，並排除註解和一些識別符（例如，常數的識別符）。
 
 為了展示這些功能，讓我們將 _sources/hello_world.move_ 檔案的內容替換為以下內容：
 
@@ -127,7 +127,7 @@ Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 
 
 ```
 
-在編譯期間，程式碼被建置，但不會執行。編譯後的套件只包含可以由其他模組或在交易中呼叫的函數。我們將在[概念](./../concepts/index.md)章節中解釋這些概念。但現在，讓我們看看當我們執行 _sui move build_ 時會發生什麼。
+在編譯期間，程式碼被建置，但不會執行。編譯後的套件只包含可以由其他模組或在交易中呼叫的函式。我們將在[概念](./../concepts/index.md)章節中解釋這些概念。但現在，讓我們看看當我們執行 _sui move build_ 時會發生什麼。
 
 ```bash
 # 從 `hello_world` 資料夾執行
@@ -151,11 +151,11 @@ BUILDING hello_world
 
 在編譯期間，Move 編譯器會自動建立一個建置資料夾，其中放置所有已獲取和編譯的依賴項，以及當前套件模組的位元組碼。
 
-> 如果您使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，您應該使用 `.gitignore` 檔案並將 `build` 添加到其中。
+> 如果您使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，您應該使用 `.gitignore` 檔案並將 `build` 加入其中。
 
 ## 執行測試
 
-在我們進行測試之前，我們應該添加一個測試。Move 編譯器支援用 Move 編寫的測試並提供執行環境。測試可以放在原始碼檔案和 `tests/` 資料夾中。測試標記有 `#[test]` 屬性，並會被編譯器自動發現。我們在[測試](./../move-basics/testing.md)部分深入解釋測試。
+在我們進行測試之前，我們應該新增一個測試。Move 編譯器支援用 Move 編寫的測試並提供執行環境。測試可以放在原始碼檔案和 `tests/` 資料夾中。測試標記有 `#[test]` 屬性，並會被編譯器自動發現。我們在[測試](./../move-basics/testing.md)部分深入解釋測試。
 
 將 `tests/hello_world_tests.move` 的內容替換為以下內容：
 
@@ -163,7 +163,7 @@ BUILDING hello_world
 
 ```
 
-這裡我們匯入了 `hello_world` 模組，並呼叫其 `hello_world` 函數來測試輸出確實是字串 "Hello, World!"。現在，既然我們已經準備好測試，就讓我們以測試模式編譯套件並執行測試。Move CLI 為此提供了 `test` 指令：
+這裡我們匯入了 `hello_world` 模組，並呼叫其 `hello_world` 函式來測試輸出確實是字串 "Hello, World!"。現在，既然我們已經準備好測試，就讓我們以測試模式編譯套件並執行測試。Move CLI 為此提供了 `test` 指令：
 
 ```bash
 $ sui move test

@@ -1,5 +1,5 @@
 ---
-description: Move.toml 套件清單 (Package Manifest)：套件中繼資料、相依套件、具名位址與相依套件覆寫詳解。
+description: Move.toml 套件清單 (Package Manifest)：套件中繼資料、相依套件、具名地址與相依套件覆寫詳解。
 ---
 
 # 套件清單 (Package Manifest) {#package-manifest}
@@ -36,7 +36,7 @@ example = { git = "https://github.com/example/example.git", subdir = "path/to/pa
 my_package = { local = "../my-package" }
 ```
 
-套件也會從其相依性匯入具名位址。舉例來說，Sui 相依性會將 `std` 與 `sui` 位址加入專案中，可在程式碼中取代完整的 `0x1` 與 `0x2` 位址使用。
+套件也會從其相依性匯入具名地址。舉例來說，Sui 相依性會將 `std` 與 `sui` 地址加入專案中，可在程式碼中取代完整的 `0x1` 與 `0x2` 地址使用。
 
 從 Sui CLI 1.45 版開始，若專案中沒有明確列出任何 Sui 系統套件（`std`、`sui`、`system`、`bridge` 與 `deepbook`），這些套件會自動被加入為相依性。
 

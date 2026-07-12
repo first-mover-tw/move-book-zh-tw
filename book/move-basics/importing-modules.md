@@ -8,7 +8,7 @@ Move 藉由允許模組匯入，達成高度模組化與程式碼重用。同一
 
 ## 匯入模組 (Importing a Module) {#importing-a-module}
 
-同一個 package 中定義的模組可以互相匯入。`use` 關鍵字後面接模組路徑，模組路徑由 package 位址（或別名）與模組名稱以 `::` 分隔組成。
+同一個 package 中定義的模組可以互相匯入。`use` 關鍵字後面接模組路徑，模組路徑由 package 地址（或別名）與模組名稱以 `::` 分隔組成。
 
 ```move title="File: sources/module_one.move" file=packages/samples/sources/move-basics/importing-modules.move anchor=module_one
 
@@ -74,15 +74,15 @@ Local = { local = "../my_other_package" }
 
 ## 從另一個 Package 匯入模組 (Importing a Module from Another Package) {#importing-a-module-from-another-package}
 
-通常，package 會在 `[addresses]` 區段中定義自己的位址。你可以使用別名來取代完整位址。舉例來說，你可以用 `sui::coin` 取代 `0x2::coin` 來參照 Sui 的 `coin` 模組。`sui` 這個別名是在 Sui Framework package 的清單檔中定義的。同樣地，`std` 別名是在標準函式庫 package 中定義的，可以用它取代 `0x1` 來存取標準函式庫模組。
+通常，package 會在 `[addresses]` 區段中定義自己的地址。你可以使用別名來取代完整地址。舉例來說，你可以用 `sui::coin` 取代 `0x2::coin` 來參考 Sui 的 `coin` 模組。`sui` 這個別名是在 Sui Framework package 的清單檔中定義的。同樣地，`std` 別名是在標準函式庫 package 中定義的，可以用它取代 `0x1` 來存取標準函式庫模組。
 
-若要從另一個 package 匯入模組，使用 `use` 關鍵字接模組路徑。模組路徑由 package 位址（或別名）與模組名稱組成，以 `::` 分隔。
+若要從另一個 package 匯入模組，使用 `use` 關鍵字接模組路徑。模組路徑由 package 地址（或別名）與模組名稱組成，以 `::` 分隔。
 
 ```move file=packages/samples/sources/move-basics/importing-modules-external.move anchor=external
 
 ```
 
-> 注意：模組位址名稱來自清單檔（`Move.toml`）的 `[addresses]` 區段，而非 `[dependencies]` 區段中使用的名稱。
+> 注意：模組地址名稱來自清單檔（`Move.toml`）的 `[addresses]` 區段，而非 `[dependencies]` 區段中使用的名稱。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 

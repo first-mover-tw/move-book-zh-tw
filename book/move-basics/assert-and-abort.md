@@ -8,7 +8,7 @@ description: Move 語言中的錯誤處理（Error handling in Move）：使用 
 
 > Move 中沒有 catch 機制。中止無法被攔截或恢復：它一定會讓整筆交易失敗。這是一項設計選擇——它用彈性換取簡單性，使得系統不可能陷入部分更新的狀態。
 
-在本節中，我們會探討 Move 提供的中止工具：`abort` 表達式、`assert!` 巨集，以及定義錯誤代碼與錯誤訊息的慣例。
+在本節中，我們會探討 Move 提供的中止工具：`abort` 運算式、`assert!` 巨集，以及定義錯誤代碼與錯誤訊息的慣例。
 
 ## 中止 (Abort) {#abort}
 
@@ -27,7 +27,7 @@ description: Move 語言中的錯誤處理（Error handling in Move）：使用 
 
 ## 省略中止代碼 (Omitting the Abort Code) {#omitting-the-abort-code}
 
-原始碼中可以省略中止代碼——單獨一個 `abort` 表達式在 Move 中是合法的：
+原始碼中可以省略中止代碼——單獨一個 `abort` 運算式在 Move 中是合法的：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=clean_abort
 
@@ -35,7 +35,7 @@ description: Move 語言中的錯誤處理（Error handling in Move）：使用 
 
 不過省略不代表不存在：呼叫端仍然會收到一個 `u64` 中止代碼，由編譯器自動衍生。這個衍生出來的代碼使用下方[錯誤訊息](#error-messages)中描述的 clever-error 編碼方式——它攜帶了模組與失敗發生的原始碼行號，而常數名稱與數值則留空。
 
-這種形式有時被稱為_乾淨中止_（clean abort），很適合用在完全不預期會被執行到的分支——例如涵蓋不可能出現數值的 `match` 表達式的萬用分支（見[列舉與 Match](./enum-and-match)）。由於衍生出來的代碼只指出失敗發生的位置，但完全沒有說明其_意義_，因此對於外部呼叫端實際上有可能觸發的情況，應優先使用明確的代碼或錯誤訊息。
+這種形式有時被稱為_乾淨中止_（clean abort），很適合用在完全不預期會被執行到的分支——例如涵蓋不可能出現數值的 `match` 運算式的萬用分支（見[列舉與 Match](./enum-and-match)）。由於衍生出來的代碼只指出失敗發生的位置，但完全沒有說明其_意義_，因此對於外部呼叫端實際上有可能觸發的情況，應優先使用明確的代碼或錯誤訊息。
 
 ## 斷言! (assert!) {#assert}
 
@@ -65,14 +65,14 @@ Move 2024 引入了 _clever errors_（聰明錯誤）——用 `#[error]` 屬性
 
 ```
 
-這個屬性並不會改變中止的本質：交易仍然會以一個 `u64` 中止代碼失敗。改變的是這個代碼的內容——編譯器會把中止所在的原始碼行號（對於像 `assert!` 這樣的巨集，是呼叫端所在的行號）以及對常數名稱與數值的參照，打包進代碼中。理解此格式的工具——Sui CLI、瀏覽器（explorer）、SDK——會將其解包並顯示完整資訊，類似下方這樣：
+這個屬性並不會改變中止的本質：交易仍然會以一個 `u64` 中止代碼失敗。改變的是這個代碼的內容——編譯器會把中止所在的原始碼行號（對於像 `assert!` 這樣的巨集，是呼叫端所在的行號）以及對常數名稱與數值的參考，打包進代碼中。理解此格式的工具——Sui CLI、瀏覽器（explorer）、SDK——會將其解包並顯示完整資訊，類似下方這樣：
 
 ```text
 Error from 'book::assert_abort::update_value' (line 15), abort 'EValueTooLow':
 "The value is too low, it should be at least 10"
 ```
 
-錯誤訊息省去了查找數字代碼含義的需要，這在面向大眾的應用程式中尤其重要，因為閱讀失敗訊息的人往往不是模組的作者。這種編碼方式的另一面是，clever abort 代碼的數字值取決於原始碼的排版：重新排版模組或新增一行都會改變這個值。應該用名稱來引用這些常數——絕不要用它們編譯後的數字值。這種編碼的確切格式，記錄在 Move 參考手冊的[Clever Errors](./../../reference/abort-and-assert/clever-errors)中。
+錯誤訊息省去了查找數字代碼含義的需要，這在面向大眾的應用程式中尤其重要，因為閱讀失敗訊息的人往往不是模組的作者。這種編碼方式的另一面是，clever abort 代碼的數字值取決於原始碼的排版：重新排版模組或新增一行都會改變這個值。應該用名稱來參考這些常數——絕不要用它們編譯後的數字值。這種編碼的確切格式，記錄在 Move 參考手冊的[Clever Errors](./../../reference/abort-and-assert/clever-errors)中。
 
 ## 測試中的中止 (Aborts in Tests) {#aborts-in-tests}
 

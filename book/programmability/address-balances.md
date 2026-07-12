@@ -1,12 +1,12 @@
 ---
 description:
-  在 Sui 上的位址餘額 (Address balances)：無需 Coin 物件即可在位址直接持有同質化價值，使用 send_funds
+  在 Sui 上的地址餘額 (Address balances)：無需 Coin 物件即可在地址直接持有同質化價值，使用 send_funds
   傳送資金，並使用 Withdrawal 提領。
 ---
 
 # 地址餘額 (Address Balances) {#address-balances}
 
-[`Coin`](./balance-and-coin) 是一種物件：要花費它，交易必須以其 ID 參照它、取得它，並將它傳入。這對離散資產來說運作良好，但這會讓帳戶的資金變成一組必須被追蹤、合併與分割的個別物件。_地址餘額 (Address balances)_ 提供了不同的模型：以流水總數的形式直接持有於地址上的可替代價值，不需要管理任何物件。
+[`Coin`](./balance-and-coin) 是一種物件：要花費它，交易必須以其 ID 參考它、取得它，並將它傳入。這對離散資產來說運作良好，但這會讓帳戶的資金變成一組必須被追蹤、合併與分割的個別物件。_地址餘額 (Address balances)_ 提供了不同的模型：以流水總數的形式直接持有於地址上的可替代價值，不需要管理任何物件。
 
 在底層，該價值存在於以 `(address, type)` 這對鍵值索引的鏈上_累加器 (accumulator)_ 中。某地址上 `T` 的餘額是單一數字，資金傳入時會增加，提領時會減少——這遠比一堆代幣的錢包更接近銀行帳戶的運作方式。
 
@@ -22,7 +22,7 @@ description:
 
 `send_funds` 同時定義在 `Coin` 與 `Balance` 上。對於 `Coin` 而言，它會將代幣轉換為 `Balance` 並加入收款人的累加器；不會留下任何物件，收款人也不需要「接受」任何東西——餘額就這樣直接增加。
 
-> 地址餘額的目前數值可以透過 Move 中的 `balance::settled_funds_value` 讀取，只要提供對系統 `AccumulatorRoot` 物件的參照即可。正如其名稱所示，它回報的是_已結算 (settled)_ 資金，時間點為目前共識提交開始時——在該次提交中產生的存款尚不會反映在其中。
+> 地址餘額的目前數值可以透過 Move 中的 `balance::settled_funds_value` 讀取，只要提供對系統 `AccumulatorRoot` 物件的參考即可。正如其名稱所示，它回報的是_已結算 (settled)_ 資金，時間點為目前共識提交開始時——在該次提交中產生的存款尚不會反映在其中。
 
 ## 提領資金 (Withdrawing Funds) {#withdrawing-funds}
 
@@ -68,7 +68,7 @@ public struct Withdrawal<phantom T: store> has drop {
 
 ## 從物件提領 (Withdrawing from an Object) {#withdrawing-from-an-object}
 
-`Withdrawal` 的擁有者不一定要是帳戶——它也可以是物件。擁有地址餘額的物件可以透過 `withdraw_funds_from_object`，傳入其 `UID` 的可變參照，從自身資金中產生提領：
+`Withdrawal` 的擁有者不一定要是帳戶——它也可以是物件。擁有地址餘額的物件可以透過 `withdraw_funds_from_object`，傳入其 `UID` 的可變參考，從自身資金中產生提領：
 
 ```move file=packages/samples/sources/programmability/address-balances.move anchor=object_withdraw
 
@@ -78,7 +78,7 @@ public struct Withdrawal<phantom T: store> has drop {
 
 ## 重放保護與平行執行 (Replay Protection and Parallel Execution) {#replay-protection-and-parallel-execution}
 
-地址餘額也改變了交易證明自身唯一且無法被重放的方式。一般的錨點是[擁有的物件 (owned object)](./../object/ownership#account-owner-or-single-owner)：每個物件都帶有一個[版本 (version)](./../object/object-model)，系統會在每次變更時遞增；因此參照該物件的已簽署交易只能執行一次——版本一旦變動，該交易就不再匹配。gas 代幣通常會免費提供這個錨點。
+地址餘額也改變了交易證明自身唯一且無法被重放的方式。一般的錨點是[擁有的物件 (owned object)](./../object/ownership#account-owner-or-single-owner)：每個物件都帶有一個[版本 (version)](./../object/object-model)，系統會在每次變更時遞增；因此參考該物件的已簽署交易只能執行一次——版本一旦變動，該交易就不再匹配。gas 代幣通常會免費提供這個錨點。
 
 沒有任何擁有物件輸入的交易——例如直接從地址餘額支付 gas 的交易，或輸入僅為共享物件的交易——沒有任何東西可以作為錨點，因此它必須自行攜帶保護機制。交易資料中有兩個欄位涵蓋這一點。SDK 在建構此類交易時會設定這些欄位，因此這屬於交易_如何被建構_的問題，而非 Move 程式碼中的任何內容：
 

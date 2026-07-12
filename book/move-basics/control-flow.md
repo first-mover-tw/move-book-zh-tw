@@ -1,5 +1,5 @@
 ---
-description: 控制流程 (Control Flow)：Move 中的 if/else 表達式、while 與 loop 結構、break、continue
+description: 控制流程 (Control Flow)：Move 中的 if/else 運算式、while 與 loop 結構、break、continue
   與 return 陳述式。
 ---
 
@@ -18,20 +18,20 @@ description: 控制流程 (Control Flow)：Move 中的 if/else 表達式、while
 
 ## 條件陳述式 (Conditional Statements) {#conditional-statements}
 
-`if` 表達式用於在程式中做出決策。它會評估一個
-[布林值](./primitive-types#booleans)表達式，並在表達式為真時執行一段程式碼區塊。
-搭配 `else`，它可以在表達式為假時執行另一段程式碼區塊。
+`if` 運算式用於在程式中做出決策。它會評估一個
+[布林值](./primitive-types#booleans)運算式，並在運算式為真時執行一段程式碼區塊。
+搭配 `else`，它可以在運算式為假時執行另一段程式碼區塊。
 
-`if` 表達式的語法為：
+`if` 運算式的語法為：
 
 ```move
 if (<bool_expression>) <expression>;
 if (<bool_expression>) <expression> else <expression>;
 ```
 
-就像任何其他表達式一樣，如果後面還有其他表達式，`if` 就需要分號。`else`
+就像任何其他運算式一樣，如果後面還有其他運算式，`if` 就需要分號。`else`
 關鍵字是可選的，除非結果值被賦值給一個變數，因為所有分支都必須回傳一個值以確保型別安全。讓我們透過以下範例來檢視
-`if` 表達式在 Move 中是如何運作的：
+`if` 運算式在 Move 中是如何運作的：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=if_condition
 
@@ -43,9 +43,9 @@ if (<bool_expression>) <expression> else <expression>;
 
 ```
 
-在這個範例中，`if` 表達式的值被賦值給變數 `y`。如果 `x` 大於
+在這個範例中，`if` 運算式的值被賦值給變數 `y`。如果 `x` 大於
 0，`y` 會被賦值為 1；否則，它會被賦值為 0。這裡需要 `else` 區塊，
-因為 `if` 表達式的兩個分支都必須具有相同的型別。當省略 `else` 時，假分支預設為單元值
+因為 `if` 運算式的兩個分支都必須具有相同的型別。當省略 `else` 時，假分支預設為單元值
 `()`，因此將沒有 `else` 的 `if` 賦值給變數會是型別錯誤：
 
 ```move
@@ -54,14 +54,14 @@ let y = if (x > 0) 1;
 //                   else 分支預設為 unit 值 `()`。
 ```
 
-要在兩個以上的分支之間做選擇，`if` 表達式可以用 `else if` 串連起來。這些
+要在兩個以上的分支之間做選擇，`if` 運算式可以用 `else if` 串連起來。這些
 分支由上到下逐一檢查，並採用第一個條件為真的分支：
 
 ```move file=packages/samples/sources/move-basics/control-flow.move anchor=else_if
 
 ```
 
-條件表達式是 Move 中最重要的控制流程陳述式之一。它們評估
+條件運算式是 Move 中最重要的控制流程陳述式之一。它們評估
 使用者提供的輸入或已儲存的資料以做出決策。一個關鍵的使用案例是在
 [`assert!` 巨集](./assert-and-abort)中，它會檢查一個條件是否為真，若不為真則中止執行。
 我們會在本章稍後詳細探討它。
@@ -83,7 +83,7 @@ let y = if (x > 0) 1;
 
 ## while 迴圈 (The `while` Loop) {#the-while-loop}
 
-只要對應的布林表達式求值為 true，`while` 陳述式就會重複執行一段程式碼區塊。就像我們在 `if` 中看到的一樣，布林表達式會在迴圈的每次疊代之前被求值。此外，和條件陳述式一樣，`while` 迴圈是一個表達式，如果後面還有其他表達式，就需要分號。
+只要對應的布林運算式求值為 true，`while` 陳述式就會重複執行一段程式碼區塊。就像我們在 `if` 中看到的一樣，布林運算式會在迴圈的每次疊代之前被求值。此外，和條件陳述式一樣，`while` 迴圈是一個運算式，如果後面還有其他運算式，就需要分號。
 
 `while` 迴圈的語法為：
 
@@ -219,7 +219,7 @@ return <expression>
 
 ```
 
-與許多其他語言不同，函式中最後一個表達式並不需要使用 `return` 陳述式。函式區塊中的最後一個表達式會自動被回傳。然而，當我們想在滿足特定條件時提前退出函式，`return` 陳述式就非常有用。
+與許多其他語言不同，函式中最後一個運算式並不需要使用 `return` 陳述式。函式區塊中的最後一個運算式會自動被回傳。然而，當我們想在滿足特定條件時提前退出函式，`return` 陳述式就非常有用。
 
 ## 進階閱讀 (Further Reading) {#further-reading}
 

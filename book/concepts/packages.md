@@ -1,7 +1,7 @@
 ---
 description:
   理解 Move 套件 (Move packages) — 程式碼組織的單位，包含發布於 Sui 區塊鏈上的模組 (modules)、依賴項
-  (dependencies) 與位址 (addresses)。
+  (dependencies) 與地址 (addresses)。
 ---
 
 # 套件 (Package) {#package}

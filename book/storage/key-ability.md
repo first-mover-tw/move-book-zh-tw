@@ -6,7 +6,7 @@ description: key 能力 (key ability) 讓結構體 (struct) 成為可在 Sui 區
 
 在 [Move 基礎][basic-syntax] 章節中，我們介紹了四種能力中的兩種——[Drop][drop-ability] 與 [Copy][copy-ability]。它們影響一個值在作用域內的行為，與儲存無關。現在該來談談 `key` 能力了——這是讓一個結構體能夠成為儲存單位的能力。
 
-從歷史上看，`key` 能力最初是用來標記一個型別為_全域儲存中的鍵值_。擁有 `key` 能力的型別可以被儲存在頂層，並可以被某個帳戶或位址_擁有_。隨著 [物件模型][object-model] 的引入，`key` 能力成為定義_物件_的關鍵能力。
+從歷史上看，`key` 能力最初是用來標記一個型別為_全域儲存中的鍵值_。擁有 `key` 能力的型別可以被儲存在頂層，並可以被某個帳戶或地址_擁有_。隨著 [物件模型][object-model] 的引入，`key` 能力成為定義_物件_的關鍵能力。
 
 > 在本書中，我們將任何擁有 `key` 能力的結構體稱為_物件_。
 
@@ -21,7 +21,7 @@ description: key 能力 (key ability) 讓結構體 (struct) 成為可在 Sui 區
 
 ```
 
-`new` 函式會建立該物件。全新的 `UID` 只能由 `object::new` 產生，此函式需要傳入 [交易上下文](./../programmability/transaction-context) 的可變參照——因此每個新建立的物件都會取得一個網路上前所未有的識別碼。我們會在 [UID 與 ID](./uid-and-id) 小節中更深入探討 `UID` 型別及其保證。
+`new` 函式會建立該物件。全新的 `UID` 只能由 `object::new` 產生，此函式需要傳入 [交易上下文](./../programmability/transaction-context) 的可變參考——因此每個新建立的物件都會取得一個網路上前所未有的識別碼。我們會在 [UID 與 ID](./uid-and-id) 小節中更深入探討 `UID` 型別及其保證。
 
 ## 與 `copy` 及 `drop` 的關係 (Relation to `copy` and `drop`) {#relation-to-copy-and-drop}
 

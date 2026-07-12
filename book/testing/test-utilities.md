@@ -57,7 +57,7 @@ fun test_balance_update() {
 
 現在錯誤訊息顯示了實際值 (`750`) 與預期值 (`1000`)，讓問題出在哪裡一目瞭然。這個除錯輸出之所以能運作，是因為 `assert_eq!` 呼叫了 [`std::debug::print`](./../move-basics/standard-library.md) 函式，該函式會在斷言失敗時印出這些值。
 
-若要以參照方式比較，請使用 `assert_ref_eq!` 而非 `assert_eq!`：
+若要以參考方式比較，請使用 `assert_ref_eq!` 而非 `assert_eq!`：
 
 ```move
 #[test_only]

@@ -16,7 +16,7 @@ referenceSidebar:
     label: 基本概念 (Basic Concepts)
     items:
       - type: category
-        label: 2. 原生類型 (Primitive Types)
+        label: 2. 原生型別 (Primitive Types)
         link:
           id: primitive-types
           type: doc
@@ -29,7 +29,7 @@ referenceSidebar:
             id: primitive-types/address
           - label: 2.4 向量 (Vector)
             id: primitive-types/vector
-          - label: 2.5 引用 (References)
+          - label: 2.5 參考 (References)
             id: primitive-types/references
           - label: 2.6 元組與單元 (Tuples and Unit)
             id: primitive-types/tuples
@@ -51,7 +51,7 @@ referenceSidebar:
           id: control-flow
           type: doc
         items:
-          - label: 6.1 條件表達式 (Conditional Expressions)
+          - label: 6.1 條件運算式 (Conditional Expressions)
             id: control-flow/conditionals
           - label: 6.2 迴圈 (Loops)
             id: control-flow/loops

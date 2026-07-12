@@ -38,9 +38,9 @@ Sui = { ... }
 [dependencies]
 ```
 
-### 具前綴的具名位址 (Prefix Named Addresses) {#prefix-named-addresses}
+### 具前綴的具名地址 (Prefix Named Addresses) {#prefix-named-addresses}
 
-如果你的套件名稱很通用（例如 `token`）——尤其是當你的專案包含多個套件時——請務必為具名位址加上前綴：
+如果你的套件名稱很通用（例如 `token`）——尤其是當你的專案包含多個套件時——請務必為具名地址加上前綴：
 
 ```toml
 # bad! 沒有指向性，且可能衝突

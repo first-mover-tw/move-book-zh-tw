@@ -28,9 +28,9 @@ description: '函式 (Functions) in Move: declare, call, and return values from 
 
 函式是以 `fun` 關鍵字宣告,後面接著函式名稱(一個有效的 Move
 識別字)、括號中的引數清單,以及一個回傳型別。函式主體是一個
-[區塊 (block)](./expression#blocks),而且就像任何區塊一樣,最後一個沒有分號的表達式就是
+[區塊 (block)](./expression#blocks),而且就像任何區塊一樣,最後一個沒有分號的運算式就是
 函式的回傳值。`return` 關鍵字允許提前回傳——這會在其他
-[控制流程 (control flow)](./control-flow)表達式中一併說明。
+[控制流程 (control flow)](./control-flow)運算式中一併說明。
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=return_nothing
 
@@ -53,7 +53,7 @@ description: '函式 (Functions) in Move: declare, call, and return values from 
 
 Move 函式可以回傳多個值,當你需要從一個函式回傳
 不只一項資料時,這特別有用。回傳型別以型別的元組(tuple)指定,而
-回傳值則以表達式的元組提供:
+回傳值則以運算式的元組提供:
 
 ```move file=packages/samples/sources/move-basics/function.move anchor=tuple_return
 

@@ -79,11 +79,11 @@ _完整文件請參閱 [sui::dynamic_field][dynamic-field-framework] 模組。_
 
 <div class="warning">
 
-可變存取 `UID` 存在安全風險。將你的型別的 `UID` 以可變參照的形式暴露出去，可能導致物件的動態欄位遭到非預期的修改或移除。此外，這也會影響[轉移至物件 (Transfer to Object)](./../storage/transfer-to-object)以及[動態物件欄位 (Dynamic Object Fields)](./dynamic-object-fields)。在將 `UID` 以可變參照的形式暴露之前，請務必了解其影響。
+可變存取 `UID` 存在安全風險。將你的型別的 `UID` 以可變參考的形式暴露出去，可能導致物件的動態欄位遭到非預期的修改或移除。此外，這也會影響[轉移至物件 (Transfer to Object)](./../storage/transfer-to-object)以及[動態物件欄位 (Dynamic Object Fields)](./dynamic-object-fields)。在將 `UID` 以可變參考的形式暴露之前，請務必了解其影響。
 
 </div>
 
-由於動態欄位是附加在 `UID` 上的，它們在其他模組中的可用性取決於該 `UID` 是否可被存取。預設情況下，struct 的可見性 (visibility) 會保護 `id` 欄位，不讓其他模組直接存取它。然而，如果存在一個公開的存取方法，會回傳 `UID` 的參照，那麼動態欄位就可以在其他模組中被讀取。
+由於動態欄位是附加在 `UID` 上的，它們在其他模組中的可用性取決於該 `UID` 是否可被存取。預設情況下，struct 的可見性 (visibility) 會保護 `id` 欄位，不讓其他模組直接存取它。然而，如果存在一個公開的存取方法，會回傳 `UID` 的參考，那麼動態欄位就可以在其他模組中被讀取。
 
 ```move file=packages/samples/sources/programmability/dynamic-fields.move anchor=exposed_uid
 

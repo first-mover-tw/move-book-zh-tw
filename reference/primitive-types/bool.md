@@ -1,11 +1,11 @@
 ---
 title: 布林值 (Bool) | 參考手冊
-description: 布林值型別參考 (bool)：true 與 false 字面值、邏輯運算子 (and, or, not)，以及布林表達式語意。
+description: 布林值型別參考 (bool)：true 與 false 字面值、邏輯運算子 (and, or, not)，以及布林運算式語意。
 ---
 
 # 布林值 (Bool)
 
-`bool` 是 Move 的布林值原生類型，包含 `true` 和 `false` 數值。
+`bool` 是 Move 的布林值原生型別，包含 `true` 和 `false` 數值。
 
 ## 常值 (Literals)
 
@@ -17,7 +17,7 @@ description: 布林值型別參考 (bool)：true 與 false 字面值、邏輯運
 
 `bool` 支援三種邏輯操作：
 
-| 語法                      | 描述                      | 等效表達式                                                |
+| 語法                      | 描述                      | 等效運算式                                                |
 | ------------------------- | ------------------------- | --------------------------------------------------------- |
 | `&&`                      | 短路邏輯與 (logical and)  | `p && q` 等同於 `if (p) q else false`                     |
 | <code>&vert;&vert;</code> | 短路邏輯或 (logical or)   | <code>p &vert;&vert; q</code> 等同於 `if (p) true else q` |

@@ -1,6 +1,6 @@
 ---
 description:
-  TxContext（交易上下文）in Sui Move：在你的智慧合約中存取傳送者位址 (sender address)、交易摘要 (transaction
+  TxContext（交易上下文）in Sui Move：在你的智慧合約中存取傳送者地址 (sender address)、交易摘要 (transaction
   digest)、epoch、燃料價格 (gas price)，並產生唯一 ID (unique IDs)。
 ---
 
@@ -19,7 +19,7 @@ module sui::tx_context;
 /// 這無法由交易自行建構——它是一個特殊權限物件，由
 /// VM 建立並以 `&mut TxContext` 的形式傳入交易的進入點。
 public struct TxContext has drop {
-    /// 簽署目前交易的使用者位址
+    /// 簽署目前交易的使用者地址
     sender: address,
     /// 目前交易的雜湊值
     tx_hash: vector<u8>,
@@ -74,9 +74,9 @@ public struct TxContext has drop {
 ```move
 module sui::tx_context;
 
-/// 建立一個尚未被使用過的 `address`。由於它是物件位址，所以
-/// 永遠不會作為使用者的位址出現。
-/// 換句話說，產生的位址是一個全域唯一的物件 ID。
+/// 建立一個尚未被使用過的 `address`。由於它是物件地址，所以
+/// 永遠不會作為使用者的地址出現。
+/// 換句話說，產生的地址是一個全域唯一的物件 ID。
 public fun fresh_object_address(ctx: &mut TxContext): address;
 ```
 

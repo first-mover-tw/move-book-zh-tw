@@ -5,7 +5,7 @@ description: 在 Move 測試中使用系統物件（system objects）：建立�
 # 在測試中建立與使用系統物件 (Creating and Using System Objects in Tests) {#creating-and-using-system-objects-in-tests}
 
 有些測試需要 `Clock`、`Random` 或 `DenyList` 等系統物件。這些物件在網路上有
-[固定位址](./../appendix/reserved-addresses.md)，並且在創世（genesis）時建立。在測試中，它們預設不存在，因此 Sui Framework 提供了 `#[test_only]` 函式來建立與操作這些物件。
+[固定地址](./../appendix/reserved-addresses.md)，並且在創世（genesis）時建立。在測試中，它們預設不存在，因此 Sui Framework 提供了 `#[test_only]` 函式來建立與操作這些物件。
 
 ## 時鐘 (Clock) {#clock}
 
@@ -210,7 +210,7 @@ fun test_with_all_system_objects() {
 }
 ```
 
-> 在測試中建立的系統物件不會有在正式網路上那種固定位址。
+> 在測試中建立的系統物件不會有在正式網路上那種固定地址。
 > 請使用 `take_shared<T>()` 依型別存取它們，而不是依 ID。
 
 若要依 ID 取得特定的共享物件，請使用 `take_shared_by_id`：

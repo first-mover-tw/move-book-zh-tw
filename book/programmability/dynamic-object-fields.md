@@ -50,7 +50,7 @@ public fun add<Name: copy + drop + store, Value: key + store>(
 - `add` - 為物件新增一個動態物件欄位
 - `remove` - 從物件移除一個動態物件欄位
 - `borrow` - 借用物件的一個動態物件欄位
-- `borrow_mut` - 借用物件的一個動態物件欄位的可變參照
+- `borrow_mut` - 借用物件的一個動態物件欄位的可變參考
 - `exists_` - 檢查動態物件欄位是否存在
 - `exists_with_type` - 檢查動態物件欄位是否以特定型別存在
 

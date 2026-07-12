@@ -1,6 +1,6 @@
 ---
 description:
-  在 Move 測試中模擬 TxContext (TxContext)：建立虛擬情境 (context)、設定發送者位址，並產生新的 UID
+  在 Move 測試中模擬 TxContext (TxContext)：建立虛擬情境 (context)、設定發送者地址，並產生新的 UID
   供單元測試使用。
 ---
 
@@ -13,7 +13,7 @@ description:
 
 ## 建立虛擬情境 (Creating a Dummy Context) {#creating-a-dummy-context}
 
-取得 `TxContext` 最簡單的方式是 `tx_context::dummy()`。它會建立一個具有預設值的情境——寄件者位址為零、epoch 為 0，以及固定的交易雜湊：
+取得 `TxContext` 最簡單的方式是 `tx_context::dummy()`。它會建立一個具有預設值的情境——寄件者地址為零、epoch 為 0，以及固定的交易雜湊：
 
 ```move
 use std::unit_test::assert_eq;
@@ -76,7 +76,7 @@ fun test_with_hint() {
 
 ## 追蹤已建立的物件 (Tracking Created Objects) {#tracking-created-objects}
 
-在測試物件建立時，你可能會想驗證建立了多少個物件，或取得最後建立物件的位址：
+在測試物件建立時，你可能會想驗證建立了多少個物件，或取得最後建立物件的地址：
 
 ```move
 use std::unit_test::{assert_eq, destroy};
@@ -93,7 +93,7 @@ fun test_object_creation_count() {
     let obj2 = my_module::new(ctx);
     assert_eq!(ctx.ids_created(), 2);
 
-    // 取得最近建立物件的位址（由其 ID 衍生）
+    // 取得最近建立物件的地址（由其 ID 衍生）
     let last_id = ctx.last_created_object_id();
     assert_eq!(last_id, object::id(&obj2).to_address());
 
@@ -162,7 +162,7 @@ fun test_with_full_context() {
 | `new_from_hint()`             | 類似 `new`，但從整數產生 tx_hash |
 | `create()`                    | 完全控制，包含 gas 參數          |
 | `ids_created()`               | 檢查已建立的物件數量             |
-| `last_created_object_id()`    | 取得最近建立物件的位址           |
+| `last_created_object_id()`    | 取得最近建立物件的地址           |
 | `increment_epoch_number()`    | 模擬 epoch 進展                  |
 | `increment_epoch_timestamp()` | 模擬時間經過                     |
 

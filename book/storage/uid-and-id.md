@@ -59,7 +59,7 @@ Sui 允許使用*衍生金鑰*（derivation keys）從既有的 UID 衍生出新
 
 ```
 
-衍生位址能降低鏈下索引器的負擔：只要知道父物件的 ID，衍生物件的 ID 就可以透過衍生函式計算得出——這類函式存在於大多數 SDK 中，Move 本身也有提供：
+衍生地址能降低鏈下索引器的負擔：只要知道父物件的 ID，衍生物件的 ID 就可以透過衍生函式計算得出——這類函式存在於大多數 SDK 中，Move 本身也有提供：
 
 ```move
 module sui::derived_object;
@@ -83,9 +83,9 @@ public fun derive_address<K: copy + drop + store>(parent: ID, key: K): address;
 
 ```
 
-## 全新物件位址 (Fresh Object Address) {#fresh-object-address}
+## 全新物件地址 (Fresh Object Address) {#fresh-object-address}
 
-[`TxContext`](./../programmability/transaction-context) 提供了 `fresh_object_address` 函式，該函式使用與 `object::new` 相同的衍生方式產生一個唯一位址——但不會建立 `UID`。這對於需要為鏈下實體提供唯一識別碼的應用程式相當有用——例如市場應用中的 `order_id`。
+[`TxContext`](./../programmability/transaction-context) 提供了 `fresh_object_address` 函式，該函式使用與 `object::new` 相同的衍生方式產生一個唯一地址——但不會建立 `UID`。這對於需要為鏈下實體提供唯一識別碼的應用程式相當有用——例如市場應用中的 `order_id`。
 
 ## 總結 (Summary) {#summary}
 

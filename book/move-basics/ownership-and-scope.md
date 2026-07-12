@@ -130,7 +130,7 @@ error[E06001]: unused value without 'drop'
 
 ```
 
-區塊是一種表達式，其結果值會被移動到外層作用域——與從函式回傳值相同的移動語意：
+區塊是一種運算式，其結果值會被移動到外層作用域——與從函式回傳值相同的移動語意：
 
 ```move file=packages/samples/sources/move-basics/ownership-and-scope.move anchor=block_return
 
@@ -138,7 +138,7 @@ error[E06001]: unused value without 'drop'
 
 ## 下一步 (Next Steps) {#next-steps}
 
-到目前為止，讓函式使用某個值的唯一方式就是交出所有權。如果每個操作都這樣做將會很不切實際——讀取一個欄位不應該需要交出整個值。Move 透過*引用*（references）解決了這個問題，它允許函式借用一個值而不取得所有權。我們會在[引用](./references)一節中介紹它們。
+到目前為止，讓函式使用某個值的唯一方式就是交出所有權。如果每個操作都這樣做將會很不切實際——讀取一個欄位不應該需要交出整個值。Move 透過*參考*（references）解決了這個問題，它允許函式借用一個值而不取得所有權。我們會在[參考](./references)一節中介紹它們。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 

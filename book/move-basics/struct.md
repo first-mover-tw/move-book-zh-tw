@@ -38,7 +38,7 @@ _struct_（結構體）是一種使用者自訂型別，將相關的值群組成
 
 在上面的範例中,我們建立了 `Artist` struct 的一個實例,並將 `name` 欄位設為字串 "The Beatles"。值 `"The Beatles"` 是一個 _字串字面值 (string literal)_:編譯器看到 `name` 欄位預期是 `String`,並自動推斷字面值的型別。字串在[String](./string)一節中有更詳細的說明。
 
-Move 還提供一種簡寫:如果一個局部變數的名稱與欄位名稱相同,欄位名稱只需寫一次即可。這稱為 _欄位名稱雙關 (field name punning)_。
+Move 還提供一種簡寫:如果一個區域變數的名稱與欄位名稱相同,欄位名稱只需寫一次即可。這稱為 _欄位名稱雙關 (field name punning)_。
 
 ```move file=packages/samples/sources/move-basics/struct.move anchor=pack_shorthand
 

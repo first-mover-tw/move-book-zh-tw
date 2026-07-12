@@ -73,7 +73,7 @@ Sui Framework 與 Sui System 套件廣泛使用 builder 進行測試。最值得
 
 ### Sui System 中的 ValidatorBuilder (ValidatorBuilder in Sui System) {#validatorbuilder-in-sui-system}
 
-`sui-system` 套件中的 [`ValidatorBuilder`][validator-builder] 展示了一個針對具有許多欄位（加密金鑰、網路位址、經濟參數）的複雜型別的完整 builder：
+`sui-system` 套件中的 [`ValidatorBuilder`][validator-builder] 展示了一個針對具有許多欄位（加密金鑰、網路地址、經濟參數）的複雜型別的完整 builder：
 
 ```move
 use sui_system::validator_builder;
@@ -92,7 +92,7 @@ fun test_validator_operations() {
 }
 ```
 
-`preset(index)` 函式會回傳一個預先填入有效測試預設值——金鑰、位址與經濟參數——的 builder，對應數個預先定義的 validator 之一，所以測試只需覆寫它們關心的欄位。
+`preset(index)` 函式會回傳一個預先填入有效測試預設值——金鑰、地址與經濟參數——的 builder，對應數個預先定義的 validator 之一，所以測試只需覆寫它們關心的欄位。
 
 ### Sui Framework 中的 TxContextBuilder (TxContextBuilder in Sui Framework) {#txcontextbuilder-in-sui-framework}
 
