@@ -221,30 +221,14 @@ def test_run_validation_error_on_one_file_does_not_stop_others():
     assert ok == 1
 
 
-def _tier_fixture(path):
-    """回傳 (zh@HEAD, en@merge-base)，供測試斷言前置條件仍成立——
-    避免 repo 狀態改變後測試變 vacuous（宣稱的缺陷早已不存在卻照樣綠）。"""
-    import subprocess
-
-    zh = subprocess.run(
-        ["git", "show", f"HEAD:{path}"], capture_output=True, text=True, check=True
-    ).stdout
-    en = subprocess.run(
-        ["git", "show", f"{pipeline.MERGE_BASE}:{path}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-    return zh, en
-
-
 def test_tier_a_when_only_body_forbidden_words():
-    """reference/constants.md：結構一致，內文帶違禁詞「循環」。內文品質
-    缺陷不在 validate 第 1、2 條，不構成降級。"""
-    zh, en = _tier_fixture("reference/constants.md")
+    """結構一致、內文帶違禁詞「循環」：內文品質缺陷不在 validate 第 1、2
+    條，不構成降級。合成資料——原活檔 fixture（reference/constants.md 的
+    legacy 債務）已在債務全清後永久失去前提。"""
+    en = '---\ndescription: "Constants."\n---\n\n# Constants\n\nText.\n'
+    zh = '---\ndescription: "常數。"\n---\n\n# 常數 {#constants}\n\n這段有循環。\n'
     assert validate.check_structure(zh, en) == []
     assert any("違禁詞" in e for e in validate.check_file(zh, en))
-    assert pipeline.tier("reference/constants.md") == "A"
 
 
 def test_rebuild_frontmatter_only_ignores_legacy_body_defects():
