@@ -13,26 +13,9 @@ reference/ 翻譯 WIP（stash acb51154）重疊，不機器重譯、待人工清
 import subprocess
 
 from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, validate
+from scripts.zh_tw.debt import LEGACY_BODY_DEBT
 
-# 只允許「違禁詞 / 簡體殘留字」兩類 body 債務的檔案（2026-07-12 實測 16 檔）。
-LEGACY_BODY_DEBT = frozenset({
-    "book/appendix/glossary.md",
-    "book/appendix/transfer-functions.md",
-    "book/your-first-move/hello-world.md",
-    "reference/constants.md",
-    "reference/control-flow.md",
-    "reference/control-flow/labeled-control-flow.md",
-    "reference/control-flow/loops.md",
-    "reference/equality.md",
-    "reference/extensions.md",
-    "reference/friends.md",
-    "reference/functions.md",
-    "reference/functions/macros.md",
-    "reference/method-syntax.md",
-    "reference/packages.md",
-    "reference/primitive-types/vector.md",
-    "reference/structs.md",
-})
+# 債務清單的單一權威在 scripts/zh_tw/debt.py（check_repo 的 exit code 同源）。
 
 
 def _show(ref: str, path: str) -> str | None:

@@ -5,17 +5,20 @@ permissions:
   pull-requests: write
 
 on:
-  # No schedule: the backfill model (Claude vs Gemini) is a human decision made
-  # via a local A/B, so this workflow runs only when a human dispatches it or
-  # english-main is pushed. Restore the daily cron once the model is chosen:
-  #   schedule:
-  #     - cron: "0 2 * * *"  # Daily at 02:00 UTC
+  # 三個觸發源，缺一不可（前車之鑑：偵測失敗靜默五個月）：
+  # - workflow_dispatch：upstream-sync 在 english-main 前進後顯式 dispatch
+  #   （GITHUB_TOKEN 的 push 不會觸發下面的 push trigger —— GitHub 遞迴防護）。
+  # - schedule：每日排水。BATCH_SIZE 限流下一次只翻一批，cron 保證殘量
+  #   隔日繼續消化，不會像 backfill 前那樣無聲累積。無 stale 時秒退。
+  # - push：人工推進 english-main 時即時觸發。
+  schedule:
+    - cron: "0 3 * * *" # upstream-sync 在 01:00 UTC 先跑
   push:
     branches: [english-main]
   workflow_dispatch:
 
 env:
-  BATCH_SIZE: "5"
+  BATCH_SIZE: "10"
 
 jobs:
   translate:
