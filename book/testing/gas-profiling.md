@@ -8,7 +8,7 @@ description:
 
 理解 gas 消耗有助於最佳化你的 Move 程式碼並估算交易成本。Move 測試框架提供內建工具來測量測試執行過程中的 gas 使用量。除此之外，還有一個專門的工具 `sui analyze-trace` 可用於更深入地分析 gas 使用情形。
 
-> `-s` 顯示的統計數據只反映**計算單位（computation units）**——不包含儲存成本。此外，編譯器的計算單位並不會直接對應到實際的鏈上 gas 費用；它們顯示的是相對的計算複雜度，適合用來比較不同實作之間的差異。若要取得實際的 gas 成本，請將你的套件發佈到 testnet 並測量實際交易。
+> `-s` 顯示的統計資料只反映**計算單位（computation units）**——不包含儲存成本。此外，編譯器的計算單位並不會直接對應到實際的鏈上 gas 費用；它們顯示的是相對的計算複雜度，適合用來比較不同實作之間的差異。若要取得實際的 gas 成本，請將你的套件發佈到 testnet 並測量實際交易。
 
 ## 簡易測量：測試統計 (Simple Measurement: Test Statistics) {#simple-measurement-test-statistics}
 

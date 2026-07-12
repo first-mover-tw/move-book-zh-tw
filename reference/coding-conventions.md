@@ -6,6 +6,6 @@ description:
   development.)'
 ---
 
-# 編碼約定 (Coding Conventions)
+# 編碼慣例 (Coding Conventions)
 
-請參閱 [Sui 的 Move 編碼約定](https://docs.sui.io/concepts/sui-move-concepts/conventions) (英文文件)。
+請參見 [Sui 的 Move 編碼慣例 (Sui's Coding Conventions for Move)](https://docs.sui.io/concepts/sui-move-concepts/conventions)

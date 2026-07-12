@@ -1,19 +1,19 @@
 ---
 title: 迴圈 (Loops) | 參考手冊
 description:
-  迴圈語法參考 (Loop Constructs Reference)：涵蓋 while 迴圈、loop 表達式、for 迴圈、break、continue
+  迴圈語法參考 (Loop Constructs Reference)：涵蓋 while 迴圈、loop 運算式、for 迴圈、break、continue
   以及走訪模式。
 ---
 
-# Move 中的循環結構
+# Move 中的迴圈結構 (Loop Constructs in Move)
 
-許多程式需要對數值進行迭代，Move 提供了 `while` 和 `loop` 形式來允許你在這些情況下編寫程式碼。此外，你還可以在執行期間使用 `break`（退出循環）和 `continue`（跳過本次迭代的剩餘部分並返回控制流結構的頂部）來修改這些循環的控制流。
+許多程式需要對值進行迭代，Move 提供了 `while` 和 `loop` 形式來讓你撰寫這類程式碼。此外，你還可以在執行期間使用 `break`（退出迴圈）和 `continue`（跳過本次迭代的剩餘部分並回到控制結構的最頂部）來修改這些迴圈的控制流。
 
-## `while` 循環
+## `while` 迴圈 (`while` Loops)
 
-`while` 結構會重複主體（類型為 `()` 的表達式），直到條件（類型為 `bool` 的表達式）求值為 `false`。
+`while` 結構會重複執行其主體（型別為單元的運算式），直到條件（型別為 `bool` 的運算式）求值為 `false`。
 
-這是一個簡單的 `while` 循環範例，用於計算從 `1` 到 `n` 的數字總和：
+以下是一個簡單的 `while` 迴圈範例，計算從 `1` 到 `n` 的數字之和：
 
 ```move
 fun sum(n: u64): u64 {
@@ -28,7 +28,7 @@ fun sum(n: u64): u64 {
 }
 ```
 
-也允許無限 `while` 循環：
+也允許無限 `while` 迴圈：
 
 ```move
 fun foo() {
@@ -36,8 +36,8 @@ fun foo() {
 }
 ```
 
-> 使用巨集 (Macros) 而非循環 (Loops) 來實現更簡潔、更具可讀性的目的是一種更好的方式。
-> 本文僅以上述函式 `sum` 為例來體驗巨集函式的魅力：
+> 使用巨集（Macros）代替迴圈是實現更簡潔、更具可讀性目的的更好方法。
+> 本文僅以上述函式 `sum` 為例，來體會巨集函式的魅力：
 
 ```move
 fun sum(n: u64): u64 {
@@ -45,9 +45,9 @@ fun sum(n: u64): u64 {
 }
 ```
 
-### 在 `while` 循環中使用 `break`
+### 在 `while` 迴圈內部使用 `break` (Using `break` Inside of `while` Loops)
 
-在 Move 中，`while` 循環可以使用 `break` 提前退出。例如，假設我們正在尋找向量中某個值的直位置，並希望在找到它時 `break`：
+在 Move 中，`while` 迴圈可以使用 `break` 提前退出。例如，假設我們正在尋找向量中某個值的位置，並且希望在找到它時 `break`：
 
 ```move
 fun find_position(values: &vector<u64>, target_value: u64): Option<u64> {
@@ -71,13 +71,13 @@ fun find_position(values: &vector<u64>, target_value: u64): Option<u64> {
 }
 ```
 
-這裡，如果借用的向量值等於我們的目標值，我們將 `found` 標記設置為 `true`，然後呼叫 `break`，這將導致程式退出循環。
+這裡，如果借用的向量值等於我們的目標值，我們將 `found` 標誌設為 `true` 並呼叫 `break`，這將導致程式退出迴圈。
 
-最後請注意，`while` 循環的 `break` 不能帶有數值：`while` 循環始終回傳單元類型 `()`，因此 `break` 也是如此。
+最後，請注意 `while` 迴圈的 `break` 不能帶有值：`while` 迴圈始終傳回單元型別 `()`，因此 `break` 也是如此。
 
-### 在 `while` 循環中使用 `continue`
+### 在 `while` 迴圈內部使用 `continue` (Using `continue` Inside of `while` Loops)
 
-與 `break` 類似，Move 的 `while` 循環可以呼叫 `continue` 來跳過部分循環主體。這允許我們在未滿足條件時跳過部分計算，如下例所示：
+與 `break` 類似，Move 的 `while` 迴圈可以呼叫 `continue` 來跳過迴圈主體的一部分。如果未滿足條件，這允許我們跳過部分計算，如下例所示：
 
 ```move
 fun sum_even(values: &vector<u64>): u64 {
@@ -95,11 +95,11 @@ fun sum_even(values: &vector<u64>): u64 {
 }
 ```
 
-這段程式碼將遍歷提供的向量。對於每個項目，如果該項目是偶數，它將將其添加到 `even_sum` 中。然而，如果不是偶數，它將呼叫 `continue`，跳過加總操作並返回 `while` 循環的條件檢查。
+這段程式碼將迭代提供的向量。對於每個條目，如果該條目是偶數，它會將其加到 `even_sum` 中。如果不是，它將呼叫 `continue`，跳過加法運算並回到 `while` 迴圈的條件檢查。
 
-## `loop` 表達式
+## `loop` 運算式 (`loop` Expressions)
 
-`loop` 表達式會重複循環主體（類型為 `()` 的表達式），直到遇到 `break`：
+`loop` 運算式重複執行迴圈主體（型別為 `()` 的運算式），直到遇到 `break`：
 
 ```move
 fun sum(n: u64): u64 {
@@ -116,7 +116,7 @@ fun sum(n: u64): u64 {
 }
 ```
 
-如果沒有 `break`，循環將永遠進行下去。在下面的範例中，程式將永遠運行，因為 `loop` 沒有 `break`：
+如果沒有 `break`，迴圈將永遠持續下去。在下例中，程式將永遠執行，因為 `loop` 中沒有 `break`：
 
 ```move
 fun foo() {
@@ -125,9 +125,9 @@ fun foo() {
 }
 ```
 
-### 在 `loop` 中使用 `break` 帶回傳值
+### 在 `loop` 中使用帶值的 `break` (Using `break` with Values in `loop`)
 
-與始終回傳 `()` 的 `while` 循環不同，`loop` 可以使用 `break` 回傳一個數值。這樣做，整個 `loop` 表達式的求值結果就是該類型的數值。例如，我們可以使用 `loop` 和 `break` 重寫上面的 `find_position`，如果找到則立即回傳索引：
+與始終傳回 `()` 的 `while` 迴圈不同，`loop` 可以使用 `break` 傳回一個值。這樣一來，整個 `loop` 運算式的求值結果就是該型別的值。例如，我們可以使用 `loop` 和 `break` 重寫上面的 `find_position`，在找到索引時立即傳回：
 
 ```move
 fun find_position(values: &vector<u64>, target_value: u64): Option<u64> {
@@ -145,11 +145,11 @@ fun find_position(values: &vector<u64>, target_value: u64): Option<u64> {
 }
 ```
 
-這個循環將以選項 (option) 結果中斷，並且作為函式主體中的最後一個表達式，將產生該數值作為最終的函式結果。
+此迴圈將以選項（Option）結果中斷，並且作為函式主體中的最後一個運算式，將產生該值作為最終的函式結果。
 
-### 在 `loop` 表達式中使用 `continue`
+### 在 `loop` 運算式內部使用 `continue` (Using `continue` Inside of `loop` Expressions)
 
-如你所料，`continue` 也可以在 `loop` 內使用。以下是使用 `loop` 配合 `break` 和 `continue` 而非 `while` 重寫的前一個 `sum_even` 函式。
+如你所料，`continue` 也可以在 `loop` 內部使用。以下是使用 `loop` 配合 `break` 和 `continue` 而非 `while` 重寫的 `sum_even` 函式。
 
 ```move
 fun sum_even(values: &vector<u64>): u64 {
@@ -168,15 +168,15 @@ fun sum_even(values: &vector<u64>): u64 {
 }
 ```
 
-## `while` 和 `loop` 的類型
+## `while` 和 `loop` 的型別 (The Type of `while` and `loop`)
 
-在 Move 中，循環是具備類型的表達式。`while` 表達式的類型始終為 `()`。
+在 Move 中，迴圈是具備型別的運算式。`while` 運算式的型別始終為 `()`。
 
 ```move
 let () = while (i < 10) { i = i + 1 };
 ```
 
-如果一個 `loop` 包含一個 `break`，該表達式的類型就是該中斷的回傳類型。沒有數值的中斷俱有單元類型 `()`。
+如果 `loop` 包含 `break`，則運算式的型別為 break 的型別。不帶值的 break 具有單元型別 `()`。
 
 ```move
 (loop { if (i < 10) i = i + 1 else break }: ());
@@ -186,14 +186,14 @@ let x: u64 = loop { if (i < 10) i = i + 1 else break 5 };
 let x: u64 = loop { if (i < 10) { i = i + 1; continue} else break 5 };
 ```
 
-此外，如果一個循環包含多個中斷，它們必須全部回傳相同的類型：
+此外，如果一個迴圈包含多個 break，它們必須全部傳回相同的型別：
 
 ```move
-// 無效 —— 第一個中斷回傳 ()，第二個回傳 5
+// 無效 -- 第一個 break 傳回 ()，第二個傳回 5
 let x: u64 = loop { if (i < 10) break else break 5 };
 ```
 
-如果 `loop` 沒有 `break`，則 `loop` 可以具有任何類型，就像 `return`、`abort`、`break` 和 `continue` 一樣。
+如果 `loop` 沒有 `break`，則 `loop` 可以具有任何型別，就像 `return`、`abort`、`break` 和 `continue` 一樣。
 
 ```move
 (loop (): u64);
@@ -201,4 +201,4 @@ let x: u64 = loop { if (i < 10) break else break 5 };
 (loop (): &vector<vector<u8>>);
 ```
 
-如果你需要甚至更精確的控制流，例如從巢狀循環中跳出，下一章將介紹 Move 中帶標籤的控制流用法。
+如果你需要更精確的控制流（例如跳出巢狀迴圈），下一章將介紹 Move 中標籤控制流（labeled control flow）的使用。

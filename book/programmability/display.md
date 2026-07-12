@@ -28,7 +28,7 @@ Sui Display 的另一項重要特性，是能夠定義範本（template）並在
 
 ## 展示註冊表 (Display Registry) {#display-registry}
 
-每個型別 `T` 恰好對應一個 `Display<T>`，且它位於一個可預測的位址。這兩項特性都來自 _Display Registry_——一個位於保留位址 `0xd` 的系統共享物件（參見[保留位址](./../appendix/reserved-addresses)）。當建立一個展示時，其物件 ID 是從註冊表的 `UID` 與型別 `T` 一起[推導](https://docs.sui.io/references/framework/sui_sui/derived_object)而來。因此，任何人——包括 RPC 與其他客戶端——都能離線計算出 `Display<T>` 的 ID 並直接擷取，而不需要掃描事件或查詢歷史資料。
+每個型別 `T` 恰好對應一個 `Display<T>`，且它位於一個可預測的地址。這兩項特性都來自 _Display Registry_——一個位於保留地址 `0xd` 的系統共享物件（參見[保留地址](./../appendix/reserved-addresses)）。當建立一個展示時，其物件 ID 是從註冊表的 `UID` 與型別 `T` 一起[推導](https://docs.sui.io/references/framework/sui_sui/derived_object)而來。因此，任何人——包括 RPC 與其他客戶端——都能離線計算出 `Display<T>` 的 ID 並直接擷取，而不需要掃描事件或查詢歷史資料。
 
 ```move
 module sui::display_registry;
@@ -55,7 +55,7 @@ public struct DisplayCap<phantom T> has key, store { id: UID }
 
 ## 建立展示 (Creating a Display) {#creating-a-display}
 
-新的 `Display` 可以透過以下兩個函式之一來建立，兩者都接受一個對 `DisplayRegistry` 的可變參照，並回傳 `Display<T>` 以及其對應的 `DisplayCap<T>`：
+新的 `Display` 可以透過以下兩個函式之一來建立，兩者都接受一個對 `DisplayRegistry` 的可變參考，並回傳 `Display<T>` 以及其對應的 `DisplayCap<T>`：
 
 - `display_registry::new<T>` ——接受一個[內部許可 (Internal Permit)](./../move-basics/internal-permit)，因此只能從定義 `T` 的模組中呼叫；
 - `display_registry::new_with_publisher<T>` ——接受 [Publisher](./publisher) 物件，適用於在定義模組之外建立展示的情況。

@@ -8,7 +8,7 @@ description: 模組 (Modules) 是 Move 的建構區塊：學習如何在你的 S
 
 ## 模組宣告 (Module Declaration) {#module-declaration}
 
-模組使用 `module` 關鍵字宣告，後面接套件位址與模組名稱，兩者以 `::` 分隔，接著是分號與模組主體。模組名稱應使用 `snake_case` 風格——全部小寫字母，單詞之間以底線分隔。模組名稱在套件中必須是唯一的。
+模組使用 `module` 關鍵字宣告，後面接套件地址與模組名稱，兩者以 `::` 分隔，接著是分號與模組主體。模組名稱應使用 `snake_case` 風格——全部小寫字母，單詞之間以底線分隔。模組名稱在套件中必須是唯一的。
 
 通常，`sources/` 資料夾中的一個檔案包含一個模組。檔案名稱應與模組名稱一致——例如，`donut_shop` 模組應存放在 `donut_shop.move` 檔案中。你可以在
 [程式碼慣例](./../guides/code-quality-checklist) 章節中閱讀更多關於程式碼慣例的內容。
@@ -19,9 +19,9 @@ description: 模組 (Modules) 是 Move 的建構區塊：學習如何在你的 S
 
 ```
 
-## 位址與具名位址 (Address and Named Address) {#address-and-named-address}
+## 地址與具名地址 (Address and Named Address) {#address-and-named-address}
 
-模組位址可以用兩種方式指定：作為位址 _字面量_（不需要 `@` 前綴），或作為
+模組地址可以用兩種方式指定：作為地址 _字面量_（不需要 `@` 前綴），或作為
 [套件清單 (Package Manifest)](./../concepts/manifest) 中宣告的套件名稱。
 
 ```move file=packages/samples/sources/move-basics/module.move anchor=address_literal

@@ -15,7 +15,7 @@ Binary Canonical Serialization（BCS）是一種用於結構化資料的二進�
 
 BCS 是一種二進位格式，支援最多 256 位元的無號整數、option、boolean、unit（空值）、固定與變動長度的序列，以及 map。此格式的設計具有確定性，意即相同的資料永遠會序列化為相同的 bytes。
 
-> 「BCS 並非自我描述格式。因此，要反序列化一則訊息，必須事先知道該訊息的類型與版面配置」——引自 [README](https://github.com/zefchain/bcs)
+> 「BCS 並非自我描述格式。因此，要反序列化一則訊息，必須事先知道該訊息的型別與版面配置」——引自 [README](https://github.com/zefchain/bcs)
 
 核心規則如下：
 
@@ -44,7 +44,7 @@ Move 中有兩個模組實作了 BCS：[Standard Library](./../move-basics/stand
 
 ## 編碼 (Encoding) {#encoding}
 
-要編碼資料，可使用 `bcs::to_bytes` 函式，它會將資料參照轉換為 byte vector。此函式支援對任何型別進行編碼，包括 struct 與 enum。
+要編碼資料，可使用 `bcs::to_bytes` 函式，它會將資料參考轉換為 byte vector。此函式支援對任何型別進行編碼，包括 struct 與 enum。
 
 ```move
 module std::bcs;
@@ -126,7 +126,7 @@ struct 的編碼不過就是其欄位依序排列而已。以下範例編碼了 
 
 ### 解碼 Enum (Decoding Enums) {#decoding-enums}
 
-[enum](./../move-basics/enum-and-match) 值的編碼方式是以其變體（variant）的索引，後面接著該變體的欄位。解碼的方式與此對應：`peel_enum_tag` 函式會讀取變體索引，接著針對該索引使用 `match` 表達式來解碼對應的欄位：
+[enum](./../move-basics/enum-and-match) 值的編碼方式是以其變體（variant）的索引，後面接著該變體的欄位。解碼的方式與此對應：`peel_enum_tag` 函式會讀取變體索引，接著針對該索引使用 `match` 運算式來解碼對應的欄位：
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode_enum
 

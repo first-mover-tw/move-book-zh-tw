@@ -6,13 +6,13 @@ description:
 
 # 使用 Move Registry (Using Move Registry) {#using-move-registry}
 
-發布在 Sui 上的每個套件都由其位址識別。位址雖然精確，但難以使用：它們不好記憶、在不同網路間有所差異，也無法透露套件的功能或發布者是誰。[Move Registry (MVR)](https://www.moveregistry.com) 透過將人類可讀的名稱（例如 `@potatoes/date`）對應到已發布套件的位址，解決了這個問題。有了 MVR，將外部依賴加入套件只需一道指令，而工具鏈會依據你所建置的網路，解析成對應的正確位址。
+發布在 Sui 上的每個套件都由其地址識別。地址雖然精確，但難以使用：它們不好記憶、在不同網路間有所差異，也無法透露套件的功能或發布者是誰。[Move Registry (MVR)](https://www.moveregistry.com) 透過將人類可讀的名稱（例如 `@potatoes/date`）對應到已發布套件的地址，解決了這個問題。有了 MVR，將外部依賴加入套件只需一道指令，而工具鏈會依據你所建置的網路，解析成對應的正確地址。
 
 本指南將帶你走過使用外部套件的完整流程：在 registry 中尋找套件、將其加入 manifest、在程式碼中呼叫，以及測試結果。本指南假設你已安裝 MVR CLI——若尚未安裝，請參考[安裝 MVR (Install MVR)](./../before-we-begin/install-move-registry-cli) 章節。
 
 ## 套件名稱 (Package Names) {#package-names}
 
-MVR 名稱遵循 `@organization/package-name` 的模式：organization 部分由 [SuiNS](https://suins.io) 名稱支援，而 package name 則由該 organization 的擁有者在其下註冊。一個名稱指向特定網路上已發布的套件，因此同一個名稱在 _mainnet_ 與 _testnet_ 上可能解析為不同位址。此外，由於 Sui 上的套件有版本控管，名稱也可以帶有版本後綴，例如 `@potatoes/date/1`；若未指定，該名稱則解析為最新版本。
+MVR 名稱遵循 `@organization/package-name` 的模式：organization 部分由 [SuiNS](https://suins.io) 名稱支援，而 package name 則由該 organization 的擁有者在其下註冊。一個名稱指向特定網路上已發布的套件，因此同一個名稱在 _mainnet_ 與 _testnet_ 上可能解析為不同地址。此外，由於 Sui 上的套件有版本控管，名稱也可以帶有版本後綴，例如 `@potatoes/date/1`；若未指定，該名稱則解析為最新版本。
 
 本指南使用 [`@potatoes/date`](https://www.moveregistry.com/package/@potatoes/date) 套件——這是一個小型函式庫，能將時間戳記轉換為 `Date` 結構，並以 ISO 8601、UTC（RFC 7231）或自訂格式印出。
 
@@ -52,7 +52,7 @@ $ mvr add @potatoes/date
 date = { r.mvr = "@potatoes/date" }
 ```
 
-與指向儲存庫與修訂版本的 git 依賴不同，這筆記錄只包含 registry 名稱。`r.` 前綴代表 _external resolver_（外部解析器）——這是一個在建置期間由 Sui CLI 呼叫的外掛，用來將名稱轉換為具體的套件位址與原始碼位置。`mvr` 這支執行檔就是該解析器，因此必須安裝並可在 `PATH` 中找到。
+與指向儲存庫與修訂版本的 git 依賴不同，這筆記錄只包含 registry 名稱。`r.` 前綴代表 _external resolver_（外部解析器）——這是一個在建置期間由 Sui CLI 呼叫的外掛，用來將名稱轉換為具體的套件地址與原始碼位置。`mvr` 這支執行檔就是該解析器，因此必須安裝並可在 `PATH` 中找到。
 
 若要將依賴固定於特定版本，可在名稱後加上版本後綴：
 
@@ -85,7 +85,7 @@ BUILDING postcard
 
 ## 使用依賴 (Using the Dependency) {#using-the-dependency}
 
-依賴加入後，其模組即可用一般的 `use` 陳述式匯入。路徑中的位址部分是該依賴自身宣告的具名位址——對 `@potatoes/date` 而言，該位址為 `date`，因此其中的 `date` 模組會以 `date::date` 的形式匯入。
+依賴加入後，其模組即可用一般的 `use` 陳述式匯入。路徑中的地址部分是該依賴自身宣告的具名地址——對 `@potatoes/date` 而言，該地址為 `date`，因此其中的 `date` 模組會以 `date::date` 的形式匯入。
 
 以下範例定義了一個 `Postcard` 物件，它會儲存一個人類可讀的建立時間戳記，使用依賴中的 `Date` 型別以及 `Clock` 物件來取得目前時間：
 
@@ -159,11 +159,11 @@ Test result: OK. Total tests: 1; passed: 1; failed: 0
 
 ## 總結 (Summary) {#summary}
 
-- Move Registry (MVR) 依網路將人類可讀的名稱（例如 `@potatoes/date`）對應到已發布套件的位址。
+- Move Registry (MVR) 依網路將人類可讀的名稱（例如 `@potatoes/date`）對應到已發布套件的地址。
 - `mvr search` 指令（或 [MVR 網站](https://www.moveregistry.com)）可協助尋找套件，並顯示它們發布於哪些網路上。
 - `mvr add` 指令會在 `Move.toml` 中加入依賴記錄；名稱會在建置期間由 `mvr` 執行檔依據作用中的環境進行解析。
 - 已解析的依賴會固定記錄於 `Move.lock` 檔案中，該檔應加入版本控制。
-- 依賴的模組須使用該依賴自身宣告的具名位址來匯入。
+- 依賴的模組須使用該依賴自身宣告的具名地址來匯入。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 

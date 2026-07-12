@@ -1,12 +1,12 @@
 ---
-description: 表達式 (Expressions) 中的字面值、函式呼叫、程式碼區塊，以及在 Move 語言中幾乎所有東西都會回傳一個值。
+description: 運算式 (Expressions) 中的字面值、函式呼叫、程式碼區塊，以及在 Move 語言中幾乎所有東西都會回傳一個值。
 ---
 
-# 表達式 (Expression) {#expression}
+# 運算式 (Expression) {#expression}
 
-在程式語言中，表達式是回傳一個值的程式碼單元。在 Move 中，幾乎所有東西都是表達式，唯一的例外是 `let` 陳述式，它是一個宣告。在本節中，我們將介紹表達式的類型，並引入作用域（scope）的概念。
+在程式語言中，運算式是回傳一個值的程式碼單元。在 Move 中，幾乎所有東西都是運算式，唯一的例外是 `let` 陳述式，它是一個宣告。在本節中，我們將介紹運算式的種類，並引入作用域（scope）的概念。
 
-> 表達式以分號 `;` 分隔。如果分號後面「沒有表達式」，編譯器會插入一個 _unit_ `()` —— 代表空表達式的值。
+> 運算式以分號 `;` 分隔。如果分號後面「沒有運算式」，編譯器會插入一個 _unit_ `()` —— 代表空運算式的值。
 
 ## 字面值 (Literals) {#literals}
 
@@ -25,7 +25,7 @@ description: 表達式 (Expressions) 中的字面值、函式呼叫、程式碼�
 
 ## 運算子 (Operators) {#operators}
 
-算術、邏輯與位元運算子用來對值執行運算。由於這些運算會產生值，因此它們被視為表達式。整數運算子——以及它們會在何時中止（abort）——列在[基本型別](./primitive-types#operations)一節中。
+算術、邏輯與位元運算子用來對值執行運算。由於這些運算會產生值，因此它們被視為運算式。整數運算子——以及它們會在何時中止（abort）——列在[基本型別](./primitive-types#operations)一節中。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=operators
 
@@ -33,7 +33,7 @@ description: 表達式 (Expressions) 中的字面值、函式呼叫、程式碼�
 
 ## 區塊 (Blocks) {#blocks}
 
-區塊是由大括號 `{}` 包住的一系列陳述式與表達式。它會回傳區塊中最後一個表達式的值（注意，這個最終的表達式不能有結尾分號）。區塊是一種表達式，因此它可以用在任何需要表達式的地方。
+區塊是由大括號 `{}` 包住的一系列陳述式與運算式。它會回傳區塊中最後一個運算式的值（注意，這個最終的運算式不能有結尾分號）。區塊是一種運算式，因此它可以用在任何需要運算式的地方。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=block
 
@@ -43,15 +43,15 @@ description: 表達式 (Expressions) 中的字面值、函式呼叫、程式碼�
 
 ## 函式呼叫 (Function Calls) {#function-calls}
 
-我們會在緊接著的下一節——[函式](./function)——中詳細介紹函式。這裡只需要說明的是，函式呼叫是一種表達式：它會呼叫一個函式，並回傳該函式主體中最後一個表達式的值，前提是該最後一個表達式沒有結尾分號。
+我們會在緊接著的下一節——[函式](./function)——中詳細介紹函式。這裡只需要說明的是，函式呼叫是一種運算式：它會呼叫一個函式，並回傳該函式主體中最後一個運算式的值，前提是該最後一個運算式沒有結尾分號。
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=fun_call
 
 ```
 
-## 控制流程表達式 (Control Flow Expressions) {#control-flow-expressions}
+## 控制流程運算式 (Control Flow Expressions) {#control-flow-expressions}
 
-控制流程表達式用來控制程式的執行流程。它們同樣也是表達式，因此會回傳一個值。我們會在[控制流程](./control-flow)一節中介紹控制流程表達式。以下是一個非常簡短的概覽：
+控制流程運算式用來控制程式的執行流程。它們同樣也是運算式，因此會回傳一個值。我們會在[控制流程](./control-flow)一節中介紹控制流程運算式。以下是一個非常簡短的概覽：
 
 ```move file=packages/samples/sources/move-basics/expression.move anchor=control_flow
 

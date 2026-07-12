@@ -7,7 +7,7 @@ description:
 
 # 區域變數與作用域 (Local Variables and Scope) {#local-variables-and-scope}
 
-Move 中的區域變數是詞法（靜態）作用域的。新變數用關鍵字 `let` 引入，這會遮蔽任何先前同名的區域變數。標記為 `mut` 的區域變數是可變的，可以直接更新，也可以透過可變參考來更新。
+Move 中的區域變數是按詞法（靜態）定義作用域的。新變數透過關鍵字 `let` 引入，這會遮蔽（shadow）任何同名的先前區域變數。標記為 `mut` 的區域變數是可變的，既可以直接更新，也可以透過可變參考進行更新。
 
 ## 宣告區域變數 (Declaring Local Variables) {#declaring-local-variables}
 
@@ -20,13 +20,13 @@ let x = 1;
 let y = x + x;
 ```
 
-`let` 也可以在不綁定值到區域變數的情況下使用。
+`let` 也可以在不將值綁定到區域變數的情況下使用。
 
 ```move
 let x;
 ```
 
-之後可以再賦值給該區域變數。
+隨後可以為該區域變數分配一個值。
 
 ```move
 let x;
@@ -37,7 +37,7 @@ if (cond) {
 }
 ```
 
-當試圖從迴圈中取出一個值，而又無法提供預設值時，這會非常有幫助。
+當嘗試在無法提供預設值的情況下從迴圈中提取值時，這非常有用。
 
 ```move
 let x;
@@ -52,7 +52,7 @@ loop {
 }
 ```
 
-若要在賦值*之後*修改區域變數，或以可變參考（`&mut`）借用它，該變數必須宣告為 `mut`。
+要在分配後修改區域變數，或以可變方式借用它（`&mut`），必須將其宣告為 `mut`。
 
 ```move
 let mut x = 0;
@@ -60,16 +60,16 @@ if (cond) x = x + 1;
 foo(&mut x);
 ```
 
-更多細節請參閱下方[賦值](#assignments)章節。
+欲了解更多詳情，請參閱下文的[賦值](#assignments)部分。
 
-### 變數必須先賦值才能使用 (Variables must be assigned before use) {#variables-must-be-assigned-before-use}
+### 變數在使用前必須先賦值 (Variables must be assigned before use) {#variables-must-be-assigned-before-use}
 
-Move 的型別系統會防止區域變數在賦值之前就被使用。
+Move 的型別系統可確保區域變數在賦值之前不會被使用。
 
 ```move
 let x;
 // highlight-error
-x + x // 錯誤！x 在賦值之前就被使用
+x + x // 錯誤！x 在賦值前被使用
 ```
 
 ```move
@@ -86,14 +86,12 @@ while (cond) x = 0;
 x + x // 錯誤！x 並非在所有情況下都有值
 ```
 
-### 有效變數名稱 (Valid variable names) {#valid-variable-names}
+### 有效的變數名稱 (Valid variable names) {#valid-variable-names}
 
-變數名稱可以包含底線 `_`、字母 `a` 到 `z`、字母 `A` 到 `Z`、以及數字 `0`
-到 `9`。變數名稱必須以底線 `_` 或字母 `a` 到 `z` 開頭。它們
-_不能_ 以大寫字母開頭。
+變數名稱可以包含底線 `_`、字母 `a` 到 `z`、字母 `A` 到 `Z` 以及數字 `0` 到 `9`。變數名稱必須以底線 `_` 或字母 `a` 到 `z` 開頭。它們 _不能_ 以大寫字母開頭。
 
 ```move
-// all valid
+// 全部有效
 let x = e;
 let _x = e;
 let _A = e;
@@ -101,24 +99,22 @@ let x0 = e;
 let xA = e;
 let foobar_123 = e;
 
-// all invalid
+// 全部無效
 // highlight-error-start
-let X = e; // ERROR!
-let Foo = e; // ERROR!
+let X = e; // 錯誤！
+let Foo = e; // 錯誤！
 // highlight-error-end
 ```
 
 ### 型別標註 (Type annotations) {#type-annotations}
 
-區域變數的型別幾乎都能被 Move 的型別系統推斷出來。不過，Move
-允許明確的型別標註，這在可讀性、清晰度或除錯時很有用。新增型別標註的
-語法如下：
+區域變數的型別幾乎總能由 Move 的型別系統推論出來。然而，Move 允許顯式的型別標註，這有助於提高可讀性、清晰度或除錯。新增型別標註的語法為：
 
 ```move
-let x: T = e; // "變數 x 的型別為 T，並初始化為運算式 e"
+let x: T = e; // 「型別為 T 的變數 x 被初始化為運算式 e」
 ```
 
-一些明確型別標註的範例：
+顯式型別標註的一些範例：
 
 ```move
 module 0::example;
@@ -134,7 +130,7 @@ fun annotated() {
 }
 ```
 
-請注意，型別標註必須永遠放在模式的右側：
+請注意，型別標註必須始終位於模式的右側：
 
 ```move
 // highlight-error-start
@@ -143,19 +139,19 @@ let (x: &u64, y: &mut u64) = (&0, &mut 1);
 // highlight-error-end
 ```
 
-### 需要標註型別時 (When annotations are necessary) {#when-annotations-are-necessary}
+### 何時需要標註 (When annotations are necessary) {#when-annotations-are-necessary}
 
-在某些情況下，如果型別系統無法推斷型別，就需要局部型別標註。這種情況常發生在無法推斷泛型型別的型別引數時。例如：
+在某些情況下，如果型別系統無法推論型別，則需要局部型別標註。這常見於無法推論泛型型別的型別參數時。例如：
 
 ```move
 // highlight-error-start
-let _v1 = vector[]; // ERROR!
-//        ^^^^^^^^ 無法推斷此型別。請嘗試新增型別註解
+let _v1 = vector[]; // 錯誤！
+//        ^^^^^^^^ 無法推論此型別。請嘗試新增標註
 // highlight-error-end
-let v2: vector<u64> = vector[]; // no error
+let v2: vector<u64> = vector[]; // 無錯誤
 ```
 
-在較罕見的情況下，型別系統可能無法為發散程式碼（divergent code，指後續所有程式碼都無法到達）推斷出型別。[`return`](./functions#return-expression) 和 [`abort`](./abort-and-assert) 都是運算式，可以是任意型別。[`loop`](./control-flow/loops) 如果有 `break`，其型別為 `()`（若有 `break e` 且 `e: T`，則型別為 `T`），但如果 `loop` 中沒有 `break`，它可以是任意型別。如果無法推斷這些型別，就需要型別標註。例如，以下程式碼：
+在極少數情況下，型別系統可能無法為發散（divergent）程式碼（後續程式碼均無法到達的情況）推論型別。[`return`](./functions#return-expression) 和 [`abort`](./abort-and-assert) 都是運算式，可以具有任何型別。[`loop`](./control-flow/loops) 如果有 `break` 則具有型別 `()`（如果有 `break e` 且 `e: T` 則具有型別 `T`），但如果沒有跳出 `loop` 的 break，則它可能具有任何型別。如果無法推論這些型別，則需要提供型別標註。例如，以下程式碼：
 
 ```move
 let a: u8 = return ();
@@ -163,20 +159,20 @@ let b: bool = abort 0;
 let c: signer = loop ();
 
 // highlight-error-start
-let x = return (); // ERROR!
-//  ^ 無法推斷此型別。請嘗試新增型別註解
-let y = abort 0; // ERROR!
-//  ^ 無法推斷此型別。請嘗試新增型別註解
-let z = loop (); // ERROR!
-//  ^ 無法推斷此型別。請嘗試新增型別註解
+let x = return (); // 錯誤！
+//  ^ 無法推論此型別。請嘗試新增標註
+let y = abort 0; // 錯誤！
+//  ^ 無法推論此型別。請嘗試新增標註
+let z = loop (); // 錯誤！
+//  ^ 無法推論此型別。請嘗試新增標註
 // highlight-error-end
 ```
 
-為這段程式碼加上型別標註後，會暴露出其他關於死程式碼（dead code）或未使用區域變數的錯誤，但這個範例仍有助於理解這個問題。
+為這些程式碼新增型別標註會暴露有關無作用程式碼 (dead code) 或未使用區域變數的其他錯誤，但該範例對於理解此問題仍然很有幫助。
 
-### 多重宣告與 tuple (Multiple declarations with tuples) {#multiple-declarations-with-tuples}
+### 透過元組進行多重宣告 (Multiple declarations with tuples) {#multiple-declarations-with-tuples}
 
-`let` 可以用 tuple 一次引入多個區域變數。括號內宣告的區域變數會依序初始化為 tuple 中對應的值。
+`let` 可以使用元組一次性引入多個區域變數。圓括號內宣告的區域變數會被初始化為元組中對應的值。
 
 ```move
 let () = ();
@@ -185,32 +181,32 @@ let (y0, y1, y2) = (0, 1, 2);
 let (z0, z1, z2, z3) = (0, 1, 2, 3);
 ```
 
-表達式的型別必須與 tuple 樣式的元數（arity）完全相符。
+運算式的型別必須與元組模式的基數（arity）完全匹配。
 
 ```move
 // highlight-error
-let (x, y) = (0, 1, 2); // ERROR!
+let (x, y) = (0, 1, 2); // 錯誤！
 // highlight-error
-let (x, y, z, q) = (0, 1, 2); // ERROR!
+let (x, y, z, q) = (0, 1, 2); // 錯誤！
 ```
 
-在同一個 `let` 中不能宣告兩個同名的區域變數。
+不能在單個 `let` 中宣告多個同名的區域變數。
 
 ```move
 // highlight-error
-let (x, x) = 0; // ERROR!
+let (x, x) = 0; // 錯誤！
 ```
 
-宣告的區域變數之可變性可以混合使用。
+宣告的區域變數的可變性可以混用。
 
 ```move
 let (mut x, y) = (0, 1);
 x = 1;
 ```
 
-### 具有結構體的多重宣告 (Multiple declarations with structs) {#multiple-declarations-with-structs}
+### 透過結構體進行多重宣告 (Multiple declarations with structs) {#multiple-declarations-with-structs}
 
-當解構(或匹配)一個結構體時，`let` 也可以同時引入多個區域變數。在這種形式中，`let` 會建立一組區域變數，並初始化為結構體欄位的值。語法看起來像這樣：
+在對結構體進行解構（或與之匹配）時，`let` 也可以一次性引入多個區域變數。在這種形式中，`let` 建立一組區域變數，並依照結構體中欄位的值進行初始化。語法如下：
 
 ```move
 public struct T { f1: u64, f2: u64 }
@@ -222,13 +218,13 @@ let T { f1: local1, f2: local2 } = T { f1: 1, f2: 2 };
 // local2: u64
 ```
 
-具位置的結構體也類似
+對於位置結構體（positional structs）也是如此：
 
 ```move
 public struct P(u64, u64)
 ```
 
-以及
+以及：
 
 ```move
 let P (local1, local2) = P ( 1, 2 );
@@ -236,7 +232,7 @@ let P (local1, local2) = P ( 1, 2 );
 // local2: u64
 ```
 
-以下是一個更複雜的範例：
+這是一個更複雜的範例：
 
 ```move
 module 0::example;
@@ -260,7 +256,7 @@ fun example() {
 }
 ```
 
-結構體的欄位可以身兼二職，同時識別要綁定的欄位*以及*變數的名稱。這有時被稱為雙關(punning)。
+結構體的欄位可以兼任兩職：標識要綁定的欄位 _以及_ 變數名稱。這有時被稱為「雙關（punning）」。
 
 ```move
 let Y { x1, x2 } = e;
@@ -272,28 +268,28 @@ let Y { x1, x2 } = e;
 let Y { x1: x1, x2: x2 } = e;
 ```
 
-如同 tuple 所示，你不能在單一 `let` 中宣告多個同名的區域變數。
+如元組所示，不能在單個 `let` 中宣告多個同名的區域變數。
 
 ```move
 // highlight-error
-let Y { x1: x, x2: x } = e; // ERROR!
+let Y { x1: x, x2: x } = e; // 錯誤！
 ```
 
-同樣地，如同 tuple，所宣告區域變數的可變性可以混合使用。
+與元組一樣，宣告的區域變數的可變性可以混用。
 
 ```move
 let Y { x1: mut x1, x2 } = e;
 ```
 
-此外，可變性標註也可以套用在雙關的欄位上。給出等價的範例
+此外，可變性標註也可以應用於雙關欄位。給出等效的範例：
 
 ```move
 let Y { mut x1, x2 } = e;
 ```
 
-### 對引用進行解構 (Destructuring against references) {#destructuring-against-references}
+### 對參考進行解構 (Destructuring against references) {#destructuring-against-references}
 
-在上面針對 struct 的範例中，`let` 中被綁定的值被移動了，銷毀了 struct 值並綁定其欄位。
+在上述結構體的範例中，`let` 中綁定的值被移動，銷毀了結構體值並綁定了其欄位。
 
 ```move
 public struct T { f1: u64, f2: u64 }
@@ -305,9 +301,9 @@ let T { f1: local1, f2: local2 } = T { f1: 1, f2: 2 };
 // local2: u64
 ```
 
-在這個情境中，struct 值 `T { f1: 1, f2: 2 }` 在 `let` 之後就不再存在了。
+在這種情況下，結構體值 `T { f1: 1, f2: 2 }` 在 `let` 之後不再存在。
 
-如果你希望不移動並銷毀 struct 值，你可以借用它的每個欄位。例如：
+如果你希望不移動且不銷毀結構體值，則可以借用其每個欄位。例如：
 
 ```move
 let t = T { f1: 1, f2: 2 };
@@ -316,7 +312,7 @@ let T { f1: local1, f2: local2 } = &t;
 // local2: &u64
 ```
 
-可變參照也有類似的行為：
+對於可變參考也是如此：
 
 ```move
 let mut t = T { f1: 1, f2: 2 };
@@ -325,7 +321,7 @@ let T { f1: local1, f2: local2 } = &mut t;
 // local2: &mut u64
 ```
 
-這種行為也適用於巢狀 struct。
+此行為也適用於巢狀結構體。
 
 ```move
 module 0::example;
@@ -348,14 +344,14 @@ fun example() {
     *f2 = *f2 + 1;
     assert!(*f1 + *f2 == 4, 42);
 
-    // `struct X and struct Y` 沒有 `drop` 能力，需要手動銷毀
+    // `struct X 和 struct Y` 沒有 `drop` 能力，需要手動銷毀
     let Y { x1: X(_), x2: X(_) } = y;
 }
 ```
 
 ### 忽略值 (Ignoring Values) {#ignoring-values}
 
-在 `let` 綁定中，忽略某些值通常很有幫助。以 `_` 開頭的區域變數會被忽略，不會引入新的變數
+在 `let` 綁定中，忽略某些值通常很有幫助。以 `_` 開頭的區域變數將被忽略，且不會引入新變數。
 
 ```move
 fun three(): (u64, u64, u64) {
@@ -369,29 +365,29 @@ let (x2, _y, z2) = three();
 assert!(x1 + z1 == x2 + z2, 42);
 ```
 
-這在某些時候是必要的，因為編譯器會對未使用的區域變數發出警告
+有時這是必要的，因為編譯器會針對未使用的區域變數發出警告。
 
 ```move
 let (x1, y, z1) = three(); // 警告！
 //       ^ 未使用的區域變數 'y'
 ```
 
-### `let` 陳述式的一般文法 (General `let` grammar) {#general-let-grammar}
+### 通用的 `let` 語法 (General `let` grammar) {#general-let-grammar}
 
-`let` 裡的各種結構都可以組合使用！這樣我們就得到 `let` 陳述式的一般文法：
+`let` 中的所有不同結構都可以組合使用！因此，我們可以得出 `let` 陳述式的通用語法：
 
 > _let-binding_ → **let** _pattern-or-list_ _type-annotation_<sub>_opt_</sub> >
 > _initializer_<sub>_opt_</sub> > _pattern-or-list_ → _pattern_ | **(** _pattern-list_ **)** >
 > _pattern-list_ → _pattern_ **,**<sub>_opt_</sub> | _pattern_ **,** _pattern-list_ >
 > _type-annotation_ → **:** _type_ _initializer_ → **=** _expression_
 
-引入綁定的項目的一般術語是_pattern_（模式）。模式的作用是既可以（可能遞迴地）解構資料，又可以引入綁定。模式的文法如下：
+引入綁定的項目的通稱是 _模式（pattern）_。模式既用於解構資料（可能是遞迴的），也用於引入綁定。模式語法如下：
 
 > _pattern_ -> _local-variable_ | _struct-type_ **\{** _field-binding-list_ **\}** >
 > _field-binding-list_ → _field-binding_ **,**<sub>_opt_</sub> | _field-binding_ **,** >
 > _field-binding-list_ > _field-binding_ → _field_ | _field_ **:** _pattern_
 
-套用此文法的幾個具體範例：
+應用此語法的一些具體範例：
 
 ```move
     let (x, y): (u64, u64) = (0, 1);
@@ -402,49 +398,49 @@ let (x1, y, z1) = three(); // 警告！
 //          ^                        模式清單
 //       ^^^^                        模式清單
 //      ^^^^^^                       模式或清單
-//            ^^^^^^^^^^^^           型別註記
-//                         ^^^^^^^^  初始化式
-//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ let 綁定
+//            ^^^^^^^^^^^^           型別標註
+//                         ^^^^^^^^  初始化程序
+//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ let-綁定
 
     let Foo { f, g: x } = Foo { f: 0, g: 1 };
-//      ^^^                                    struct 型別
+//      ^^^                                    結構體型別
 //            ^                                欄位
 //            ^                                欄位綁定
-//               ^                                欄位
+//               ^                             欄位
 //                  ^                          區域變數
 //                  ^                          模式
 //               ^^^^                          欄位綁定
 //            ^^^^^^^                          欄位綁定清單
 //      ^^^^^^^^^^^^^^^                        模式
 //      ^^^^^^^^^^^^^^^                        模式或清單
-//                      ^^^^^^^^^^^^^^^^^^^^   初始化式
-//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ let 綁定
+//                      ^^^^^^^^^^^^^^^^^^^^   初始化程序
+//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ let-綁定
 ```
 
-## Mutations（賦值） (Mutations) {#mutations}
+## 修改 (Mutations) {#mutations}
 
 ### 賦值 (Assignments) {#assignments}
 
-在區域變數被引入之後（透過 `let` 或作為函式參數），可變的（`mut`）區域變數可以透過賦值來修改：
+在引入區域變數後（無論是透過 `let` 還是作為函式參數），可以透過賦值修改 `mut` 區域變數：
 
 ```move
 x = e
 ```
 
-與 `let` 綁定不同，賦值是運算式。在某些語言中，賦值會回傳被賦予的值，但在 Move 中，任何賦值的型別永遠是 `()`。
+與 `let` 綁定不同，賦值是運算式。在某些語言中，賦值會傳回被分配的值，但在 Move 中，任何賦值的型別始終為 `()`。
 
 ```move
 (x = e: ())
 ```
 
-實務上，賦值作為運算式意味著它們可以在不需要用大括號（`{`...`}`）新增運算式區塊的情況下使用。
+實際上，賦值作為運算式意味著可以在不使用大括號（`{`...`}`）增加新運算式區塊的情況下使用它們。
 
 ```move
 let x;
 if (cond) x = 1 else x = 2;
 ```
 
-賦值使用與 `let` 綁定相似的模式語法，但不含 `mut`：
+賦值使用與 `let` 綁定類似的模式語法方案，但缺少 `mut`：
 
 ```move
 module 0::example;
@@ -455,7 +451,7 @@ fun new_x(): X {
     X { f: 1 }
 }
 
-// 注意：此範例會針對未使用的變數和賦值出現提示。
+// 注意：此範例將會針對未使用的變數和賦值發出警告。
 fun example() {
     let (mut x, mut y, mut f, mut g) = (0, 0, 0, 0);
 
@@ -466,18 +462,18 @@ fun example() {
 }
 ```
 
-請注意，一個區域變數只能有一種型別，因此該區域變數的型別在多次賦值之間不能改變。
+請注意，區域變數只能有一種型別，因此區域變數的型別在賦值之間不能改變。
 
 ```move
 let mut x;
 x = 0;
 // highlight-error
-x = false; // ERROR!
+x = false; // 錯誤！
 ```
 
-### 透過參考修改 (Mutating through a reference) {#mutating-through-a-reference}
+### 透過參考進行修改 (Mutating through a reference) {#mutating-through-a-reference}
 
-除了直接透過賦值修改區域變數外，可變的（`mut`）區域變數也可以透過可變參考 `&mut` 來修改。
+除了使用賦值直接修改區域變數外，還可以透過可變參考 `&mut` 修改 `mut` 區域變數。
 
 ```move
 let mut x = 0;
@@ -504,7 +500,7 @@ let mut x = 0;
 modify_ref(&mut x);
 ```
 
-這種修改方式正是你修改結構體與向量的方法！
+這類修改也是修改結構體和向量的方法！
 
 ```move
 let mut v = vector[];
@@ -512,14 +508,13 @@ vector::push_back(&mut v, 100);
 assert!(*vector::borrow(&v, 0) == 100, 42);
 ```
 
-更多細節請參見 [Move 參考](./primitive-types/references)。
+欲了解更多詳情，請參閱 [Move 參考](./primitive-types/references)。
 
-## Scopes 作用域 (Scopes) {#scopes}
+## 作用域 (Scopes) {#scopes}
 
-任何用 `let` 宣告的區域變數，在_該作用域內_都可以在後續的表達式中使用。
-作用域由表達式區塊 `{`...`}` 宣告。
+任何使用 `let` 宣告的區域變數都可以在該 _作用域（scope）_ 內的所有後續運算式中使用。作用域使用運算式區塊 `{`...`}` 宣告。
 
-區域變數無法在宣告的作用域之外使用。
+區域變數不能在宣告的作用域之外使用。
 
 ```move
 let x = 0;
@@ -527,23 +522,23 @@ let x = 0;
     let y = 1;
 };
 // highlight-error-start
-x + y // ERROR!
-//  ^ 未綁定的區域變數 'y'
+x + y // 錯誤！
+//  ^ 未繫結的區域變數 'y'
 // highlight-error-end
 ```
 
-但是，外層作用域的區域變數_可以_在巢狀作用域中使用。
+但是，外部作用域的區域變數 _可以_ 在巢狀作用域中使用。
 
 ```move
 {
     let x = 0;
     {
-        let y = x + 1; // valid
+        let y = x + 1; // 有效
     }
 }
 ```
 
-區域變數可以在任何能存取到它的作用域中被修改。這個修改會跟著該區域變數留存下來，不論是哪個作用域執行了這次修改。
+區域變數可以在任何可存取的作用域中被修改。該修改將隨區域變數一起保留，無論執行修改的作用域為何。
 
 ```move
 let mut x = 0;
@@ -556,55 +551,55 @@ assert!(x == 1, 42);
 assert!(x == 2, 42);
 ```
 
-### 表達式區塊 (Expression Blocks) {#expression-blocks}
+### 運算式區塊 (Expression Blocks) {#expression-blocks}
 
-表達式區塊是一連串以分號（`;`）分隔的敘述。表達式區塊的結果值就是區塊中最後一個表達式的值。
+運算式區塊是由分號（`;`）分隔的一系列陳述式。運算式區塊的結果值是區塊中最後一個運算式的值。
 
 ```move
 { let x = 1; let y = 1; x + y }
 ```
 
-在這個範例中，區塊的結果是 `x + y`。
+在此範例中，區塊的結果是 `x + y`。
 
-一個敘述可以是 `let` 宣告，也可以是一個表達式。記住，賦值（`x = e`）是型別為 `()` 的表達式。
+陳述式可以是 `let` 宣告，也可以是運算式。請記住，賦值（`x = e`）是型別為 `()` 的運算式。
 
 ```move
 { let x; let y = 1; x = 1; x + y }
 ```
 
-函式呼叫是另一種常見的型別為 `()` 的表達式。會修改資料的函式呼叫通常被當作敘述使用。
+函式呼叫是另一種常見的型別為 `()` 的運算式。修改資料的函式呼叫通常用作陳述式。
 
 ```move
 { let v = vector[]; vector::push_back(&mut v, 1); v }
 ```
 
-這不僅限於 `()` 型別——任何表達式都可以在一連串敘述中被當作敘述使用！
+這不僅限於 `()` 型別——任何運算式都可以在序列中用作陳述式！
 
 ```move
 {
     let x = 0;
-    x + 1; // value is discarded
-    x + 2; // value is discarded
-    b"hello"; // value is discarded
+    x + 1; // 值被捨棄
+    x + 2; // 值被捨棄
+    b"hello"; // 值被捨棄
 }
 ```
 
-但是！如果表達式包含一個資源（不具備 `drop` [能力](./abilities) 的值），你會得到一個錯誤。這是因為 Move 的型別系統保證任何被丟棄的值都具備 `drop` [能力](./abilities)。（所有權必須被轉移，或者該值必須在其宣告模組內被明確銷毀。）
+但是！如果運算式包含資源（不具備 `drop` [能力](./abilities)的值），則會報錯。這是因為 Move 的型別系統保證任何被捨棄的值都具備 `drop` [能力](./abilities)。（所有權必須被轉移，或者該值必須在宣告它的模組內部被顯式銷毀。）
 
 ```move
 {
     let x = 0;
 // highlight-error-start
-    Coin { value: x }; // ERROR!
-//  ^^^^^^^^^^^^^^^^^ 沒有 `drop` 能力的值未被使用
+    Coin { value: x }; // 錯誤！
+//  ^^^^^^^^^^^^^^^^^ 未使用的值，不具備 `drop` 能力
 // highlight-error-end
     x
 }
 ```
 
-如果區塊中沒有最後一個表達式——也就是說，如果結尾有一個尾隨分號 `;`，就會有一個隱含的 [unit `()` 值](https://en.wikipedia.org/wiki/Unit_type)。同樣地，如果表達式區塊是空的，也會有一個隱含的 unit `()` 值。
+如果區塊中不存在最終運算式——即如果存在末尾分號 `;`，則存在隱式的 [單元 `()` 值](https://en.wikipedia.org/wiki/Unit_type)。同樣地，如果運算式區塊為空，則存在隱式的單元 `()` 值。
 
-兩者是等價的
+兩者是等效的
 
 ```move
 { x = x + 1; 1 / x; }
@@ -614,7 +609,7 @@ assert!(x == 2, 42);
 { x = x + 1; 1 / x; () }
 ```
 
-同樣地，以下兩者也是等價的
+同樣地，兩者也是等效的
 
 ```move
 { }
@@ -624,7 +619,7 @@ assert!(x == 2, 42);
 { () }
 ```
 
-表達式區塊本身就是一個表達式，可以用在任何使用表達式的地方。（注意：函式的主體也是一個表達式區塊，但函式主體不能被替換成另一個表達式。）
+運算式區塊本身就是一個運算式，可以在任何使用運算式的地方使用。（注意：函式體也是一個運算式區塊，但函式體不能被另一個運算式替換。）
 
 ```move
 let my_vector: vector<vector<u8>> = {
@@ -635,31 +630,31 @@ let my_vector: vector<vector<u8>> = {
 };
 ```
 
-（在這個範例中並不需要型別標注，加上它只是為了清楚起見。）
+（在此範例中不需要型別標註，新增僅是為了清晰考量。）
 
 ### 遮蔽 (Shadowing) {#shadowing}
 
-如果一個 `let` 引入的區域變數名稱已經存在於作用域中，那個先前的變數在該作用域的其餘部分將無法再被存取。這稱為_遮蔽 (shadowing)_。
+如果 `let` 引入了一個名稱已在作用域中的區域變數，則在該作用域的剩餘部分將無法再存取之前的變數。這被稱為 _遮蔽（shadowing）_。
 
 ```move
 let x = 0;
 assert!(x == 0, 42);
 
-let x = 1; // x is shadowed
+let x = 1; // x 被遮蔽
 assert!(x == 1, 42);
 ```
 
-當一個區域變數被遮蔽時，它不需要保留與之前相同的型別。
+當區域變數被遮蔽時，不需要保留與之前相同的型別。
 
 ```move
 let x = 0;
 assert!(x == 0, 42);
 
-let x = b"hello"; // x is shadowed
+let x = b"hello"; // x 被遮蔽
 assert!(x == b"hello", 42);
 ```
 
-當一個區域變數被遮蔽後，儲存在該區域變數中的值仍然存在，但將無法再被存取。對於不具備 [`drop` 能力](./abilities) 的型別值來說，這點需要特別留意，因為該值的所有權必須在函式結束前被轉移。
+區域變數被遮蔽後，儲存在區域變數中的值仍然存在，但將不再可被存取。對於不具備 [`drop` 能力](./abilities)型別的值，必須牢記這一點，因為值的所有權必須在函式結束前轉移。
 
 ```move
 module 0::example;
@@ -668,17 +663,17 @@ public struct Coin has store { value: u64 }
 
 fun unused_coin(): Coin {
 // highlight-error-start
-    let x = Coin { value: 0 }; // ERROR!
-//      ^ 這個區域變數仍持有一個沒有 `drop` 能力的值
+    let x = Coin { value: 0 }; // 錯誤！
+//      ^ 此區域變數仍包含一個不具備 `drop` 能力的值
     x.value = 1;
     let x = Coin { value: 10 };
     x
-//  ^ 無效的回傳
+//  ^ 無效的傳回
 // highlight-error-end
 }
 ```
 
-當一個區域變數在某個作用域內被遮蔽時，這個遮蔽只在該作用域內有效。一旦該作用域結束，遮蔽就會消失。
+當區域變數在一個作用域內被遮蔽時，遮蔽僅對該作用域有效。一旦該作用域結束，遮蔽就會消失。
 
 ```move
 let x = 0;
@@ -689,7 +684,7 @@ let x = 0;
 assert!(x == 0, 42);
 ```
 
-記住，區域變數在被遮蔽時可以改變型別。
+請記住，當區域變數被遮蔽時，它們可以改變型別。
 
 ```move
 let x = 0;
@@ -702,9 +697,9 @@ assert!(x == 0, 42);
 
 ## 移動與複製 (Move and Copy) {#move-and-copy}
 
-Move 中所有的區域變數都可以用兩種方式使用：`move` 或 `copy`。如果沒有指定其中一種，Move 編譯器能夠推斷應該使用 `copy` 還是 `move`。這代表在上述所有範例中，編譯器都會自動插入 `move` 或 `copy`。區域變數如果不使用 `move` 或 `copy` 就無法被使用。
+Move 中的所有區域變數都可以透過兩種方式使用：`move` 或 `copy`。如果未指定其中之一，Move 編譯器能夠推論應使用 `copy` 還是 `move`。這意味著在上述所有範例中，編譯器都會插入 `move` 或 `copy`。區域變數在不使用 `move` 或 `copy` 的情況下無法使用。
 
-`copy` 對於來自其他程式語言的開發者來說可能感覺最熟悉，因為它會在該運算式中建立變數內值的新副本來使用。使用 `copy`，區域變數可以被使用超過一次。
+對於從其他程式語言轉向 Move 的開發者來說，`copy` 可能感覺最熟悉，因為它會在運算式中使用該變數時，建立變數值的全新副本。使用 `copy` 之後，區域變數可以多次使用。
 
 ```move
 let x = 0;
@@ -712,44 +707,44 @@ let y = copy x + 1;
 let z = copy x + 2;
 ```
 
-任何具有 `copy` [能力 (ability)](./abilities) 的值都可以用這種方式複製，且除非指定了 `move`，否則會隱式地被複製。
+任何具備 `copy` [能力](./abilities)的值都可以以此方式複製，除非指定 `move`，否則將隱式複製。
 
-`move` 會將值從區域變數中取出，*不*複製資料。在 `move` 發生後，該區域變數就無法使用，即使該值的型別具有 `copy` [能力 (ability)](./abilities)。
+`move` 將值從區域變數中取出 _而不_ 複製資料。在執行 `move` 後，即使該值的型別具備 `copy` [能力](./abilities)，該區域變數也將不再可用。
 
 ```move
 let x = 1;
 // highlight-error-start
 let y = move x + 1;
-//      ------ 區域變數在此處被移動
-let z = move x + 2; // Error!
-//      ^^^^^^ 對區域變數 'x' 的無效使用
+//      ------ 區域變數在此處已移動
+let z = move x + 2; // 錯誤！
+//      ^^^^^^ 區域變數 'x' 的用法無效
 // highlight-error-end
 y + z
 ```
 
 ### 安全性 (Safety) {#safety}
 
-Move 的型別系統會防止值在被移動後被使用。這與 [`let` 宣告](#let-bindings) 中描述的安全檢查相同，該檢查會防止區域變數在被賦值前被使用。
+Move 的型別系統將阻止值在被移動後再次使用。這與 [`let` 宣告](#let-bindings) 中描述的安全檢查相同，用於防止區域變數在賦值之前被使用。
 
-<!-- For more information, see TODO future section on ownership and move semantics. -->
+<!-- 欲瞭解更多資訊，請參見 TODO 未來關於所有權和移動語義的章節。 -->
 
-### 推斷 (Inference) {#inference}
+### 推論 (Inference) {#inference}
 
-如上所述，如果沒有明確指示，Move 編譯器會推斷出 `copy` 或 `move`。其演算法相當簡單：
+如上所述，如果未指明，Move 編譯器將推論 `copy` 或 `move`。其演算法非常簡單：
 
-- 任何具有 `copy` [能力 (ability)](./abilities) 的值都會被賦予 `copy`。
-- 任何參照（不論是可變的 `&mut` 還是不可變的 `&`）都會被賦予 `copy`。
-  - 除非在特殊情況下，為了讓借用檢查器 (borrow checker) 的錯誤可預期而被設為 `move`。這會在該參照不再被使用後發生。
-- 其他任何值都會被賦予 `move`。
+- 任何具備 `copy` [能力](./abilities)的值都被賦予 `copy`。
+- 任何參考（包括可變 `&mut` 和不可變 `&`）都被賦予 `copy`。
+  - 除特殊情況外，為了產生可預測的借用檢查器錯誤，參考會被設為 `move`。這發生在參考不再被使用後。
+- 其他任何值都被賦予 `move`。
 
-給定以下結構
+給定結構體：
 
 ```move
 public struct Foo has copy, drop, store { f: u64 }
 public struct Coin has store { value: u64 }
 ```
 
-我們有以下範例
+我們有以下範例：
 
 ```move
 let s = b"hello";

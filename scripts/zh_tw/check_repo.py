@@ -13,7 +13,7 @@ glossary/簡體殘留字則是彙總全語料的違規數）。
 import sys
 from pathlib import Path
 
-from . import debt, frontmatter, glossary, validate
+from . import frontmatter, glossary, validate
 
 
 def collect() -> dict[str, str]:
@@ -33,27 +33,20 @@ def main() -> int:
     for e in link_errs:
         print(e, file=sys.stderr)
 
-    # debt.LEGACY_BODY_DEBT 內的違規：報告但不計入 exit code（使用者裁決
-    # 保留的 legacy 債務；不放行的話 translate workflow 的 validate 步驟
-    # 每次必紅，自動化不可能綠）。清單外的違規照常擋。
     glossary_total = 0
     for path, text in sorted(files.items()):
         _, body = frontmatter.split(text)
         hits = glossary.scan(body)
         for bad, n in sorted(hits.items()):
-            tag = "（legacy 債務）" if path in debt.LEGACY_BODY_DEBT else ""
-            print(f"{path}: 違禁詞 {bad} x{n}{tag}", file=sys.stderr)
-            if path not in debt.LEGACY_BODY_DEBT:
-                glossary_total += n
+            print(f"{path}: 違禁詞 {bad} x{n}", file=sys.stderr)
+            glossary_total += n
 
     simplified_total = 0
     for path, text in sorted(files.items()):
         _, body = frontmatter.split(text)
         for line, ch in validate.simplified_chars(body):
-            tag = "（legacy 債務）" if path in debt.LEGACY_BODY_DEBT else ""
-            print(f"{path}: 簡體殘留字 {ch!r}（第 {line + 1} 行）{tag}", file=sys.stderr)
-            if path not in debt.LEGACY_BODY_DEBT:
-                simplified_total += 1
+            print(f"{path}: 簡體殘留字 {ch!r}（第 {line + 1} 行）", file=sys.stderr)
+            simplified_total += 1
 
     # frontmatter 可翻譯欄位的值另掃一輪：實測 5 個檔的違禁詞藏在
     # description/title 裡，body-only 掃描對它們回報假乾淨。

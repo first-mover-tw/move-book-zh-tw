@@ -26,7 +26,7 @@ description:
 
 ```
 
-`contains` 函式可以回答成員資格的問題，而集合內容可以透過引用以 `keys` 讀回，或是透過 `into_keys` 取出成一個純粹的 `vector`——例如，可以用[向量巨集](./../move-basics/vector#vector-macros)對其進行走訪。
+`contains` 函式可以回答成員資格的問題，而集合內容可以透過參考以 `keys` 讀回，或是透過 `into_keys` 取出成一個純粹的 `vector`——例如，可以用[向量巨集](./../move-basics/vector#vector-macros)對其進行走訪。
 
 > `VecSet` 的元素型別必須具備 [`copy`](./../move-basics/copy-ability) 與 [`drop`](./../move-basics/drop-ability) 能力。這對原生型別與簡單的資料 struct 來說是成立的，但排除了在集合中儲存資產的可能性。
 
@@ -38,7 +38,7 @@ description:
 
 ```
 
-和 `VecSet` 一樣，`VecMap` 在嘗試 `insert` 一個已存在的鍵時會中止——它*不會*悄悄地覆寫舊值。要取代一個值，需要透過可變引用（如上面的範例所示），或是先移除舊的項目。`VecMap` 的鍵必須具備 [`copy`](./../move-basics/copy-ability) 能力，而值則可以是任何型別。
+和 `VecSet` 一樣，`VecMap` 在嘗試 `insert` 一個已存在的鍵時會中止——它*不會*悄悄地覆寫舊值。要取代一個值，需要透過可變參考（如上面的範例所示），或是先移除舊的項目。`VecMap` 的鍵必須具備 [`copy`](./../move-basics/copy-ability) 能力，而值則可以是任何型別。
 
 ## 限制 (Limitations) {#limitations}
 

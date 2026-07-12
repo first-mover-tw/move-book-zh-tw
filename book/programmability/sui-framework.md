@@ -87,9 +87,9 @@ _為了方便起見，我們將 Sui Framework 中的模組分成多個類別，�
 [sui::versioned](https://docs.sui.io/references/framework/sui/versioned)。完整清單請參閱
 [框架文件](https://docs.sui.io/references/framework)。
 
-## 匯出位址 (Exported Addresses) {#exported-addresses}
+## 匯出地址 (Exported Addresses) {#exported-addresses}
 
-Sui Framework 匯出了兩個具名位址：`sui = 0x2`，以及來自 std 依賴的 `std = 0x1`。
+Sui Framework 匯出了兩個具名地址：`sui = 0x2`，以及來自 std 依賴的 `std = 0x1`。
 
 ## 隱式匯入 (Implicit Imports) {#implicit-imports}
 

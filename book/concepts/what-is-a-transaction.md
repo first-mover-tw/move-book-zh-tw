@@ -32,7 +32,7 @@ description: 了解如何 Sui 交易運作：結構、指令、gas 支付方式�
   - [`std::option::Option<T>`](../move-basics/option)，其中 `T` 為 pure 型別。
   - [`sui::object::ID`](../storage/uid-and-id)，通常指向一個物件。另見
     [What is an Object](../object/object-model)。
-- Object 引數：這些是交易將存取的物件或物件參照。要讓交易成功，object 引數必須是共享物件、凍結物件，或是交易 sender 所擁有的物件。詳見
+- Object 引數：這些是交易將存取的物件或物件參考。要讓交易成功，object 引數必須是共享物件、凍結物件，或是交易 sender 所擁有的物件。詳見
   [Object Model](../object)。
 
 ## 指令 (Commands) {#commands}

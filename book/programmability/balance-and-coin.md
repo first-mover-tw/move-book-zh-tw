@@ -72,10 +72,10 @@ public struct Coin<phantom T> has key, store {
 
 ## 貨幣與 Coin Registry (Currency and the Coin Registry) {#currency-and-the-coin-registry}
 
-單一的 `Coin<T>` 完全沒有透露代幣 `T` 本身的任何資訊：它的名稱、符號、使用幾位小數，或其供應量如何管理。這些資訊每個型別只會儲存一次，存放在 `Currency<T>` 物件中，而所有貨幣都由 `CoinRegistry` 追蹤——這是一個具有保留位址 `0xc` 的系統物件：
+單一的 `Coin<T>` 完全沒有透露代幣 `T` 本身的任何資訊：它的名稱、符號、使用幾位小數，或其供應量如何管理。這些資訊每個型別只會儲存一次，存放在 `Currency<T>` 物件中，而所有貨幣都由 `CoinRegistry` 追蹤——這是一個具有保留地址 `0xc` 的系統物件：
 
 ```move
-/// 位於位址 `0xc` 的系統物件，儲存所有已註冊
+/// 位於地址 `0xc` 的系統物件，儲存所有已註冊
 /// coin 型別的 coin 資料。
 public struct CoinRegistry has key { id: UID }
 ```
@@ -118,7 +118,7 @@ public struct Currency<phantom T> has key {
 `coin_registry` 模組是建立貨幣的*唯一*方式：它取代了原本的
 `coin::create_currency` 函式，後者將中繼資料儲存在獨立的
 `CoinMetadata` 物件中（我們會在[本章節末尾](#legacy-coin-metadata)涵蓋兩者的差異）。它提供了兩種建立貨幣的方式，兩者都會產生相同的結果：一個共享的 `Currency<T>` 物件，帶有一個
-[衍生位址](https://docs.sui.io/references/framework/sui_sui/derived_object)，因此任何代幣型別的中繼資料都能被找到，而不需要知道其物件 ID。
+[衍生地址](https://docs.sui.io/references/framework/sui_sui/derived_object)，因此任何代幣型別的中繼資料都能被找到，而不需要知道其物件 ID。
 
 ### 在 `init` 中建立貨幣 (Creating a Currency in `init`) {#creating-a-currency-in-init}
 
@@ -138,7 +138,7 @@ public struct Currency<phantom T> has key {
   [供應量與 TreasuryCap](#supply-and-treasurycap)章節中探討。
 
 `finalize` 呼叫還會多回傳一個能力——`MetadataCap<T>`，它控制對貨幣中繼資料的更新。然而，在 OTW 流程中，`finalize` 並不會完成註冊。
-因為 `init` 是在發布過程中執行的，早於 `CoinRegistry` 能被當作參數傳入之前，`Currency<GOLD>` 物件會走一條迂迴路徑：`finalize` 會將它轉移到註冊表的位址，
+因為 `init` 是在發布過程中執行的，早於 `CoinRegistry` 能被當作參數傳入之前，`Currency<GOLD>` 物件會走一條迂迴路徑：`finalize` 會將它轉移到註冊表的地址，
 在那裡等待第二個、收尾的步驟——`finalize_registration`：
 
 ```move
@@ -155,8 +155,8 @@ public fun finalize_registration<T>(
 ```
 
 這個函式[接收](./../storage/transfer-to-object)被送到註冊表的 `Currency<T>`，
-並將它重新建立為一個具有衍生位址的共享物件。在它被呼叫之前，註冊
-是不完整的：`Currency<GOLD>` 並未被共享，無法在其衍生位址找到，也
+並將它重新建立為一個具有衍生地址的共享物件。在它被呼叫之前，註冊
+是不完整的：`Currency<GOLD>` 並未被共享，無法在其衍生地址找到，也
 無法傳入任何讀取或更新它的函式。這個呼叫是無需權限的——任何人
 都可以進行呼叫，索引器也經常這麼做——但不應該將它交由運氣決定：
 
@@ -254,11 +254,11 @@ public struct TreasuryCap<phantom T> has key, store {
 
 ## 管理中繼資料 (Managing Metadata) {#managing-metadata}
 
-貨幣的名稱、符號、描述與圖示 URL 可以在建立後透過 `set_name`、`set_symbol`、`set_description` 與 `set_icon_url` 函式更新——每個都需要一個 `MetadataCap<T>` 的參照。就像 `TreasuryCap` 一樣，`MetadataCap` 可以用 `delete_metadata_cap` 刪除，讓中繼資料永遠不可變——或者一開始就不去取得它：`finalize_and_delete_metadata_cap` 會從一開始就以不可變的中繼資料來完成該貨幣的設定。無論哪種方式，刪除動作都會記錄在 `Currency` 中，因此該 cap 永遠無法再次被取得。
+貨幣的名稱、符號、描述與圖示 URL 可以在建立後透過 `set_name`、`set_symbol`、`set_description` 與 `set_icon_url` 函式更新——每個都需要一個 `MetadataCap<T>` 的參考。就像 `TreasuryCap` 一樣，`MetadataCap` 可以用 `delete_metadata_cap` 刪除，讓中繼資料永遠不可變——或者一開始就不去取得它：`finalize_and_delete_metadata_cap` 會從一開始就以不可變的中繼資料來完成該貨幣的設定。無論哪種方式，刪除動作都會記錄在 `Currency` 中，因此該 cap 永遠無法再次被取得。
 
 ## 讀取 Currency (Reading a Currency) {#reading-a-currency}
 
-`Currency<T>` 不僅供其建立者使用。作為一個具有衍生地址的共享物件，任何程式碼類型都能找到它，並以不可變參照的方式傳入任何函式，而 registry 為每個欄位都提供了 getter：`decimals`、`name`、`symbol`、`description`、`icon_url`，供給量檢查用的 `is_supply_fixed` 和 `is_supply_burn_only`，以及用來定位此貨幣各項能力（或驗證它們已被刪除，deny cap 屬於_受監管_貨幣，於[下方](#regulated-currencies)介紹）的 `treasury_cap_id`、`metadata_cap_id` 和 `deny_cap_id` 函式。
+`Currency<T>` 不僅供其建立者使用。作為一個具有衍生地址的共享物件，任何程式碼型別都能找到它，並以不可變參考的方式傳入任何函式，而 registry 為每個欄位都提供了 getter：`decimals`、`name`、`symbol`、`description`、`icon_url`，供給量檢查用的 `is_supply_fixed` 和 `is_supply_burn_only`，以及用來定位此貨幣各項能力（或驗證它們已被刪除，deny cap 屬於_受監管_貨幣，於[下方](#regulated-currencies)介紹）的 `treasury_cap_id`、`metadata_cap_id` 和 `deny_cap_id` 函式。
 
 這使得 coin metadata 成為應用程式能在_鏈上_信賴的東西：借貸協議可以要求作為抵押品的 coin 供給量必須固定，而下方的函式使用 `decimals` 來確保只接受以貨幣整數單位存入的款項：
 
@@ -287,7 +287,7 @@ public struct TreasuryCap<phantom T> has key, store {
 ## 總結 (Summary) {#summary}
 
 - `Coin<T>` 是可替代代幣的主要抽象：一個可以被擁有、轉移，並傳入交易的物件；
-- `Balance<T>` 是 `Coin` 內部的計量單位：一個非物件的值，不能被複製或捨棄，只能被移動、拆分和合併——這是型別用來保存資金所嵌入的類型；
+- `Balance<T>` 是 `Coin` 內部的計量單位：一個非物件的值，不能被複製或捨棄，只能被移動、拆分和合併——這是型別用來保存資金所嵌入的型別；
 - `Currency<T>` 描述代幣型別：中繼資料、供應量狀態，以及法規狀態。它是透過 `CoinRegistry` 系統物件建立的，可以在 `init` 中用 OTW 建立，也可以動態建立——並且可以被任何模組在鏈上*讀取*；
 - `Supply<T>` 是計量權威：`Balance` 值被建立和銷毀的唯一關卡。`TreasuryCap<T>` 是它的物件形式——它控制鑄造與銷毀，並且可以被放棄以固定供應量；
 - `MetadataCap<T>` 控制中繼資料的更新，可以被刪除以使其變為不可變；

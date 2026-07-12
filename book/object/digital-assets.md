@@ -12,7 +12,7 @@ description:
 
 <!-- note: consider "native" -> "fine-grained" -->
 
-然而，以太坊的程式設計模型缺乏對資產的原生表示方式。從外部來看，ERC-20 代幣的行為就像資產一樣，但在合約內部，它僅僅是帳本中的條目——一個位址對應餘額的映射——在語言層面上並不存在真正代表資產的值。從一開始，Move 的目標就是為資產提供第一等抽象，為思考與撰寫資產相關程式開啟了新的途徑。
+然而，以太坊的程式設計模型缺乏對資產的原生表示方式。從外部來看，ERC-20 代幣的行為就像資產一樣，但在合約內部，它僅僅是帳本中的條目——一個地址對應餘額的映射——在語言層面上並不存在真正代表資產的值。從一開始，Move 的目標就是為資產提供第一等抽象，為思考與撰寫資產相關程式開啟了新的途徑。
 
 <!-- Move was initially created in 2018 as part of the Libra project. The language was designed to address shortcomings in existing smart contract languages, especially in handling assets and access control. The Move language aims to provide first-class abstractions for these concepts, improving the safety and productivity of smart contract programming. -->
 

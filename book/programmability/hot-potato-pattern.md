@@ -53,7 +53,7 @@ description: Hot Potato 模式 (Hot Potato Pattern)：Move 中一種沒有任何
 
 如[上方範例](#example-usage)所示，熱馬鈴薯對於借用非常有效，
 可以保證借出的值會歸還到正確的容器。雖然該範例聚焦於
-儲存在 `Option` 中的值，但同樣的 pattern 也可以套用到任何其他儲存類型，例如
+儲存在 `Option` 中的值，但同樣的 pattern 也可以套用到任何其他儲存型別，例如
 [動態欄位](./dynamic-fields)。
 
 ### 閃電貸 (Flash Loans) {#flash-loans}

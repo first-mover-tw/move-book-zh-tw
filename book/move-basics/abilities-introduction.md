@@ -71,7 +71,7 @@ public struct Wrapper has copy, drop {
 }
 ```
 
-> 除了[參照](./references)以外的所有內建型別都具有 `copy`、`drop` 和 `store` 能力，而參照具有 `copy` 和 `drop`。容器型別如 [`vector`](./vector) 和 [`Option`](./option) _有條件地_ 支援 `copy`、`drop` 和 `store`——一個 vector 只有在其元素可以被複製的情況下才能被複製。
+> 除了[參考](./references)以外的所有內建型別都具有 `copy`、`drop` 和 `store` 能力，而參考具有 `copy` 和 `drop`。容器型別如 [`vector`](./vector) 和 [`Option`](./option) _有條件地_ 支援 `copy`、`drop` 和 `store`——一個 vector 只有在其元素可以被複製的情況下才能被複製。
 
 ## 沒有能力 (No Abilities) {#no-abilities}
 

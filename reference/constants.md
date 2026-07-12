@@ -11,7 +11,7 @@ description: Move 常數 (Move Constants) 參考手冊：定義編譯時期值�
 
 ## 宣告 (Declaration)
 
-常數宣告以 `const` 關鍵字開始，後接名稱、類型和值。
+常數宣告以 `const` 關鍵字開始，後接名稱、型別和值。
 
 ```text
 const <name>: <type> = <expression>;
@@ -49,11 +49,11 @@ const ADDRESS_42: address = @0x42;
 
 ## 有效的運算式 (Valid Expressions)
 
-目前常數限制於原始類型 `bool`、`u8`、`u16`、`u32`、`u64`、`u128`、`u256`、`address` 和 `vector<T>`，其中 `T` 是常數的有效類型。
+目前常數限制於原始型別 `bool`、`u8`、`u16`、`u32`、`u64`、`u128`、`u256`、`address` 和 `vector<T>`，其中 `T` 是常數的有效型別。
 
 ### 值 (Values)
 
-常見的情況是，`const` 被賦予其類型的簡單值或字面值。舉例
+常見的情況是，`const` 被賦予其型別的簡單值或字面值。舉例
 
 ```move
 const MY_BOOL: bool = false;
@@ -88,14 +88,14 @@ const SHIFT_BY_A_LOT: u64 = 1 << 100; // 錯誤！
 const NEGATIVE_U64: u64 = 0 - 1; // 錯誤！
 ```
 
-此外，常數可以在同一模組內引用其他常數。
+此外，常數可以在同一模組內參考其他常數。
 
 ```move
 const BASE: u8 = 4;
 const SQUARE: u8 = BASE * BASE;
 ```
 
-但注意，常數定義中的任何循環都會導致錯誤。
+但注意，常數定義之間的任何環狀依賴 (cycle) 都會導致錯誤。
 
 ```move
 const A: u16 = B + 1;

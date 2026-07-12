@@ -11,7 +11,7 @@ description: Sui 鏈上隨機性 (Onchain Randomness in Sui)：使用 Random 共
 
 ## `Random` 物件 (The `Random` Object) {#the-random-object}
 
-`Random` 物件定義於 `sui::random` 模組中，並擁有保留位址 `0x8`（參見[保留位址](./../appendix/reserved-addresses)）。這個位址在每個網路上都相同——localnet、devnet、testnet 與 mainnet——因此可以安全地寫死（hardcode）在應用程式與客戶端程式碼中。與[時鐘（Clock）](./epoch-and-time#time)物件類似，它是一個共享物件，無法以可變的方式存取——嘗試以可變參照取得它的交易會失敗。這使得隨機性可以被平行存取，同時保護全域狀態不被竄改。
+`Random` 物件定義於 `sui::random` 模組中，並擁有保留地址 `0x8`（參見[保留地址](./../appendix/reserved-addresses)）。這個地址在每個網路上都相同——localnet、devnet、testnet 與 mainnet——因此可以安全地寫死（hardcode）在應用程式與客戶端程式碼中。與[時鐘（Clock）](./epoch-and-time#time)物件類似，它是一個共享物件，無法以可變的方式存取——嘗試以可變參考取得它的交易會失敗。這使得隨機性可以被平行存取，同時保護全域狀態不被竄改。
 
 ```move
 module sui::random;
@@ -100,7 +100,7 @@ Sui 在協定層級真正強制執行的，是交易組合方式：在一個可�
 
 ## 從交易中呼叫 (Calling from a Transaction) {#calling-from-a-transaction}
 
-要呼叫一個接受 `&Random` 的 entry 函式，請將位於 `0x8` 的 `Random` 物件作為引數傳入——如前所述，這個位址在每個網路上都相同。舉例來說，使用 Sui CLI：
+要呼叫一個接受 `&Random` 的 entry 函式，請將位於 `0x8` 的 `Random` 物件作為引數傳入——如前所述，這個地址在每個網路上都相同。舉例來說，使用 Sui CLI：
 
 ```bash
 sui client ptb \
@@ -117,7 +117,7 @@ sui client ptb \
 
 ```
 
-若要測試 entry 函式本身——也就是交易實際執行時的完整流程——請使用 [Test Scenario](./../testing/test-scenario)，並用 `random::create_for_testing` 建立共享的 `Random` 物件。請注意，`Random` 物件只能由系統位址 `0x0` 建立與更新：
+若要測試 entry 函式本身——也就是交易實際執行時的完整流程——請使用 [Test Scenario](./../testing/test-scenario)，並用 `random::create_for_testing` 建立共享的 `Random` 物件。請注意，`Random` 物件只能由系統地址 `0x0` 建立與更新：
 
 ```move file=packages/samples/sources/programmability/randomness.move anchor=test_scenario
 

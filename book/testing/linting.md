@@ -37,7 +37,7 @@ public fun mint(ctx: &mut TxContext) {
 }
 ```
 
-執行 linter 會印出一則警告，附帶說明及指向確切表達式的指標：
+執行 linter 會印出一則警告，附帶說明及指向確切運算式的指標：
 
 ```
 warning[Lint W99001]: non-composable transfer to sender

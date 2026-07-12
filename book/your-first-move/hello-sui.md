@@ -340,7 +340,7 @@ $ sui client publish --gas-budget 100000000 --json
 
 ### 準備變數 (Prepare the Variables) {#prepare-the-variables}
 
-在建構指令之前，先儲存我們在交易中會用到的值。把 `0x4....` 換成你所發布 package 的位址。`MY_ADDRESS` 變數則會從 CLI 的輸出自動設為你的位址。
+在建構指令之前，先儲存我們在交易中會用到的值。把 `0x4....` 換成你所發布 package 的地址。`MY_ADDRESS` 變數則會從 CLI 的輸出自動設為你的地址。
 
 ```bash
 $ export PACKAGE_ID=0x468daa33dfcb3e17162bbc8928f6ec73744bb08d838d1b6eb94eac99269b29fe
@@ -360,7 +360,7 @@ $ sui client ptb \
 --transfer-objects "[list]" sender
 ```
 
-在這個指令中，我們使用 `ptb` 子指令來建構一筆交易。接續在後面的參數定義了這筆交易將執行的實際指令與動作。我們所做的前兩個呼叫是工具性的呼叫，用來將寄件者位址設為指令輸入，並設定這筆交易的 gas 預算。
+在這個指令中，我們使用 `ptb` 子指令來建構一筆交易。接續在後面的參數定義了這筆交易將執行的實際指令與動作。我們所做的前兩個呼叫是工具性的呼叫，用來將寄件者地址設為指令輸入，並設定這筆交易的 gas 預算。
 
 ```bash
 # 設定這筆交易的 gas 預算
@@ -372,7 +372,7 @@ $ sui client ptb \
 接著我們對 package 中的一個函式進行實際的呼叫。我們使用 `--move-call`，後面接著 package ID、模組名稱與函式名稱。在這個例子中，我們呼叫的是 `todo_list` package 中的 `new` 函式。
 
 ```bash
-# 呼叫位於 $PACKAGE_ID 位址下 "todo_list" package 中的 "new" 函式
+# 呼叫位於 $PACKAGE_ID 地址下 "todo_list" package 中的 "new" 函式
 --move-call $PACKAGE_ID::todo_list::new
 ```
 
@@ -415,7 +415,7 @@ $ sui client ptb \
 ```
 
 在這個範例中，物件 ID 是
-`0x20e0bede16de8a728ab25e228816b9059b45ebea49c8ad384e044580b2d3e553`。而擁有者應該是你的帳戶位址。我們透過在交易的最後一個指令中將物件轉移給寄件者，達成了這一點。
+`0x20e0bede16de8a728ab25e228816b9059b45ebea49c8ad384e044580b2d3e553`。而擁有者應該是你的帳戶地址。我們透過在交易的最後一個指令中將物件轉移給寄件者，達成了這一點。
 
 另一種驗證你已成功建立 list 的方式，是檢查帳戶的物件。
 

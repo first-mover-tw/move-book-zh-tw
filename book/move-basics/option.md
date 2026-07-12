@@ -68,7 +68,7 @@ option 不會與它包裝的值混淆：`Option<String>` 不是 `String`，而�
 
 ## Option 巨集 (Option Macros) {#option-macros}
 
-和[向量巨集 (vector macros)](./vector#vector-macros)一樣，option 巨集用單一表達式取代常見的「先檢查再取出」序列：
+和[向量巨集 (vector macros)](./vector#vector-macros)一樣，option 巨集用單一運算式取代常見的「先檢查再取出」序列：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=macros
 

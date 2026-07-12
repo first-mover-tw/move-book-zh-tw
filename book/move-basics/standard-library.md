@@ -56,9 +56,9 @@ Move 標準函式庫提供了一組與整數型別相關的函式。這些函式
 
 </div>
 
-## 匯出的位址 (Exported Addresses) {#exported-addresses}
+## 匯出的地址 (Exported Addresses) {#exported-addresses}
 
-標準函式庫匯出了單一個具名位址——`std = 0x1`。這就是本書中所使用的 `std` 別名的定義處。
+標準函式庫匯出了單一個具名地址——`std = 0x1`。這就是本書中所使用的 `std` 別名的定義處。
 
 ## 隱式匯入 (Implicit Imports) {#implicit-imports}
 

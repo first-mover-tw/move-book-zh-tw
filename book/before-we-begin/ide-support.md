@@ -1,20 +1,20 @@
 ---
 description: 在 VSCode 或 IntelliJ IDEA 中配置 Move 開發環境 (Configuring Move Development
-  in VSCode or IntelliJ IDEA)，包含語法高亮、錯誤檢查與程式碼格式化擴充套件
+  in VSCode or IntelliJ IDEA)，包含語法突顯、錯誤檢查與程式碼格式化擴充套件
 ---
 
 # 設定您的 IDE
 
-Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供基本功能，例如語法高亮和錯誤訊息，儘管它們的額外功能有所不同。無論您選擇哪種 IDE，您都需要使用終端機來執行 [Move CLI](./install-sui.md)。
+Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供基本功能，例如語法突顯和錯誤訊息，儘管它們的額外功能有所不同。無論您選擇哪種 IDE，您都需要使用終端機來執行 [Move CLI](./install-sui.md)。
 
-> **IntelliJ 外掛程式不支援 Move 2024 版本，某些語法將無法被高亮顯示。**
+> **IntelliJ 外掛程式不支援 Move 2024 版本，某些語法將無法被突顯。**
 
 ## VSCode
 
 - [VSCode](https://code.visualstudio.com/) 是來自 Microsoft 的免費開源 IDE。
 - [Move (Extension)](https://marketplace.visualstudio.com/items?itemName=mysten.move) 是由 [Mysten Labs](https://mystenlabs.com) 維護的 Move 語言伺服器擴充功能。
 - [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) - 由 [Mysten Labs](https://mystenlabs.com) 開發和維護的 Move 程式碼格式化工具。
-- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 是由 [Damir Shamanaev](https://github.com/damirka/) 開發的 Move 簡單語法高亮擴充功能。
+- [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 是由 [Damir Shamanaev](https://github.com/damirka/) 開發的 Move 簡單語法突顯擴充功能。
 
 ## IntelliJ IDEA
 

@@ -1,30 +1,30 @@
 ---
 title: 地址 (Address) | 參考手冊
 description:
-  Move 位址型別參考手冊 (Move address type reference)：256 位元識別碼 (256-bit identifiers)、命名位址
-  (named addresses)、十六進位常值 (hex literals)、位址相關運算 (address-related operations)。
+  Move 地址型別參考手冊 (Move address type reference)：256 位元識別碼 (256-bit identifiers)、命名地址
+  (named addresses)、十六進位常值 (hex literals)、地址相關運算 (address-related operations)。
 ---
 
 # 地址 (Address)
 
-`address` 是 Move 中的內建類型，用於表示存儲中的位置（有時稱為帳戶）。一個 `address` 數值是一個 256 位元（32 位元組）的識別碼。Move 使用地址來區分 [模組 (modules)](./../modules) 的套件，其中每個套件都有自己的地址和模組。Move 的具體部署也可能將 `address` 數值用於 [存儲](./../abilities#key) 操作。
+`address` 是 Move 中的內建型別，用於表示儲存中的位置（有時稱為帳戶）。一個 `address` 數值是一個 256 位元（32 位元組）的識別碼。Move 使用地址來區分 [模組 (modules)](./../modules) 的套件，其中每個套件都有自己的地址和模組。Move 的具體部署也可能將 `address` 數值用於 [儲存](./../abilities#key) 操作。
 
-> 對於 Sui 來說，`address` 用於表示「帳戶」，以及透過強類型包裝器（使用 `sui::object::UID` 和 `sui::object::ID`）表示物件。
+> 對於 Sui 來說，`address` 用於表示「帳戶」，以及透過強型別包裝器（使用 `sui::object::UID` 和 `sui::object::ID`）表示物件。
 
 儘管 `address` 在底層是一個 256 位元的整數，但 Move 地址被刻意設計為不透明的 —— 它們不能從整數建立，不支援算術運算，也不能被修改。Move 的特定部署可能有 `native` (原生) 函式來切換其中一些操作（例如，從位元組 `vector<u8>` 建立 `address`），但這些不屬於 Move 語言本身。
 
-雖然存在執行階段的高地址數值（類型為 `address` 的數值），但它們 _不能_ 用於在執行階段存取模組。
+雖然存在執行階段的高地址數值（型別為 `address` 的數值），但它們 _不能_ 用於在執行階段存取模組。
 
 ## 地址及其語法
 
 地址有兩種形式：具名地址 (named addresses) 或數字地址 (numerical addresses)。具名地址的語法遵循 Move 中任何具名識別碼的相同規則。數字地址的語法不限於十六進制編碼的數值，任何有效的 [`u256` 數字值](./integers) 都可以用作地址數值，例如 `42`、`0xCAFE` 和 `10_000` 都是有效的數字地址常值。
 
-為了區分何時在表達式上下文中使用地址，使用地址時的語法取決於其使用的上下文：
+為了區分何時在運算式上下文中使用地址，使用地址時的語法取決於其使用的上下文：
 
-- 當地址作為表達式使用時，地址必須帶有 `@` 字元前綴，即 [`@<數字值>`](./integers) 或 `@<具名地址識別碼>`。
-- 在表達式上下文之外，地址可以不帶前導的 `@` 字元編寫，即 [`<數字值>`](./integers) 或 `<具名地址識別碼>`。
+- 當地址作為運算式使用時，地址必須帶有 `@` 字元前綴，即 [`@<數字值>`](./integers) 或 `@<具名地址識別碼>`。
+- 在運算式上下文之外，地址可以不帶前導的 `@` 字元編寫，即 [`<數字值>`](./integers) 或 `<具名地址識別碼>`。
 
-一般來說，你可以將 `@` 視為一個運算子，它將地址從命名空間項目轉換為表達式項目。
+一般來說，你可以將 `@` 視為一個運算子，它將地址從命名空間項目轉換為運算式項目。
 
 ## 具名地址 (Named Addresses)
 
@@ -53,8 +53,8 @@ let a5: address = @std;
 let a6: address = @66;
 let a7: address = @42_000;
 
-module 66::some_module {   // 不在表達式上下文中，所以不需要 @
-    use 0x1::other_module; // 不在表達式上下文中，所以不需要 @
+module 66::some_module {   // 不在運算式上下文中，所以不需要 @
+    use 0x1::other_module; // 不在運算式上下文中，所以不需要 @
     use std::vector;       // 可以將具名地址用作命名空間項目
     ...
 }

@@ -3,19 +3,13 @@
 修復前基線（本測試曾釘 PRE_FIX=0d4b8bea 的普查值，見 git history）：
 結構殘缺 15、未翻 description 88、違禁詞 126、簡體 5、anchor 問題 56。
 
-與 plan Task 22 模板的差異（使用者裁決，2026-07-11 tier 決策）：
-「全部歸零」不含 A 層檔的 legacy body 違禁詞/簡體 —— 該範圍與使用者的
-reference/ 翻譯 WIP（stash acb51154）重疊，不機器重譯、待人工清理。
-債務清單釘死於 LEGACY_BODY_DEBT：出現新檔或新錯誤類型即紅；清理一檔
-就從清單移除一檔，直到空集合後刪除本豁免。
+2026-07-12：LEGACY_BODY_DEBT 債務全清（stash acb51154 手工翻譯合併 +
+機械修復），豁免機制（scripts/zh_tw/debt.py）已移除，全語料零違規。
 """
 
 import subprocess
 
 from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, validate
-from scripts.zh_tw.debt import LEGACY_BODY_DEBT
-
-# 債務清單的單一權威在 scripts/zh_tw/debt.py（check_repo 的 exit code 同源）。
 
 
 def _show(ref: str, path: str) -> str | None:
@@ -31,45 +25,30 @@ def test_no_orphans():
     assert manifest.orphans("english-main") == []
 
 
-def test_every_file_passes_validation_modulo_pinned_body_debt():
-    """全 repo 對 english-main 過全量 check_file；唯一豁免是 LEGACY_BODY_DEBT
-    檔案的違禁詞/簡體錯誤。豁免以「檔案集合相等」斷言 —— 清理後必須同步
-    收縮清單，新增債務檔或新錯誤類型都會紅。"""
+def test_every_file_passes_validation():
+    """全 repo 對 english-main 過全量 check_file，零豁免。"""
     files = check_repo.collect()
-    debt_files = set()
-    other_failures = {}
+    failures = {}
     for path, zh in files.items():
         en = _show("english-main", path)
         if en is None:
-            other_failures[path] = ["英文來源不存在"]
+            failures[path] = ["英文來源不存在"]
             continue
         errs = validate.check_file(zh, en)
-        if not errs:
-            continue
-        rest = [
-            e for e in errs
-            if not (e.startswith("違禁詞") or e.startswith("簡體殘留字"))
-        ]
-        if rest:
-            other_failures[path] = rest
-        else:
-            debt_files.add(path)
-    assert other_failures == {}, other_failures
-    assert debt_files == set(LEGACY_BODY_DEBT), {
-        "新增債務檔": sorted(debt_files - LEGACY_BODY_DEBT),
-        "已清理應移出清單": sorted(LEGACY_BODY_DEBT - debt_files),
-    }
+        if errs:
+            failures[path] = errs
+    assert failures == {}, failures
 
 
 def test_all_anchor_links_resolve():
     assert validate.check_links(check_repo.collect()) == []
 
 
-def test_glossary_violations_only_in_pinned_debt_files():
+def test_no_glossary_or_simplified_violations_anywhere():
     for path, text in check_repo.collect().items():
         _, body = frontmatter.split(text)
-        if glossary.scan(body) or validate.simplified_chars(body):
-            assert path in LEGACY_BODY_DEBT, path
+        assert not glossary.scan(body), path
+        assert not validate.simplified_chars(body), path
 
 
 def test_file_set_matches_english_main():

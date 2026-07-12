@@ -5,11 +5,11 @@ description: Move 方法語法參考手冊：以點號表示法呼叫函式，�
 
 # 方法 (Methods)
 
-作為一種語法便利性，Move 中的某些函式可以作為值上的「方法」呼叫。這是通過使用 `.` 運算子來呼叫函式，其中 `.` 左側的值是該函式的第一個引數（有時稱為接收者）。該值的類型靜態決定了呼叫哪個函式。這與某些其他語言的重要區別在於，在那些語言中，此語法可能指示動態呼叫，其中待呼叫的函式在執行時期確定。在 Move 中，所有函式呼叫都是靜態確定的。
+為了語法上的便利，Move 中的某些函式可以作為值的「方法（methods）」來呼叫。這是透過使用 `.` 運算子來呼叫函式實現的，其中 `.` 左側的值是函式的第一個參數（有時稱為接收者，receiver）。該值的型別以靜態方式決定了呼叫哪個函式。這與其他一些語言有重要區別，在某些語言中，這種語法可能表示動態呼叫，即呼叫哪個函式是在執行時決定的。在 Move 中，所有函式呼叫都是靜態決定的。
 
-簡單來說，這種語法的存在是為了使呼叫函式變得更容易，無需用 `use` 建立別名，也無需顯式借用函式的第一個引數。此外，這可以使程式碼更具可讀性，因為它減少了呼叫函式所需的樣板程式碼，並使鏈式呼叫函式變得更容易。
+簡而言之，這種語法的存在是為了讓呼叫函式變得更容易，而無需使用 `use` 建立別名，也無需顯式借用函式的第一個參數。此外，這可以使程式碼更具可讀性，因為它減少了呼叫函式所需的樣板程式碼（boilerplate），並使得鏈式呼叫函式更加容易。
 
-## 語法
+## 語法 (Syntax)
 
 呼叫方法的語法如下：
 
@@ -17,22 +17,22 @@ description: Move 方法語法參考手冊：以點號表示法呼叫函式，�
 <expression> . <identifier> <[type_arguments],*> ( <arguments> )
 ```
 
-例如
+例如：
 
 ```move
 coin.value();
 *nums.borrow_mut(i) = 5;
 ```
 
-## 方法解析
+## 方法解析 (Method Resolution)
 
-當呼叫方法時，編譯器將根據接收者（`.` 左側的引數）的類型靜態確定呼叫哪個函式。編譯器維護一個從類型和方法名稱到應呼叫的模組和函式名稱的映射。此映射是從目前範圍內的 `use fun` 別名以及接收者類型定義模組中的適當函式建立的。在所有情況下，接收者類型都是函式的第一個引數，無論是按值傳遞還是按參考傳遞。
+當呼叫一個方法時，編譯器將根據接收者（`.` 左側的參數）的型別靜態地決定呼叫哪個函式。編譯器維護一個從型別和方法名稱到應呼叫的模組及函式名稱的映射。此映射是根據目前作用域內的 `use fun` 別名，以及接收者型別定義模組中的適當函式建立的。在所有情況下，接收者型別都是函式的第一個參數，無論是按值（by-value）還是按參考（by-reference）。
 
-在本節中，當我們說方法「解析」為函式時，我們指的是編譯器將靜態地將該方法替換為普通[函式](./functions)呼叫。例如，如果我們有 `x.foo(e)` 且 `foo` 解析為 `a::m::foo`，編譯器將把 `x.foo(e)` 替換為 `a::m::foo(x, e)`，可能會[自動借用](#自動借用) `x`。
+在本節中，當我們說一個方法「解析（resolves）」為一個函式時，是指編譯器將在靜態上把該方法替換為正常的 [函式](./functions) 呼叫。例如，如果我們有 `x.foo(e)`，且 `foo` 解析為 `a::m::foo`，編譯器會將 `x.foo(e)` 替換為 `a::m::foo(x, e)`，並可能 [自動借用](#自動借用-automatic-borrowing) `x`。
 
-### 定義模組中的函式
+### 定義模組中的函式 (Functions in the Defining Module)
 
-在類型的定義模組中，當類型是函式的第一個引數時，編譯器將自動為其類型的任何函式宣告建立方法別名。例如，
+在型別的定義模組（defining module）中，當該型別作為函式的第一個參數時，編譯器將自動為其任何函式宣告建立方法別名。例如：
 
 ```move
 module a::m;
@@ -42,7 +42,7 @@ public fun foo(x: &X) { ... }
 public fun bar(flag: bool, x: &X) { ... }
 ```
 
-函式 `foo` 可以作為 `X` 類型值上的方法呼叫。然而，並非第一個引數（也不會為 `bool` 建立，因為 `bool` 未在該模組中定義）。例如，
+函式 `foo` 可以作為型別 `X` 的值的方法來呼叫。然而，由於 `bar` 的第一個參數不是 `X`，因此不會為其建立別名（且不會為 `bool` 建立別名，因為 `bool` 不是在該模組中定義的）。例如：
 
 ```move
 fun example(x: a::m::X) {
@@ -51,9 +51,9 @@ fun example(x: a::m::X) {
 }
 ```
 
-### `use fun` 別名
+### `use fun` 別名 (`use fun` Aliases)
 
-與傳統的 [`use`](uses) 類似，`use fun` 陳述式建立一個別名，該別名的作用域限於其目前的範圍。這可能是當前模組或當前表達式區塊。但是，該別名與類型相關聯。
+與傳統的 [`use`](uses) 類似，`use fun` 陳述式會在其目前作用域建立一個區域別名。這可以是針對目前的模組或目前的運算式區塊。然而，該別名是與某個型別相關聯的。
 
 `use fun` 陳述式的語法如下：
 
@@ -61,9 +61,9 @@ fun example(x: a::m::X) {
 use fun <function> as <type>.<method alias>;
 ```
 
-這為 `<function>` 建立一個別名，`<type>` 可以以 `<method alias>` 的形式接收該別名。
+這會為 `<function>` 建立一個別名，`<type>` 可以將其作為 `<method alias>` 接收。
 
-例如
+例如：
 
 ```move
 module a::cup;
@@ -84,7 +84,7 @@ public fun cup_swap<T: drop>(c: &mut Cup<T>, t: T) {
 }
 ```
 
-我們現在可以為這些函式建立 `use fun` 別名
+我們現在可以為這些函式建立 `use fun` 別名：
 
 ```move
 module b::example;
@@ -100,7 +100,7 @@ fun example(c: &mut Cup<u64>) {
 }
 ```
 
-請注意，`use fun` 中的 `<function>` 不必是完全解析的路徑，可以改用別名，因此上面範例中的宣告可以等價地寫成
+請注意，`use fun` 中的 `<function>` 不需要是完全解析的路徑，也可以使用別名，因此上述範例中的宣告可以等效地寫為：
 
 ```move
 use a::cup::{Self, cup_swap};
@@ -110,7 +110,7 @@ use fun cup::cup_value as Cup.value;
 use fun cup_swap as Cup.set;
 ```
 
-雖然這些範例對於在當前模組中重新命名函式很巧妙，但該功能對於宣告來自其他模組的類型上的方法可能更有用。例如，如果我們想為 `Cup` 新增實用程式，我們可以使用 `use fun` 別名並仍然使用方法語法
+雖然這些重新命名當前模組函式的範例很簡潔，但該功能對於在其他模組的型別上宣告方法可能更有用。例如，如果我們想給 `Cup` 新增一個新的實用工具，我們可以透過 `use fun` 別名來達成，並且仍然使用方法語法：
 
 ```move
 module b::example;
@@ -121,16 +121,16 @@ fun double(c: &Cup<u64>): Cup<u64> {
 }
 ```
 
-通常，我們會被困在必須將其呼叫為 `double(&c)`，因為 `b::example` 未定義 `Cup`，但相反我們可以使用 `use fun` 別名
+通常，我們只能將其呼叫為 `double(&c)`，因為 `b::example` 沒有定義 `Cup`，但我們可以改用 `use fun` 別名：
 
 ```move
 fun double_double(c: Cup<u64>): (Cup<u64>, Cup<u64>) {
     use fun b::example::double as Cup.dub;
-    (c.dub(), c.dub()) // 在兩次呼叫中都解析為 b::example::double
+    (c.dub(), c.dub()) // 兩次呼叫均解析為 b::example::double
 }
 ```
 
-雖然 `use fun` 可以在任何範圍內建立，但 `use fun` 的目標 `<function>` 必須具有與 `<type>` 相同的第一個引數。
+雖然 `use fun` 可以在任何作用域中建立，但 `use fun` 的目標 `<function>` 的第一個參數必須與 `<type>` 相同。
 
 ```move
 public struct X() has copy, drop, store;
@@ -140,10 +140,10 @@ fun flag(flag: bool): u8 { if (flag) 1 else 0 }
 
 use fun new as X.new; // 錯誤！
 use fun flag as X.flag; // 錯誤！
-// `new` 和 `flag` 都沒有類型為 `X` 的第一個引數
+// `new` 和 `flag` 的第一個參數型別都不是 `X`
 ```
 
-但 `<type>` 的任何第一個引數都可以使用，包括參考和可變參考
+但可以使用 `<type>` 的任何形式的第一個參數，包括參考和可變參考：
 
 ```move
 public struct X() has copy, drop, store;
@@ -152,13 +152,13 @@ public fun by_val(_: X) {}
 public fun by_ref(_: &X) {}
 public fun by_mut(_: &mut X) {}
 
-// 這 3 個都有效，在任何範圍內
+// 在任何作用域中這 3 個都有效
 use fun by_val as X.v;
 use fun by_ref as X.r;
 use fun by_mut as X.m;
 ```
 
-請注意，對於泛型，方法與通用類型的 _所有_ 實例相關聯。您無法多載方法以根據具體化解析為不同的函式。
+注意對於泛型（generics），方法與泛型型別的 _所有_ 實例相關聯。你不能多載方法使其根據實例化而解析為不同的函式。
 
 ```move
 public struct Cup<T>(T) has copy, drop, store;
@@ -169,12 +169,12 @@ public fun value<T: copy>(c: &Cup<T>): T {
 
 use fun value as Cup<bool>.flag; // 錯誤！
 use fun value as Cup<u64>.num; // 錯誤！
-// 在兩種情況下，`use fun` 別名都不能是泛型，它們必須適用於類型的所有實例
+// 在這兩種情況下，`use fun` 別名不能是特定的泛型實例，它們必須適用於該型別的所有實例
 ```
 
-### `public use fun` 別名
+### `public use fun` 別名 (`public use fun` Aliases)
 
-與傳統的 [`use`](uses) 不同，`use fun` 陳述式可以是 `public` 的，這允許它在其宣告的範圍之外使用。`use fun` 可以是 `public` 的條件是它在定義接收者類型的模組中宣告，就像為定義模組中的函式自動建立的方法別名一樣。或者，反過來，可以認為對於定義模組中的每個函式，如果其第一個引數是接收者類型（如果它在該模組中定義），則隱式建立 `public use fun`。這兩種觀點是等價的。
+與傳統的 [`use`](uses) 不同，`use fun` 陳述式可以設定為 `public`，這允許它在其宣告的作用域之外使用。如果 `use fun` 是在定義接收者型別的模組中宣告的，則可以將其設定為 `public`，這就像為定義模組中的函式 [自動建立](#定義模組中的函式-functions-in-the-defining-module) 的方法別名一樣。或者相反地，可以認為為定義模組中第一個參數為接收者型別（如果是在該模組中定義的）的每個函式自動建立了一個隱式的 `public use fun`。這兩種觀點是等效的。
 
 ```move
 module a::cup;
@@ -187,7 +187,7 @@ public fun cup_borrow<T>(c: &Cup<T>): &T {
 }
 ```
 
-在此範例中，為 `a::cup::Cup.borrow` 和 `a::cup::Cup.cup_borrow` 建立了公開方法別名。兩者都解析為 `a::cup::cup_borrow`。並且兩者在「公開」的意義上都是可用的，即它們可以在 `a::cup` 之外使用，無需額外的 `use` 或 `use fun`。
+在這個例子中，為 `a::cup::Cup.borrow` 和 `a::cup::Cup.cup_borrow` 建立了一個公開的方法別名。兩者都解析為 `a::cup::cup_borrow`。兩者在「公開」的意義上是一致的，即它們可以在 `a::cup` 之外使用，而無需額外的 `use` 或 `use fun`。
 
 ```move
 module b::example;
@@ -198,7 +198,7 @@ fun example<T: drop>(c: a::cup::Cup<u64>) {
 }
 ```
 
-`public use fun` 宣告因此可用作重新命名函式的方式，如果您想為方法語法使用更簡潔的名稱。這在您有一個模組包含多個類型以及每個類型的類似命名函式時特別有幫助。
+因此，`public use fun` 宣告可以作為一種重命名函式的方法，如果你想給它一個更簡潔的名稱以配合方法語法。如果你有一個包含多個型別的模組，並且每個型別都有類似名稱的函式，這會特別有幫助。
 
 ```move
 module a::shapes;
@@ -206,7 +206,7 @@ module a::shapes;
 public struct Rectangle { base: u64, height: u64 }
 public struct Box { base: u64, height: u64, depth: u64 }
 
-// Rectangle 和 Box 可以擁有具有相同名稱的方法
+// Rectangle 和 Box 可以有相同名稱的方法
 
 public use fun rectangle_base as Rectangle.base;
 public fun rectangle_base(rectangle: &Rectangle): u64 {
@@ -219,7 +219,7 @@ public fun box_base(box: &Box): u64 {
 }
 ```
 
-`public use fun` 的另一個用途是為來自其他模組的類型新增方法。這在與散佈在單個套件中的函式結合使用時非常有幫助。
+`public use fun` 的另一個用途是向來自其他模組的型別新增方法。這在與分佈在單個套件中的函式結合使用時非常有幫助。
 
 ```move
 module a::cup {
@@ -229,7 +229,7 @@ module a::cup {
     public fun borrow<T>(c: &Cup<T>): &T {
         &c.0
     }
-    // 指向定義在另一個模組中的函式的 `public use fun`
+    // `public use fun` 指向定義在另一個模組中的函式
     public use fun a::utils::split as Cup.split;
 }
 
@@ -246,11 +246,11 @@ module a::utils {
 }
 ```
 
-並請注意，此 `public use fun` 不會建立循環依賴，因為 `use fun` 在模組編譯後不存在——所有方法都是靜態解析的。
+請注意，這個 `public use fun` 不會建立環狀依賴，因為在模組編譯後 `use fun` 就不再存在了——所有方法都是靜態解析的。
 
-### 與 `use` 別名的互動
+### 與 `use` 別名的互動 (Interactions with `use` Aliases)
 
-需要注意的一個細節是方法別名尊重普通 `use` 別名。
+需要注意的一個小細節是，方法別名遵循正常的 `use` 別名規則。
 
 ```move
 module a::cup {
@@ -270,11 +270,11 @@ module b::other {
 }
 ```
 
-一個有幫助的想法是 `use` 在它能做到時為函式建立隱式 `use fun` 別名。在此情況下，`use a::cup::cup_borrow as borrow` 建立了隱含的 `use fun a::cup::cup_borrow as Cup.borrow`，因為它將成為有效的 `use fun` 別名。兩種觀點是等價的。這條推理線可以告知使用遮蔽時特定方法將如何解析。有關更多詳情，請參閱[範圍](#scoping)中的情況。
+理解這一點的一個好方法是，只要可能，`use` 就會為函式建立一個隱式的 `use fun` 別名。在這種情況下，`use a::cup::cup_borrow as borrow` 建立了一個隱式的 `use fun a::cup::cup_borrow as Cup.borrow`，因為它是一個有效的 `use fun` 別名。這兩種觀點是等效的。這種推理方式可以指導特定的方法將如何透過遮蔽（shadowing）來解析。詳細資訊請參見 [作用域](#scoping) 中的案例。
 
-### 範圍 (Scoping) {#scoping}
+### 作用域 (Scoping) {#scoping}
 
-如果不是 `public`，`use fun` 別名在其範圍內是本地的，很像普通的 [`use`](uses)。例如
+如果不是 `public`，`use fun` 別名在其作用域內是局部的，就像正常的 [`use`](uses) 一樣。例如：
 
 ```move
 module a::m {
@@ -302,9 +302,9 @@ module b::other {
     }
 ```
 
-## 自動借用
+## 自動借用 (Automatic Borrowing)
 
-解析方法時，如果函式期望參考，編譯器會自動借用接收者。例如
+在解析方法時，如果函式預期的是一個參考，編譯器將自動借用接收者。例如：
 
 ```move
 module a::m;
@@ -320,7 +320,7 @@ fun example(mut x: X) {
 }
 ```
 
-在這些範例中，`x` 分別自動借用到 `&x` 和 `&mut x`。這也可以通過欄位存取運作
+在這些範例中，`x` 分別被自動借用為 `&x` 和 `&mut x`。這同樣適用於欄位存取：
 
 ```move
 module a::m;
@@ -338,9 +338,9 @@ fun example(mut y: Y) {
 }
 ```
 
-請注意，在這兩個範例中，本地變數都必須標記為 [`mut`](./variables) 以允許 `&mut` 借用。如果沒有這個，會出現一個錯誤，說 `x`（或第二個範例中的 `y`）不可變。
+請注意，在這兩個範例中，區域變數都必須標記為 [`mut`](./variables) 以允許 `&mut` 借用。如果沒有這個標記，將會出現錯誤，指出 `x`（或第二個範例中的 `y`）不是可變的。
 
-請記住，沒有參考的情況下，變數和欄位存取的普通規則適用。意味著如果不借用值，值可能會被移動或複製。
+請記住，在沒有參考的情況下，變數和欄位存取的正常規則就會生效。這意味著如果值不被借用，它可能會被移動或複製。
 
 ```move
 module a::m;
@@ -354,14 +354,14 @@ public struct Y has drop { x: X }
 public fun drop_y(y: Y) { y }
 
 fun example(y: Y) {
-    y.x.by_val(); // 複製 `y.x`，因為 `by_val` 是按值傳遞且 `X` 有 `copy`
-    y.drop_y(); // 移動 `y`，因為 `drop_y` 是按值傳遞且 `Y` 沒有 `copy`
+    y.x.by_val(); // 複製 `y.x`，因為 `by_val` 是按值傳遞且 `X` 具備 `copy`
+    y.drop_y(); // 移動 `y`，因為 `drop_y` 是按值傳遞且 `Y` 不具備 `copy`
 }
 ```
 
 ## 鏈式呼叫 (Chaining)
 
-方法呼叫可以鏈式呼叫，因為任何表達式都可以是方法的接收者。
+方法呼叫可以鏈式進行，因為任何運算式都可以作為方法的接收者。
 
 ```move
 module a::shapes {
@@ -373,7 +373,6 @@ module a::shapes {
 
     public fun start(l: &Line): &Point { &l.start }
     public fun end(l: &Line): &Point { &l.end }
-
 }
 
 module b::example {
@@ -382,8 +381,7 @@ module b::example {
     public fun x_values(l: Line): (u64, u64) {
         (l.start().x(), l.end().x())
     }
-
 }
 ```
 
-在此範例中，對於 `l.start().x()`，編譯器首先將 `l.start()` 解析為 `a::shapes::start(&l)`。然後 `.x()` 解析為 `a::shapes::x(a::shapes::start(&l))`。對 `l.end().x()` 類似。請記住，此功能不是「特殊的」——`.` 左側可以是任何表達式，編譯器將如常解析方法呼叫。我們簡單地重點指出這種「鏈式」呼叫，因為它是提高可讀性的常見做法。
+在此範例的 `l.start().x()` 中，編譯器首先將 `l.start()` 解析為 `a::shapes::start(&l)`。然後將 `.x()` 解析為 `a::shapes::x(a::shapes::start(&l))`。`l.end().x()` 同理。請記住，此功能並非「特殊」的——`.` 左側可以是任何運算式，編譯器將照常解析方法呼叫。我們只是特別指出這種「鏈式呼叫」，因為它是提高可讀性的常見做法。

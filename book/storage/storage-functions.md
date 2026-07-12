@@ -135,7 +135,7 @@ public fun public_transfer<T: key + store>(obj: T, recipient: address);
 ## 凍結 (Freeze) {#freeze}
 
 `transfer::freeze_object` 函式會把物件轉為 _不可變_ 狀態。物件一旦被
-_凍結_，就永遠無法改變，任何人都可以透過不可變參照存取它：
+_凍結_，就永遠無法改變，任何人都可以透過不可變參考存取它：
 
 ```move
 module sui::transfer;
@@ -154,9 +154,9 @@ public fun public_freeze_object<T: key + store>(obj: T);
 ```
 
 一旦呼叫 `create_and_freeze`，`Config` 就會透過其 ID 公開可用，任何人都能呼叫
-`message` 函式 —— 對於一個凍結的物件，不可變參照是人人都能自由取用的。
+`message` 函式 —— 對於一個凍結的物件，不可變參考是人人都能自由取用的。
 
-函式的定義與物件的狀態無關，因此定義一個以可變參照或以值取用凍結型別的函式，
+函式的定義與物件的狀態無關，因此定義一個以可變參考或以值取用凍結型別的函式，
 在語法上完全合法 —— 只是這些函式**無法**用凍結物件來呼叫：
 
 ```move file=packages/samples/sources/storage/storage-functions.move anchor=frozen_uncallable
@@ -185,13 +185,13 @@ public fun public_freeze_object<T: key + store>(obj: T);
 ### 快速回顧 (Quick Recap) {#quick-recap-1}
 
 - `freeze_object` 會把物件轉為_不可變_狀態 —— 且是永久性的；
-- 凍結的物件可供任何人透過不可變參照讀取，且永遠無法被修改、轉移或刪除；
+- 凍結的物件可供任何人透過不可變參考讀取，且永遠無法被修改、轉移或刪除；
 - 已擁有的物件可以被凍結 —— 若物件具有 `store`，甚至可以由擁有者在交易中凍結；
 - `public_freeze_object` 是公開版本：可在任何地方呼叫，但要求 `key + store`。
 
 ## 分享 (Share) {#share}
 
-`transfer::share_object` 函式會將物件放入 _共享_ 狀態，讓任何人都能透過可變參照（因此也包含不可變參照）存取它：
+`transfer::share_object` 函式會將物件放入 _共享_ 狀態，讓任何人都能透過可變參考（因此也包含不可變參考）存取它：
 
 ```move
 module sui::transfer;
@@ -230,7 +230,7 @@ public fun transfer_shared(c: Config, to: address) {
 
 ### 快速回顧 (Quick Recap) {#quick-recap-2}
 
-- `share_object` 會將物件放入 _共享_ 狀態，讓任何人都能透過可變參照存取；
+- `share_object` 會將物件放入 _共享_ 狀態，讓任何人都能透過可變參考存取；
 - 只有在同一筆交易中建立的物件才能被共享——不存在 Owned → Shared 的轉換；
 - 共享是永久性的，唯一的例外：共享物件可以被以值取用，以便進行 _刪除_；
 - `public_share_object` 是公開形式：可在任何地方呼叫，需要 `key + store`。
@@ -246,7 +246,7 @@ public fun transfer_shared(c: Config, to: address) {
 
 | 函式             | 結果狀態 | 是否可逆                                             | 公開版本                |
 | ---------------- | -------- | ---------------------------------------------------- | ----------------------- |
-| `transfer`       | 位址擁有 | 是 - 可以再轉走                                      | `public_transfer`       |
+| `transfer`       | 地址擁有 | 是 - 可以再轉走                                      | `public_transfer`       |
 | `freeze_object`  | 不可變   | 否                                                   | `public_freeze_object`  |
 | `share_object`   | 共享     | 只能透過刪除                                         | `public_share_object`   |
 | `party_transfer` | Party    | [取決於權限](./../appendix/transfer-functions#party) | `public_party_transfer` |

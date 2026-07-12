@@ -33,7 +33,7 @@ use std::unit_test::assert_eq;
 
 #[test]
 fun test_add_increases_balance_by_specified_amount() {
-    // Arrange：設置初始狀態
+    // Arrange：設定初始狀態
     let mut balance = new(100);
 
     // Act：執行被測試的操作

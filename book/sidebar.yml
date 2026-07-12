@@ -52,11 +52,11 @@ bookSidebar:
         id: move-basics/module
       - label: 註解 (Comments)
         id: move-basics/comments
-      - label: 原生類型 (Primitive Types)
+      - label: 原生型別 (Primitive Types)
         id: move-basics/primitive-types
-      - label: 位址類型 (Address Type)
+      - label: 地址型別 (Address Type)
         id: move-basics/address
-      - label: 表達式 (Expressions)
+      - label: 運算式 (Expressions)
         id: move-basics/expression
       - label: 函式 (Functions)
         id: move-basics/function
@@ -92,7 +92,7 @@ bookSidebar:
         id: move-basics/constants
       - label: 中斷執行 (Aborting Execution)
         id: move-basics/assert-and-abort
-      - label: 參照 (References)
+      - label: 參考 (References)
         id: move-basics/references
       - label: 泛型 (Generics)
         id: move-basics/generics
@@ -100,7 +100,7 @@ bookSidebar:
         id: move-basics/macros
       - label: 內部許可 (Internal Permit)
         id: move-basics/internal-permit
-      - label: 類型反射 (Type Reflection)
+      - label: 型別反射 (Type Reflection)
         id: move-basics/type-reflection
       - label: 測試 (Testing)
         id: move-basics/testing
@@ -132,7 +132,7 @@ bookSidebar:
         id: storage/store-ability
       - label: 內部約束 (Internal Constraint)
         id: storage/internal-constraint
-      - label: 存儲函式 (Storage Functions)
+      - label: 儲存函式 (Storage Functions)
         id: storage/storage-functions
       - label: UID 與 ID (UID and ID)
         id: storage/uid-and-id
@@ -161,7 +161,7 @@ bookSidebar:
         id: programmability/epoch-and-time
       - label: 集合 (Collections)
         id: programmability/collections
-      - label: '模式：封裝類型 (Pattern: Wrapper Type)'
+      - label: '模式：封裝型別 (Pattern: Wrapper Type)'
         id: programmability/wrapper-type-pattern
       - label: 動態欄位 (Dynamic Fields)
         id: programmability/dynamic-fields
@@ -274,9 +274,9 @@ bookSidebar:
     items:
       - label: A. 術語表 (Glossary)
         id: appendix/glossary
-      - label: B. 保留位址 (Reserved Addresses)
+      - label: B. 保留地址 (Reserved Addresses)
         id: appendix/reserved-addresses
-      - label: C. 轉移函數 (Transfer Functions)
+      - label: C. 轉移函式 (Transfer Functions)
         id: appendix/transfer-functions
       - label: D. 著作 (Publications)
         id: appendix/publications

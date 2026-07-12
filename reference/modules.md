@@ -5,7 +5,7 @@ description: Move 模組參考手冊 (Move Module Reference)：宣告模組、�
 
 # 模組 (Modules)
 
-**模組 (Modules)** 是核心程式單元，定義了類型以及操作這些類型的函式。結構體 (Struct) 類型定義了 Move [存儲 (storage)](./abilities#key) 的結構 (schema)，而模組函式定義了與這些類型的數值互動的規則。雖然模組本身也存儲在存儲中，但它們無法從 Move 程式內部存取。在區塊鏈環境中，模組存儲在鏈上，這個過程通常稱為「發布 (publishing)」。發布後，可以根據該特定 Move 實例的規則呼叫 [`entry`](./functions#entry-modifier) 和 [`public`](./functions#visibility) 函式。
+**模組 (Modules)** 是核心程式單元，定義了型別以及操作這些型別的函式。結構體 (Struct) 型別定義了 Move [儲存 (storage)](./abilities#key) 的結構 (schema)，而模組函式定義了與這些型別的數值互動的規則。雖然模組本身也儲存在儲存中，但它們無法從 Move 程式內部存取。在區塊鏈環境中，模組儲存在鏈上，這個過程通常稱為「發布 (publishing)」。發布後，可以根據該特定 Move 實例的規則呼叫 [`entry`](./functions#entry-modifier) 和 [`public`](./functions#visibility) 函式。
 
 ## 語法
 
@@ -67,7 +67,7 @@ fun example() {
 }
 ```
 
-並且我們在將 `my_addr` 設置為 `0xC0FFEE` 的情況下對其進行編譯，那麼它在操作上將等同於以下內容：
+並且我們在將 `my_addr` 設定為 `0xC0FFEE` 的情況下對其進行編譯，那麼它在操作上將等同於以下內容：
 
 ```move
 fun example() {
@@ -84,11 +84,11 @@ module a::my_module {}
 module a::foo_bar_42 {}
 ```
 
-通常，模組名稱以小寫字母開頭。名為 `my_module` 的模組應存儲在名為 `my_module.move` 的原始檔中。
+通常，模組名稱以小寫字母開頭。名為 `my_module` 的模組應儲存在名為 `my_module.move` 的原始檔中。
 
 ## 成員
 
-`module` 區塊內的所有成員可以以任何順序出現。從根本上說，模組是 [`類型 (types)`](./structs) 和 [`函式 (functions)`](./functions) 的集合。[`use`](./uses) 關鍵字引用來自其他模組的成員。[`const`](./constants) 關鍵字定義了可以在模組函式中使用的常數。
+`module` 區塊內的所有成員可以以任何順序出現。從根本上說，模組是 [`型別 (types)`](./structs) 和 [`函式 (functions)`](./functions) 的集合。[`use`](./uses) 關鍵字參考來自其他模組的成員。[`const`](./constants) 關鍵字定義了可以在模組函式中使用的常數。
 
 [`friend`](./friends) 語法是用於指定受信任模組清單的一種已棄用概念。該概念已被 [`public(package)`](./functions#visibility) 取代。
 

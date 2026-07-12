@@ -362,7 +362,7 @@ def test_scan_agrees_with_markdown_it_fuzz_sweep():
     assert checked == 18234
 
 
-def test_corpus_banned_term_total_is_126():
+def test_corpus_has_no_banned_terms():
     files = [
         p
         for base in ("book", "reference")
@@ -373,4 +373,4 @@ def test_corpus_banned_term_total_is_126():
         text = path.read_text(encoding="utf-8")
         _, body = frontmatter.split(text)
         total += sum(glossary.scan(body).values())
-    assert total == 76  # backfill 完成：126→76；殘留全在 reference/ legacy body（使用者 WIP 範圍）
+    assert total == 0  # 2026-07-12 債務全清（126→76→0，stash 手工翻譯合併 + 機械修復）
