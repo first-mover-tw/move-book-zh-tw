@@ -58,9 +58,11 @@ bookSidebar:
         id: move-basics/address
       - label: 表達式 (Expressions)
         id: move-basics/expression
+      - label: 函式 (Functions)
+        id: move-basics/function
       - label: 結構 (Structs)
         id: move-basics/struct
-      - label: '能力：簡介 (Abilities Introduction)'
+      - label: 能力：簡介 (Abilities Introduction)
         id: move-basics/abilities-introduction
       - label: '能力：Drop (Ability: Drop)'
         id: move-basics/drop-ability
@@ -78,12 +80,6 @@ bookSidebar:
         id: move-basics/control-flow
       - label: 列舉與模式匹配 (Enums and Match)
         id: move-basics/enum-and-match
-      - label: 常數 (Constants)
-        id: move-basics/constants
-      - label: 中斷執行 (Aborting Execution)
-        id: move-basics/assert-and-abort
-      - label: 函式 (Functions)
-        id: move-basics/function
       - label: 結構方法 (Struct Methods)
         id: move-basics/struct-methods
       - label: 可見性修飾符 (Visibility Modifiers)
@@ -92,15 +88,20 @@ bookSidebar:
         id: move-basics/ownership-and-scope
       - label: '能力：Copy (Ability: Copy)'
         id: move-basics/copy-ability
+      - label: 常數 (Constants)
+        id: move-basics/constants
+      - label: 中斷執行 (Aborting Execution)
+        id: move-basics/assert-and-abort
       - label: 參照 (References)
         id: move-basics/references
       - label: 泛型 (Generics)
         id: move-basics/generics
+      - label: 巨集函式 (Macro Functions)
+        id: move-basics/macros
+      - label: 內部許可 (Internal Permit)
+        id: move-basics/internal-permit
       - label: 類型反射 (Type Reflection)
         id: move-basics/type-reflection
-      # - label: "5.26 Macros: Introduction"
-      #   type: doc
-      #   id: move-basics/type-parameters
       - label: 測試 (Testing)
         id: move-basics/testing
   - type: category
@@ -117,7 +118,7 @@ bookSidebar:
         id: object/object-model
       - label: 所有權 (Ownership)
         id: object/ownership
-      - label: 快速路徑與共識 (Fast Path & Consensus)
+      - label: 快速路徑與共識 (Fast Path and Consensus)
         id: object/fast-path-and-consensus
   - type: category
     label: 使用物件 (Using Objects)
@@ -125,16 +126,14 @@ bookSidebar:
       id: storage/index
       type: doc
     items:
-      - label: 內部約束 (Internal Constraint)
-        id: storage/internal-constraint
       - label: '能力：Key (Ability: Key)'
         id: storage/key-ability
       - label: '能力：Store (Ability: Store)'
         id: storage/store-ability
+      - label: 內部約束 (Internal Constraint)
+        id: storage/internal-constraint
       - label: 存儲函式 (Storage Functions)
         id: storage/storage-functions
-      # - label: Transfer Restrictions
-      #   id: storage/transfer-restrictions
       - label: UID 與 ID (UID and ID)
         id: storage/uid-and-id
       - label: 接收物件 (Receiving as Object)
@@ -180,19 +179,19 @@ bookSidebar:
         id: programmability/display
       - label: 事件 (Events)
         id: programmability/events
-      # - label: Balance & Coin
-      #   id: programmability/balance-and-coin
-      #   type: doc
-      - label: '模式：Hot Potato'
+      - label: 餘額與代幣 (Balance and Coin)
+        id: programmability/balance-and-coin
+      - label: 地址餘額 (Address Balances)
+        id: programmability/address-balances
+      - label: '模式：燙手山芋 (Pattern: Hot Potato)'
         id: programmability/hot-potato-pattern
+      - label: 套件升級 (Package Upgrades)
+        id: programmability/package-upgrades
       # - label: '8.18 Pattern: Request'
       #   id: programmability/request-pattern
       #   type: doc
       # - label: '8.19 Pattern: Object Capability'
       #   id: programmability/object-capability-pattern
-      #   type: doc
-      # - label: '8.20 Package Upgrades'
-      #   id: programmability/package-upgrades
       #   type: doc
       # - label: '8.21 Transaction Blocks'
       #   id: programmability/transaction-block
@@ -203,9 +202,8 @@ bookSidebar:
       # - label: '8.23 Cryptography and Hashing'
       #   id: programmability/cryptography-and-hashing
       #   type: doc
-      # - label: '8.24 Randomness'
-      #   id: programmability/cryptography-and-hashing
-      #   type: doc
+      - label: 隨機性 (Randomness)
+        id: programmability/randomness
       - label: BCS
         id: programmability/bcs
   - type: category
@@ -234,6 +232,8 @@ bookSidebar:
       #   id: testing/writing-test-macros
       - label: 擴充模組 (Extending Modules)
         id: testing/extend-foreign-module
+      - label: 執行 Lint 檢查 (Running Lints)
+        id: testing/linting
       - label: 覆蓋率報告 (Coverage Reports)
         id: testing/coverage
       - label: Gas 分析 (Gas Profiling)
@@ -246,13 +246,15 @@ bookSidebar:
     items:
       - label: 編譯模式 (Compilation Modes)
         id: move-advanced/modes
+      - label: 進入點函式 (Entry Functions)
+        id: move-advanced/entry-functions
   - type: category
     label: 指南 (Guides)
     enumerate: false
     items:
       - label: 2024 遷移指南 (2024 Migration Guide)
         id: guides/2024-migration-guide
-      - label: 升級實踐 (Upgradeability Practices)
+      - label: 可升級性實踐 (Upgradability Practices)
         id: guides/upgradeability-practices
       - label: 針對限制進行開發 (Building Against Limits)
         id: guides/building-against-limits
@@ -260,6 +262,8 @@ bookSidebar:
         id: guides/better-error-handling
       - label: 程式碼品質檢查清單 (Code Quality Checklist)
         id: guides/code-quality-checklist
+      - label: 使用 Move Registry (Using Move Registry)
+        id: guides/using-move-registry
       # - label: Open-sourcing Libraries
       #   id: guides/open-sourcing-libraries
       # - label: Creating an NFT Collection

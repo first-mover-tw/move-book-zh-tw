@@ -70,10 +70,10 @@ def test_no_orphans_remain():
     assert manifest.orphans("english-main") == []
 
 
-def test_stale_files_count_tracks_backfill():
-    """backfill 進度計數器：PR 2→104、PR 3→91、PR 4→62、PR 5→42、
-    PR 6（testing 13）→29。收尾歸零並改寫本測試。"""
-    assert len(manifest.stale_files("english-main")) == 29
+def test_no_stale_files_after_backfill():
+    """backfill 完成（PR 2→104、PR 3→91、PR 4→62、PR 5→42、PR 6→29、
+    PR 7→0）。此後任何 stale 出現都代表上游前進、待週期性同步。"""
+    assert len(manifest.stale_files("english-main")) == 0
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():

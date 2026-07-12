@@ -4,27 +4,41 @@
 // ANCHOR: main
 module book::shop;
 
-/// 授予商店所有者管理權限的能力
-/// 商店。
+/// The Capability which grants the Shop owner the right to manage
+/// the shop.
 public struct ShopOwnerCap has key, store { id: UID }
 
-/// 在 `init` 函式中建立的單數商店。
+/// The singular Shop itself, created in the `init` function.
 public struct Shop has key {
     id: UID,
     /* ... */
 }
 
-// 僅在模組發佈時呼叫一次。它必須
-// 是私有的以防止外部呼叫。
+// Called only once, upon module publication. It must be
+// private to prevent external invocation.
 fun init(ctx: &mut TxContext) {
-    // 將 ShopOwnerCap 轉移至傳送者（發佈者）。
+    // Transfers the ShopOwnerCap to the sender (publisher).
     transfer::transfer(ShopOwnerCap {
         id: object::new(ctx)
     }, ctx.sender());
 
-    // 共用商店物件。
+    // Shares the Shop object.
     transfer::share_object(Shop {
         id: object::new(ctx)
     });
 }
 // ANCHOR_END: main
+
+// ANCHOR: test
+#[test_only]
+use std::unit_test::assert_eq;
+
+#[test]
+fun test_init() {
+    let ctx = &mut tx_context::dummy();
+    init(ctx);
+
+    // Two objects were created: the `ShopOwnerCap` and the `Shop`.
+    assert_eq!(ctx.ids_created(), 2);
+}
+// ANCHOR_END: test

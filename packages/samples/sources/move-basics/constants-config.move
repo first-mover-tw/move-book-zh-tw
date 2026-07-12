@@ -8,10 +8,10 @@ const ITEM_PRICE: u64 = 100;
 const TAX_RATE: u64 = 10;
 const SHIPPING_COST: u64 = 5;
 
-/// 回傳商品的價格。
+/// Returns the price of an item.
 public fun item_price(): u64 { ITEM_PRICE }
-/// 回傳稅率。
+/// Returns the tax rate.
 public fun tax_rate(): u64 { TAX_RATE }
-/// 回傳運送成本。
+/// Returns the shipping cost.
 public fun shipping_cost(): u64 { SHIPPING_COST }
 // ANCHOR_END: config

@@ -3,13 +3,13 @@
 
 // ANCHOR: main
 module book::coffee_machine {
-    /// 咖啡機是共用物件，因此需要 `key` 能力。
+    /// Coffee machine is a shared object, hence requires `key` ability.
     public struct CoffeeMachine has key { id: UID, counter: u16 }
 
-    /// Cup 是被擁有的物件。
+    /// Cup is an owned object.
     public struct Cup has key, store { id: UID, has_coffee: bool }
 
-    /// 初始化模組並共用 `CoffeeMachine` 物件。
+    /// Initialize the module and share the `CoffeeMachine` object.
     fun init(ctx: &mut TxContext) {
         transfer::share_object(CoffeeMachine {
             id: object::new(ctx),
@@ -17,23 +17,23 @@ module book::coffee_machine {
         });
     }
 
-    /// 從空氣中拿出一個杯子。這是快速路徑操作。
+    /// Take a cup out of thin air. This is a fast path operation.
     public fun take_cup(ctx: &mut TxContext): Cup {
         Cup { id: object::new(ctx), has_coffee: false }
     }
 
-    /// 製作咖啡並倒入杯子。需要共識。
+    /// Make coffee and pour it into the cup. Requires consensus.
     public fun make_coffee(machine: &mut CoffeeMachine, cup: &mut Cup) {
         machine.counter = machine.counter + 1;
         cup.has_coffee = true;
     }
 
-    /// 從杯子喝咖啡。這是快速路徑操作。
+    /// Drink coffee from the cup. This is a fast path operation.
     public fun drink_coffee(cup: &mut Cup) {
         cup.has_coffee = false;
     }
 
-    /// 放回杯子。這是快速路徑操作。
+    /// Put the cup back. This is a fast path operation.
     public fun put_back(cup: Cup) {
         let Cup { id, has_coffee: _ } = cup;
         id.delete();

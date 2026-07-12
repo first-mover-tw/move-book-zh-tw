@@ -8,17 +8,17 @@ module book::type_reflection;
 use std::ascii::String;
 use std::type_name::{Self, TypeName};
 
-/// 回傳型別 `T` 的名稱及其模組和地址的函式。
+/// A function that returns the name of the type `T` and its module and address.
 public fun do_i_know_you<T>(): (String, String, String) {
     let type_name: TypeName = type_name::with_defining_ids<T>();
 
-    // 有一種借用的方式
+    // there's a way to borrow
     let str: &String = type_name.as_string();
 
     let module_name: String = type_name.module_string();
     let address_str: String = type_name.address_string();
 
-    // 和一種消耗值的方式
+    // and a way to consume the value
     let str = type_name.into_string();
 
     (str, module_name, address_str)
@@ -34,6 +34,6 @@ use std::unit_test::assert_eq;
 fun test_type_reflection() {
     let (type_name, module_name, _address_str) = do_i_know_you<MyType>();
 
-    assert_eq!(module_name, b"type_reflection".to_ascii_string());
+    assert_eq!(module_name, "type_reflection");
 }
 // ANCHOR_END: main

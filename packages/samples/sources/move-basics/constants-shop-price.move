@@ -6,18 +6,18 @@ module book::shop_price;
 
 use sui::{coin::Coin, sui::SUI};
 
-/// 試圖以不正確的價格購買商品。
+/// Trying to purchase an item at an incorrect price.
 const EWrongPrice: u64 = 0;
 
-/// 商店中商品的價格。
+/// The price of an item in the shop.
 const ITEM_PRICE: u64 = 100;
-/// 商店的所有者，一個位址。
+/// The owner of the shop, an address.
 const SHOP_OWNER: address = @0xa11ce;
 
-/// 在商店中銷售的商品。
+/// An item sold in the shop.
 public struct Item {}
 
-/// 從商店購買商品。
+/// Purchase an item from the shop.
 public fun purchase(coin: Coin<SUI>): Item {
     assert!(coin.value() == ITEM_PRICE, EWrongPrice);
 

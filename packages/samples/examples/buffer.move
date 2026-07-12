@@ -3,44 +3,44 @@
 
 module book::buffer;
 
-/// 當緩衝區溢位時回傳的錯誤。
+/// Error returned when the buffer is overflowed.
 const EBufferOverflow: u64 = 0;
 
-/// Buffer 結構體代表一個可增長的緩衝區。
+/// The Buffer struct represents a growable buffer.
 public struct Buffer {
     data: vector<u8>,
     expected_len: Option<u64>
 }
 
-/// 建立一個新的空白緩衝區。
+/// Creates a new empty buffer.
 public fun new(): Buffer {
     Buffer { data: vector[], expected_len: option::none() }
 }
 
-/// 建立一個新的空白緩衝區，指定容量（以位元組為單位）。
-/// 如果緩衝區溢位，交易會中止並回傳 `EBufferOverflow`。
+/// Creates a new empty buffer with the specified capacity (in bytes).
+/// If the buffer is overflowed, tx aborts with `EBufferOverflow`.
 public fun alloc(len: u64): Buffer {
     Buffer { data: vector[], expected_len: option::some(len) }
 }
 
-/// 將指定資料推入緩衝區的末尾。
+/// Pushes the given data to the end of the buffer.
 public fun push(self: &mut Buffer, data: vector<u8>) {
     self.expected_len.do_ref!(|max_len| assert!(self.len() + data.length() <= *max_len, EBufferOverflow));
     self.data.append(data)
 }
 
-/// 解包緩衝區並回傳底層的向量。
+/// Unwraps the buffer and returns the underlying vector.
 public fun unwrap(self: Buffer): vector<u8> {
     let Buffer { data, expected_len: _ } = self;
     data
 }
 
-/// 回傳緩衝區的長度。
+/// Returns the length of the buffer.
 public fun len(self: &Buffer): u64 {
     self.data.length()
 }
 
-/// 如果緩衝區為空，回傳 `true`。
+/// Returns `true` if the buffer is empty.
 public fun is_empty(self: &Buffer): bool {
     self.data.is_empty()
 }

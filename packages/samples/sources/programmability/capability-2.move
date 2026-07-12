@@ -4,12 +4,12 @@
 // ANCHOR: admin_cap
 module book::admin_cap;
 
-/// 授予系統中管理員權限的能力。
-/// 僅在 `init` 函式中建立一次。
+/// The capability granting the admin privileges in the system.
+/// Created only once in the `init` function.
 public struct AdminCap has key { id: UID }
 
-/// 在套件發佈時建立 AdminCap 物件，並將其轉移至
-/// 套件所有者。
+/// Create the AdminCap object on package publish and transfer it to the
+/// package owner.
 fun init(ctx: &mut TxContext) {
     transfer::transfer(
         AdminCap { id: object::new(ctx) },

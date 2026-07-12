@@ -5,10 +5,10 @@
 // ANCHOR: conflict
 module book::conflict_resolution;
 
-// `as` 可以放在任何 import 後面，包括分組 import
+// `as` can be placed after any import, including group imports
 use book::module_one::{Self as mod, Character as Char};
 
-/// 呼叫 `module_one` 模組中的 `new` 函式。
+/// Calls the `new` function from the `module_one` module.
 public fun create(): Char {
     mod::new()
 }

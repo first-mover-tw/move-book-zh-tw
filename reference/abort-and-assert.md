@@ -10,7 +10,7 @@ description:
 
 [`return`](./functions) 和 `abort` 是兩種結束執行的控制流結構，一個用於當前函式，一個用於整個交易。
 
-[在連結章節中可以找到更多關於 `return` 的資訊](./functions#return-表達式)
+[在連結章節中可以找到更多關於 `return` 的資訊](./functions#return-expression)
 
 ## `abort`
 

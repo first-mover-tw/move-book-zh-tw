@@ -8,27 +8,53 @@ use sui::coin::Coin;
 use sui::sui::SUI;
 use sui::event;
 
-/// 可購買的項目。
+/// The item that can be purchased.
 public struct Item has key { id: UID }
 
-/// 購買項目時發出的事件。包含項目的 ID 和
-/// 購買價格。
+/// Event emitted when an item is purchased. Contains the ID of the item and
+/// the price for which it was purchased.
 public struct ItemPurchased has copy, drop {
     item: ID,
     price: u64
 }
 
-/// 執行項目購買的市場函式。
-public fun purchase(coin: Coin<SUI>, ctx: &mut TxContext) {
+/// A marketplace function which performs the purchase of an item.
+public fun purchase(seller: address, coin: Coin<SUI>, ctx: &mut TxContext): Item {
     let item = Item { id: object::new(ctx) };
 
-    // 建立 `ItemPurchased` 的實例並將其傳遞給 `event::emit`。
+    // Create an instance of `ItemPurchased` and pass it to `event::emit`.
     event::emit(ItemPurchased {
         item: object::id(&item),
         price: coin.value()
     });
 
-    // 省略實現的其餘部分以保持範例簡潔。
-    abort
+    // Send the payment to the seller, return the item to the caller.
+    transfer::public_transfer(coin, seller);
+    item
 }
 // ANCHOR_END: emit
+
+#[test_only]
+use std::unit_test::assert_eq;
+
+// ANCHOR: test
+#[test]
+fun test_emit_item_purchased() {
+    let ctx = &mut tx_context::dummy();
+    let item = Item { id: object::new(ctx) };
+    let item_id = object::id(&item);
+
+    event::emit(ItemPurchased { item: item_id, price: 100 });
+
+    // Total number of events emitted in this test so far.
+    assert_eq!(event::num_events(), 1);
+
+    // Read back all `ItemPurchased` events and check their contents.
+    let purchases = event::events_by_type<ItemPurchased>();
+    assert_eq!(purchases.length(), 1);
+    assert_eq!(purchases[0].item, item_id);
+    assert_eq!(purchases[0].price, 100);
+
+    std::unit_test::destroy(item);
+}
+// ANCHOR_END: test

@@ -1,18 +1,29 @@
 ---
-description: 'The evolution of Move from Diem to Sui: how the storage model changed from account-based to the object-based model.'
+description:
+  Move 從 Diem 到 Sui 的演進：儲存模型如何從基於帳戶 (account-based) 轉變為基於物件 (object-based)
+  的模型
 ---
 
-# Move 的演進 (Evolution of Move)
+# Move 的演進 (Evolution of Move) {#evolution-of-move}
 
-雖然 Move 的創立初衷是為了管理數位資產，但其最初的存儲模型相對笨重，且不太適應許多使用案例。例如，如果 Alice 想將資產 X 轉移給 Bob，Bob 必須先建立一個新的「空」資源，之後 Alice 才能將資產 X 轉移給他。這個過程不夠直觀，且帶來了實作上的挑戰，部分原因在於 [Diem](https://www.diem.com/en-us) 設計上的限制。原始設計的另一個缺點是缺乏內建的「轉移 (transfer)」操作支援，導致每個模組都必須實作自己的存儲轉移邏輯。此外，在單個帳戶中管理多樣化的異質資產集合也特別具有挑戰性。
+Move 誕生於 [Diem](https://www.diem.com/en-us)，用來管理數位資產，其最初的儲存模型反映了該區塊鏈的設計。儲存是以*帳戶為基礎*的：每一份資料——稱為*資源 (resource)*——存在於某個帳戶位址底下，而模組只能在與其互動的帳戶底下儲存、讀取、移除資源。在最初的形式中，Move 有專屬的全域儲存運算子來處理這件事，而資源只有在該帳戶簽署交易同意後，才能被放置到該帳戶底下。
 
-Sui 透過重新設計物件的存儲和所有權模型來應對這些挑戰，使其更貼近現實世界中的物件互動方式。憑藉原生所有權和 **轉移 (transfer)** 的觀念，Alice 可以直接將資產 X 轉移給 Bob。此外，Bob 無需任何準備步驟即可維護不同資產的集合。這些改進為 Sui 的物件模型 (Object Model) 奠定了基礎。
+這個模型帶來了實際的後果，讓日常的資產操作變得出奇地困難：
 
-## 總結 (Summary)
+- 沒有內建的*轉帳*操作。如果 Alice 想把資產 X 傳送給 Bob，定義 X 的模組必須自行實作轉帳邏輯：Bob 必須先在自己的帳戶底下發布一個「空的」資源（同意接收該資產），Alice 的交易才能把餘額移入其中。每個模組都得重新發明這套流程。
+- 資產是依型別、依帳戶儲存的。管理一個異質集合——例如單一帳戶持有多種不同種類的物品——需要為每個新型別投入大量心力與事前準備。
+- 由於資料存在於帳戶底下，資產本身沒有自己的身分：無法指向「這個特定的物品」並在不同擁有者之間追蹤它。
 
-- Move 最初的存儲模型不適合管理數位資產，需要複雜且受限的轉移操作。
-- Sui 引入了物件模型 (Object Model)，提供了原生的所有權觀念，簡化了資產管理並啟用了異質資產集合。
+Sui 透過圍繞資產本身重新設計儲存模型，解決了這些問題。在 Sui 中，儲存的單位不是帳戶，而是*物件 (object)*——一個具有自己獨一無二識別碼、且擁有者由系統記錄的型別化值。所有權與*轉帳*成為原生操作：Alice 可以直接將資產 X 轉移給 Bob，而不需要 Bob 事先準備任何東西，且 Bob 可以持有任意數量、任意型別的資產。原始 Move 中的全域儲存運算子在 Move on Sui 中並不存在——在[使用物件 (Using Objects)](./../storage)章節中，我們會看到它們被操作物件的函式所取代。
 
-## 延伸閱讀
+這些改變為物件模型 (Object Model) 奠定了基礎，我們將在下一節中說明。
 
-- Sam Blackshear 所撰寫的 [為什麼我們創造了 Sui Move (Why We Created Sui Move)](https://blog.sui.io/why-we-created-sui-move/)。
+## 總結 (Summary) {#summary}
+
+- 原始的 Move 使用以帳戶為基礎的全域儲存：資源存在於帳戶位址底下，沒有原生的轉帳操作，且異質集合難以管理。
+- Sui 圍繞*物件*重新設計了儲存——具有自己身分且由系統追蹤所有權的型別化值——使轉帳成為原生操作。
+- Move on Sui 移除了全域儲存運算子，改以物件儲存函式取代。
+
+## 延伸閱讀 (Further Reading) {#further-reading}
+
+- Sam Blackshear 撰寫的 [Why We Created Sui Move](https://blog.sui.io/why-we-created-sui-move/)
