@@ -46,8 +46,22 @@ jobs:
 
       - name: Detect files needing translation
         id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail   # a failing detect must turn the job red, not silently report 0
+          # review F2：manifest 更新活在未合併的 auto PR branch 上，zh-tw-main
+          # 的 detect 會對同一批檔重翻、PR 疊 PR（每日 cron 每天多一個 +
+          # 重複燒 API）。有未合併的 auto PR 就本輪跳過（放在 detect 內部：
+          # 若做成獨立 skipped step，後續 steps 讀到的 count 是空字串，
+          # `!= '0'` 反而為真）。
+          OPEN=$(gh pr list --state open --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/zh-tw-"))] | length')
+          if [ "$OPEN" != "0" ]; then
+            echo "已有 $OPEN 個未合併的 auto PR，本輪跳過（merge 後下次 cron 續跑）。"
+            echo "count=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           python -m scripts.zh_tw --detect --english-ref origin/english-main \
             | head -n "$BATCH_SIZE" > /tmp/changed_files.txt
           COUNT=$(grep -c . /tmp/changed_files.txt || true)

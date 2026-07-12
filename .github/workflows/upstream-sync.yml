@@ -74,6 +74,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          # label 不存在時 gh issue create 會直接失敗（review F1：repo 只有
+          # 預設 label），先冪等建立。
+          gh label create upstream-sync-conflict \
+            --description "upstream merge 衝突，需人工處理" --force || true
           EXISTING=$(gh issue list --label upstream-sync-conflict --state open --json number --jq length)
           if [ "$EXISTING" = "0" ]; then
             gh issue create \
