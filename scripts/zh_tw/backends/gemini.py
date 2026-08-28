@@ -12,9 +12,12 @@ from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 #     "from google import genai; import os; \
 #      [print(m.name) for m in genai.Client(api_key=os.environ['GEMINI_API_KEY']).models.list()]"
 # 用實際回傳的模型目錄重新確認/擴充這份清單。
-MODELS = ["gemini-2.5-flash"]
+# free tier 的 RPD 配額是 per model 計，兩個 model = 兩份額度。
+MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
 MAX_RETRIES = 3
 RATE_LIMIT_WAIT = 60
+# 日配額用盡的 429 帶這個 quotaId；等 60 秒不會恢復，直接換下一個 model。
+_DAILY_QUOTA_MARKERS = ("PerDay", "per_day")
 
 
 class GeminiBackend:
@@ -43,13 +46,11 @@ class GeminiBackend:
                     return resp.text
                 except Exception as e:  # noqa: BLE001
                     last = e
-                    is_last_attempt = (
-                        model == MODELS[-1] and attempt == MAX_RETRIES - 1
-                    )
-                    if is_last_attempt:
-                        continue
-                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                        time.sleep(RATE_LIMIT_WAIT)
-                    else:
-                        time.sleep(5)
+                    err = str(e)
+                    if any(m in err for m in _DAILY_QUOTA_MARKERS):
+                        break  # 日配額耗盡：此 model 今天不會再成功，換下一個
+                    if model == MODELS[-1] and attempt == MAX_RETRIES - 1:
+                        break  # 最後一次，不用再等
+                    is_rate_limited = "429" in err or "RESOURCE_EXHAUSTED" in err
+                    time.sleep(RATE_LIMIT_WAIT if is_rate_limited else 5)
         raise RuntimeError(f"所有模型皆失敗: {last}")
