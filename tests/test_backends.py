@@ -539,3 +539,40 @@ def test_gemini_backend_skips_to_next_model_on_daily_quota(monkeypatch):
     b._client = _StubClient()
     assert b.translate("hello") == "結構"
     assert calls == [gemini_mod.MODELS[0], gemini_mod.MODELS[1]]
+
+
+def test_gemini_model_gone_404_skips_to_next_model_without_retry(monkeypatch):
+    """model 下架回 404（2026-08-29 gemini-2.5-flash-lite 實例）：重試三次無意義，
+    要立刻換下一個 model，而且不能 sleep。"""
+    from scripts.zh_tw.backends import gemini as gemini_mod
+
+    monkeypatch.setattr(
+        gemini_mod.time, "sleep", lambda *_: pytest.fail("404 不該 sleep")
+    )
+    calls = []
+
+    class _Resp:
+        text = "結構"
+
+    class _Models:
+        def generate_content(self, model, contents):
+            calls.append(model)
+            if model == gemini_mod.MODELS[0]:
+                raise RuntimeError(
+                    "404 NOT_FOUND. This model models/x is no longer available to new users."
+                )
+            return _Resp()
+
+    class _StubClient:
+        models = _Models()
+
+    b = object.__new__(gemini_mod.GeminiBackend)
+    b._client = _StubClient()
+    assert b.translate("hello") == "結構"
+    assert calls == [gemini_mod.MODELS[0], gemini_mod.MODELS[1]]
+
+
+def test_gemini_models_do_not_include_retired_flash_lite():
+    from scripts.zh_tw.backends import gemini as gemini_mod
+
+    assert "gemini-2.5-flash-lite" not in gemini_mod.MODELS

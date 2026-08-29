@@ -13,7 +13,11 @@ from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 #      [print(m.name) for m in genai.Client(api_key=os.environ['GEMINI_API_KEY']).models.list()]"
 # 用實際回傳的模型目錄重新確認/擴充這份清單。
 # free tier 的 RPD 配額是 per model 計，兩個 model = 兩份額度。
-MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
+# 2026-08-29：gemini-2.5-flash-lite 對新用戶回 404「no longer available, use
+# gemini-3.5-flash-lite」（run 33227490688），故換成官方指名的後繼者。
+MODELS = ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
+# model 不存在/已下架的 404：重試無意義，直接換下一個。
+_MODEL_GONE_MARKERS = ("404", "NOT_FOUND")
 MAX_RETRIES = 3
 RATE_LIMIT_WAIT = 60
 # 日配額用盡的 429 帶這個 quotaId；等 60 秒不會恢復，直接換下一個 model。
@@ -47,8 +51,11 @@ class GeminiBackend:
                 except Exception as e:  # noqa: BLE001
                     last = e
                     err = str(e)
+                    print(f"    [{model} attempt {attempt + 1}] {err[:160]}")
                     if any(m in err for m in _DAILY_QUOTA_MARKERS):
                         break  # 日配額耗盡：此 model 今天不會再成功，換下一個
+                    if any(m in err for m in _MODEL_GONE_MARKERS):
+                        break  # model 已下架：換下一個
                     if model == MODELS[-1] and attempt == MAX_RETRIES - 1:
                         break  # 最後一次，不用再等
                     is_rate_limited = "429" in err or "RESOURCE_EXHAUSTED" in err
