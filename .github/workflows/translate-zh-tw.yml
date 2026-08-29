@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 env:
-  BATCH_SIZE: "10"
+  BATCH_SIZE: "3" # free tier 每 model 20 req/天，每檔約 3-6 req；付費後可調回 10
 
 jobs:
   translate:
@@ -75,14 +75,21 @@ jobs:
 
       - name: Translate
         if: steps.detect.outputs.count != '0'
+        id: translate
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          # 部分失敗不中斷（前車之鑑：配額用盡 → xargs exit 123 → job 死在這裡
+          # → 成功檔案從未 commit → 隔日重翻同一批 → 連續紅燈零進度）。
+          # 成功檔案的 manifest 已落盤，後續照常 commit/PR；殘量隔日 cron 接手。
           xargs -a /tmp/changed_files.txt \
             python -m scripts.zh_tw --backend gemini \
               --english-ref origin/english-main --apply
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          [ "$rc" -eq 0 ] || echo "::warning::部分檔案翻譯失敗（rc=$rc），先提交已成功者"
 
       - name: Validate before commit
         if: steps.detect.outputs.count != '0'
@@ -100,7 +107,12 @@ jobs:
           git checkout -b "$BRANCH"
           git add scripts/translation-manifest.json
           xargs -a /tmp/changed_files.txt git add --
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            # 全數失敗才轉紅（部分成功走 PR 流程，失敗殘量由 cron 續跑）
+            [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
+            exit 0
+          fi
           git commit -m "Auto update zh-TW translations (Gemini)"
           git push origin "$BRANCH"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"

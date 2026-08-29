@@ -508,3 +508,34 @@ def test_claude_cli_backend_runs_outside_project_cwd(monkeypatch):
     assert captured["cwd_ok"]
     # stdin 必須斷開：claude -p 會把非 tty 的殘留 stdin 整段讀進當輸入
     assert captured["stdin"] == subprocess.DEVNULL
+
+
+def test_gemini_backend_skips_to_next_model_on_daily_quota(monkeypatch):
+    """日配額 429 不該對同一 model 重試 3 次（等 60 秒不會恢復），
+    要立刻換下一個 model —— 這正是 CI 連續紅燈時燒掉的時間。"""
+    from scripts.zh_tw.backends import gemini as gemini_mod
+
+    monkeypatch.setattr(
+        gemini_mod.time, "sleep", lambda *_: pytest.fail("日配額耗盡不該 sleep")
+    )
+    calls = []
+
+    class _Resp:
+        text = "結構"
+
+    class _Models:
+        def generate_content(self, model, contents):
+            calls.append(model)
+            if model == gemini_mod.MODELS[0]:
+                raise RuntimeError(
+                    "429 RESOURCE_EXHAUSTED quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+                )
+            return _Resp()
+
+    class _StubClient:
+        models = _Models()
+
+    b = object.__new__(gemini_mod.GeminiBackend)
+    b._client = _StubClient()
+    assert b.translate("hello") == "結構"
+    assert calls == [gemini_mod.MODELS[0], gemini_mod.MODELS[1]]
