@@ -1,7 +1,7 @@
 ---
 description: 設定 VSCode 或 IntelliJ IDEA，以便進行 Move 開發 (Move development)，並使用語法突顯 (syntax
   highlighting)、錯誤檢查 (error checking) 和程式碼格式化 (code formatting) 擴充功能 (extensions)。
-title: 設定您的整合開發環境 (IDE)
+title: 設定您的 IDE
 keywords:
 - Move
 - Sui
@@ -38,37 +38,37 @@ Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都�
 
 > **IntelliJ 外掛程式不支援 Move 2024 版本，部分語法將不會被突顯。**
 
-## VSCode 整合開發環境 (VSCode) {#vscode}
+## VSCode {#vscode}
 
-- [VSCode](https://code.visualstudio.com/) 是 Microsoft 出品的免費開源整合開發環境 (IDE)。
+- [VSCode](https://code.visualstudio.com/) 是來自 Microsoft 的免費開源 IDE。
 - [Move (Extension)](https://marketplace.visualstudio.com/items?itemName=mysten.move) 是由 [Mysten Labs](https://mystenlabs.com) 維護的 Move 語言伺服器擴充功能。
 - [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) - 由 [Mysten Labs](https://mystenlabs.com) 開發與維護的 Move 程式碼格式化工具。
 - [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 是 [Damir Shamanaev](https://github.com/damirka/) 開發的 Move 簡單語法突顯擴充功能。
 
-## IntelliJ IDEA 整合開發環境 (IntelliJ IDEA) {#intellij-idea}
+## IntelliJ IDEA {#intellij-idea}
 
-- [IntelliJ IDEA](https://www.jetbrains.com/idea/) 是 JetBrains 出品的商業整合開發環境 (IDE)。
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) 是來自 JetBrains 的商業 IDE。
 - [Move Language Plugin](https://plugins.jetbrains.com/plugin/23301-sui-move-language) 由 [MoveFuns](https://movefuns.org/) 提供，為 IntelliJ IDEA 帶來 Move on Sui 語言擴充功能。
 
-## Emacs 文字編輯器 (Emacs) {#emacs}
+## Emacs {#emacs}
 
 - [Emacs](https://www.gnu.org/software/emacs/) 是一款免費開源文字編輯器。
 - [move-mode](https://github.com/amnn/move-mode) 是由 [Ashok Menon](https://github.com/amnn) 開發的 Emacs Move 模式。
 
-## Zed 程式碼編輯器 (Zed) {#zed}
+## Zed {#zed}
 
 - [Zed](https://zed.dev/) 是一款專為高效能人機與 AI 協作設計的新一代程式碼編輯器。
 - [Move](https://github.com/Tzal3x/move-zed-extension) 是由 [Tzal3x](https://github.com/Tzal3x) 維護的 Move 語言伺服器擴充功能。
 
-## Github Codespaces 開發環境 (Github Codespaces) {#github-codespaces}
+## Github Codespaces {#github-codespaces}
 
-Github 的基於網頁的 IDE 可以直接在瀏覽器中執行，並提供幾乎完整功能的 VSCode 體驗。
+Github 的網頁版 IDE 可直接在瀏覽器中執行，並提供幾乎完整功能的 VSCode 體驗。
 
 - [Github Codespaces](https://github.com/features/codespaces)
 - [Move Syntax](https://marketplace.visualstudio.com/items?itemName=damirka.move-syntax) 在擴充功能市集中也可取得。
 - [Move Formatter](https://marketplace.visualstudio.com/items?itemName=mysten.prettier-move) 在擴充功能市集中也可取得。
 
-## 其他工具 (Other (CLI)) {#other-cli}
+## 其他 (Other (CLI)) {#other-cli}
 
 上述列出的部分工具具有支援 CLI 的版本。
 

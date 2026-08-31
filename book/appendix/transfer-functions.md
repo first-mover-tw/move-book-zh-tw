@@ -35,27 +35,27 @@ goal:
 
 ## 轉移函式比較 (Transfer Functions Comparison) {#transfer-functions-comparison}
 
-| 函式                      | 公開函式                | 最終狀態      | 權限                      |
-| :------------------------ | :---------------------- | :------------ | :------------------------ |
-| [`transfer`][transfer]    | `public_transfer`       | 地址擁有      | 完整                      |
-| [`share_object`][share]   | `public_share_object`   | 共享          | 參照、可變參照、刪除      |
-| [`freeze_object`][freeze] | `public_freeze_object`  | 凍結          | 參照                      |
-| [`party_transfer`][party] | `public_party_transfer` | 方            | [請參閱「方」表格](#party) |
+| 函式                      | 公開函式                | 最終狀態 | 權限                        |
+| :------------------------ | :---------------------- | :------- | :-------------------------- |
+| [`transfer`][transfer]    | `public_transfer`       | 地址擁有 | 完整                        |
+| [`share_object`][share]   | `public_share_object`   | 共享     | 參考、可變參考、刪除        |
+| [`freeze_object`][freeze] | `public_freeze_object`  | 凍結     | 參考                        |
+| [`party_transfer`][party] | `public_party_transfer` | Party    | [請參閱 Party 表格](#party) |
 
 ## 狀態比較 (States Comparison) {#states-comparison}
 
-| 狀態        | 說明                                          |
-| :---------- | :-------------------------------------------- |
-| 地址擁有    | 物件可由地址（或物件）完全存取                |
-| 共享        | 物件可由任何人參照及刪除                      |
-| 凍結        | 物件可透過不可變參照存取                      |
-| 方          | 取決於方設定 ([請參閱「方」表格](#party)) |
+| 狀態     | 說明                                            |
+| :------- | :---------------------------------------------- |
+| 地址擁有 | 物件可由地址（或物件）完全存取                  |
+| 共享     | 物件可由任何人參考及刪除                        |
+| 凍結     | 物件可透過不可變參考存取                        |
+| Party    | 取決於 Party 設定 ([請參閱 Party 表格](#party)) |
 
-## 方 (Party) {#party}
+## Party {#party}
 
-| 函式           | 說明                                 |
-| :------------- | :----------------------------------- |
-| `single_owner` | 物件具有與「地址擁有」相同的權限     |
+| 函式           | 說明                             |
+| :------------- | :------------------------------- |
+| `single_owner` | 物件具有與「地址擁有」相同的權限 |
 
 [transfer]: https://docs.sui.io/references/framework/sui_sui/transfer#sui_transfer_transfer
 [share]: https://docs.sui.io/references/framework/sui_sui/transfer#sui_transfer_share_object
