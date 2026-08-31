@@ -1,7 +1,7 @@
 ---
 description: 學術出版品 (Academic publications) 關於 Move 與 Sui：探討借用檢查器 (borrow checker)、資源安全
   (resource safety) 與 Move 程式 (Move programs) 形式化驗證 (formal verification) 的論文。
-title: '附錄 D: 刊物'
+title: '附錄 D: 出版品 (Publications)'
 keywords:
 - Move
 - Sui

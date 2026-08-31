@@ -31,8 +31,8 @@ goal:
 
 # 附錄 A：詞彙表 (Appendix A: Glossary) {#appendix-a-glossary}
 
-- Fast Path - 用於描述一種不涉及共享物件，且無需共識即可執行的交易。
-- Parallel Execution - 用於描述 Sui 執行時期平行執行交易的能力，包含涉及共享物件的交易。
+- 快速路徑 (Fast Path) - 用於描述一種不涉及共享物件，且無需共識即可執行的交易。
+- 平行執行 (Parallel Execution) - 用於描述 Sui 執行時期平行執行交易的能力，包含涉及共享物件的交易。
 - 內部型別 (Internal Type) - 模組內部定義的型別。此型別的欄位無法從模組外部存取，且在只有「key」能力的情況下，無法用於 `public_*` 傳輸函式。
 
 ## 能力 (Abilities) {#abilities}
