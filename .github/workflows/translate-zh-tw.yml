@@ -29,6 +29,10 @@ jobs:
         with:
           ref: zh-tw-main
           fetch-depth: 0
+          # PAT（非 GITHUB_TOKEN）：Actions 被 repo 層 workflow permissions
+          # 禁止建 PR，而該開關要 admin 才點得到（我們只有 maintain）。
+          # PAT 不受那個開關管，故 push 與 gh pr create 一律走 PR_TOKEN。
+          token: ${{ secrets.PR_TOKEN }}
 
       - name: Fetch english-main
         run: git fetch origin english-main
@@ -120,8 +124,15 @@ jobs:
       - name: Open PR into zh-tw-main
         if: steps.detect.outputs.count != '0' && env.BRANCH != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PR_TOKEN }}
         run: |
+          # 開 PR 失敗不轉紅：翻譯與 push 都已成功，只差最後這一步（token 過期、
+          # 配額、API 抽風）。降級成 warning + 可點的 compare 連結，人工補開即可，
+          # 避免整條 job 紅燈掩蓋掉「本輪其實翻成功了」。
           gh pr create --base zh-tw-main --head "$BRANCH" \
             --title "Update zh-TW translations (Gemini)" \
-            --body "自動翻譯 english-main 上變動的 Markdown 檔案。已通過 check_repo。請檢查術語與翻譯品質後再合併。"
+            --body "自動翻譯 english-main 上變動的 Markdown 檔案。已通過 check_repo。請檢查術語與翻譯品質後再合併。" \
+            || {
+              echo "::warning::gh pr create 失敗，請手動開 PR：https://github.com/${{ github.repository }}/compare/zh-tw-main...$BRANCH?expand=1"
+              exit 0
+            }
