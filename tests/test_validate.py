@@ -699,6 +699,35 @@ def test_heading_suffix_error_single_heading_cases():
     assert ok("Loop stuff (Loops)", "Loops")  # 前綴未翻
 
 
+def test_heading_suffix_error_exempts_proper_noun_headings():
+    """產品名沒有中文譯名，verbatim 才是正解。
+
+    舊版只豁免「無小寫」（BCS），VSCode / Emacs / Github Codespaces 含小寫
+    → 判未翻譯 → 修復 pass 只能叫 backend 硬掰中文前綴，實測產出
+    「VSCode 整合開發環境 (VSCode)」這種贅語（run 33367759448 / PR #17）。
+    """
+    ok = validate.heading_suffix_error
+    assert ok("VSCode", "VSCode") is None
+    assert ok("Emacs", "Emacs") is None
+    assert ok("Zed", "Zed") is None
+    assert ok("Github Codespaces", "Github Codespaces") is None
+    assert ok("IntelliJ IDEA", "IntelliJ IDEA") is None
+    assert ok("Party", "Party") is None  # 2026-08-31 裁決：party 保留原文
+
+
+def test_heading_suffix_error_proper_noun_exemption_is_not_a_blanket_pass():
+    """豁免必須逐 token 全稱，否則等於把 gate 9 的 verbatim 判定廢掉。
+
+    只要有一個 token 不是已知專有名詞，散文標題就仍要被擋 —— 這正是
+    Task 17 A/B 觀測到的 backend 失效模式（sonnet 對 "Scopes"）。
+    """
+    ok = validate.heading_suffix_error
+    assert ok("Set Up Your IDE", "Set Up Your IDE")  # Set/Up/Your 不在表內
+    assert ok("Move Basics", "Move Basics")  # Move 在表內、Basics 不在
+    assert ok("Scopes", "Scopes")
+    assert ok("Loops", "Loops")
+
+
 # --- 簡體偵測的詞級白名單：干/准 在特定詞裡是合法繁體 ---
 
 

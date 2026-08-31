@@ -4,8 +4,10 @@
 無需另行製造缺陷來驗證守衛有效。
 """
 
+import json
 import os
 import re
+from pathlib import Path
 
 from opencc import OpenCC
 
@@ -261,6 +263,37 @@ ANCHOR_SUFFIX = _ANCHOR_SUFFIX  # 公開別名：pipeline._repair_headings 與�
 # glossary.protected_mask 的跨行/巢狀 backtick 處理。
 _HEADING_CODE_SPAN = re.compile(r"`[^`]*`")
 
+# gate 9 的專有名詞豁免表。「去 inline code 後無小寫」那條豁免是為縮寫
+# （BCS）設計的，接不住 VSCode / Emacs / Zed / Github Codespaces 這類
+# 本來就沒有中文譯名的產品名：它們含小寫，於是被判「未翻譯」，而修復
+# pass 唯一的出路是叫 backend 硬掰一個中文前綴，實測產出
+# 「VSCode 整合開發環境 (VSCode)」「Emacs 文字編輯器 (Emacs)」這種贅語
+# （2026-08-31，run 33367759448 / PR #17）。gate 逼出來的缺陷手修沒用，
+# 下一輪重翻會原樣長回來，所以豁免要開在 gate 這一側。
+#
+# 判定採 token 全稱：標題去掉 code span 與標點後，每個字母 token 都在表內
+# 才豁免（"Github Codespaces" = Github + Codespaces 都在表內 → 過；
+# "Set Up Your IDE" 只有 IDEA/IDE 之類在表內、Set/Up/Your 不在 → 仍擋）。
+# 逐 token 而非整句比對，是為了讓多字產品名不必逐一列舉組合。
+#
+# 這張表刻意只收「產品／工具名」與使用者裁決過保留原文的專名（Party，
+# 2026-08-31 裁決），不收 Bag / Balance / Coin / Clock 這類型別名——那是
+# 另一個獨立裁決（型別名到底該不該保留原文），混進來會讓豁免悄悄擴權。
+_PROPER_NOUNS = frozenset(
+    json.loads((Path(__file__).parent / "proper_nouns.json").read_text(encoding="utf-8"))
+)
+_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*")
+
+
+def _is_proper_noun_only(text: str) -> bool:
+    """text 去掉 code span 後，所有字母 token 都是已知專有名詞。
+
+    無字母 token 時回 False：那種標題走「無小寫」那條豁免，不該從這裡
+    拿到第二張通行證（避免兩條豁免的前提互相漂移）。
+    """
+    words = _WORD.findall(_HEADING_CODE_SPAN.sub("", text))
+    return bool(words) and all(w in _PROPER_NOUNS for w in words)
+
 
 def check_heading_suffix(zh_text: str, en_text: str) -> list[str]:
     """9. 新翻譯的 body 標題必須是「中文 (English)」，後綴值等於對應的英文
@@ -306,6 +339,8 @@ def heading_suffix_error(zh_t: str, en_t: str) -> str | None:
     if zh_t == en_t:
         if not re.search(r"[a-z]", _HEADING_CODE_SPAN.sub("", en_t)):
             return None
+        if _is_proper_noun_only(en_t):
+            return None  # 產品名／裁決保留原文的專名：verbatim 才是正解
         return f"未翻譯（verbatim 複製英文原文）: {zh_t!r}"
     want = f"({en_t})"
     prefix = zh_t[: -len(want)].strip() if zh_t.endswith(want) else ""
