@@ -29,6 +29,12 @@ jobs:
         with:
           ref: english-main
           fetch-depth: 0
+          # PAT（非 GITHUB_TOKEN）：GITHUB_TOKEN 是 GitHub App identity，
+          # push 含 .github/workflows/* 的 commit 會被直接拒絕
+          # （refusing to allow a GitHub App to create or update workflow）。
+          # 上游動到 test.yml 時整條同步就死在這，故一律走 PR_TOKEN
+          # （scope 含 workflow）。與 translate-zh-tw.yml 同一決策。
+          token: ${{ secrets.PR_TOKEN }}
 
       - name: Fetch upstream
         run: |
@@ -65,13 +71,18 @@ jobs:
       - name: Dispatch translate workflow
         if: steps.check.outputs.new == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PR_TOKEN }}
+          # 本 step 之前已 `git remote add upstream`，gh 的 remote 優先序是
+          # upstream > github > origin，不釘 GH_REPO 會打到 MystenLabs/move-book
+          # 拿 403（notes.md 舊 gotcha：gh 會誤解析到上游 repo）。
+          GH_REPO: ${{ github.repository }}
         run: gh workflow run translate-zh-tw.yml --ref zh-tw-main
 
       - name: Open conflict issue
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PR_TOKEN }}
+          GH_REPO: ${{ github.repository }} # 同上：避免 gh 解析到 upstream remote
         run: |
           set -euo pipefail
           # label 不存在時 gh issue create 會直接失敗（review F1：repo 只有
