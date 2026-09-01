@@ -1,10 +1,40 @@
 ---
-description: Move.toml 套件清單 (Package Manifest)：套件中繼資料、相依套件、具名地址與相依套件覆寫詳解。
+description: Move.toml 套件 (package) 資訊清單 (manifest)：套件 (package) 中繼資料 (metadata)、依賴
+  (dependencies)、具名 (named) 地址 (addresses) 與依賴 (dependency) 覆寫 (overrides) 說明。
+title: 套件 (Package) 清單 (Manifest)
+keywords:
+- Move
+- Sui
+- Move tutorial
+- package
+- manifest
+questions:
+- What is Package Manifest in Move?
+- How do I use Package Manifest in Move?
+- What is Sections in Move?
+- What is TOML Styles in Move?
+answer: 'The Move.toml package manifest: package metadata, dependencies, named addresses,
+  and dependency overrides explained.'
+goal:
+  description: 'Reader understands the Move.toml package manifest: package metadata,
+    dependencies, named addresses, and dependency overrides explained'
+  requires:
+  - has_frontmatter:
+    - title
+    - description
+    - keywords
+    label: Has required frontmatter fields
+  - min_words: 50
+    label: Needs content depth
+  - has_questions: true
+    label: Needs questions for AI search visibility
+  - has_answer: true
+    label: Needs answer summary for AI citation
 ---
 
-# 套件清單 (Package Manifest) {#package-manifest}
+# 套件 Manifest (Package Manifest) {#package-manifest}
 
-`Move.toml` 是描述 [套件](./packages) 及其相依性的清單檔案。它以 [TOML](https://toml.io/en/) 格式撰寫，包含多個區段，其中最重要的是 `[package]`、`[dependencies]` 與 `[addresses]`。
+`Move.toml` 是描述[套件 (package)](./packages) 及其依賴項的 manifest 檔案。它以 [TOML](https://toml.io/en/) 格式撰寫，包含多個章節，其中最重要的是 `[package]`、`[dependencies]` 和 `[addresses]`。
 
 ```toml
 [package]
@@ -15,46 +45,46 @@ edition = "2024"
 example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
 ```
 
-## 區段 (Sections) {#sections}
+## 章節 (Sections) {#sections}
 
 ### 套件 (Package) {#package}
 
-`[package]` 區段用來描述套件。此區段中的欄位皆不會發佈到鏈上，但會用於工具與版本發布管理；它們也會指定編譯器使用的 Move 版本。
+`[package]` 章節用於描述套件。此章節中的任何欄位皆不會發佈至鏈上，但會用於工具和發佈管理；它們也指定了編譯器的 Move 版本。
 
-- `name` - 匯入此套件時使用的名稱；
-- `edition` - Move 語言的版本；目前唯一有效的值是 `2024`；
+- `name` - 匯入套件時的名稱；
+- `edition` - Move 語言的版本；目前唯一有效的值為 `2024`；
 
-### 相依性 (Dependencies) {#dependencies}
+### 依賴項 (Dependencies) {#dependencies}
 
-`[dependencies]` 區段用來指定專案的相依性。每個相依性都以鍵值對的形式指定，其中鍵是相依性的名稱，值是相依性的規格。相依性規格可以是 git repository 的網址，或是本機目錄的路徑。
+`[dependencies]` 章節用於指定專案的依賴項。每個依賴項都以鍵值對的形式指定，其中鍵是依賴項的名稱，值是依賴項規格。依賴項規格可以是 Git 儲存庫 URL 或本機目錄的路徑。
 
 ```toml
-# git repository
+# Git 儲存庫
 example = { git = "https://github.com/example/example.git", subdir = "path/to/package", rev = "framework/testnet" }
 
-# 本地目錄
+# 本機目錄
 my_package = { local = "../my-package" }
 ```
 
-套件也會從其相依性匯入具名地址。舉例來說，Sui 相依性會將 `std` 與 `sui` 地址加入專案中，可在程式碼中取代完整的 `0x1` 與 `0x2` 地址使用。
+套件也會從其依賴項匯入具名地址。例如，Sui 依賴項會將 `std` 和 `sui` 地址新增至專案，可在程式碼中取代完整的 `0x1` 和 `0x2` 地址使用。
 
-從 Sui CLI 1.45 版開始，若專案中沒有明確列出任何 Sui 系統套件（`std`、`sui`、`system`、`bridge` 與 `deepbook`），這些套件會自動被加入為相依性。
+從 Sui CLI 1.45 版開始，如果沒有明確列出任何 Sui 系統套件（`std`、`sui`、`system`、`bridge` 和 `deepbook`），將會自動新增為依賴項。
 
 ### 使用 Override 解決版本衝突 (Resolving Version Conflicts with Override) {#resolving-version-conflicts-with-override}
 
-有時相依性之間會有同一個套件版本衝突的情況。舉例來說，如果你有兩個相依性使用不同版本的 Example 套件，你可以在 `[dependencies]` 區段中覆寫該相依性。作法是在該相依性中加入 `override` 欄位。此時會使用 `[dependencies]` 區段中指定的版本，而非該相依性自身指定的版本。
+有時候依賴項之間會發生相同套件的不同版本之間發生衝突。例如，如果您有兩個依賴項使用不同版本的 Example 套件，您可以在 `[dependencies]` 章節中覆寫該依賴項。為此，請將 `override` 欄位新增至依賴項。將會使用 `[dependencies]` 章節中指定的依賴項版本，而非依賴項本身指定的版本。
 
 ```toml
 [dependencies]
 example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 ```
 
-## TOML 風格 (TOML Styles) {#toml-styles}
+## TOML 樣式 (TOML Styles) {#toml-styles}
 
-TOML 格式支援兩種表格書寫風格：inline 與 multiline。上面的範例使用的是 inline 風格，但也可以使用 multiline 風格。你不會想在 `[package]` 區段使用 multiline 風格，但它對相依性設定來說可能很有用。
+TOML 格式支援兩種表格樣式：內嵌 (inline) 和多行 (multiline)。上述範例皆使用內嵌樣式，但也可以使用多行樣式。您不會想將其用於 `[package]` 章節，但對於依賴項可能很有用。
 
 ```toml
-# 單行樣式
+# 內嵌樣式
 [dependencies]
 example = { override = true, git = "https://github.com/example/example.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 MyPackage = { local = "../my-package" }
@@ -74,5 +104,5 @@ local = "../my-package"
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Sui Docs 中的 [Move Package Management](https://docs.sui.io/develop/manage-packages/move-package-management)。
-- Move Reference 中的 [Packages](./../../reference/packages)。
+- Sui 文件中的 [Move 套件管理 (Move Package Management)](https://docs.sui.io/develop/manage-packages/move-package-management)。
+- Move 參考文件中的 [套件 (Packages)](./../../reference/packages)。
