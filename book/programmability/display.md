@@ -49,7 +49,7 @@ public struct Display<phantom T> has key {
 public struct DisplayCap<phantom T> has key, store { id: UID }
 ```
 
-`Display<T>` 物件本身是_共享的_，其權限則由另一個獨立的自有物件——`DisplayCap<T>` [能力（capability）](./capability)——來代表。持有該能力的人可以隨時 `set`（設定）、`unset`（取消設定）或 `clear`（清除）展示欄位，且變更會全域套用，不需要更新每一個物件。該能力可以轉移給其他帳戶，或整合進具有自訂中繼資料管理功能的應用程式中。
+`Display<T>` 物件本身是*共享的*，其權限則由另一個獨立的自有物件——`DisplayCap<T>` [能力（capability）](./capability)——來代表。持有該能力的人可以隨時 `set`（設定）、`unset`（取消設定）或 `clear`（清除）展示欄位，且變更會全域套用，不需要更新每一個物件。該能力可以轉移給其他帳戶，或整合進具有自訂中繼資料管理功能的應用程式中。
 
 ## 建立展示 (Creating a Display) {#creating-a-display}
 
@@ -84,7 +84,7 @@ public struct DisplayCap<phantom T> has key, store { id: UID }
 
 ## 範本語法 (Template Syntax) {#template-syntax}
 
-Display 中的每個值都是一個_格式字串 (format string)_——由字面文字與以 `{` 與 `}` 分隔的運算式組成。最簡單的運算式是欄位路徑：`{path}` 會被替換為該路徑對應欄位的值，其中路徑是以點分隔的欄位名稱清單，從被展示的物件開始。若要輸出字面上的大括號，將其重複一次即可——`{{` 會變成 `{`。
+Display 中的每個值都是一個*格式字串 (format string)*——由字面文字與以 `{` 與 `}` 分隔的運算式組成。最簡單的運算式是欄位路徑：`{path}` 會被替換為該路徑對應欄位的值，其中路徑是以點分隔的欄位名稱清單，從被展示的物件開始。若要輸出字面上的大括號，將其重複一次即可——`{{` 會變成 `{`。
 
 ```move file=packages/samples/sources/programmability/display.move anchor=nested
 
@@ -100,7 +100,7 @@ Display 中的每個值都是一個_格式字串 (format string)_——由字面
 }
 ```
 
-欄位路徑只是最基本的運算式。運算式的完整形式有三個部分——一條用來導覽資料的_鏈 (chain)_、以 `|` 分隔的可選_後備值 (fallbacks)_清單，以及以 `:` 開頭、控制值如何呈現的可選_轉換 (transform)_：
+欄位路徑只是最基本的運算式。運算式的完整形式有三個部分——一條用來導覽資料的*鏈 (chain)*、以 `|` 分隔的可選*後備值 (fallbacks)*清單，以及以 `:` 開頭、控制值如何呈現的可選*轉換 (transform)*：
 
 ```text
 { chain | fallback | ... : transform }

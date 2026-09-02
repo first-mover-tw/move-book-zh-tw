@@ -27,7 +27,7 @@ public fun new<T: drop>(_witness: T, ctx: &mut TxContext): TreasuryCap<T> {
 }
 ```
 
-一般的 witness 證明了呼叫模組擁有型別 `T`，但它並不能證明這個 witness 曾經——或未來將——被建構了_幾次_。一個不誠實的開發者可以直接呼叫 `new` 兩次，把第二個 treasury 留給自己：
+一般的 witness 證明了呼叫模組擁有型別 `T`，但它並不能證明這個 witness 曾經——或未來將——被建構了*幾次*。一個不誠實的開發者可以直接呼叫 `new` 兩次，把第二個 treasury 留給自己：
 
 ```move
 module book::simple_coin_cheater;

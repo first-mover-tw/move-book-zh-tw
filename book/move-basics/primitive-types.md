@@ -4,13 +4,13 @@ description: Move 基本型別（primitive types）：布林值（booleans）與
 
 # 基本型別 (Primitive Types) {#primitive-types}
 
-Move 是一種靜態型別語言：每個值都有一個型別，且在編譯時期即可得知。本節將介紹其中最簡單的型別 —— 內建的_基本_型別：布林值與無號整數。它們與下一節介紹的 [地址](./address) 一起，構成了其他所有型別的基礎材料。
+Move 是一種靜態型別語言：每個值都有一個型別，且在編譯時期即可得知。本節將介紹其中最簡單的型別 —— 內建的*基本*型別：布林值與無號整數。它們與下一節介紹的 [地址](./address) 一起，構成了其他所有型別的基礎材料。
 
 > 本章的程式碼範例都是節錄片段：像下面這樣的運算式，實際上是放在模組內的一個函式中 —— 通常是 [測試函式](./testing) —— 為求簡潔我們省略了模組的部分。若想親自試試某個範例，可以把它放進 [Hello World](./../your-first-move/hello-world) 章節所建立套件中的 `#[test]` 函式裡，然後執行 `sui move test`。
 
 ## 變數與賦值 (Variables and Assignment) {#variables-and-assignment}
 
-變數以 `let` 關鍵字宣告，且預設是_不可變的_：一旦賦值後就無法替換。若需要改變的變數，則要以 `let mut` 宣告，如此一來才能用 `=` 運算子重新賦值：
+變數以 `let` 關鍵字宣告，且預設是*不可變的*：一旦賦值後就無法替換。若需要改變的變數，則要以 `let mut` 宣告，如此一來才能用 `=` 運算子重新賦值：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=variables_and_assignment
 
@@ -18,7 +18,7 @@ Move 是一種靜態型別語言：每個值都有一個型別，且在編譯時
 
 型別標註 —— 也就是名稱後面的 `: u8` —— 在編譯器能從值或後續使用推斷出型別時是可選的；寫出它只是為了清楚易讀，並非必要。
 
-變數名稱也可以透過再次宣告來重複使用，這稱為_遮蔽 (shadowing)_。與重新賦值不同，遮蔽會建立一個新變數，因此它對不可變變數也適用，並且可以改變型別：
+變數名稱也可以透過再次宣告來重複使用，這稱為*遮蔽 (shadowing)*。與重新賦值不同，遮蔽會建立一個新變數，因此它對不可變變數也適用，並且可以改變型別：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=shadowing
 
@@ -36,7 +36,7 @@ Move 是一種靜態型別語言：每個值都有一個型別，且在編譯時
 
 ## 整數型別 (Integer Types) {#integer-types}
 
-Move 有六種整數型別，差異僅在於大小 —— 且全部都是_無號的_：Move 中沒有負整數，也沒有專門的有號型別。
+Move 有六種整數型別，差異僅在於大小 —— 且全部都是*無號的*：Move 中沒有負整數，也沒有專門的有號型別。
 
 <div class="modules-table">
 
@@ -79,13 +79,13 @@ Move 支援整數的標準算術運算：加法、減法、乘法、除法與取
 
 </div>
 
-除法是_無條件捨去_的：沒有小數值，任何餘數都會被捨棄，所以 `7 / 2` 等於 `3`。整數也可以用 `==`、`!=`、`<`、`>`、`<=` 和 `>=` 進行比較，產生一個 `bool`：
+除法是*無條件捨去*的：沒有小數值，任何餘數都會被捨棄，所以 `7 / 2` 等於 `3`。整數也可以用 `==`、`!=`、`<`、`>`、`<=` 和 `>=` 進行比較，產生一個 `bool`：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=comparison
 
 ```
 
-在每一個運算與比較中，運算元的型別_必須相符_ —— 整數型別之間沒有隱式轉換，將 `u8` 與 `u64` 相加會導致編譯錯誤。若要對不同型別進行運算，其中一個運算元必須先明確轉型。
+在每一個運算與比較中，運算元的型別*必須相符* —— 整數型別之間沒有隱式轉換，將 `u8` 與 `u64` 相加會導致編譯錯誤。若要對不同型別進行運算，其中一個運算元必須先明確轉型。
 
 > 想瞭解更多運算，包含位元運算，請參閱
 > [Move 參考文件](./../../reference/primitive-types/integers#bitwise)。
@@ -98,7 +98,7 @@ Move 支援整數的標準算術運算：加法、減法、乘法、除法與取
 
 ```
 
-_向上_轉型到較大的型別永遠會成功。_向下_轉型則必須能夠容納：與那些會靜默截斷值的語言不同，當數值超出範圍時 Move 會中止：
+*向上*轉型到較大的型別永遠會成功。*向下*轉型則必須能夠容納：與那些會靜默截斷值的語言不同，當數值超出範圍時 Move 會中止：
 
 ```move file=packages/samples/sources/move-basics/primitive-types.move anchor=downcast
 

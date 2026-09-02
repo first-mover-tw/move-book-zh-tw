@@ -6,7 +6,7 @@ description: 在 Sui 上的地址餘額 (Address balances)：無需 Coin 物件�
 
 [`Coin`](./balance-and-coin) 是一種物件：要花費它，交易必須以其 ID 參考它、取得它，並將它傳入。這對離散資產來說運作良好，但這會讓帳戶的資金變成一組必須被追蹤、合併與分割的個別物件。_地址餘額 (Address balances)_ 提供了不同的模型：以流水總數的形式直接持有於地址上的可替代價值，不需要管理任何物件。
 
-在底層，該價值存在於以 `(address, type)` 這對鍵值索引的鏈上_累加器 (accumulator)_ 中。某地址上 `T` 的餘額是單一數字，資金傳入時會增加，提領時會減少——這遠比一堆代幣的錢包更接近銀行帳戶的運作方式。
+在底層，該價值存在於以 `(address, type)` 這對鍵值索引的鏈上*累加器 (accumulator)* 中。某地址上 `T` 的餘額是單一數字，資金傳入時會增加，提領時會減少——這遠比一堆代幣的錢包更接近銀行帳戶的運作方式。
 
 > 地址餘額是 Sui Framework 最近新增的功能。本節涵蓋核心的 `send_funds` / `redeem_funds` API、從物件提領，以及保護提領免於重放攻擊的交易層級規則。
 
@@ -20,11 +20,11 @@ description: 在 Sui 上的地址餘額 (Address balances)：無需 Coin 物件�
 
 `send_funds` 同時定義在 `Coin` 與 `Balance` 上。對於 `Coin` 而言，它會將代幣轉換為 `Balance` 並加入收款人的累加器；不會留下任何物件，收款人也不需要「接受」任何東西——餘額就這樣直接增加。
 
-> 地址餘額的目前數值可以透過 Move 中的 `balance::settled_funds_value` 讀取，只要提供對系統 `AccumulatorRoot` 物件的參考即可。正如其名稱所示，它回報的是_已結算 (settled)_ 資金，時間點為目前共識提交開始時——在該次提交中產生的存款尚不會反映在其中。
+> 地址餘額的目前數值可以透過 Move 中的 `balance::settled_funds_value` 讀取，只要提供對系統 `AccumulatorRoot` 物件的參考即可。正如其名稱所示，它回報的是*已結算 (settled)* 資金，時間點為目前共識提交開始時——在該次提交中產生的存款尚不會反映在其中。
 
 ## 提領資金 (Withdrawing Funds) {#withdrawing-funds}
 
-反向操作——從地址餘額_取出_價值——則被刻意設計成更加受限。你不能讀取任意地址的餘額並從中鑄造代幣；相反地，提領是以 `Withdrawal<Balance<T>>` 值來表示，該型別定義在 Sui Framework 的 `sui::funds_accumulator` 模組中：
+反向操作——從地址餘額*取出*價值——則被刻意設計成更加受限。你不能讀取任意地址的餘額並從中鑄造代幣；相反地，提領是以 `Withdrawal<Balance<T>>` 值來表示，該型別定義在 Sui Framework 的 `sui::funds_accumulator` 模組中：
 
 ```move
 /// 允許從 `owner` 提領最多 `limit` 單位的 `T`。
@@ -34,7 +34,7 @@ public struct Withdrawal<phantom T: store> has drop {
 }
 ```
 
-`Withdrawal` 是一種_授權 (authorization)_，而非資金本身。它記錄了要從誰的餘額中提領（`owner`）以及可提領的最大金額（`limit`）。它具有 `drop` 能力，因此未使用的 `Withdrawal` 可以直接被捨棄。交易會提供它——交易發送者的 `Withdrawal` 會由交易建構器以輸入的形式提供，其精神與 gas 代幣或[已接收物件](./../storage/transfer-to-object)相同。使用者程式碼中沒有它的建構函式。
+`Withdrawal` 是一種*授權 (authorization)*，而非資金本身。它記錄了要從誰的餘額中提領（`owner`）以及可提領的最大金額（`limit`）。它具有 `drop` 能力，因此未使用的 `Withdrawal` 可以直接被捨棄。交易會提供它——交易發送者的 `Withdrawal` 會由交易建構器以輸入的形式提供，其精神與 gas 代幣或[已接收物件](./../storage/transfer-to-object)相同。使用者程式碼中沒有它的建構函式。
 
 因此，一筆從發送者地址餘額中花費的交易看起來會像這樣：`Withdrawal` 以輸入的形式傳入，在簽署時會針對發送者的餘額進行檢查，並由一個指令將其轉換為 `Coin`：
 
@@ -62,7 +62,7 @@ public struct Withdrawal<phantom T: store> has drop {
 
 ```
 
-分割與合併 `Withdrawal` 只是在移動_額度 (limit)_；在呼叫 `redeem_funds` 之前，並不會有任何資金易手。合併需要兩個提領的 `owner` 相同，否則會中止。
+分割與合併 `Withdrawal` 只是在移動*額度 (limit)*；在呼叫 `redeem_funds` 之前，並不會有任何資金易手。合併需要兩個提領的 `owner` 相同，否則會中止。
 
 ## 從物件提領 (Withdrawing from an Object) {#withdrawing-from-an-object}
 
@@ -78,7 +78,7 @@ public struct Withdrawal<phantom T: store> has drop {
 
 地址餘額也改變了交易證明自身唯一且無法被重放的方式。一般的錨點是[擁有的物件 (owned object)](./../object/ownership#account-owner-or-single-owner)：每個物件都帶有一個[版本 (version)](./../object/object-model)，系統會在每次變更時遞增；因此參考該物件的已簽署交易只能執行一次——版本一旦變動，該交易就不再匹配。gas 代幣通常會免費提供這個錨點。
 
-沒有任何擁有物件輸入的交易——例如直接從地址餘額支付 gas 的交易，或輸入僅為共享物件的交易——沒有任何東西可以作為錨點，因此它必須自行攜帶保護機制。交易資料中有兩個欄位涵蓋這一點。SDK 在建構此類交易時會設定這些欄位，因此這屬於交易_如何被建構_的問題，而非 Move 程式碼中的任何內容：
+沒有任何擁有物件輸入的交易——例如直接從地址餘額支付 gas 的交易，或輸入僅為共享物件的交易——沒有任何東西可以作為錨點，因此它必須自行攜帶保護機制。交易資料中有兩個欄位涵蓋這一點。SDK 在建構此類交易時會設定這些欄位，因此這屬於交易*如何被建構*的問題，而非 Move 程式碼中的任何內容：
 
 - **過期時間 (`ValidDuring`)。** 交易將其過期時間設定為 `TransactionExpiration::ValidDuring`，並附帶 `min_epoch` 與 `max_epoch`，兩者最多橫跨一個 epoch（`max_epoch <= min_epoch + 1`）。將有效性限制在狹窄的 epoch 視窗內，可以限縮該交易可能被重放的時間視窗，取代了保護擁有物件的版本檢查。
 - **Nonce。** 交易包含一個 `nonce`——一個任意值，其唯一作用是讓兩筆原本相同的交易變得不同。與基於帳戶的鏈上 nonce 不同，它不是循序的，也沒有間隔問題；它只是讓原本會共享摘要值的交易得以共存。
