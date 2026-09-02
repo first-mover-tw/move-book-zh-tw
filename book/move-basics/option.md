@@ -39,7 +39,7 @@ option 不會與它包裝的值混淆：`Option<String>` 不是 `String`，而�
 
 ```
 
-> `borrow` 函式回傳指向該值的_參考 (reference)_——一種不需將值取出 option 就能讀取的方式。參考將在本章稍後的[參考 (References)](./references#immutable-references)小節中介紹。
+> `borrow` 函式回傳指向該值的*參考 (reference)*——一種不需將值取出 option 就能讀取的方式。參考將在本章稍後的[參考 (References)](./references#immutable-references)小節中介紹。
 
 下表列出 `std::option` 模組中最常用的函式；完整清單請參閱[模組文件][option-stdlib]：
 
@@ -86,7 +86,7 @@ public struct Option<Element> has copy, drop, store {
 }
 ```
 
-> 你可能會驚訝 `Option` 是一個包含 `vector` 的結構，而不是一個 [enum][enum-reference]。這是歷史因素造成的：`Option` 在 Move 語言支援 enum 之前就已經加入了。在 Rust（這個型別的發源地）中，`Option` _就是_一個帶有 `Some` 和 `None` _變體 (variants)_ 的 enum——Move 沿用了這套術語。
+> 你可能會驚訝 `Option` 是一個包含 `vector` 的結構，而不是一個 [enum][enum-reference]。這是歷史因素造成的：`Option` 在 Move 語言支援 enum 之前就已經加入了。在 Rust（這個型別的發源地）中，`Option` *就是*一個帶有 `Some` 和 `None` _變體 (variants)_ 的 enum——Move 沿用了這套術語。
 
 這種內部表示方式屬於實作細節：上述函式與巨集已涵蓋一般用途，`vec` 欄位不會被直接存取。
 

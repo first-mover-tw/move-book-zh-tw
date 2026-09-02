@@ -4,7 +4,7 @@ description: 撰寫有效 Move 測試的最佳實務 (Best Practices)：簡潔�
 
 # 什麼是好測試 (What Makes a Good Test) {#what-makes-a-good-test}
 
-撰寫測試是一回事，撰寫_好的_測試又是另一回事。一個只是存在的測試套件，如果沒有真正抓到 bug 或幫助你理解程式碼，只會提供錯誤的安全感。本節涵蓋區分有效測試與表面測試的原則與實務做法。
+撰寫測試是一回事，撰寫*好的*測試又是另一回事。一個只是存在的測試套件，如果沒有真正抓到 bug 或幫助你理解程式碼，只會提供錯誤的安全感。本節涵蓋區分有效測試與表面測試的原則與實務做法。
 
 ## 好測試的特徵 (Characteristics of Good Tests) {#characteristics-of-good-tests}
 

@@ -18,13 +18,13 @@ description: Move 中的能力模式（Capability Pattern）：在 Sui 智慧合
 
 ## 使用 `init` 建立 Admin Capability (Using `init` for Admin Capability) {#using-init-for-admin-capability}
 
-一個非常常見的做法，是在 package 發布時建立單一的 `AdminCap` object。如此一來，應用程式便能有一個設定階段，讓 admin 帳號準備好應用程式的狀態。
+一個非常常見的做法，是在 package 發布時建立單一的 `AdminCap` object。如此一來，應用程式便能有一個設定階段，讓 admin 帳戶準備好應用程式的狀態。
 
 ```move file=packages/samples/sources/programmability/capability-2.move anchor=admin_cap
 
 ```
 
-請注意，這個 `AdminCap` 只有 `key` 能力，不像第一個範例中同時擁有 `store` 能力。capability 的[能力（abilities）](./../move-basics/abilities-introduction)定義了它如何在帳號之間移動：具備 `key` 和 `store` 時，capability 可以透過 public transfer 函式自由轉移，也能儲存在其他 object 中；只有 `key` 時，就只能透過其模組定義的函式轉移，因此模組可以限制——甚至完全禁止——這個 capability 被傳遞出去。如同[Storage Functions](./../storage/storage-functions)章節所述，這正是內部轉移與 public 轉移之間的差異。
+請注意，這個 `AdminCap` 只有 `key` 能力，不像第一個範例中同時擁有 `store` 能力。capability 的[能力（abilities）](./../move-basics/abilities-introduction)定義了它如何在帳戶之間移動：具備 `key` 和 `store` 時，capability 可以透過 public transfer 函式自由轉移，也能儲存在其他 object 中；只有 `key` 時，就只能透過其模組定義的函式轉移，因此模組可以限制——甚至完全禁止——這個 capability 被傳遞出去。如同[Storage Functions](./../storage/storage-functions)章節所述，這正是內部轉移與 public 轉移之間的差異。
 
 ## Sui Framework 中的 Capability (Capabilities in the Sui Framework) {#capabilities-in-the-sui-framework}
 
@@ -60,7 +60,7 @@ capability 模式不只是一種慣例——[Sui Framework](./sui-framework)本�
 - 由於 capability 是 object，管理員權限的轉移更加容易。若使用地址檢查，一旦管理員地址變更，所有檢查該地址的函式都需要更新——因而需要進行 package 升級。
 - 使用 capability 時，函式簽章更具描述性。可以清楚看出 `new` 函式需要傳入 `AdminCap` 作為引數，且沒有它便無法呼叫此函式。
 - Object Capability 不需要在函式主體中做額外檢查，因而降低了開發者出錯的機率。
-- 擁有的 Capability 也有助於發現性。`AdminCap` 的擁有者可以在自己的帳號中看到該 object（透過錢包或瀏覽器），並知道自己擁有管理員權限。這一點在使用地址檢查時較不透明。
+- 擁有的 Capability 也有助於發現性。`AdminCap` 的擁有者可以在自己的帳戶中看到該 object（透過錢包或瀏覽器），並知道自己擁有管理員權限。這一點在使用地址檢查時較不透明。
 
 然而，地址檢查方式也有自己的優勢。其中一種情況是 **multisig（多重簽名）**地址——由多方共同控制的地址，只有在足夠多方簽署時，交易才算有效。若應用程式的管理員權限屬於一個 multisig 地址，檢查發送者可能會比建構一筆呈現該地址所擁有 capability object 的交易來得簡單。
 

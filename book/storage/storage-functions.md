@@ -105,11 +105,11 @@ public fun public_transfer<T: key + store>(obj: T, recipient: address);
 
 ```
 
-當模組被發布時，`init` 函式會被呼叫，其中建立的 `AdminCap` 物件會被_轉移_給交易的發送者 —— `ctx.sender()` 會回傳目前交易的發送者地址。（`init` 函式在[模組初始化器](./../programmability/module-initializer)章節中有詳細說明。）
+當模組被發布時，`init` 函式會被呼叫，其中建立的 `AdminCap` 物件會被*轉移*給交易的發送者 —— `ctx.sender()` 會回傳目前交易的發送者地址。（`init` 函式在[模組初始化器](./../programmability/module-initializer)章節中有詳細說明。）
 
-從此之後，假設發送者是 `0xa11ce`，該物件就處於_地址擁有_狀態：只有 `0xa11ce` 能在交易中使用它——無論是透過參考或值傳遞，包括用上方的 `transfer_admin_cap` 函式繼續轉移它。
+從此之後，假設發送者是 `0xa11ce`，該物件就處於*地址擁有*狀態：只有 `0xa11ce` 能在交易中使用它——無論是透過參考或值傳遞，包括用上方的 `transfer_admin_cap` 函式繼續轉移它。
 
-> 地址擁有的物件受_真正擁有權_約束——只有擁有者地址能存取它們。這是 Sui 儲存模型中的基本概念，已在[擁有權](./../object/ownership#account-owner-or-single-owner)章節中介紹過。
+> 地址擁有的物件受*真正擁有權*約束——只有擁有者地址能存取它們。這是 Sui 儲存模型中的基本概念，已在[擁有權](./../object/ownership#account-owner-or-single-owner)章節中介紹過。
 
 ### 公開轉移 (Public Transfer) {#public-transfer}
 
@@ -119,15 +119,15 @@ public fun public_transfer<T: key + store>(obj: T, recipient: address);
 
 ```
 
-`mint_and_transfer` 函式「理論上」任何人都能呼叫——它是公開的——但它要求第一個參數必須是 `AdminCap` 參考，而 `AdminCap` 物件是由 `0xa11ce` 獨自擁有的。所以實際上只有 `0xa11ce` 能鑄造。這種簡單明確的方式來限制對函式的存取，就是_[能力模式](./../programmability/capability)_，是 Sui 應用程式設計的基石之一。
+`mint_and_transfer` 函式「理論上」任何人都能呼叫——它是公開的——但它要求第一個參數必須是 `AdminCap` 參考，而 `AdminCap` 物件是由 `0xa11ce` 獨自擁有的。所以實際上只有 `0xa11ce` 能鑄造。這種簡單明確的方式來限制對函式的存取，就是*[能力模式](./../programmability/capability)*，是 Sui 應用程式設計的基石之一。
 
-注意這個範例中兩個物件的差異。`AdminCap` 只有 `key`：模組對它保有完全的控制權，如果模組沒有公開 `transfer_admin_cap` 函式，管理員權限就會是_靈魂綁定_的——無法轉讓出去。`Gift` 則具有 `key + store`：它是用 `public_transfer` 送出的，任何擁有 `Gift` 的人都能在自己的交易中自由地繼續轉移它，不需要這個模組的任何協助。
+注意這個範例中兩個物件的差異。`AdminCap` 只有 `key`：模組對它保有完全的控制權，如果模組沒有公開 `transfer_admin_cap` 函式，管理員權限就會是*靈魂綁定*的——無法轉讓出去。`Gift` 則具有 `key + store`：它是用 `public_transfer` 送出的，任何擁有 `Gift` 的人都能在自己的交易中自由地繼續轉移它，不需要這個模組的任何協助。
 
 ### 快速回顧 (Quick Recap) {#quick-recap}
 
-- `transfer` 會將物件送到某個地址，使其成為_地址擁有_；
+- `transfer` 會將物件送到某個地址，使其成為*地址擁有*；
 - 只有擁有者能使用地址擁有的物件——無論是透過參考或值傳遞；
-- 要求一個只有 `key` 的物件作為參數，能將函式的存取權限制在物件擁有者身上——這就是_能力_模式；
+- 要求一個只有 `key` 的物件作為參數，能將函式的存取權限制在物件擁有者身上——這就是*能力*模式；
 - `public_transfer` 是公開版本：任何地方都能呼叫，但要求 `key + store`。
 
 ## 凍結 (Freeze) {#freeze}
@@ -162,13 +162,13 @@ public fun public_freeze_object<T: key + store>(obj: T);
 ```
 
 同樣的規則也適用於下方[分享 (Share)](#share) 段落中定義的 `delete_config`：它以值取用
-`Config`，而一個凍結的 `Config` 永遠無法傳入其中。凍結是_永久性_的：
+`Config`，而一個凍結的 `Config` 永遠無法傳入其中。凍結是*永久性*的：
 一個凍結的物件無法被修改、轉移、刪除 —— 也無法解凍。
 
 ### 單一擁有者 → 凍結 (Owned → Frozen) {#owned-frozen}
 
 由於 `freeze_object` 的簽章接受任何以值傳入的物件，它既可以接收在同一作用域中
-建立的物件，也可以接收發送者_擁有_的物件。從單一擁有者轉換為不可變狀態是可行的！
+建立的物件，也可以接收發送者*擁有*的物件。從單一擁有者轉換為不可變狀態是可行的！
 舉例來說，`Gift` 的擁有者可以決定將它永久保存：
 
 ```move file=packages/samples/sources/storage/storage-functions.move anchor=freeze_gift
@@ -182,7 +182,7 @@ public fun public_freeze_object<T: key + store>(obj: T);
 
 ### 快速回顧 (Quick Recap) {#quick-recap-1}
 
-- `freeze_object` 會把物件轉為_不可變_狀態 —— 且是永久性的；
+- `freeze_object` 會把物件轉為*不可變*狀態 —— 且是永久性的；
 - 凍結的物件可供任何人透過不可變參考讀取，且永遠無法被修改、轉移或刪除；
 - 已擁有的物件可以被凍結 —— 若物件具有 `store`，甚至可以由擁有者在交易中凍結；
 - `public_freeze_object` 是公開版本：可在任何地方呼叫，但要求 `key + store`。

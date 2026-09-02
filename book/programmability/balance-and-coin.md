@@ -18,7 +18,7 @@ description: 在 Sui Move 中處理餘額 (Balance)、代幣 (Coin) 與代幣註
 
 ## Balance 餘額 (Balance) {#balance}
 
-`Balance<T>` 型別定義在 `sui::balance` 模組中。它是一個具備 `store` 能力的純值——不是物件：它沒有 `UID`，也沒有自己的儲存開銷。這使它成為_保存_資金的首選型別：每當應用程式需要在自己的型別內儲存或累積價值時——例如金庫、流動性池、託管帳戶——它會內嵌一個 `Balance`，而不是 `Coin`。
+`Balance<T>` 型別定義在 `sui::balance` 模組中。它是一個具備 `store` 能力的純值——不是物件：它沒有 `UID`，也沒有自己的儲存開銷。這使它成為*保存*資金的首選型別：每當應用程式需要在自己的型別內儲存或累積價值時——例如金庫、流動性池、託管帳戶——它會內嵌一個 `Balance`，而不是 `Coin`。
 
 ```move
 /// 可儲存的餘額 - Coin 型別的內部 struct。
@@ -256,9 +256,9 @@ public struct TreasuryCap<phantom T> has key, store {
 
 ## 讀取 Currency (Reading a Currency) {#reading-a-currency}
 
-`Currency<T>` 不僅供其建立者使用。作為一個具有衍生地址的共享物件，任何程式碼型別都能找到它，並以不可變參考的方式傳入任何函式，而 registry 為每個欄位都提供了 getter：`decimals`、`name`、`symbol`、`description`、`icon_url`，供給量檢查用的 `is_supply_fixed` 和 `is_supply_burn_only`，以及用來定位此貨幣各項能力（或驗證它們已被刪除，deny cap 屬於_受監管_貨幣，於[下方](#regulated-currencies)介紹）的 `treasury_cap_id`、`metadata_cap_id` 和 `deny_cap_id` 函式。
+`Currency<T>` 不僅供其建立者使用。作為一個具有衍生地址的共享物件，任何程式碼型別都能找到它，並以不可變參考的方式傳入任何函式，而 registry 為每個欄位都提供了 getter：`decimals`、`name`、`symbol`、`description`、`icon_url`，供給量檢查用的 `is_supply_fixed` 和 `is_supply_burn_only`，以及用來定位此貨幣各項能力（或驗證它們已被刪除，deny cap 屬於*受監管*貨幣，於[下方](#regulated-currencies)介紹）的 `treasury_cap_id`、`metadata_cap_id` 和 `deny_cap_id` 函式。
 
-這使得 coin metadata 成為應用程式能在_鏈上_信賴的東西：借貸協議可以要求作為抵押品的 coin 供給量必須固定，而下方的函式使用 `decimals` 來確保只接受以貨幣整數單位存入的款項：
+這使得 coin metadata 成為應用程式能在*鏈上*信賴的東西：借貸協議可以要求作為抵押品的 coin 供給量必須固定，而下方的函式使用 `decimals` 來確保只接受以貨幣整數單位存入的款項：
 
 ```move file=packages/samples/sources/programmability/balance-and-coin-4.move anchor=currency_reader
 

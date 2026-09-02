@@ -374,3 +374,53 @@ def test_corpus_has_no_banned_terms():
         _, body = frontmatter.split(text)
         total += sum(glossary.scan(body).values())
     assert total == 0  # 2026-07-12 債務全清（126→76→0，stash 手工翻譯合併 + 機械修復）
+
+
+# --- scan-only 詞表：標記但不自動替換 ---
+#
+# 有些詞條「值得提醒人」但「不能機械替換」，因為它們是多義詞或有子字串碰撞
+# （lessons L9：「循環→迴圈」誤傷 cycle 語意的前科）。2026-09-02 外部 review
+# 實測三個現場：
+#   交易影響→交易效果  「這筆交易影響了物件的所有權」→「這筆交易效果了…」
+#   Move 封裝→Move 套件 「Move 封裝了狀態與行為」→「Move 套件了狀態與行為」
+#   燃料費→gas         「支付燃料費用」→「支付gas用」（子字串碰撞）
+# 這些放進 enforce 表就是靜默破壞句子；完全不收又等於下一批重翻照樣長回來。
+
+
+def test_scan_only_terms_are_reported_but_not_replaced():
+    from scripts.zh_tw import glossary
+
+    text = "這筆交易影響了物件的所有權，支付燃料費用。"
+    assert glossary.enforce(text) == text, "scan-only 詞條不得被機械替換"
+    # 走獨立通道，不混進 scan()：scan() 的結果會被 validate 轉成 error，
+    # 而 scan-only 沒有自動修復路徑，當成 error 就是合法中文擋住整條管線。
+    assert glossary.scan(text) == {}
+    hits = glossary.scan_only_hits(text)
+    assert "交易影響" in hits and "燃料費" in hits
+
+
+def test_scan_only_and_enforce_tables_are_disjoint():
+    """同一個詞不能同時在兩張表 —— 那會讓「要不要替換」取決於載入順序。"""
+    from scripts.zh_tw import glossary
+
+    assert not (set(glossary.load()) & set(glossary.load_scan_only()))
+
+
+def test_scan_only_terms_do_not_fail_the_write_gate():
+    """複驗輪 C2：scan-only 洩漏進 validate 的 gate 7 → 「這筆交易影響了
+    物件的所有權」這種**完全正確的中文**會讓整個檔案的翻譯硬失敗，而
+    enforce 依設計不碰它 → 沒有任何自動修復路徑，每輪都要人工。
+    修前是「靜默改壞句子」，修後變成「合法句子讓管線炸掉」，兩者都不是
+    「標記但不替換」該有的行為。scan-only 只能是 warn，不能是 fail。"""
+    from scripts.zh_tw import validate
+
+    zh = "---\ntitle: 標題 (T)\ndescription: 說明\n---\n\n# 標題 (T) {#t}\n\n這筆交易影響了物件的所有權。\n"
+    en = "---\ntitle: T\ndescription: d\n---\n\n# T {#t}\n\nThis transaction affected ownership.\n"
+    assert not [e for e in validate.check_file(zh, en) if "交易影響" in e]
+
+
+def test_scan_only_terms_are_still_surfaced():
+    """但它必須被看見 —— 不然等於沒收。"""
+    from scripts.zh_tw import glossary
+
+    assert "交易影響" in glossary.scan_only_hits("這筆交易影響了物件的所有權。")

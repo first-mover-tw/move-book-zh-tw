@@ -9,9 +9,11 @@ import os
 import re
 from pathlib import Path
 
+import commonmark
 from opencc import OpenCC
 
 from . import anchors, frontmatter, glossary
+from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 _CJK = re.compile(r"[一-鿿]")
 CJK = _CJK  # 公開別名：pipeline 的沿用/修復判斷與 gate 4 用同一個 pattern
@@ -229,7 +231,55 @@ def check_file(
     for line, ch in simplified_chars(zh_body):
         errs.append(f"簡體殘留字 {ch!r}（第 {line + 1} 行）")
 
+    # 10. 強調在翻譯中消失（見 check_cjk_emphasis）
+    errs += check_cjk_emphasis(zh_text, en_text)
+
     return errs
+
+
+def _emphases(text: str) -> int:
+    """渲染後的 <em> 個數。問 commonmark 本人，不重刻 CommonMark 的
+    left/right-flanking 規則。"""
+    body = frontmatter.split(text)[1]
+    return len(re.findall(r"<em>", commonmark.commonmark(body)))
+
+
+def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
+    """gate 10：翻譯過程中弄丟了強調。
+
+    CommonMark 不允許 `_` 在詞內開合（避免 snake_case 被誤判成強調），而
+    CJK 算 word char。於是 `進行_升級_：` 產出的是**合法 Markdown、卻完全
+    沒有 <em>** —— 強調靜靜消失。PR #22 實測：backend 從 `*文字*` 改用
+    `_文字_` 之後，3 個檔的 5 處強調全滅。結構檢查（標題層級、fence 數）、
+    術語、簡體、prettier 全部看不到，只有人眼發現得了。
+
+    判準是「跟英文原文比，中文渲染出來的強調變少了」——**不是**「有沒有
+    可疑的底線對」。後者是代理量：第一版就是那樣寫的，對全語料噴 192 個
+    假陽性，全是 URL（`Lambda_(computer_function)`）與識別字碎片
+    （`_failureabort_`）（lessons L2）。
+
+    修復由 pipeline._repair_cjk_emphasis 決定性完成，這道 gate 是
+    fail-closed 的第二層：修復漏掉就擋下來，不靜默放行。
+    """
+    zh_n, en_n = _emphases(zh_text), _emphases(en_text)
+    if zh_n >= en_n:
+        return []
+    # 只報數字的話，人要自己在整份檔案裡找哪幾處壞掉。把渲染不出來的候選
+    # 位置一併指出來（修復 pass 修不掉的通常就是這些）。
+    body = frontmatter.split(zh_text)[1]
+    mask = glossary.protected_mask(body)
+    suspects = []
+    for m in _UNDERSCORE_EM.finditer(body):
+        if any(mask[i] for i in range(m.start(), m.end())):
+            continue
+        line = body[body.rfind("\n", 0, m.start()) + 1 :].split("\n", 1)[0]
+        if f"<em>{m.group(1)}</em>" not in commonmark.commonmark(line):
+            suspects.append(f"`_{m.group(1)}_`")
+    hint = ("；可疑位置：" + "、".join(suspects[:5])) if suspects else ""
+    return [
+        f"強調在翻譯中消失：英文 {en_n} 處、中文只渲染出 {zh_n} 處。"
+        f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`{hint}"
+    ]
 
 
 def _anchor_ids(text: str) -> set[str]:

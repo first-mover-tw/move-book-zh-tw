@@ -6,10 +6,14 @@
 import json
 import re
 import subprocess
+
+import commonmark
 from pathlib import Path
 
 from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
+from .pipeline_patterns import URLISH as _URLISH
+from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
 FRONTMATTER_ONLY_DELTA = 6
@@ -141,6 +145,7 @@ def assemble(
     zh_body = _repair_headings(zh_body, en_body, backend)
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
+    zh_body = _repair_cjk_emphasis(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -287,6 +292,83 @@ def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
 
 
 _INPAGE_LINK = re.compile(r"\]\(#([^)#\s]+)\)")
+
+
+_IDENTISH = re.compile(r"[A-Za-z0-9_]")
+
+
+def _repair_cjk_emphasis(zh_body: str) -> str:
+    """把「因為與 CJK 相鄰而渲染不出來」的 `_..._` 改寫成 `*...*`。
+
+    CommonMark 不允許 `_` 在詞內開合（避免 snake_case 被誤判成強調），而
+    CJK 算 word char。於是 `進行_升級_：` 產出的是**合法 Markdown、卻完全
+    沒有 <em>** —— 強調靜靜消失。PR #22 實測：backend 從 `*文字*` 改用
+    `_文字_` 之後，3 個檔的 5 處強調全滅。八道 gate 全是結構／術語檢查，
+    prettier 只管格式，這種回歸只有人眼看得到，所以修在產出這一側。
+
+    **逐行 tokenize + 成對決議，不做逐一 regex 配對。** 逐一配對的第一版
+    對真實輸入有三種靜默破壞（外部 review 兩輪實測）：連結內含中文的 URL
+    被改成星號（404、圖裂）、識別字被拆、`__粗體__` 降級成 `_*粗體*_`；
+    而且被跳過的匹配仍會**消耗掉**那個底線，讓下一次配對跨過真正的強調
+    邊界（`與_所有權_的關係，也講_物件_模型` → `與_所有權*的關係，也講*物件_`）。
+    gate 10 對這些全無覆蓋，因為它們讓 <em> 不減反增。
+
+    排除規則（每一條都對應一個實測過的破壞）：
+    - code span / fence：glossary.protected_mask，真相來源不重刻。
+    - 連結/圖片 destination、autolink、裸 URL：URLISH。含中文的 URL 只會
+      出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+    - 緊鄰 ASCII 英數或底線的底線：那是識別字（`tx_context`）或 `__粗體__`
+      的外層，不是強調分隔符 —— 直接不算進 token，而不是「跳過匹配」。
+    - 一行的分隔符數為奇數：配不成對就整行放棄。寧可漏修讓 gate 10 擋下來
+      人工處理，也不要猜一個配對然後靜默改壞。
+    - 內容不含 CJK、或本來就渲染得出來：不動，不製造無謂 diff。
+    """
+    mask = glossary.protected_mask(zh_body)
+    for u in _URLISH.finditer(zh_body):
+        for i in range(u.start(), u.end()):
+            mask[i] = True
+
+    out, pos = [], 0
+    line_start = 0
+    for line in zh_body.splitlines(keepends=True):
+        line_end = line_start + len(line)
+        # 這一行的強調分隔符候選：非保護區、且兩側都不是 ASCII 英數/底線
+        delims = []
+        for i in range(line_start, line_end):
+            if zh_body[i] != "_" or mask[i]:
+                continue
+            before = zh_body[i - 1] if i else ""
+            after = zh_body[i + 1] if i + 1 < len(zh_body) else ""
+            if _IDENTISH.match(before) or _IDENTISH.match(after):
+                continue
+            # 兩側皆空白（或行首/行尾）的底線，在 CommonMark 裡既不能當開頭
+            # 分隔符（後面不能是空白）也不能當收尾（前面不能是空白）——它是
+            # 散文裡的字面底線，最常見的來源就是本書在講 Move 的 `_` 萬用字元。
+            # 不排除的話它照樣佔一個 parity 名額，配對又會跨過真正的邊界：
+            # `見 _ 標記 和_重點_說明 _ 結束。` → `見 * 標記 和*重點*說明 * 結束。`
+            if (not before or before.isspace()) and (not after or after.isspace()):
+                continue
+            delims.append(i)
+        if len(delims) % 2 == 0:
+            for a, b in zip(delims[::2], delims[1::2]):
+                content = zh_body[a + 1 : b]
+                # 內容不得以空白開頭/結尾：`_ x_` / `_x _` 都不是合法強調。
+                if (
+                    "_" in content
+                    or not content
+                    or content[0].isspace()
+                    or content[-1].isspace()
+                    or not validate.CJK.search(content)
+                ):
+                    continue
+                if f"<em>{content}</em>" in commonmark.commonmark(line):
+                    continue  # 本來就渲染得出來
+                out.append(zh_body[pos:a])
+                out.append(f"*{content}*")
+                pos = b + 1
+        line_start = line_end
+    out.append(zh_body[pos:])
+    return "".join(out)
 
 
 def _repair_inpage_links(zh_body: str, en_body: str) -> str:

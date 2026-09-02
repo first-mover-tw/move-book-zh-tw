@@ -12,6 +12,16 @@ from pathlib import Path
 from . import anchors
 
 _DEFAULT = Path(__file__).parent / "glossary.json"
+# 標記但不替換的詞表。格式與 glossary.json 相同（違禁詞 -> 正確用法），
+# 差別只在**不進 enforce**。收在這裡的是「值得提醒人、卻不能機械替換」的
+# 詞條 —— 多義詞或有子字串碰撞（lessons L9）。2026-09-02 外部 review 實測
+# 的三個現場，也就是目前這張表的三個詞：
+#   交易影響  「這筆交易影響了物件的所有權」→「這筆交易效果了…」（影響是動詞）
+#   Move 封裝 「Move 封裝了狀態與行為」→「Move 套件了狀態與行為」
+#   燃料費    「支付燃料費用」→「支付gas用」（子字串碰撞）
+# 放進 enforce 表是靜默破壞句子；完全不收又等於下一批重翻照樣長回來。
+# scan 會報（讓它顯形）、prompt_rules 會教（讓模型別寫）、enforce 不碰。
+_SCAN_ONLY = Path(__file__).parent / "glossary_scan_only.json"
 
 # CommonMark inline code 是「反引號 run + 同長度反引號 run 收尾」的 span，
 # 內容可以跨行 —— 只有空白行（段落結束）會終止它。之前這裡用逐行 regex
@@ -48,6 +58,11 @@ _CODE_SPAN = re.compile(r"(?<!`)(?P<t>`++)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)(?P=t)
 
 def load(path: str | None = None) -> dict[str, str]:
     return json.loads(Path(path or _DEFAULT).read_text(encoding="utf-8"))
+
+
+def load_scan_only(path: str | None = None) -> dict[str, str]:
+    """只回報、不替換的詞表（見 _SCAN_ONLY 的註解）。"""
+    return json.loads(Path(path or _SCAN_ONLY).read_text(encoding="utf-8"))
 
 
 def protected_mask(body: str) -> list[bool]:
@@ -128,7 +143,16 @@ def enforce(body: str, table: dict[str, str] | None = None) -> str:
 
 
 def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
-    table = table or load()
+    """只掃 enforce 表。
+
+    scan-only 的詞**不能**併進來：validate 的 gate 7 與 check_frontmatter
+    都用預設 scan()，且任何 hit 一律轉成 error → 「這筆交易影響了物件的
+    所有權」這種完全正確的中文會讓整個檔案的翻譯硬失敗，而 enforce 依設計
+    不碰它 = 沒有任何自動修復路徑，每輪都要人工。那不是「標記但不替換」，
+    是把靜默改壞句子換成合法句子炸掉管線。scan-only 走 scan_only_hits()，
+    由 check_repo 以 warning 呈現、不影響 exit code。
+    """
+    table = table if table is not None else load()
     mask = protected_mask(body)
     counts: Counter[str] = Counter()
     for protected, seg in _segments(body, mask):
@@ -141,10 +165,32 @@ def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
     return dict(counts)
 
 
+def scan_only_hits(body: str) -> dict[str, int]:
+    """scan-only 詞表的命中數。呈現用，**不得**餵給任何會 fail 的 gate。"""
+    return scan(body, load_scan_only())
+
+
 def prompt_rules(table: dict[str, str] | None = None) -> str:
-    table = table or load()
-    pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in table.items())
+    """兩張表都要教給模型，但措辭不同。
+
+    scan-only 的詞不能事後機械替換（多義詞／子字串碰撞），只能在產出前就
+    別寫出來；而且它們的「正確用法」往往不是換詞而是改寫句子 ——
+    「交易影響了所有權」的替代不是「交易效果了所有權」。照 enforce 表那樣
+    寫成「用 X 取代 Y」會教模型寫出不合語法的中文。
+    """
+    if table is not None:
+        pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in table.items())
+        return (
+            "使用台灣繁體中文的技術用語。務必遵守以下對照："
+            f"{pairs}。程式碼與 inline code 中的識別字不要翻譯。"
+        )
+    pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in load().items())
+    avoid = "、".join(
+        f"{bad}（術語語境請用{good}；若它在句中是動詞或其他詞性，請改寫句子而不是換詞）"
+        for bad, good in load_scan_only().items()
+    )
     return (
         "使用台灣繁體中文的技術用語。務必遵守以下對照："
-        f"{pairs}。程式碼與 inline code 中的識別字不要翻譯。"
+        f"{pairs}。另外請避免這些寫法：{avoid}。"
+        "程式碼與 inline code 中的識別字不要翻譯。"
     )

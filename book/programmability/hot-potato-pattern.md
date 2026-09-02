@@ -82,7 +82,7 @@ transfer::public_transfer(proceeds, ctx.sender());
 > 一個尚未結清的熱馬鈴薯也會影響交易其餘部分被允許執行的操作：
 > 與其糾纏在一起的值在熱馬鈴薯被消耗之前，不能傳遞給非 `public` 的
 > `entry` 函式。詳細規則——連同一個完整的閃電貸範例——說明於
-> [進入點函式](./../move-advanced/entry-functions)。
+> [入口函式](./../move-advanced/entry-functions)。
 
 ### 可變路徑執行 (Variable-path Execution) {#variable-path-execution}
 

@@ -46,7 +46,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
+        run: pip install commonmark pyyaml markdown-it-py opencc-python-reimplemented google-genai
 
       # prettier 是 frontmatter 格式的權威（見 scripts/zh_tw/frontmatter.py 的
       # _PrettierDumper docstring）：pyyaml 只做 best-effort，真正收斂在下面的

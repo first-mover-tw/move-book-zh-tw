@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
+      - run: pip install commonmark pyyaml markdown-it-py opencc-python-reimplemented google-genai
       - name: Translate one sentence via GeminiBackend
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

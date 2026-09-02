@@ -4,7 +4,7 @@ description: 儲存能力（store ability）在 Move 中允許型別被用作物
 
 # 儲存能力 (Ability: Store) {#ability-store}
 
-[`key` 能力][key-ability]要求所有欄位都必須具備 `store`，而這項要求也是理解 `store` 意義的最佳途徑：它是被_儲存_的能力——最終存在於區塊鏈狀態中的一個物件裡。具有[`copy`][copy-ability]或[`drop`][drop-ability]但沒有 `store` 的結構體，只能存活在建立它的交易期間；它永遠無法被持久化。
+[`key` 能力][key-ability]要求所有欄位都必須具備 `store`，而這項要求也是理解 `store` 意義的最佳途徑：它是被*儲存*的能力——最終存在於區塊鏈狀態中的一個物件裡。具有[`copy`][copy-ability]或[`drop`][drop-ability]但沒有 `store` 的結構體，只能存活在建立它的交易期間；它永遠無法被持久化。
 
 ## 定義 (Definition) {#definition}
 
@@ -20,10 +20,10 @@ description: 儲存能力（store ability）在 Move 中允許型別被用作物
 
 ## 與 `key` 的關係 (Relation to `key`) {#relation-to-key}
 
-一個_物件_也可以擁有 `store` 能力,而對物件而言,它扮演雙重角色:
+一個*物件*也可以擁有 `store` 能力,而對物件而言,它扮演雙重角色:
 
-- 具有 `store` 的物件可以被_包裝_（wrapped）:用作另一個物件的欄位。沒有 `store` 的物件則被限制永遠只能位於儲存空間的頂層。
-- `store` 作為該物件的一種_公開_（public）修飾詞:它允許從_任何_模組呼叫公開的[儲存函式](./storage-functions)——`public_transfer`、`public_share_object` 以及 `public_freeze_object`。若沒有 `store`,該物件的儲存操作就只保留給定義它的模組使用,讓該模組能完全掌控此物件的移動方式。
+- 具有 `store` 的物件可以被*包裝*（wrapped）:用作另一個物件的欄位。沒有 `store` 的物件則被限制永遠只能位於儲存空間的頂層。
+- `store` 作為該物件的一種*公開*（public）修飾詞:它允許從*任何*模組呼叫公開的[儲存函式](./storage-functions)——`public_transfer`、`public_share_object` 以及 `public_freeze_object`。若沒有 `store`,該物件的儲存操作就只保留給定義它的模組使用,讓該模組能完全掌控此物件的移動方式。
 
 第二項角色並非語言層級的功能,而是[Sui Framework][sui-framework]的一項慣例,透過[內部限制](./internal-constraint)來強制執行——這正是下一節的主題。是否要賦予一個物件 `store`,是 Sui 應用程式設計中最具影響力的決策之一,我們會在[儲存函式](./storage-functions#internal-rule-in-transfer-functions)一節中再次討論這個議題。
 
@@ -45,7 +45,7 @@ Move 中所有原生型別（參考除外)都具有 `store` 能力。這包括:
 ## 總結 (Summary) {#summary}
 
 - `store` 允許某型別被持久化——在任意巢狀深度中被用作物件的欄位。
-- 對物件而言,`store` 還額外解鎖了_包裝_（wrapping)以及公開的儲存函式。
+- 對物件而言,`store` 還額外解鎖了*包裝*（wrapping)以及公開的儲存函式。
 - `store` 與 `copy`、`drop` 彼此獨立;容器型別是否具備 `store`,取決於其內容物是否具備此能力。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
