@@ -186,7 +186,7 @@ def prompt_rules(table: dict[str, str] | None = None) -> str:
         )
     pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in load().items())
     avoid = "、".join(
-        f"{bad}（名詞語境請用{good}；若{bad}是句中的動詞，請改寫句子）"
+        f"{bad}（術語語境請用{good}；若它在句中是動詞或其他詞性，請改寫句子而不是換詞）"
         for bad, good in load_scan_only().items()
     )
     return (

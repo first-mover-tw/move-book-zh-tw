@@ -1003,6 +1003,31 @@ def test_repair_cjk_emphasis_still_fixes_emphasis_next_to_strong():
     )
 
 
+def test_repair_cjk_emphasis_ignores_isolated_underscores():
+    """終驗輪 B1：兩側皆為空白的底線既不是有效的 CommonMark 分隔符（開頭
+    分隔符後面不能是空白、收尾前面不能是空白），也沒被前三條規則排除，
+    parity 照樣算它一份 → 又跨過真正的邊界：
+
+        見 _ 標記 和_重點_說明 _ 結束。
+        → 見 * 標記 和*重點*說明 * 結束。
+
+    散文裡憑空多出星號，gate 10 全程綠燈（<em> 不減反增）。這本書大量在講
+    Move 的 `_` 萬用字元，譯文散文出現孤立 `_` 是可預期的。
+    """
+    cases = [
+        "見 _ 標記 和_重點_說明 _ 結束。\n",
+        "填 _ 值，這是_重點_，另 _ 欄。\n",
+        "見 _ 這裡 _ 說明。\n",
+    ]
+    expected = [
+        "見 _ 標記 和*重點*說明 _ 結束。\n",   # 孤立底線不動，真強調照修
+        "填 _ 值，這是*重點*，另 _ 欄。\n",
+        "見 _ 這裡 _ 說明。\n",               # 全是孤立底線，整行不動
+    ]
+    for text, want in zip(cases, expected):
+        assert pipeline._repair_cjk_emphasis(text) == want, text
+
+
 def test_repair_cjk_emphasis_skips_line_when_delimiters_cannot_be_paired():
     """配不成對就整行放棄（fail-safe）。寧可漏修讓 gate 10 擋下來人工處理，
     也不要猜一個配對然後靜默改壞。"""

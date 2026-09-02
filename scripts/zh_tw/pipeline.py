@@ -341,11 +341,25 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
             after = zh_body[i + 1] if i + 1 < len(zh_body) else ""
             if _IDENTISH.match(before) or _IDENTISH.match(after):
                 continue
+            # 兩側皆空白（或行首/行尾）的底線，在 CommonMark 裡既不能當開頭
+            # 分隔符（後面不能是空白）也不能當收尾（前面不能是空白）——它是
+            # 散文裡的字面底線，最常見的來源就是本書在講 Move 的 `_` 萬用字元。
+            # 不排除的話它照樣佔一個 parity 名額，配對又會跨過真正的邊界：
+            # `見 _ 標記 和_重點_說明 _ 結束。` → `見 * 標記 和*重點*說明 * 結束。`
+            if (not before or before.isspace()) and (not after or after.isspace()):
+                continue
             delims.append(i)
         if len(delims) % 2 == 0:
             for a, b in zip(delims[::2], delims[1::2]):
                 content = zh_body[a + 1 : b]
-                if "_" in content or not validate.CJK.search(content):
+                # 內容不得以空白開頭/結尾：`_ x_` / `_x _` 都不是合法強調。
+                if (
+                    "_" in content
+                    or not content
+                    or content[0].isspace()
+                    or content[-1].isspace()
+                    or not validate.CJK.search(content)
+                ):
                     continue
                 if f"<em>{content}</em>" in commonmark.commonmark(line):
                     continue  # 本來就渲染得出來
