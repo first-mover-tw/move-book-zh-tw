@@ -1,7 +1,5 @@
 ---
-description:
-  在 Sui Move 中存取時間 (Access Time in Sui Move)：在智慧合約中，操作週期用 epoch (epoch)，毫秒級時間戳記用
-  Clock (Clock)。
+description: 在 Sui Move 中存取時間 (Access Time in Sui Move)：在智慧合約中，操作週期用 epoch (epoch)，毫秒級時間戳記用 Clock (Clock)。
 ---
 
 # Epoch 與時間 (Epoch and Time) {#epoch-and-time}

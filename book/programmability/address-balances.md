@@ -1,7 +1,5 @@
 ---
-description:
-  在 Sui 上的地址餘額 (Address balances)：無需 Coin 物件即可在地址直接持有同質化價值，使用 send_funds
-  傳送資金，並使用 Withdrawal 提領。
+description: 在 Sui 上的地址餘額 (Address balances)：無需 Coin 物件即可在地址直接持有同質化價值，使用 send_funds 傳送資金，並使用 Withdrawal 提領。
 ---
 
 # 地址餘額 (Address Balances) {#address-balances}

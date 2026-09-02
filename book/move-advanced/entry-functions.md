@@ -1,7 +1,5 @@
 ---
-description:
-  Move 中的入口函式 (entry function)：entry 修飾詞如何限制函式只能透過交易呼叫，以及其引數 (argument)
-  因此獲得的靜態燙手山芋保證 (hot-potato guarantee)。
+description: Move 中的入口函式 (entry function)：entry 修飾詞如何限制函式只能透過交易呼叫，以及其引數 (argument) 因此獲得的靜態燙手山芋保證 (hot-potato guarantee)。
 ---
 
 # 入口函式 (Entry Functions) {#entry-functions}

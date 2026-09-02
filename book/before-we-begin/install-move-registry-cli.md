@@ -1,33 +1,31 @@
 ---
-description: 安裝 Move 註冊中心 (Move Registry) (MVR) 命令列介面 (CLI)，以發佈、探索及管理用於 Sui 開發的可重複使用
-  Move 套件 (Move package)。
+description: 安裝 Move 註冊中心 (Move Registry) (MVR) 命令列介面 (CLI)，以發佈、探索及管理用於 Sui 開發的可重複使用 Move 套件 (Move package)。
 title: 安裝 MVR
 keywords:
-- Move
-- Sui
-- Move tutorial
-- install
-- mvr
+  - Move
+  - Sui
+  - Move tutorial
+  - install
+  - mvr
 questions:
-- What is the Move Registry CLI?
-- How do I install MVR?
-- How do I manage Move dependencies?
-answer: The Move Registry (MVR) CLI resolves and manages Move package dependencies
-  from a decentralized registry for easier package sharing and reuse.
+  - What is the Move Registry CLI?
+  - How do I install MVR?
+  - How do I manage Move dependencies?
+answer: The Move Registry (MVR) CLI resolves and manages Move package dependencies from a decentralized registry for easier package sharing and reuse.
 goal:
   description: Reader has MVR installed and can manage Move package dependencies
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 安裝 MVR (Install MVR) {#install-mvr}

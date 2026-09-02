@@ -1,8 +1,6 @@
 ---
 title: 測試 Move 程式 (Testing Move Programs)
-description: 在 Sui 上測試 Move 智慧合約 (Testing Move smart contracts on Sui)：單元測試 (unit
-  tests)、測試情境 (test scenarios)、程式碼檢查 (linting)、覆蓋率報告 (coverage reports)、gas 效能分析 (gas
-  profiling) 與最佳實踐。
+description: 在 Sui 上測試 Move 智慧合約 (Testing Move smart contracts on Sui)：單元測試 (unit tests)、測試情境 (test scenarios)、程式碼檢查 (linting)、覆蓋率報告 (coverage reports)、gas 效能分析 (gas profiling) 與最佳實踐。
 ---
 
 # 測試 (Testing) {#testing}

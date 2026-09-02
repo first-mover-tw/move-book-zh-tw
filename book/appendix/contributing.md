@@ -1,31 +1,29 @@
 ---
-description: 如何貢獻 The Move Book (How to contribute to The Move Book)：提交提取請求 (submit
-  pull requests)、回報問題 (report issues)，並協助改善 Move 程式語言 (Move programming language)
-  指南。
+description: 如何貢獻 The Move Book (How to contribute to The Move Book)：提交提取請求 (submit pull requests)、回報問題 (report issues)，並協助改善 Move 程式語言 (Move programming language) 指南。
 title: '附錄 E：參與貢獻 (Appendix E: Contributing)'
 keywords:
-- Move
-- Sui
-- Move tutorial
-- appendix
-- contributing
+  - Move
+  - Sui
+  - Move tutorial
+  - appendix
+  - contributing
 questions:
-- How do I contribute to The Move Book?
+  - How do I contribute to The Move Book?
 answer: Contributions to The Move Book are welcome via pull requests on GitHub.
 goal:
   description: Reader knows how to contribute to The Move Book
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 20
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 20
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 附錄 E：貢獻 (Appendix E: Contributing) {#appendix-e-contributing}

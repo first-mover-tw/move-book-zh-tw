@@ -1,7 +1,5 @@
 ---
-description:
-  Move 中的可見度修飾詞 (Visibility Modifiers)：private、public、public(package)，以及用於控制模組成員存取權限的
-  entry 函式。
+description: Move 中的可見度修飾詞 (Visibility Modifiers)：private、public、public(package)，以及用於控制模組成員存取權限的 entry 函式。
 ---
 
 # 可見度修飾詞 (Visibility Modifiers) {#visibility-modifiers}

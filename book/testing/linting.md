@@ -1,7 +1,5 @@
 ---
-description:
-  使用 sui move lint 執行 Move 程式碼檢查工具（linter）：在編譯時期抓出 Sui 特有的反模式（antipattern），抑制誤判，並在
-  CI 中強制執行 lint 規則。
+description: 使用 sui move lint 執行 Move 程式碼檢查工具（linter）：在編譯時期抓出 Sui 特有的反模式（antipattern），抑制誤判，並在 CI 中強制執行 lint 規則。
 ---
 
 # 執行檢查程式碼風格 (Running Lints) {#running-lints}

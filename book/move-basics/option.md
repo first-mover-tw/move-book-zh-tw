@@ -1,8 +1,5 @@
 ---
-description:
-  'The Option type in Move: 表示可能不存在的值 (represent a value that may be absent)、建立與檢查選項
-  (create and inspect options)、安全地取出值 (extract values safely)，並使用選項巨集 (option macros)
-  處理它們。'
+description: 'The Option type in Move: 表示可能不存在的值 (represent a value that may be absent)、建立與檢查選項 (create and inspect options)、安全地取出值 (extract values safely)，並使用選項巨集 (option macros) 處理它們。'
 ---
 
 # 選項 (Option) {#option}

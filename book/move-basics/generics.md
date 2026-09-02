@@ -1,7 +1,5 @@
 ---
-description:
-  泛型 (Generics) in Move：撰寫可重複使用的函式與型別，適用於任何型別參數，並包含幻影型別 (Phantom Types)
-  與限制條件。
+description: 泛型 (Generics) in Move：撰寫可重複使用的函式與型別，適用於任何型別參數，並包含幻影型別 (Phantom Types) 與限制條件。
 ---
 
 # 泛型 (Generics) {#generics}

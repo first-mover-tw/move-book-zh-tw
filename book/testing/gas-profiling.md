@@ -1,7 +1,5 @@
 ---
-description:
-  在 Move 測試中分析 gas 使用量 (Profile Gas Usage in Move Tests)：測量運算成本、比較不同實作方式，並使用
-  sui analyze-trace 分析追蹤紀錄
+description: 在 Move 測試中分析 gas 使用量 (Profile Gas Usage in Move Tests)：測量運算成本、比較不同實作方式，並使用 sui analyze-trace 分析追蹤紀錄
 ---
 
 # Gas 效能分析 (Gas Profiling) {#gas-profiling}

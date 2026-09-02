@@ -1,8 +1,5 @@
 ---
-description:
-  將 Move 程式碼遷移至 2024 版 (2024 edition)：模組標籤 (module labels)、let mut、公開結構
-  (public structs)、方法語法 (method syntax)、列舉 (enums) 與 match、巨集 (macros)、聰明錯誤 (clever
-  errors)，以及逐步操作說明。
+description: 將 Move 程式碼遷移至 2024 版 (2024 edition)：模組標籤 (module labels)、let mut、公開結構 (public structs)、方法語法 (method syntax)、列舉 (enums) 與 match、巨集 (macros)、聰明錯誤 (clever errors)，以及逐步操作說明。
 ---
 
 # Move 2024 遷移指南 (Move 2024 Migration Guide) {#move-2024-migration-guide}

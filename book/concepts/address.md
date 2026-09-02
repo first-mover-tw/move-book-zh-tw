@@ -1,32 +1,29 @@
 ---
-description: 了解 Sui 中的地址 (address) — 用於定位區塊鏈 (blockchain) 上的套件 (package)、帳戶 (account)
-  和物件 (object) 的 32 位元組 (byte) 唯一識別碼 (identifier)。
+description: 了解 Sui 中的地址 (address) — 用於定位區塊鏈 (blockchain) 上的套件 (package)、帳戶 (account) 和物件 (object) 的 32 位元組 (byte) 唯一識別碼 (identifier)。
 title: 地址 (Address)
 keywords:
-- Move
-- Sui
-- Move tutorial
-- address
+  - Move
+  - Sui
+  - Move tutorial
+  - address
 questions:
-- What is Address in Move?
-- How do I use Address in Move?
-answer: Learn about addresses in Sui — 32-byte unique identifiers used to locate packages,
-  accounts, and objects on the blockchain.
+  - What is Address in Move?
+  - How do I use Address in Move?
+answer: Learn about addresses in Sui — 32-byte unique identifiers used to locate packages, accounts, and objects on the blockchain.
 goal:
-  description: Reader understands addresses in Sui — 32-byte unique identifiers used
-    to locate packages, accounts, and objects on the blockchain
+  description: Reader understands addresses in Sui — 32-byte unique identifiers used to locate packages, accounts, and objects on the blockchain
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 地址 (Address) {#address}
@@ -48,12 +45,12 @@ Sui 也有保留地址，用於識別標準套件和物件。保留地址通常�
 以下是一些保留地址的範例：
 
 - `0x1` - Move 標準函式庫的地址 (別名 `std`)
-- `0x2` - Sui 框架的地址 (別名 `sui`)
+- `0x2` - Sui Framework 的地址 (別名 `sui`)
 - `0x6` - 系統 `Clock` 物件的地址
 
-> 您可以在[附錄 B：保留地址 (Appendix B: Reserved Addresses)](../appendix/reserved-addresses) 中找到所有保留地址。
+> 你可以在[附錄 B：保留地址 (Appendix B: Reserved Addresses)](../appendix/reserved-addresses) 中找到所有保留地址。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 中的 [地址型別 (Address type)](../move-basics/address)
+- Move 中的[地址型別 (Address type)](../move-basics/address)
 - [sui::address 模組 (sui::address module)](https://docs.sui.io/references/framework/sui/address)

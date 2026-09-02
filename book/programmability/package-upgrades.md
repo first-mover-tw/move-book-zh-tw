@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 的套件升級 (Package Upgrades)：新版本如何發布、UpgradeCap 是什麼、如何讓套件變成不可變 (immutable)，以及如何為共享狀態
-  (shared state) 進行版本控制與遷移 (migrate)
+description: Sui 的套件升級 (Package Upgrades)：新版本如何發布、UpgradeCap 是什麼、如何讓套件變成不可變 (immutable)，以及如何為共享狀態 (shared state) 進行版本控制與遷移 (migrate)
 ---
 
 # 套件升級 (Package Upgrades) {#package-upgrades}

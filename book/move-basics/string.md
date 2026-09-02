@@ -1,6 +1,5 @@
 ---
-description: Move 中的字串（Strings in Move）：字串字面值 (string literals)、UTF-8 和 ASCII 字串型別
-  (String types)、常見操作，以及在 Sui 智能合約中兩者之間的轉換。
+description: Move 中的字串（Strings in Move）：字串字面值 (string literals)、UTF-8 和 ASCII 字串型別 (String types)、常見操作，以及在 Sui 智能合約中兩者之間的轉換。
 ---
 
 # 字串 (String) {#string}

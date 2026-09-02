@@ -2,32 +2,30 @@
 description: 《Move 書籍 (The Move Book)》致謝：感謝《Rust 書籍 (The Rust Book)》、貢獻者以及 Move 社群。
 title: '附錄 F: 致謝'
 keywords:
-- Move
-- Sui
-- Move tutorial
-- appendix
-- acknowledgements
+  - Move
+  - Sui
+  - Move tutorial
+  - appendix
+  - acknowledgements
 questions:
-- 'What is Appendix F: Acknowledgements in Move?'
-- 'How do I use Appendix F: Acknowledgements in Move?'
-- What is The Move Community in Move?
-answer: 'Acknowledgements for The Move Book: credits to The Rust Book, contributors,
-  and the Move community.'
+  - 'What is Appendix F: Acknowledgements in Move?'
+  - 'How do I use Appendix F: Acknowledgements in Move?'
+  - What is The Move Community in Move?
+answer: 'Acknowledgements for The Move Book: credits to The Rust Book, contributors, and the Move community.'
 goal:
-  description: 'Reader understands acknowledgements for The Move Book: credits to
-    The Rust Book, contributors, and the Move community'
+  description: 'Reader understands acknowledgements for The Move Book: credits to The Rust Book, contributors, and the Move community'
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 附錄 F：致謝 (Appendix F: Acknowledgements) {#appendix-f-acknowledgements}

@@ -1,7 +1,5 @@
 ---
-description:
-  Sui Move 測試場景 (Test Scenario)：模擬多筆交易流程、測試物件轉移，並驗證測試中的共享物件 (shared object)
-  行為。
+description: Sui Move 測試場景 (Test Scenario)：模擬多筆交易流程、測試物件轉移，並驗證測試中的共享物件 (shared object) 行為。
 ---
 
 # 測試場景 (Test Scenario) {#test-scenario}

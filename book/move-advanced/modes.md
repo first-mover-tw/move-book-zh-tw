@@ -1,7 +1,5 @@
 ---
-description:
-  Move 中的編譯模式 (Compilation modes)：在內建的 test 模式之外，於 debug、benchmark 或 spec
-  等具名建置模式中包含不可發佈的程式碼。
+description: Move 中的編譯模式 (Compilation modes)：在內建的 test 模式之外，於 debug、benchmark 或 spec 等具名建置模式中包含不可發佈的程式碼。
 ---
 
 # 模式 (Modes) {#modes}

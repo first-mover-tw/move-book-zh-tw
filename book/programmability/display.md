@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 中的物件展示 (Object Display)：使用 Display Registry 為你的物件定義中繼資料範本 (metadata
-  template)，並將 Display 從 V1 遷移到 V2。
+description: Sui 中的物件展示 (Object Display)：使用 Display Registry 為你的物件定義中繼資料範本 (metadata template)，並將 Display 從 V1 遷移到 V2。
 ---
 
 # 物件展示 (Object Display) {#object-display}

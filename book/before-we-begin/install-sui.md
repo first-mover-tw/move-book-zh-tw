@@ -1,32 +1,30 @@
 ---
-description: 安裝 Sui 二進位檔 (binary) 和 Move 編譯器 (compiler)，使用 suiup、Homebrew 或 Chocolatey
-  來開始開發 Move 智慧合約 (smart contract)。
+description: 安裝 Sui 二進位檔 (binary) 和 Move 編譯器 (compiler)，使用 suiup、Homebrew 或 Chocolatey 來開始開發 Move 智慧合約 (smart contract)。
 title: 安裝 Sui
 keywords:
-- Move
-- Sui
-- Move tutorial
-- install
-- sui
+  - Move
+  - Sui
+  - Move tutorial
+  - install
+  - sui
 questions:
-- How do I install the Sui CLI?
-- How do I set up Sui for Move development?
-answer: Install the Sui CLI using the official installer, then verify with sui --version
-  to begin compiling and testing Move code.
+  - How do I install the Sui CLI?
+  - How do I set up Sui for Move development?
+answer: Install the Sui CLI using the official installer, then verify with sui --version to begin compiling and testing Move code.
 goal:
   description: Reader has the Sui CLI installed and can run sui move commands
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 安裝 Sui (Install Sui) {#install-sui}

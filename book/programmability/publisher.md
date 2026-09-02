@@ -1,7 +1,5 @@
 ---
-description:
-  發布者物件 (Publisher object) 在 Sui：證明套件權限，用於配置顯示 (Display)、轉移政策 (transfer
-  policies) 以及其他型別層級設定。
+description: 發布者物件 (Publisher object) 在 Sui：證明套件權限，用於配置顯示 (Display)、轉移政策 (transfer policies) 以及其他型別層級設定。
 ---
 
 # 發行者授權 (Publisher Authority) {#publisher-authority}

@@ -1,6 +1,5 @@
 ---
-description: 使用 `#[random_test]` 進行 Move 屬性測試 (Property-based testing in Move with
-  `#[random_test]`)：以隨機輸入執行測試，自動發現邊界案例 (edge case)。
+description: 使用 `#[random_test]` 進行 Move 屬性測試 (Property-based testing in Move with `#[random_test]`)：以隨機輸入執行測試，自動發現邊界案例 (edge case)。
 ---
 
 # 隨機輸入 (Random Inputs) {#random-inputs}

@@ -1,7 +1,5 @@
 ---
-description:
-  改善 Move 智慧合約的錯誤處理 (Improve error handling)：使用具描述性的中止代碼 (abort code) 與錯誤常數
-  (error constant)，提升在 Sui 上除錯的效率。
+description: 改善 Move 智慧合約的錯誤處理 (Improve error handling)：使用具描述性的中止代碼 (abort code) 與錯誤常數 (error constant)，提升在 Sui 上除錯的效率。
 ---
 
 # 更好的錯誤處理 (Better Error Handling) {#better-error-handling}

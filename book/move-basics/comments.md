@@ -1,7 +1,5 @@
 ---
-description:
-  如何在 Move 中使用行內註解 (line comments)、區塊註解 (block comments) 與文件註解 (doc comments)
-  來進行文件撰寫與程式碼註解。
+description: 如何在 Move 中使用行內註解 (line comments)、區塊註解 (block comments) 與文件註解 (doc comments) 來進行文件撰寫與程式碼註解。
 ---
 
 # 註解 (Comments) {#comments}

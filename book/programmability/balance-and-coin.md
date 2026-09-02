@@ -1,7 +1,5 @@
 ---
-description:
-  在 Sui Move 中處理餘額 (Balance)、代幣 (Coin) 與代幣註冊表 (CoinRegistry)：使用 Currency
-  標準建立同質化代幣、以 TreasuryCap 管理供應量，並將中繼資料儲存在鏈上。
+description: 在 Sui Move 中處理餘額 (Balance)、代幣 (Coin) 與代幣註冊表 (CoinRegistry)：使用 Currency 標準建立同質化代幣、以 TreasuryCap 管理供應量，並將中繼資料儲存在鏈上。
 ---
 
 # 餘額與 Coin (Balance and Coin) {#balance-and-coin}

@@ -1,7 +1,5 @@
 ---
-description:
-  在 Sui 上建立你的第一個 Move 套件 (package)：學習專案結構、撰寫模組 (module)、編譯程式碼，並使用 Move
-  CLI 執行測試。
+description: 在 Sui 上建立你的第一個 Move 套件 (package)：學習專案結構、撰寫模組 (module)、編譯程式碼，並使用 Move CLI 執行測試。
 ---
 
 # 哈囉，世界！

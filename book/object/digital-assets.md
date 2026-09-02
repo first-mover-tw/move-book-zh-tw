@@ -1,7 +1,5 @@
 ---
-description:
-  Move 如何原生處理數位資產 (digital assets)：從同質化代幣 (fungible tokens) 到 NFT，具備內建安全性與型別層級的資源保證
-  (type-level resource guarantees)。
+description: Move 如何原生處理數位資產 (digital assets)：從同質化代幣 (fungible tokens) 到 NFT，具備內建安全性與型別層級的資源保證 (type-level resource guarantees)。
 ---
 
 # Move - 數位資產的語言 (Move - Language for Digital Assets) {#move---language-for-digital-assets}

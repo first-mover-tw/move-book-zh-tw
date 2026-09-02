@@ -1,7 +1,5 @@
 ---
-description:
-  Sui Move 中的一次性見證 (One Time Witness, OTW)：保證只能被實例化一次的型別，用於建立 Publisher
-  與 Coin。
+description: Sui Move 中的一次性見證 (One Time Witness, OTW)：保證只能被實例化一次的型別，用於建立 Publisher 與 Coin。
 ---
 
 # One Time Witness 一次性見證 (One Time Witness) {#one-time-witness}

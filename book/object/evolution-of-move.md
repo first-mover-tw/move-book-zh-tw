@@ -1,7 +1,5 @@
 ---
-description:
-  Move 從 Diem 到 Sui 的演進：儲存模型如何從基於帳戶 (account-based) 轉變為基於物件 (object-based)
-  的模型
+description: Move 從 Diem 到 Sui 的演進：儲存模型如何從基於帳戶 (account-based) 轉變為基於物件 (object-based) 的模型
 ---
 
 # Move 的演進 (Evolution of Move) {#evolution-of-move}
