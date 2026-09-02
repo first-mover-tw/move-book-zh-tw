@@ -16,6 +16,11 @@ def main() -> int:
         "--max-lines", type=int, default=pipeline.CHUNK_MAX_LINES,
         help="翻譯 chunk 上限行數（長檔掉標題時可縮小）",
     )
+    p.add_argument(
+        "--result-jsonl", default=None,
+        help="把本次執行的 ok/touched/failed 附加一行 JSON 到此檔（CI 用來判定"
+             "「本輪有沒有進展」，不必從 git 狀態推論）",
+    )
     p.add_argument("files", nargs="*")
     a = p.parse_args()
 
@@ -35,7 +40,9 @@ def main() -> int:
         print("沒有需要翻譯的檔案。")
         return 0
 
-    ok, failed = pipeline.run(paths, a.backend, a.english_ref, a.apply, a.max_lines)
+    ok, failed = pipeline.run(
+        paths, a.backend, a.english_ref, a.apply, a.max_lines, a.result_jsonl
+    )
     print(f"成功 {ok}，失敗 {len(failed)}")
     for path, errs in failed.items():
         print(f"  {path}: {'; '.join(errs)}", file=sys.stderr)

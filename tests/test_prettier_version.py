@@ -1,4 +1,4 @@
-"""prettier 的版本字串散在三個檔，這裡守住「實際執行的命令」都釘死且一致。
+"""prettier 的版本字串散在三個檔，這裡守住它們都釘死且一致。
 
 為什麼需要：translate workflow 的 `prettier --write` 與 prettier.yml gate 的
 `prettier --check` 若解析到不同版本，管線剛格式化過的 PR 會被自己的 gate 擋下
@@ -6,11 +6,16 @@
 的 printer 演算法」正是拿版本漂移當理由）。原本這三處靠人工同步，下次升版漏改
 一處就完全重現那個缺陷。
 
-刻意**不**用「掃全檔找 prettier@x.y.z」：那會把註解、docstring、YAML comment
-一起算進去，而 workflow 裡談版本釘死的註解就緊貼著它要守的那行命令。於是把
-`npx --yes prettier@3.9.6 --write` 改成 `npx --yes prettier --write`、同時在註解裡
-留一句「原本釘 3.9.6」，守衛照樣全綠而釘死已經沒了 —— 觀測的維度（檔案提過這個
-版本號）不等於它宣稱保護的性質（執行的命令帶著這個版本號），lessons L2。
+判準刻意是**否定式**（「非註解行裡出現的每一個 prettier 都必須緊跟 @x.y.z」），
+而不是「找得到一個釘死的呼叫」。前兩版都栽在肯定式上，兩次都是同一個病 ——
+觀測維度是「文字裡出現過」，宣稱保護的性質是「會被執行的那行帶著版本」：
+  v1 掃全檔 → 談版本釘死的註解就緊貼著它要守的那行命令，把命令的 @3.9.6
+     拿掉、註解留著，守衛照樣全綠。
+  v2 只掃 run 字串、要求 npx/npm exec 與 --write/--check 同一行 → 改用
+     `pnpm dlx prettier --write`（不匹配 npx）並在旁邊留一行
+     `echo "本機等價：npx --yes prettier@3.9.6 --write"`，守衛照樣全綠。
+否定式沒有這個縫：任何未釘死的 prettier 字樣都會紅，繞不過去。代價是連
+`echo "run prettier"` 這種散文也會紅 —— 可接受，寫 `prettier@3.9.6` 即可。
 """
 
 import json
@@ -24,60 +29,56 @@ WORKFLOWS = {
     "translate-zh-tw.yml": ROOT / ".github/workflows/translate-zh-tw.yml",
     "prettier.yml": ROOT / ".github/workflows/prettier.yml",
 }
-# 只認 npx/npm exec 起手的呼叫；--write/--check 二選一必須在同一行，
-# 確保抓到的是真的會執行的那行，不是散文。
-_INVOCATION = re.compile(r"\b(?:npx|npm exec)\b[^\n]*\bprettier(@[^\s]+)?\b[^\n]*--(?:write|check)\b")
-_EXACT = re.compile(r"^@(\d+\.\d+\.\d+)$")
+# 緊跟在 prettier 後面的 @x.y.z；沒有就是沒釘死。
+_MENTION = re.compile(r"\bprettier(@\d+\.\d+\.\d+)?\b")
 
 
-def _command_lines(text: str) -> list[str]:
-    """去掉註解後，回傳含 prettier 呼叫的命令列。"""
-    out = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            continue
-        if _INVOCATION.search(stripped):
-            out.append(stripped)
-    return out
+def _command_text(text: str) -> str:
+    """去掉註解行，並把 shell 續行接回來。
+
+    續行要先接：`npx --yes prettier@3.9.6 \\` + `--write --` 拆成兩行時，
+    逐行判斷會看不出這是同一個命令。
+    """
+    joined = text.replace("\\\n", " ")
+    return "\n".join(
+        line for line in joined.splitlines() if not line.strip().startswith("#")
+    )
 
 
-def _invocations() -> dict[str, list[str]]:
-    found: dict[str, list[str]] = {}
+def _mentions() -> dict[str, list[str | None]]:
+    """每個檔裡「非註解的 prettier 字樣」對應的版本（None = 沒釘死）。"""
+    found: dict[str, list[str | None]] = {}
     for name, path in WORKFLOWS.items():
         doc = yaml.safe_load(path.read_text())
         runs = [
             step["run"]
             for job in doc["jobs"].values()
-            for step in job["steps"]
+            # reusable workflow 的 job 用 `uses:`，沒有 steps
+            for step in job.get("steps", [])
             if isinstance(step, dict) and isinstance(step.get("run"), str)
         ]
-        found[name] = _command_lines("\n".join(runs))
+        found[name] = [m.group(1) for m in _MENTION.finditer(_command_text("\n".join(runs)))]
     pkg = json.loads((ROOT / "package.json").read_text())
-    found["package.json"] = _command_lines("\n".join(pkg["scripts"].values()))
+    scripts = _command_text("\n".join(pkg["scripts"].values()))
+    found["package.json"] = [m.group(1) for m in _MENTION.finditer(scripts)]
     return found
 
 
-def test_every_prettier_invocation_exists():
-    """三個檔都必須真的有 prettier 呼叫 —— 否則下面兩條會 vacuously 綠。"""
-    for where, lines in _invocations().items():
-        assert lines, f"{where} 找不到任何 npx/npm exec 的 prettier --write/--check 呼叫"
+def test_every_file_mentions_prettier():
+    """三個檔都必須真的用到 prettier —— 否則下面兩條會 vacuously 綠。"""
+    for where, mentions in _mentions().items():
+        assert mentions, f"{where} 的 run/scripts 裡找不到 prettier，守衛失去意義"
 
 
-def test_every_prettier_invocation_is_pinned():
-    """每一個呼叫都要帶 exact version，不能是浮動的 `prettier` 或 `prettier@3`。"""
-    for where, lines in _invocations().items():
-        for line in lines:
-            m = _INVOCATION.search(line)
-            spec = m.group(1) or ""
-            assert _EXACT.match(spec), f"{where} 的呼叫未釘死 exact version：{line}"
+def test_every_prettier_mention_is_pinned():
+    """每一處都要帶 exact version，不能是浮動的 `prettier` 或 `prettier@3`。"""
+    for where, mentions in _mentions().items():
+        assert None not in mentions, (
+            f"{where} 有未釘死版本的 prettier（浮動版本、或 pnpm dlx 之類的繞法）"
+        )
 
 
-def test_all_prettier_invocations_share_one_version():
+def test_all_prettier_versions_are_identical():
     """三處版本必須一模一樣。"""
-    versions = {
-        _INVOCATION.search(line).group(1)
-        for lines in _invocations().values()
-        for line in lines
-    }
+    versions = {v for mentions in _mentions().values() for v in mentions if v}
     assert len(versions) == 1, f"prettier 版本不一致：{versions}"

@@ -752,3 +752,78 @@ def test_repair_inpage_links_skips_on_count_mismatch_and_code():
     en = "```\n[x](#keep)\n```\n\n[a](#a) 與 [b](#b)\n"
     out = pipeline._repair_inpage_links(zh, en)
     assert out == zh  # 頁內連結數不一致（1 vs 2）→ 不修；code 內不算連結
+
+
+# --- run() 自報成果：進展判定不再由 workflow 從檔案系統推論 ---
+#
+# 為什麼要有這個輸出：translate workflow 的「本輪有沒有進展」判定連續三輪
+# review 各出一個 blocker，全部同源 —— 它一直在拿代理量推論真實性質：
+#   輪一 `git diff --cached` 非空 → prettier 對既有髒檔的純格式改動能撐起假 diff
+#   輪二 同上 → `_save_manifest_updates` 無條件 save 的正規化噪音也能
+#   輪三 「工作區有檔案變動」 → 反方向漏掉本測試釘住的這個情境
+# 三次的失效形式都是「job 全綠但管線靜默停擺」。真正的原始量從頭到尾是
+# run() 自己手上的 ok 與 touched，manifest 與工作區 diff 都只是它們的影子。
+# 這個輸出讓 workflow 直接讀本體，把推論整段刪掉（lessons L2）。
+
+
+def _byte_identical_apply(tmp_path, monkeypatch, result_path=None):
+    from scripts.zh_tw import manifest as mf
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "book").mkdir()
+    same = "---\ntitle: 標題 (T)\n---\n\n內文。\n"
+    (tmp_path / "book" / "x.md").write_text(same, encoding="utf-8")
+
+    monkeypatch.setattr(mf, "MANIFEST_PATH", tmp_path / "m.json")
+    monkeypatch.setattr(mf, "blob_sha", lambda ref, path: "newsha")
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: same)
+    monkeypatch.setattr(pipeline, "tier", lambda *a, **k: "B")
+    monkeypatch.setattr(pipeline, "assemble", lambda *a, **k: same)
+
+    return pipeline.run(
+        ["book/x.md"], "fake", apply=True, result_path=result_path
+    ), same
+
+
+def test_run_reports_success_even_when_output_is_byte_identical(tmp_path, monkeypatch):
+    """tier A 沿用 HEAD 的中文 body + carry-forward frontmatter 時，產出可以與
+    磁碟 byte-identical。此時工作區零 diff，但 manifest 的 provenance 更新是
+    本輪唯一且真實的成果 —— stale 判定只看英文 blob SHA（manifest.py:51）。
+    run() 的回報必須說「成功 1、touched 含該檔」，不能跟著工作區一起說零。
+    """
+    import json
+
+    result = tmp_path / "result.jsonl"
+    (ok, failed), same = _byte_identical_apply(tmp_path, monkeypatch, str(result))
+
+    assert (ok, failed) == (1, {})
+    # 前提斷言（防 vacuous）：檔案內容確實沒變，工作區看不出任何進展。
+    assert (tmp_path / "book" / "x.md").read_text(encoding="utf-8") == same
+
+    line = json.loads(result.read_text(encoding="utf-8").strip())
+    assert line["ok"] == 1
+    assert line["touched"] == ["book/x.md"]
+    assert line["failed"] == []
+
+
+def test_run_result_is_appended_not_overwritten(tmp_path, monkeypatch):
+    """xargs 在清單超過 ARG_MAX 時會把同一批拆成多次呼叫。覆寫式輸出會讓
+    最後一批洗掉前面幾批的成果，workflow 讀到的 ok 數就少算 —— 少算到 0
+    就是「本輪零成功」誤判轉紅、已翻好的檔全丟。BATCH_SIZE=3 現在碰不到
+    ARG_MAX，但這正是「靠外部不變式撐正確性」的老毛病，不留。
+    """
+    import json
+
+    result = tmp_path / "result.jsonl"
+    result.write_text('{"ok": 2, "touched": ["book/old.md"], "failed": []}\n', encoding="utf-8")
+    _byte_identical_apply(tmp_path, monkeypatch, str(result))
+
+    lines = [json.loads(x) for x in result.read_text(encoding="utf-8").splitlines() if x]
+    assert [l["ok"] for l in lines] == [2, 1]
+    assert sum(l["ok"] for l in lines) == 3
+
+
+def test_run_without_result_path_writes_nothing(tmp_path, monkeypatch):
+    """不給 result_path 就不該生出檔案（dry-run 與既有呼叫端不受影響）。"""
+    _byte_identical_apply(tmp_path, monkeypatch, None)
+    assert list(tmp_path.glob("*.jsonl")) == []
