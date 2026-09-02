@@ -96,7 +96,8 @@ jobs:
           # 部分失敗不中斷（前車之鑑：配額用盡 → xargs exit 123 → job 死在這裡
           # → 成功檔案從未 commit → 隔日重翻同一批 → 連續紅燈零進度）。
           # 成功檔案的 manifest 已落盤，後續照常 commit/PR；殘量隔日 cron 接手。
-          xargs -a /tmp/changed_files.txt \
+          # -d '\n' -r 與下面兩處 xargs 一致：含空白的路徑不被拆詞、空輸入不執行。
+          xargs -a /tmp/changed_files.txt -d '\n' -r \
             python -m scripts.zh_tw --backend gemini \
               --english-ref origin/english-main --apply
           rc=$?
@@ -116,10 +117,9 @@ jobs:
           #    失敗的新檔在磁碟上並不存在，直接餵給 prettier 會 ENOENT 轉紅，
           #    把「本輪其實翻成功了幾檔」整個蓋掉。
           # 2. 更關鍵：既有但本輪沒翻成的檔多半是舊版管線的產物、prettier 不合規
-          #    （2026-09-01 語料 15 檔紅）。餵了它們，就算本輪零翻譯成功，也會生出
-          #    純格式的 staged diff → 下面 Commit step 的 `git diff --cached --quiet`
-          #    為假 → 「本輪零成功」的紅燈永遠不亮 → 開出一個沒有任何翻譯的 PR →
-          #    detect 從此每天因「有未合併 auto PR」秒退，管線全綠但靜默停擺。
+          #    （2026-09-01 語料 15 檔紅）。餵了它們就會生出純格式改動，而這份清單
+          #    同時是 Commit step 判斷「本輪有沒有進展」的依據之一（見該 step 註解），
+          #    髒進來會讓「本輪零翻譯成功」的紅燈不亮。
           # 3. 同一份清單給下面的 git add 用，順帶解掉 `git add <不存在的檔>`
           #    退 128 拖垮整批成功檔的老問題。
           #
@@ -149,7 +149,7 @@ jobs:
             # 一個 3.10 → 剛格式化過的 PR 被自己的 gate 擋下。三處版本字串由
             # tests/test_prettier_version.py 守住，不靠人工同步。
             # -d '\n' 讓含空白的路徑不被拆詞（GNU xargs；runner 是 ubuntu）。
-            xargs -a /tmp/format_files.txt -d '\n' npx --yes prettier@3.9.6 --write --
+            xargs -a /tmp/format_files.txt -d '\n' -r npx --yes prettier@3.9.6 --write --
           else
             echo "本輪工作區零變動，跳過格式化。"
           fi
@@ -164,19 +164,58 @@ jobs:
         if: steps.detect.outputs.count != '0'
         run: |
           set -euo pipefail
-          # 紅燈判定綁「本輪有沒有真的產出翻譯」，不是「index 有沒有 diff」。
-          # staged diff 是代理量，至少有兩條旁路能在零翻譯成功時把它撐成非空
-          # （lessons L2，這個 repo 第三次犯）：
-          #   1. prettier 對「既有但本輪沒翻成、且是舊管線產物」的檔做純格式改動。
-          #      已由 Format step 的清單交集擋掉。
-          #   2. manifest：`_save_manifest_updates`（pipeline.py:359）在 apply 下
-          #      **無條件** save，touched 為空也照寫。只要磁碟上的 manifest 不是
-          #      save() 的 canonical 形式（人工解 merge conflict 後的縮排/鍵序、
-          #      手動編輯、日後調 indent/ensure_ascii），這次寫入就產生純正規化 diff。
-          # 任一條成立 → 「本輪零成功」的紅燈永遠不亮 → 開出零翻譯的 PR →
-          # detect 從此每天因「有未合併 auto PR」秒退 → 管線全綠但靜默停擺。
-          if [ ! -s /tmp/format_files.txt ]; then
-            echo "本輪沒有任何檔案變動。"
+          # 「本輪有沒有進展」= 有檔案變動 **或** manifest 的 provenance 有語意變動。
+          # 三輪 review 在這個判定上各抓到一個 bug，全部同源：拿代理量當真實性質
+          # （lessons L2）。歷代錯法與各自的失效模式：
+          #
+          #   git diff --cached 非空 ── 兩條旁路能在零翻譯成功時撐起假 diff：
+          #     (a) prettier 對「既有但本輪沒翻成」的舊管線產物做純格式改動；
+          #     (b) `_save_manifest_updates`（pipeline.py:359）在 apply 下無條件
+          #         save，touched 為空也照寫 → 磁碟上的 manifest 只要不是 save()
+          #         的 canonical 形式（人工解 merge conflict 的縮排/鍵序、手動編輯、
+          #         日後調 indent/ensure_ascii），就產生純正規化 diff。
+          #     → 紅燈不亮 → 開出零翻譯的 PR → detect 每天因「有未合併 auto PR」
+          #       秒退 → 管線全綠但靜默停擺。
+          #
+          #   format_files.txt 非空 ── 反方向漏掉「翻成功但輸出與現況相同」：
+          #     tier A（英文改動小於 FRONTMATTER_ONLY_DELTA 且只動 body）會沿用
+          #     HEAD 的中文 body + carry-forward frontmatter，產出可以 byte-identical。
+          #     但 stale 判定只看英文 blob SHA（manifest.py:46），所以 manifest 的
+          #     provenance 更新是本輪**唯一且真實**的成果。早退丟掉它 → 該檔隔天
+          #     仍 stale → 每天重翻燒配額 → 累積 3 個就佔死 BATCH_SIZE 名額，
+          #     其他 stale 檔永遠輪不到，而 job 全綠。
+          #
+          # 現在兩者都判，且 manifest 比的是 **json 語意**不是位元組——對縮排/鍵序/
+          # ensure_ascii 免疫，(b) 那條噪音進不來，真實的 provenance 變動跑不掉。
+          MANIFEST=scripts/translation-manifest.json
+          # rc 三態：0=語意相同、1=有變動、其餘=比對本身壞了（不能猜，直接轉紅）。
+          # 用 exit 1 表示「有變動」而非讓例外冒出來，是為了不讓 JSON 壞掉
+          # 被讀成「有變動」而靜默 commit 一份壞 manifest。
+          set +e
+          python - "$MANIFEST" <<'PY'
+          import json, subprocess, sys
+
+          try:
+              path = sys.argv[1]
+              head = subprocess.run(
+                  ["git", "show", f"HEAD:{path}"], capture_output=True, text=True
+              )
+              old = json.loads(head.stdout) if head.returncode == 0 else None
+              new = json.loads(open(path, encoding="utf-8").read())
+          except Exception as e:  # noqa: BLE001
+              print(f"manifest 比對失敗：{e}", file=sys.stderr)
+              sys.exit(2)
+          sys.exit(0 if old == new else 1)
+          PY
+          MANIFEST_RC=$?
+          set -e
+          case "$MANIFEST_RC" in
+            0) MANIFEST_CHANGED=0 ;;
+            1) MANIFEST_CHANGED=1 ;;
+            *) echo "::error::manifest 比對失敗（rc=$MANIFEST_RC）"; exit 1 ;;
+          esac
+          if [ ! -s /tmp/format_files.txt ] && [ "$MANIFEST_CHANGED" = "0" ]; then
+            echo "本輪零進展：無檔案變動，manifest provenance 也沒變。"
             # 部分成功走 PR 流程、失敗殘量由 cron 續跑；全數失敗才轉紅。
             [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
             exit 0
@@ -192,7 +231,9 @@ jobs:
           # detect 會列出上游新增、本地尚不存在的檔，翻譯若因配額失敗，
           # `git add -- book/新檔.md` 會以 pathspec did not match 退 128，
           # set -e 下拖垮同批其他已翻成功的檔。
-          xargs -a /tmp/format_files.txt -d '\n' git add --
+          # -r：清單可能是空的（只有 manifest provenance 變動的情形），
+          #     空輸入不要跑 git add。
+          xargs -a /tmp/format_files.txt -d '\n' -r git add --
           git commit -m "Auto update zh-TW translations (Gemini)"
           git push origin "$BRANCH"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
