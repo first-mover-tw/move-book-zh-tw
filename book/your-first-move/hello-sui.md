@@ -1,5 +1,5 @@
 ---
-description: 在 Sui 上建立並發布一個待辦事項清單應用程式：建立帳號、部署 Move 套件，並透過 CLI 傳送交易
+description: 在 Sui 上建立並發布一個待辦事項清單應用程式：建立帳戶、部署 Move 套件，並透過 CLI 傳送交易
 ---
 
 # Sui，你好！ (Hello, Sui!) {#hello-sui}
