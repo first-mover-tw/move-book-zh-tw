@@ -108,19 +108,37 @@ jobs:
         if: steps.detect.outputs.count != '0'
         run: |
           set -euo pipefail
-          # 只格式化本輪動到的檔案。全 repo 跑會掃到 site/.docusaurus 建置產物
-          # 與 pnpm-lock.yaml（195 檔不合規，全與翻譯無關）。
+          # 餵給 prettier 的是「detect 清單 ∩ 本輪工作區真的變動的檔」。
+          # 不是全 repo（會掃到 site/.docusaurus 建置產物與 pnpm-lock.yaml，
+          # 195 檔不合規、全與翻譯無關），也不是整份 detect 清單，三個理由：
           #
-          # 只餵存在的檔案：detect 列的是「該翻的」，翻譯步驟刻意容忍部分失敗
-          # （配額用盡），失敗的新檔在磁碟上並不存在。直接餵給 prettier 會讓
-          # 這一步以 ENOENT 轉紅，把「本輪其實翻成功了幾檔」整個蓋掉。
+          # 1. detect 列的是「該翻的」，翻譯步驟刻意容忍部分失敗（配額用盡）。
+          #    失敗的新檔在磁碟上並不存在，直接餵給 prettier 會 ENOENT 轉紅，
+          #    把「本輪其實翻成功了幾檔」整個蓋掉。
+          # 2. 更關鍵：既有但本輪沒翻成的檔多半是舊版管線的產物、prettier 不合規
+          #    （2026-09-01 語料 15 檔紅）。餵了它們，就算本輪零翻譯成功，也會生出
+          #    純格式的 staged diff → 下面 Commit step 的 `git diff --cached --quiet`
+          #    為假 → 「本輪零成功」的紅燈永遠不亮 → 開出一個沒有任何翻譯的 PR →
+          #    detect 從此每天因「有未合併 auto PR」秒退，管線全綠但靜默停擺。
+          # 3. 同一份清單給下面的 git add 用，順帶解掉 `git add <不存在的檔>`
+          #    退 128 拖垮整批成功檔的老問題。
+          #
+          # 迴圈刻意用 if/fi 而非 `[ -f "$f" ] && printf`：後者在 while body 最後
+          # 一圈為偽時，while 的回傳值是 1，`set -e` 下是否中止取決於 bash 版本。
+          # if 沒有 else 分支時一律回 0，不留這個問題。
+          : > /tmp/format_files.txt
           while IFS= read -r f; do
-            [ -f "$f" ] && printf '%s\n' "$f"
-          done < /tmp/changed_files.txt > /tmp/format_files.txt
+            if [ -n "$f" ] && [ -n "$(git status --porcelain -- "$f")" ]; then
+              printf '%s\n' "$f" >> /tmp/format_files.txt
+            fi
+          done < /tmp/changed_files.txt
           if [ -s /tmp/format_files.txt ]; then
-            xargs -a /tmp/format_files.txt npx --yes prettier@3 --write --
+            # 版本釘死：浮動的 prettier@3 一旦 minor 改變輸出，這裡 --write 的版本
+            # 與 prettier.yml gate --check 的版本會在不同時間各自解析，可能一個 3.9
+            # 一個 3.10 → 剛格式化過的 PR 被自己的 gate 擋下。兩處必須同版本。
+            xargs -a /tmp/format_files.txt npx --yes prettier@3.9.6 --write --
           else
-            echo "No files on disk to format."
+            echo "本輪工作區零變動，跳過格式化。"
           fi
 
       - name: Validate before commit
@@ -138,7 +156,13 @@ jobs:
           BRANCH="auto/zh-tw-${{ github.run_id }}"
           git checkout -b "$BRANCH"
           git add scripts/translation-manifest.json
-          xargs -a /tmp/changed_files.txt git add --
+          # 用 Format step 算好的「真的變動了」清單，不用整份 detect 清單：
+          # detect 會列出上游新增、本地尚不存在的檔，翻譯若因配額失敗，
+          # `git add -- book/新檔.md` 會以 pathspec did not match 退 128，
+          # set -e 下拖垮同批其他已翻成功的檔。
+          if [ -s /tmp/format_files.txt ]; then
+            xargs -a /tmp/format_files.txt git add --
+          fi
           if git diff --cached --quiet; then
             echo "No changes to commit"
             # 全數失敗才轉紅（部分成功走 PR 流程，失敗殘量由 cron 續跑）

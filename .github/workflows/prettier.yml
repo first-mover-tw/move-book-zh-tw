@@ -5,6 +5,8 @@
 # fence），沒有一道看格式。prettier 又一直不在 CI 上，於是 frontmatter 的格式回歸
 # 連續三批 PR（#16 檔尾換行、#17 檔尾換行、#21 sequence 縮排 15 檔全紅）沒被任何
 # 東西攔下，都是人工審查時才發現。
+#
+# 本機修復：`pnpm format`（見 package.json），與這裡跑的是同一個指令、同一個版本。
 name: Prettier
 
 permissions:
@@ -12,6 +14,22 @@ permissions:
 
 on:
   pull_request:
+    # 只管進 zh-tw-main 的 PR。english-main 放的是上游英文原文，從未經過
+    # prettier（2026-09-02 實測 150 檔不合規），而且它的 .prettierrc 沒有 md
+    # override（proseWrap 是 always）。不限定 base 分支的話，這道 gate 對任何
+    # 碰到英文語料的 PR 都是必紅，等於沒有 gate。
+    branches: [zh-tw-main]
+    # 語料沒動就不用跑（只改 scripts/ 或 workflow 的 PR 佔多數）。
+    paths:
+      - "book/**/*.md"
+      - "reference/**/*.md"
+      - ".prettierrc"
+      - ".github/workflows/prettier.yml"
+
+# 同一個 PR 連續 push 時只留最後一次。
+concurrency:
+  group: prettier-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -23,8 +41,12 @@ jobs:
         with:
           node-version: "20"
 
+      # 版本釘死，且必須與 translate-zh-tw.yml 的 `prettier --write` 同版本。
+      # 浮動的 prettier@3 一旦 minor 改變 markdown/YAML 輸出，兩邊會在不同時間
+      # 各自解析到不同版本 → 管線剛格式化過的 PR 被自己的 gate 擋下。
+      #
       # 範圍限定在翻譯語料。全 repo 跑會掃到 site/.docusaurus 建置產物與
       # pnpm-lock.yaml（2026-09-01 實測 195 檔不合規，全與翻譯無關），
       # 一道從第一天就紅的 gate 等於沒有 gate。
       - name: Check corpus formatting
-        run: npx --yes prettier@3 --check "book/**/*.md" "reference/**/*.md"
+        run: npx --yes prettier@3.9.6 --check "book/**/*.md" "reference/**/*.md"
