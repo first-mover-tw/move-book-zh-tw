@@ -6,10 +6,13 @@
 import json
 import re
 import subprocess
+
+import commonmark
 from pathlib import Path
 
 from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
+from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
 FRONTMATTER_ONLY_DELTA = 6
@@ -141,6 +144,7 @@ def assemble(
     zh_body = _repair_headings(zh_body, en_body, backend)
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
+    zh_body = _repair_cjk_emphasis(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -287,6 +291,51 @@ def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
 
 
 _INPAGE_LINK = re.compile(r"\]\(#([^)#\s]+)\)")
+
+
+
+
+
+def _repair_cjk_emphasis(zh_body: str) -> str:
+    """把「因為與 CJK 相鄰而渲染不出來」的 `_..._` 改寫成 `*...*`。
+
+    CommonMark 不允許 `_` 在詞內開合（避免 snake_case 被誤判成強調），
+    而 CJK 字元算 word char。於是 `進行_升級_：` 這種寫法產出的是合法
+    Markdown、卻完全沒有 <em> —— 強調靜靜消失。PR #22 實測：backend 從
+    `*文字*` 改用 `_文字_` 之後，3 個檔的 5 處強調全滅（整檔渲染，<em>
+    由 5 變 0）。八道 gate 全是結構/術語檢查，prettier 也不管語意，
+    這種回歸只有人眼看得到 —— 所以修在產出這一側，不靠人工審查。
+
+    只改「現在渲染不出來、且內容含 CJK」的那些：本來就正確的 `_emphasis_`
+    原樣保留不製造無謂 diff；不含 CJK 的底線對是 URL 或識別字碎片，碰了
+    就是內容破壞。code span 與 fence 由
+    glossary.protected_mask 排除 —— snake_case 識別字被改成星號是編譯
+    層級的破壞，那個判斷的真相來源在 anchors/glossary，這裡不重刻。
+    """
+    mask = glossary.protected_mask(zh_body)
+    out, pos = [], 0
+    for m in _UNDERSCORE_EM.finditer(zh_body):
+        if any(mask[i] for i in range(m.start(), min(m.end(), len(mask)))):
+            continue
+        # 強調內容必須含 CJK。中文段落裡的強調必然含中文，而 URL
+        # （`Lambda_(computer_function)`）與識別字碎片（`_failureabort_`）
+        # 不會 —— 第一版沒這條，對全語料掃出 192 處全是這類假陽性，
+        # 照著「修」就是把 URL 改成星號的內容破壞。
+        if not validate.CJK.search(m.group(1)):
+            continue
+        # 「這個寫法渲染得出來嗎」問 commonmark 本人，不自己重刻 CommonMark
+        # 的 left/right-flanking 規則（L2：守衛要觀測真實性質）。以整行為
+        # 判斷單位——強調能不能開合完全取決於前後字元。
+        line_start = zh_body.rfind("\n", 0, m.start()) + 1
+        line_end = zh_body.find("\n", m.end())
+        line = zh_body[line_start : line_end if line_end != -1 else len(zh_body)]
+        if f"<em>{m.group(1)}</em>" in commonmark.commonmark(line):
+            continue
+        out.append(zh_body[pos:m.start()])
+        out.append(f"*{m.group(1)}*")
+        pos = m.end()
+    out.append(zh_body[pos:])
+    return "".join(out)
 
 
 def _repair_inpage_links(zh_body: str, en_body: str) -> str:

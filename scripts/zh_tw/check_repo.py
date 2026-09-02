@@ -63,6 +63,10 @@ def main() -> int:
                 print(f"{path}: frontmatter {key} 簡體殘留字 {ch!r}", file=sys.stderr)
                 simplified_total += 1
 
+    # gate 10（強調在翻譯中消失）刻意不在這裡跑：判準是「跟英文原文比
+    # 少了幾處」，需要中英配對，而 check_repo 只看 working tree 的中文側。
+    # 它是 validate.check_file 的寫檔 gate —— 擋在產出那一刻，不是事後盤點。
+
     print(
         f"連結問題 {len(link_errs)} 個，違禁詞共 {glossary_total} 處，"
         f"簡體殘留字共 {simplified_total} 個",

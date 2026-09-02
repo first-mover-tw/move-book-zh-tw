@@ -862,3 +862,88 @@ def test_dry_run_reports_ok_but_empty_touched(tmp_path, monkeypatch):
     line = json.loads(result.read_text(encoding="utf-8").strip())
     assert line["ok"] == 1
     assert line["touched"] == []
+
+
+# --- 底線強調在 CJK 相鄰時不會渲染（決定性修復 pass）---
+#
+# PR #22 實測：backend 從 `*文字*` 改用 `_文字_`，3 個檔的 5 處強調全部
+# 不再渲染（改動前後整檔跑 commonmark，<em> 由 5 變 0）。CommonMark 規定
+# `_` 不能在「詞內」開合，而 CJK 算 word char —— `進行_升級_：`、
+# `包括_所有權的變更_；`、`_簽署_交易` 全中。八道 gate 全是結構/術語檢查、
+# prettier 不管語意，所以這種「產出合法 Markdown、但渲染結果少了東西」的
+# 回歸沒有任何東西攔得住，只有人眼看得到。
+
+
+def test_repair_cjk_underscore_emphasis_rewrites_to_asterisk():
+    """CJK 相鄰的 `_..._` 改寫成 `*...*`，渲染結果才會有 <em>。"""
+    import commonmark
+
+    zh = "但套件可以進行_升級 (upgraded)_：升級會在新地址發布。\n"
+    assert "<em>" not in commonmark.commonmark(zh)  # 前提：修之前真的壞掉
+
+    out = pipeline._repair_cjk_emphasis(zh)
+    assert out == "但套件可以進行*升級 (upgraded)*：升級會在新地址發布。\n"
+    assert "<em>升級 (upgraded)</em>" in commonmark.commonmark(out)
+
+
+def test_repair_cjk_underscore_emphasis_leaves_working_emphasis_alone():
+    """本來就渲染得出來的不要動 —— 修復 pass 不該製造無謂 diff。
+    `_` 兩側都是空白/標點時是合法的強調，ASCII 詞也沒有這個問題。"""
+    for text in [
+        "這是 _emphasis_ 測試。\n",
+        "前面有空白 _強調_ 後面也有。\n",
+        "*星號本來就對*，不要動。\n",
+    ]:
+        assert pipeline._repair_cjk_emphasis(text) == text
+
+
+def test_repair_cjk_emphasis_never_touches_code():
+    """snake_case 識別字與 code span/fence 內的底線絕對不能動 ——
+    `object_id`、`std::string::String` 這類東西被改成星號就是編譯層級的破壞。"""
+    cases = [
+        "呼叫 `sui::coin::from_balance` 與 `tx_context` 兩個東西。\n",
+        "```move\nlet _x = foo_bar(_y);\n```\n",
+        "變數 `some_var_name` 不該被動到。\n",
+        "行內 `a_b_c` 與中文相鄰的_強調_混在一起。\n",
+    ]
+    for text in cases:
+        out = pipeline._repair_cjk_emphasis(text)
+        # code 內容逐字不變
+        import re
+
+        assert re.findall(r"`[^`]*`|```.*?```", out, flags=re.S) == re.findall(
+            r"`[^`]*`|```.*?```", text, flags=re.S
+        ), text
+
+
+def test_repair_cjk_emphasis_never_touches_urls_and_identifiers():
+    """真實語料的假陽性：`Lambda_(computer_function)` 這種 URL、
+    `_failureabort_` 這種識別字碎片，底線對看起來就是強調。第一版修復 pass
+    對全語料掃出 192 處「失效強調」，全是這類 —— 把它們改成星號就是內容
+    破壞。判準加上「強調內容必須含 CJK」：中文段落裡的強調必然含中文，
+    URL 與識別字不會（lessons L2：觀測量要等於宣稱保護的性質）。"""
+    cases = [
+        "巨集 (macro) 見 [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function))。\n",
+        "測試狀態 _failureabort_ 與 _status-u64_ 是識別字碎片。\n",
+    ]
+    for text in cases:
+        assert pipeline._repair_cjk_emphasis(text) == text, text
+
+
+def test_gate_flags_emphasis_lost_in_translation():
+    """fail-closed 的判準是「跟英文原文比，中文渲染出來的強調變少了」——
+    不是「有沒有可疑的底線對」。前者是真實性質（翻譯弄丟了強調），後者是
+    代理量，實測對全語料噴 192 個假陽性（URL 與 snake_case 識別字）。"""
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\nIncluding *ownership changes*; and more.\n"
+    bad = "# 標題 (T) {#t}\n\n包括_所有權的變更_；還有別的。\n"
+    good = "# 標題 (T) {#t}\n\n包括*所有權的變更*；還有別的。\n"
+
+    assert validate.check_cjk_emphasis(bad, en)
+    assert validate.check_cjk_emphasis(good, en) == []
+
+    # URL 裡的底線不得被算成強調，也不得因此報錯
+    en2 = "# T {#t}\n\nSee [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function)).\n"
+    zh2 = "# 標題 (T) {#t}\n\n見 [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function))。\n"
+    assert validate.check_cjk_emphasis(zh2, en2) == []
