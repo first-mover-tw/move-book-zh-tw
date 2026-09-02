@@ -1,0 +1,30 @@
+# zh-TW 專屬 gate，不是上游檔案 —— 刻意獨立成一個檔而非塞進 docs.yml / test.yml，
+# 那兩個是 MystenLabs/move-book 的複製品，改它們每次 upstream sync 都要處理衝突。
+#
+# 為什麼需要這道 gate：翻譯管線的八道 gate 全是內容檢查（術語、簡體、連結、標題、
+# fence），沒有一道看格式。prettier 又一直不在 CI 上，於是 frontmatter 的格式回歸
+# 連續三批 PR（#16 檔尾換行、#17 檔尾換行、#21 sequence 縮排 15 檔全紅）沒被任何
+# 東西攔下，都是人工審查時才發現。
+name: Prettier
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 範圍限定在翻譯語料。全 repo 跑會掃到 site/.docusaurus 建置產物與
+      # pnpm-lock.yaml（2026-09-01 實測 195 檔不合規，全與翻譯無關），
+      # 一道從第一天就紅的 gate 等於沒有 gate。
+      - name: Check corpus formatting
+        run: npx --yes prettier@3 --check "book/**/*.md" "reference/**/*.md"

@@ -12,6 +12,27 @@ TRANSLATABLE_KEYS = frozenset({"description", "title"})
 _FENCE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 
 
+class _PrettierDumper(yaml.SafeDumper):
+    """讓 safe_dump 的輸出盡量貼近 prettier 的 YAML 規則。
+
+    pyyaml 預設與本 repo 的 prettier 設定不合，會讓每個帶 keywords/questions 的檔案
+    永久停在 prettier 不合規（2026-09-01 掃描：15 個含 `questions:` 的檔案，15 個全紅，
+    1:1 對應）。prettier 不在 CI 上，所以 PR #16/#17/#21 三批都沒被任何 gate 攔下。
+
+    ⚠️ 這個 dumper 是 best-effort，不是合規保證 —— 權威是 translate workflow 裡
+    真正跑的 `prettier --write`（見 .github/workflows/translate-zh-tw.yml）。
+    理由：prettier 對 YAML 純量的處理取決於**型別**而非長度 ——
+    plain scalar 多長都留單行，quoted scalar（值含 `: ` 時 YAML 強制加引號）
+    則會用 east-asian 顯示寬度做 greedy fill 折行。在 python 這端把後者複製一遍
+    等於手刻 prettier 的 printer 演算法，會隨 prettier 版本漂移（lessons L2：
+    不要用廉價代理量代替真實性質）。所以這裡只做「不會錯」的那半，剩下交給 prettier。
+    """
+
+    def increase_indent(self, flow=False, indentless=False):
+        # sequence 要縮排（pyyaml 預設 `- x` 頂格，prettier 要 `  - x`）
+        return super().increase_indent(flow, False)
+
+
 def split(text: str) -> tuple[dict, str]:
     m = _FENCE.match(text)
     if not m:
@@ -30,8 +51,16 @@ def join(meta: dict, body: str) -> str:
     # join 是所有 .md 產出的唯一匯流點，補在這裡才是一次修完。
     if not meta:
         return _end_with_newline(body)
-    dumped = yaml.safe_dump(
-        meta, allow_unicode=True, default_flow_style=False, sort_keys=False
+    dumped = yaml.dump(
+        meta,
+        allow_unicode=True,
+        default_flow_style=False,
+        sort_keys=False,
+        Dumper=_PrettierDumper,
+        # 不要在 80 欄折行：prettier 對 plain scalar 一律留單行，pyyaml 預設的
+        # 80 欄折行對它們就是純粹的不合規（2026-09-01 實測 glossary/manifest）。
+        # quoted scalar 反過來該折，但折法由 prettier 決定，不在這裡猜。
+        width=10**9,
     ).rstrip("\n")
     return _end_with_newline(f"---\n{dumped}\n---\n\n{body}")
 

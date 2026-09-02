@@ -48,6 +48,14 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
 
+      # prettier 是 frontmatter 格式的權威（見 scripts/zh_tw/frontmatter.py 的
+      # _PrettierDumper docstring）：pyyaml 只做 best-effort，真正收斂在下面的
+      # Format 步驟。python 端猜 prettier 的折行規則猜錯過一次，別再猜第二次。
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Detect files needing translation
         id: detect
         env:
@@ -94,6 +102,26 @@ jobs:
           rc=$?
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
           [ "$rc" -eq 0 ] || echo "::warning::部分檔案翻譯失敗（rc=$rc），先提交已成功者"
+
+      # 必須在 Validate 之前：gate 檢查的要是最終落盤的內容，不是 prettier 改動前的。
+      - name: Format with prettier
+        if: steps.detect.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          # 只格式化本輪動到的檔案。全 repo 跑會掃到 site/.docusaurus 建置產物
+          # 與 pnpm-lock.yaml（195 檔不合規，全與翻譯無關）。
+          #
+          # 只餵存在的檔案：detect 列的是「該翻的」，翻譯步驟刻意容忍部分失敗
+          # （配額用盡），失敗的新檔在磁碟上並不存在。直接餵給 prettier 會讓
+          # 這一步以 ENOENT 轉紅，把「本輪其實翻成功了幾檔」整個蓋掉。
+          while IFS= read -r f; do
+            [ -f "$f" ] && printf '%s\n' "$f"
+          done < /tmp/changed_files.txt > /tmp/format_files.txt
+          if [ -s /tmp/format_files.txt ]; then
+            xargs -a /tmp/format_files.txt npx --yes prettier@3 --write --
+          else
+            echo "No files on disk to format."
+          fi
 
       - name: Validate before commit
         if: steps.detect.outputs.count != '0'
