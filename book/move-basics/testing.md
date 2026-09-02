@@ -2,8 +2,7 @@
 description: '以撰寫測試（testing）為主軸的技術短句翻譯，不涉及技能觸發。
 
 
-  使用 `#[test]` 屬性（attribute）、預期失敗（expected failures）以及測試工具，在 Move 中撰寫並執行單元測試（unit
-  tests），驗證智能合約邏輯。'
+  使用 `#[test]` 屬性（attribute）、預期失敗（expected failures）以及測試工具，在 Move 中撰寫並執行單元測試（unit tests），驗證智能合約邏輯。'
 ---
 
 # Testing 測試 (Testing) {#testing}

@@ -1,7 +1,5 @@
 ---
-description:
-  快速路徑與共識機制在 Sui 中的比較 (Fast Path vs Consensus in Sui)：擁有型物件 (owned objects)
-  如何跳過共識機制以加速交易，而共享物件 (shared objects) 則需要排序。
+description: 快速路徑與共識機制在 Sui 中的比較 (Fast Path vs Consensus in Sui)：擁有型物件 (owned objects) 如何跳過共識機制以加速交易，而共享物件 (shared objects) 則需要排序。
 ---
 
 # 快速路徑與共識 (Fast Path and Consensus) {#fast-path-and-consensus}

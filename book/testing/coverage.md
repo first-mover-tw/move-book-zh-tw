@@ -1,6 +1,5 @@
 ---
-description: 為 Move 測試產生程式碼覆蓋率報告 (Generate code coverage reports for Move tests)：使用
-  --coverage 旗標與 sui move coverage 找出未測試的程式碼路徑。
+description: 為 Move 測試產生程式碼覆蓋率報告 (Generate code coverage reports for Move tests)：使用 --coverage 旗標與 sui move coverage 找出未測試的程式碼路徑。
 ---
 
 # 產生涵蓋率報告 (Generating Coverage Reports) {#generating-coverage-reports}

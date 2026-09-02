@@ -1,32 +1,30 @@
 ---
-description: Move 與 Sui 術語 (terminology) 詞彙表：快速路徑 (fast path)、平行執行 (parallel execution)、內部型別
-  (internal types) 以及其他重要概念的定義。
+description: Move 與 Sui 術語 (terminology) 詞彙表：快速路徑 (fast path)、平行執行 (parallel execution)、內部型別 (internal types) 以及其他重要概念的定義。
 title: '附錄 A: 詞彙表 (Glossary)'
 keywords:
-- Move
-- Sui
-- Move tutorial
-- appendix
-- glossary
+  - Move
+  - Sui
+  - Move tutorial
+  - appendix
+  - glossary
 questions:
-- What does this Move term mean?
-- Where is the Move glossary?
-answer: The glossary defines key terms in the Move language and Sui ecosystem including
-  abilities, objects, modules, packages, and blockchain concepts.
+  - What does this Move term mean?
+  - Where is the Move glossary?
+answer: The glossary defines key terms in the Move language and Sui ecosystem including abilities, objects, modules, packages, and blockchain concepts.
 goal:
   description: Reader can look up definitions of Move and Sui terminology
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 附錄 A：詞彙表 (Appendix A: Glossary) {#appendix-a-glossary}

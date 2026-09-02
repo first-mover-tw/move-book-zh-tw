@@ -1,7 +1,5 @@
 ---
-description:
-  安全預設 (security by default)、表達力 (expressiveness) 與直覺的資源管理 (intuitive resource
-  management)，這是 Move 智慧合約背後的設計哲學。
+description: 安全預設 (security by default)、表達力 (expressiveness) 與直覺的資源管理 (intuitive resource management)，這是 Move 智慧合約背後的設計哲學。
 ---
 
 # 前言

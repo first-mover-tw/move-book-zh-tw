@@ -1,7 +1,5 @@
 ---
-description:
-  快速路徑最佳化 (Fast Path Optimization)：為 Sui 設計快速路徑——建構擁有物件（owned object）與共享物件（shared
-  object），以最大化交易平行處理與效能
+description: 快速路徑最佳化 (Fast Path Optimization)：為 Sui 設計快速路徑——建構擁有物件（owned object）與共享物件（shared object），以最大化交易平行處理與效能
 ---
 
 # 快速路徑 (Fast Path) {#fast-path}

@@ -48,6 +48,14 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml markdown-it-py opencc-python-reimplemented google-genai
 
+      # prettier 是 frontmatter 格式的權威（見 scripts/zh_tw/frontmatter.py 的
+      # _PrettierDumper docstring）：pyyaml 只做 best-effort，真正收斂在下面的
+      # Format 步驟。python 端猜 prettier 的折行規則猜錯過一次，別再猜第二次。
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Detect files needing translation
         id: detect
         env:
@@ -88,12 +96,72 @@ jobs:
           # 部分失敗不中斷（前車之鑑：配額用盡 → xargs exit 123 → job 死在這裡
           # → 成功檔案從未 commit → 隔日重翻同一批 → 連續紅燈零進度）。
           # 成功檔案的 manifest 已落盤，後續照常 commit/PR；殘量隔日 cron 接手。
-          xargs -a /tmp/changed_files.txt \
+          # -d '\n' -r 與下面兩處 xargs 一致：含空白的路徑不被拆詞、空輸入不執行。
+          # --result-jsonl：管線自報 ok/touched/failed。Commit step 直接讀這個
+          # 數字判「本輪有沒有進展」，不從 git/檔案系統推論（見該 step 註解）。
+          # 「result 檔存在 ⟹ 本輪自報過」這個前提整個押在這行上。
+          # GitHub-hosted runner 是 ephemeral，但換 self-hosted／複用 /tmp 時，
+          # 殘留檔若不可刪（權限、唯讀掛載）rm -f 會靜默成功退出，上一輪的
+          # 成果就混進本輪加總。前提破掉要自己知道。
+          rm -f /tmp/translate_result.jsonl || { echo "::error::無法清除舊 result 檔"; exit 1; }
+          [ -e /tmp/translate_result.jsonl ] && { echo "::error::舊 result 檔仍在"; exit 1; }
+          xargs -a /tmp/changed_files.txt -d '\n' -r \
             python -m scripts.zh_tw --backend gemini \
-              --english-ref origin/english-main --apply
+              --english-ref origin/english-main --apply \
+              --result-jsonl /tmp/translate_result.jsonl
           rc=$?
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
           [ "$rc" -eq 0 ] || echo "::warning::部分檔案翻譯失敗（rc=$rc），先提交已成功者"
+
+      # 必須在 Validate 之前：gate 檢查的要是最終落盤的內容，不是 prettier 改動前的。
+      - name: Format with prettier
+        if: steps.detect.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          # 餵給 prettier 的是「detect 清單 ∩ 本輪工作區真的變動的檔」。
+          # 不是全 repo（會掃到 site/.docusaurus 建置產物與 pnpm-lock.yaml，
+          # 195 檔不合規、全與翻譯無關），也不是整份 detect 清單，三個理由：
+          #
+          # 1. detect 列的是「該翻的」，翻譯步驟刻意容忍部分失敗（配額用盡）。
+          #    失敗的新檔在磁碟上並不存在，直接餵給 prettier 會 ENOENT 轉紅，
+          #    把「本輪其實翻成功了幾檔」整個蓋掉。
+          # 2. 更關鍵：既有但本輪沒翻成的檔多半是舊版管線的產物、prettier 不合規
+          #    （2026-09-01 語料 15 檔紅）。餵了它們就會生出純格式改動，而這份清單
+          #    同時是 Commit step 判斷「本輪有沒有進展」的依據之一（見該 step 註解），
+          #    髒進來會讓「本輪零翻譯成功」的紅燈不亮。
+          # 3. 同一份清單給下面的 git add 用，順帶解掉 `git add <不存在的檔>`
+          #    退 128 拖垮整批成功檔的老問題。
+          #
+          # 迴圈刻意用 if/fi 而非 `[ -f "$f" ] && printf`：後者在 while body 最後
+          # 一圈為偽時，while 的回傳值是 1，`set -e` 下是否中止取決於 bash 版本。
+          # if 沒有 else 分支時一律回 0，不留這個問題。
+          : > /tmp/format_files.txt
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            # git status 的 rc 要自己檢查：它包在 `[ -n "$(...)" ]` 裡時，
+            # 非零退出不會被 set -e 攔下，失敗會被讀成「這檔沒變」→ 該檔
+            # 既不格式化也不 git add → 翻譯成果靜默丟棄而 job 還是綠的。
+            if ! status=$(git status --porcelain -- "$f"); then
+              echo "::error::git status 對 $f 失敗"; exit 1
+            fi
+            # -f 與「有變更」兩個條件都要：已刪除的追蹤檔在 porcelain 是
+            # ` D path`（非空）卻不在磁碟上，只看 git 狀態會餵給 prettier
+            # 吃 ENOENT。目前 pipeline 沒有刪檔路徑，但不把正確性押在
+            # 一個外部不變式上。
+            if [ -f "$f" ] && [ -n "$status" ]; then
+              printf '%s\n' "$f" >> /tmp/format_files.txt
+            fi
+          done < /tmp/changed_files.txt
+          if [ -s /tmp/format_files.txt ]; then
+            # 版本釘死：浮動的 prettier@3 一旦 minor 改變輸出，這裡 --write 的版本
+            # 與 prettier.yml gate --check 的版本會在不同時間各自解析，可能一個 3.9
+            # 一個 3.10 → 剛格式化過的 PR 被自己的 gate 擋下。三處版本字串由
+            # tests/test_prettier_version.py 守住，不靠人工同步。
+            # -d '\n' 讓含空白的路徑不被拆詞（GNU xargs；runner 是 ubuntu）。
+            xargs -a /tmp/format_files.txt -d '\n' -r npx --yes prettier@3.9.6 --write --
+          else
+            echo "本輪工作區零變動，跳過格式化。"
+          fi
 
       - name: Validate before commit
         if: steps.detect.outputs.count != '0'
@@ -105,18 +173,64 @@ jobs:
         if: steps.detect.outputs.count != '0'
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="auto/zh-tw-${{ github.run_id }}"
-          git checkout -b "$BRANCH"
-          git add scripts/translation-manifest.json
-          xargs -a /tmp/changed_files.txt git add --
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            # 全數失敗才轉紅（部分成功走 PR 流程，失敗殘量由 cron 續跑）
+          # 「本輪有沒有進展」直接讀管線自報的 ok 數，不從 git/檔案系統推論。
+          #
+          # 這個判定連續三輪 review 各出一個 blocker，全部同源 —— 拿代理量當
+          # 真實性質（lessons L2），且三次的失效形式都是「job 全綠但管線靜默停擺」：
+          #   輪一 `git diff --cached` 非空 → prettier 對「既有但本輪沒翻成」的
+          #        舊管線產物做純格式改動，零翻譯成功也能撐起假 diff。
+          #   輪二 同上 → `_save_manifest_updates`（pipeline.py）在 apply 下無條件
+          #        save，touched 為空也照寫，manifest 的正規化噪音是第二條旁路。
+          #   輪三 「工作區有檔案變動」→ 反方向漏掉 tier A 產出 byte-identical 的
+          #        情形：工作區零 diff，但 manifest 的 provenance 更新是唯一真實
+          #        成果，早退丟掉它 → 該檔永遠 stale、每天重翻、佔死 BATCH_SIZE。
+          # 原始量從頭到尾是 run() 手上的 ok 與 touched，manifest 與工作區 diff
+          # 都只是它們的影子。現在直接讀本體，整段推論刪掉。
+          #
+          # 檔案不存在 = 管線沒跑或壞了，不能猜成 0（那會靜默丟掉成果），轉紅。
+          if [ ! -f /tmp/translate_result.jsonl ]; then
+            echo "::error::找不到 /tmp/translate_result.jsonl，翻譯步驟沒有自報成果"
+            exit 1
+          fi
+          # 加總 touched 而不是 ok：ok 是「產出了幾份譯文字串」，`ok += 1` 在
+          # pipeline.py 的 `if apply:` 之外，dry-run 也會累加；touched 只在寫檔
+          # 之後才 add，才是「落盤了幾檔」。兩者在 --apply 下相等，但那是外部
+          # 不變式 —— 日後誰加一個不帶 --apply 的冒煙步驟，讀 ok 就會判成
+          # 「有進展」而 index 是空的，git commit 以 nothing to commit 轉紅。
+          APPLIED=$(python - /tmp/translate_result.jsonl <<'PY'
+          import json, sys
+
+          total = 0
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              for line in fh:
+                  line = line.strip()
+                  if line:
+                      total += len(json.loads(line)["touched"])
+          print(total)
+          PY
+          )
+          echo "本輪落盤 $APPLIED 檔。"
+          if [ "$APPLIED" = "0" ]; then
+            # 部分成功走 PR 流程、失敗殘量由 cron 續跑；全數失敗才轉紅。
             [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
             exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="auto/zh-tw-${{ github.run_id }}"
+          # checkout -b 在 HEAD 建分支，不動 index/工作區/untracked，
+          # 上面算好的 format_files.txt 不會失效。
+          git checkout -b "$BRANCH"
+          # ok>0 才 add manifest：ok=0 時上面已經早退，這裡不會 stage 到
+          # `_save_manifest_updates` 的純正規化寫入。
+          git add scripts/translation-manifest.json
+          # 用 Format step 算好的「真的變動了」清單，不用整份 detect 清單：
+          # detect 會列出上游新增、本地尚不存在的檔，翻譯若因配額失敗，
+          # `git add -- book/新檔.md` 會以 pathspec did not match 退 128，
+          # set -e 下拖垮同批其他已翻成功的檔。
+          # -r：清單可能是空的（只有 manifest provenance 變動的情形），
+          #     空輸入不要跑 git add。
+          xargs -a /tmp/format_files.txt -d '\n' -r git add --
           git commit -m "Auto update zh-TW translations (Gemini)"
           git push origin "$BRANCH"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"

@@ -1,7 +1,5 @@
 ---
-description:
-  在 Move 測試中擴充外部模組 (Extend foreign modules in Move tests)：為外部套件新增僅供測試使用的函式，用於建立測試資料與模擬物件
-  (mock objects)。
+description: 在 Move 測試中擴充外部模組 (Extend foreign modules in Move tests)：為外部套件新增僅供測試使用的函式，用於建立測試資料與模擬物件 (mock objects)。
 ---
 
 # Extending Modules 擴充模組 (Extending Modules) {#extending-modules}

@@ -1,7 +1,5 @@
 ---
-description:
-  在 Move 測試中模擬 TxContext (TxContext)：建立虛擬情境 (context)、設定發送者地址，並產生新的 UID
-  供單元測試使用。
+description: 在 Move 測試中模擬 TxContext (TxContext)：建立虛擬情境 (context)、設定發送者地址，並產生新的 UID 供單元測試使用。
 ---
 
 # 模擬交易情境 (Simulating Transaction Context) {#simulating-transaction-context}

@@ -1,7 +1,5 @@
 ---
-description:
-  定義自訂結構體 (struct)：於 Sui 智慧合約中打包 (pack)、拆解 (unpack)、存取欄位，並用 getter 與 setter
-  控制欄位可見性
+description: 定義自訂結構體 (struct)：於 Sui 智慧合約中打包 (pack)、拆解 (unpack)、存取欄位，並用 getter 與 setter 控制欄位可見性
 ---
 
 # 用結構體自訂型別 (Custom Types with Struct) {#custom-types-with-struct}

@@ -1,6 +1,5 @@
 ---
-description: Sui Move 中的 UID 與 ID (UID and ID in Sui Move)：唯一物件識別符 (unique object
-  identifiers) 的建立方式、如何用於動態欄位 (dynamic fields)，以及唯一性的保證。
+description: Sui Move 中的 UID 與 ID (UID and ID in Sui Move)：唯一物件識別符 (unique object identifiers) 的建立方式、如何用於動態欄位 (dynamic fields)，以及唯一性的保證。
 ---
 
 # UID 與 ID (UID and ID) {#uid-and-id}

@@ -1,6 +1,5 @@
 ---
-description: Sui 鏈上隨機性 (Onchain Randomness in Sui)：使用 Random 共享物件 (shared object)
-  在 Move 智慧合約 (smart contract) 中產生安全的隨機值。
+description: Sui 鏈上隨機性 (Onchain Randomness in Sui)：使用 Random 共享物件 (shared object) 在 Move 智慧合約 (smart contract) 中產生安全的隨機值。
 ---
 
 # 鏈上隨機性 (Onchain Randomness) {#onchain-randomness}

@@ -1,35 +1,32 @@
 ---
-description: 設定 VSCode 或 IntelliJ IDEA，以便進行 Move 開發 (Move development)，並使用語法突顯 (syntax
-  highlighting)、錯誤檢查 (error checking) 和程式碼格式化 (code formatting) 擴充功能 (extensions)。
+description: 設定 VSCode 或 IntelliJ IDEA，以便進行 Move 開發 (Move development)，並使用語法突顯 (syntax highlighting)、錯誤檢查 (error checking) 和程式碼格式化 (code formatting) 擴充功能 (extensions)。
 title: 設定您的 IDE
 keywords:
-- Move
-- Sui
-- Move tutorial
-- set
-- your
-- ide
+  - Move
+  - Sui
+  - Move tutorial
+  - set
+  - your
+  - ide
 questions:
-- What IDE should I use for Move?
-- How do I set up VS Code for Move?
-- Is there a Move language server?
-answer: Move has official IDE support through the move-analyzer language server, providing
-  syntax highlighting, diagnostics, go-to-definition, and autocomplete in VS Code
-  and other editors.
+  - What IDE should I use for Move?
+  - How do I set up VS Code for Move?
+  - Is there a Move language server?
+answer: Move has official IDE support through the move-analyzer language server, providing syntax highlighting, diagnostics, go-to-definition, and autocomplete in VS Code and other editors.
 goal:
   description: Reader has their IDE configured with Move language support
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 設定您的 IDE (Set Up Your IDE) {#set-up-your-ide}

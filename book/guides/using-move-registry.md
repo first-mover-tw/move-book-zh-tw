@@ -1,7 +1,5 @@
 ---
-description:
-  使用 Move Registry (MVR) 將外部相依套件 (external dependencies) 加入你的 Move 套件 (package)：搜尋套件、將它們加入清單
-  (manifest)，並在程式碼中呼叫它們。
+description: 使用 Move Registry (MVR) 將外部相依套件 (external dependencies) 加入你的 Move 套件 (package)：搜尋套件、將它們加入清單 (manifest)，並在程式碼中呼叫它們。
 ---
 
 # 使用 Move Registry (Using Move Registry) {#using-move-registry}

@@ -1,7 +1,5 @@
 ---
-description:
-  Vector 型集合 (Vector-based Collections) 在 Sui Framework 中：VecSet 和 VecMap，其操作與限制，以及何時該改用動態集合
-  (Dynamic Collections)。
+description: Vector 型集合 (Vector-based Collections) 在 Sui Framework 中：VecSet 和 VecMap，其操作與限制，以及何時該改用動態集合 (Dynamic Collections)。
 ---
 
 # 集合 (Collections) {#collections}

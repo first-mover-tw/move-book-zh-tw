@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 框架 (The Sui Framework)：內建模組 (built-in modules)，提供儲存、代幣、顯示、時鐘、事件等每個套件都可使用的
-  Sui 專屬功能。
+description: Sui 框架 (The Sui Framework)：內建模組 (built-in modules)，提供儲存、代幣、顯示、時鐘、事件等每個套件都可使用的 Sui 專屬功能。
 ---
 
 # Sui 框架 (Sui Framework) {#sui-framework}

@@ -1,34 +1,32 @@
 ---
-description: Sui 上的保留地址 (Reserved addresses)：標準函式庫 (standard library) (0x1)、Sui 框架
-  (Sui framework) (0x2)、系統物件 (system objects) 及其他固定地址配置 (fixed address assignments)。
+description: Sui 上的保留地址 (Reserved addresses)：標準函式庫 (standard library) (0x1)、Sui 框架 (Sui framework) (0x2)、系統物件 (system objects) 及其他固定地址配置 (fixed address assignments)。
 title: '附錄 B: 保留地址 (Reserved Addresses)'
 keywords:
-- Move
-- Sui
-- Move tutorial
-- appendix
-- reserved
-- addresses
+  - Move
+  - Sui
+  - Move tutorial
+  - appendix
+  - reserved
+  - addresses
 questions:
-- What addresses are reserved in Move?
-- What is address 0x1?
-- What is the Sui framework address?
-answer: 'Move reserves specific addresses for system packages: 0x1 for the standard
-  library, 0x2 for the Sui framework, and 0x3 for additional Sui system packages.'
+  - What addresses are reserved in Move?
+  - What is address 0x1?
+  - What is the Sui framework address?
+answer: 'Move reserves specific addresses for system packages: 0x1 for the standard library, 0x2 for the Sui framework, and 0x3 for additional Sui system packages.'
 goal:
   description: Reader knows which addresses are reserved in Move and their purpose
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 附錄 B：保留地址 (Appendix B: Reserved Addresses) {#appendix-b-reserved-addresses}

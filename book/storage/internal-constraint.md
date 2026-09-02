@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 驗證器 (Sui Verifier) 內部限制：為何儲存操作 (storage operations) 需要型別 (type) 定義於呼叫模組
-  (calling module) 中
+description: Sui 驗證器 (Sui Verifier) 內部限制：為何儲存操作 (storage operations) 需要型別 (type) 定義於呼叫模組 (calling module) 中
 ---
 
 # Sui 驗證器：內部約束 (Sui Verifier: Internal Constraint) {#sui-verifier-internal-constraint}

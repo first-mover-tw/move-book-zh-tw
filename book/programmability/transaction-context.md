@@ -1,7 +1,5 @@
 ---
-description:
-  TxContext（交易上下文）in Sui Move：在你的智慧合約中存取傳送者地址 (sender address)、交易摘要 (transaction
-  digest)、epoch、燃料價格 (gas price)，並產生唯一 ID (unique IDs)。
+description: TxContext（交易上下文）in Sui Move：在你的智慧合約中存取傳送者地址 (sender address)、交易摘要 (transaction digest)、epoch、燃料價格 (gas price)，並產生唯一 ID (unique IDs)。
 ---
 
 # 交易上下文 (Transaction Context) {#transaction-context}

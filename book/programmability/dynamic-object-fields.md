@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 中的動態物件欄位 (dynamic object fields)：把物件掛載為欄位，並保持可透過 ID 存取，與一般動態欄位 (dynamic
-  fields) 有所不同。
+description: Sui 中的動態物件欄位 (dynamic object fields)：把物件掛載為欄位，並保持可透過 ID 存取，與一般動態欄位 (dynamic fields) 有所不同。
 ---
 
 # 動態物件欄位 (Dynamic Object Fields) {#dynamic-object-fields}

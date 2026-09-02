@@ -1,8 +1,5 @@
 ---
-description:
-  Move 基本型別（primitive types）：布林值（booleans）與從 u8 到 u256 的無符號整數（unsigned
-  integers）——字面值（literals）與型別推斷（type inference）、算術運算（arithmetic）與比較運算（comparison）、使用
-  `as` 進行轉型（casting）、以及溢位行為（overflow behavior）。
+description: Move 基本型別（primitive types）：布林值（booleans）與從 u8 到 u256 的無符號整數（unsigned integers）——字面值（literals）與型別推斷（type inference）、算術運算（arithmetic）與比較運算（comparison）、使用 `as` 進行轉型（casting）、以及溢位行為（overflow behavior）。
 ---
 
 # 基本型別 (Primitive Types) {#primitive-types}

@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 進階可程式化性 (Advanced Sui Programmability)：Move 中的模式、事件、動態欄位、能力 (capabilities)、BCS
-  序列化與設計模式。
+description: Sui 進階可程式化性 (Advanced Sui Programmability)：Move 中的模式、事件、動態欄位、能力 (capabilities)、BCS 序列化與設計模式。
 ---
 
 # 進階可程式化性 (Advanced Programmability) {#advanced-programmability}

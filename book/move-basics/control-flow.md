@@ -1,6 +1,5 @@
 ---
-description: 控制流程 (Control Flow)：Move 中的 if/else 運算式、while 與 loop 結構、break、continue
-  與 return 陳述式。
+description: 控制流程 (Control Flow)：Move 中的 if/else 運算式、while 與 loop 結構、break、continue 與 return 陳述式。
 ---
 
 # 控制流程 (Control Flow) {#control-flow}

@@ -3,6 +3,7 @@
 驗證失敗一律 raise，絕不寫檔。
 """
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -356,6 +357,35 @@ def rebuild_frontmatter_only(
     return out
 
 
+def _append_result(
+    result_path: str, ok: int, touched: set[str], failed: dict[str, list[str]]
+) -> None:
+    """把本次執行的成果自報成一行 JSON。
+
+    存在的理由：translate workflow 需要知道「本輪有沒有進展」，而它唯一能看到的
+    是 git 與檔案系統的狀態。那是影子不是本體 —— tier A 的產出可以與磁碟
+    byte-identical，此時工作區零 diff，但 manifest 的 provenance 更新是真實成果；
+    反過來，prettier 對既有髒檔的格式改動與 `_save_manifest_updates` 的正規化
+    寫入都能在零翻譯成功時偽造出 diff。三輪 review 各在這條推論上抓到一個
+    blocker，失效形式一律是「job 全綠但管線靜默停擺」。ok 與 touched 是本體，
+    直接報出去，workflow 就不必推論（lessons L2）。
+
+    **append 不是覆寫**：xargs 在清單超過 ARG_MAX 時會把同一批拆成多次呼叫，
+    覆寫會讓最後一批洗掉前面幾批的成果。
+    """
+    # touched 才是「落盤了幾檔」的本體；ok 是「產出了幾份譯文字串」，
+    # dry-run 下也會累加，兩者只在 apply 下恰好相等。消費端（CI）要判進展
+    # 一律讀 touched，別讀 ok —— 這條等價關係是外部不變式，不是型別保證。
+    # failed 連錯誤訊息一起留（sorted(dict) 只會取到 key），供 post-mortem。
+    line = json.dumps(
+        {"ok": ok, "touched": sorted(touched), "failed": failed},
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    with open(result_path, "a", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+
+
 def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
     """merge-on-save：save 前重新載入 on-disk manifest，只套用本行程處理過
     的路徑。兩個 apply 行程平行跑時，整檔覆寫會讓後結束者用啟動時的舊
@@ -376,6 +406,7 @@ def run(
     en_ref: str = "english-main",
     apply: bool = False,
     max_lines: int = CHUNK_MAX_LINES,
+    result_path: str | None = None,
 ) -> tuple[int, dict[str, list[str]]]:
     backend = base.get(backend_name)
     m = manifest.load()
@@ -409,4 +440,6 @@ def run(
 
     if apply:
         _save_manifest_updates(m, touched)
+    if result_path:
+        _append_result(result_path, ok, touched, failed)
     return ok, failed

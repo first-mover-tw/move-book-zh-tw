@@ -1,34 +1,32 @@
 ---
-description: 快速參考：Sui 傳輸函式 (transfer functions)：傳輸 (transfer)、分享 (share)、凍結 (freeze)、接收
-  (receive)，及其具備權限 (permissions) 與終端狀態 (end states) 的公開變體 (public variants)。
+description: 快速參考：Sui 傳輸函式 (transfer functions)：傳輸 (transfer)、分享 (share)、凍結 (freeze)、接收 (receive)，及其具備權限 (permissions) 與終端狀態 (end states) 的公開變體 (public variants)。
 title: '附錄 C: 轉移函式 (Transfer Functions)'
 keywords:
-- Move
-- Sui
-- Move tutorial
-- appendix
-- transfer
-- functions
+  - Move
+  - Sui
+  - Move tutorial
+  - appendix
+  - transfer
+  - functions
 questions:
-- What transfer functions exist in Move?
-- How do I transfer objects?
-- What is public_transfer vs transfer?
-answer: Sui provides transfer, public_transfer, share_object, freeze_object, and their
-  variants for moving object ownership between addresses.
+  - What transfer functions exist in Move?
+  - How do I transfer objects?
+  - What is public_transfer vs transfer?
+answer: Sui provides transfer, public_transfer, share_object, freeze_object, and their variants for moving object ownership between addresses.
 goal:
   description: Reader understands all transfer functions available in Sui Move
   requires:
-  - has_frontmatter:
-    - title
-    - description
-    - keywords
-    label: Has required frontmatter fields
-  - min_words: 50
-    label: Needs content depth
-  - has_questions: true
-    label: Needs questions for AI search visibility
-  - has_answer: true
-    label: Needs answer summary for AI citation
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 附錄 C：轉移函式 (Appendix C: Transfer Functions) {#appendix-c-transfer-functions}

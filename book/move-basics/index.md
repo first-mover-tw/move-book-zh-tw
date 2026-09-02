@@ -1,7 +1,5 @@
 ---
-description:
-  學習 Move 語言基礎（Learn Move language fundamentals）：型別、模組、函式、結構體、能力、泛型與流程控制，用於
-  Sui 智能合約。
+description: 學習 Move 語言基礎（Learn Move language fundamentals）：型別、模組、函式、結構體、能力、泛型與流程控制，用於 Sui 智能合約。
 ---
 
 # Move 基礎 (Move Basics) {#move-basics}

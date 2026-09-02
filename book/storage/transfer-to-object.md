@@ -1,7 +1,5 @@
 ---
-description:
-  在 Sui 中轉移到物件 (Transfer to Object, TTO)：在 Move 中將物件傳送給其他物件，並使用 Receiving
-  型別接收它們。
+description: 在 Sui 中轉移到物件 (Transfer to Object, TTO)：在 Move 中將物件傳送給其他物件，並使用 Receiving 型別接收它們。
 ---
 
 # 以物件形式接收 (Receiving as Object) {#receiving-as-object}

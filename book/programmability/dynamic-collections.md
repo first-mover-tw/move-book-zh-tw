@@ -1,7 +1,5 @@
 ---
-description:
-  動態集合 (Dynamic Collections)：Sui 中基於動態欄位建構的 Bag、Table、ObjectBag、ObjectTable
-  與 LinkedTable，提供彈性儲存空間。
+description: 動態集合 (Dynamic Collections)：Sui 中基於動態欄位建構的 Bag、Table、ObjectBag、ObjectTable 與 LinkedTable，提供彈性儲存空間。
 ---
 
 # 動態集合 (Dynamic Collections) {#dynamic-collections}

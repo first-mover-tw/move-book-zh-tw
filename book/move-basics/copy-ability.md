@@ -1,7 +1,5 @@
 ---
-description:
-  複製能力 (copy ability) 使值可以被複製。學習如何為自訂型別新增 copy，並了解它在資源安全 (resource safety)
-  中扮演的角色。
+description: 複製能力 (copy ability) 使值可以被複製。學習如何為自訂型別新增 copy，並了解它在資源安全 (resource safety) 中扮演的角色。
 ---
 
 # Abilities: 複製能力 (Abilities: Copy) {#abilities-copy}

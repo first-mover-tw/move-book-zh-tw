@@ -1,7 +1,5 @@
 ---
-description:
-  了解如何在 Move 中使用 Sui 物件（object）：儲存能力 (storage abilities)、轉移函式 (transfer
-  functions)、所有權規則 (ownership rules) 以及物件生命週期管理 (object lifecycle management)。
+description: 了解如何在 Move 中使用 Sui 物件（object）：儲存能力 (storage abilities)、轉移函式 (transfer functions)、所有權規則 (ownership rules) 以及物件生命週期管理 (object lifecycle management)。
 ---
 
 # 使用物件 (Using Objects) {#using-objects}

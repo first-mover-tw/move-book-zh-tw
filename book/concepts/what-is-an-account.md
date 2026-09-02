@@ -1,7 +1,5 @@
 ---
-description:
-  了解 Sui 帳戶 (Sui accounts)：私鑰如何生成帳戶、如何以地址 (address) 識別，以及支援多種加密方案 (crypto
-  schemes)
+description: 了解 Sui 帳戶 (Sui accounts)：私鑰如何生成帳戶、如何以地址 (address) 識別，以及支援多種加密方案 (crypto schemes)
 ---
 
 # 帳戶 (Account) {#account}

@@ -1,6 +1,6 @@
 ---
-description: '常數 (Constants) in Move: how to define immutable module-level values,
-  naming conventions, and supported constant types.
+description:
+  '常數 (Constants) in Move: how to define immutable module-level values, naming conventions, and supported constant types.
 
 
   翻譯：

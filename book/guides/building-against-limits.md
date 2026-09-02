@@ -1,7 +1,5 @@
 ---
-description:
-  Sui 網路限制與其開發應對之道 (Sui network limits and how to build within them)：物件大小
-  (object size)、動態欄位 (dynamic fields)、交易限制 (transaction limits) 與協定約束 (protocol constraints)。
+description: Sui 網路限制與其開發應對之道 (Sui network limits and how to build within them)：物件大小 (object size)、動態欄位 (dynamic fields)、交易限制 (transaction limits) 與協定約束 (protocol constraints)。
 ---
 
 # 針對限制進行開發 (Building Against Limits)
