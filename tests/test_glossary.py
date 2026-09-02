@@ -374,3 +374,30 @@ def test_corpus_has_no_banned_terms():
         _, body = frontmatter.split(text)
         total += sum(glossary.scan(body).values())
     assert total == 0  # 2026-07-12 債務全清（126→76→0，stash 手工翻譯合併 + 機械修復）
+
+
+# --- scan-only 詞表：標記但不自動替換 ---
+#
+# 有些詞條「值得提醒人」但「不能機械替換」，因為它們是多義詞或有子字串碰撞
+# （lessons L9：「循環→迴圈」誤傷 cycle 語意的前科）。2026-09-02 外部 review
+# 實測三個現場：
+#   交易影響→交易效果  「這筆交易影響了物件的所有權」→「這筆交易效果了…」
+#   Move 封裝→Move 套件 「Move 封裝了狀態與行為」→「Move 套件了狀態與行為」
+#   燃料費→gas         「支付燃料費用」→「支付gas用」（子字串碰撞）
+# 這些放進 enforce 表就是靜默破壞句子；完全不收又等於下一批重翻照樣長回來。
+
+
+def test_scan_only_terms_are_reported_but_not_replaced():
+    from scripts.zh_tw import glossary
+
+    text = "這筆交易影響了物件的所有權，支付燃料費用。"
+    assert glossary.enforce(text) == text, "scan-only 詞條不得被機械替換"
+    hits = glossary.scan(text)
+    assert "交易影響" in hits and "燃料費" in hits
+
+
+def test_scan_only_and_enforce_tables_are_disjoint():
+    """同一個詞不能同時在兩張表 —— 那會讓「要不要替換」取決於載入順序。"""
+    from scripts.zh_tw import glossary
+
+    assert not (set(glossary.load()) & set(glossary.load_scan_only()))

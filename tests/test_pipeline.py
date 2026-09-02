@@ -930,6 +930,43 @@ def test_repair_cjk_emphasis_never_touches_urls_and_identifiers():
         assert pipeline._repair_cjk_emphasis(text) == text, text
 
 
+def test_repair_cjk_emphasis_never_touches_link_destinations():
+    """外部 review C1：`protected_mask` 只保護 code，不保護連結／圖片的
+    destination。而「內容含 CJK」那條過濾是為 ASCII URL 設計的，對**含中文的
+    URL** 完全失效 —— 偏偏含中文的 URL 只會出現在中文譯文裡（模型把英文維基
+    連結換成 `zh.wikipedia.org/wiki/區塊鏈_(技術)`、或引入中文檔名的圖片）。
+    改成星號 → href 帶著 `*` → 404、圖裂，而 gate 10 看不到（<em> 數不減反增）。
+    """
+    cases = [
+        "見[文件](https://example.com/wiki/中文_頁面_說明)。\n",
+        "![說明](./img/中文_圖_1.png)\n",
+        "見 <https://example.com/中文_頁_說明> 一文。\n",
+        "裸連結 https://example.com/中文_頁_說明 也一樣。\n",
+    ]
+    for text in cases:
+        assert pipeline._repair_cjk_emphasis(text) == text, text
+
+
+def test_repair_cjk_emphasis_never_crosses_identifier_boundary():
+    """外部 review C2：regex 是逐一非貪婪配對，一行內底線數為奇數時，
+    第一個 `_` 會跟真正強調的**起始** `_` 配成一對，把中間整段吃掉 ——
+    識別字被拆、強調錯位、尾巴留下裸底線。gate 10 同樣看不到（<em> 由 0 變 1，
+    是增加）。判準：底線緊鄰 ASCII 英數時一律不碰，那是識別字不是強調。
+    """
+    text = "本節說明 tx_context 與_所有權_的關係。\n"
+    assert pipeline._repair_cjk_emphasis(text) == text
+
+
+def test_repair_cjk_emphasis_never_downgrades_strong():
+    """外部 review C3：`__粗體__` 會被匹配到內層 `_粗體_`，外層兩個底線
+    原地留下 → `_*粗體*_`，<strong> 降級成 <em> 且畫面多出兩個裸底線。
+    這個很可能已經會發生：本次事故就是 backend 從 `*` 換成 `_`，
+    對 `**bold**` 的自然對應就是 `__bold__`。
+    """
+    text = "這是__粗體強調__的說明。\n"
+    assert pipeline._repair_cjk_emphasis(text) == text
+
+
 def test_gate_flags_emphasis_lost_in_translation():
     """fail-closed 的判準是「跟英文原文比，中文渲染出來的強調變少了」——
     不是「有沒有可疑的底線對」。前者是真實性質（翻譯弄丟了強調），後者是

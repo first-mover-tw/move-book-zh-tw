@@ -11,3 +11,13 @@ import re
 
 # 底線強調：`_文字_`。允許內部有空白與括號，但不跨行、不含反引號。
 UNDERSCORE_EM = re.compile(r"_([^_\n`]+)_")
+
+# 連結／圖片 destination、autolink、裸 URL。修復 pass 必須把這些也當保護區：
+# glossary.protected_mask 只保護 code span 與 fence，而含 CJK 的 URL
+# （`zh.wikipedia.org/wiki/區塊鏈_(技術)`、中文檔名的圖片）在中文譯文裡完全
+# 可能出現，底線被改成星號就是 404 與圖裂，而且 gate 10 看不到（<em> 不減反增）。
+URLISH = re.compile(
+    r"\]\([^)\n]*\)"           # ](destination "title")
+    r"|<[a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]*>"   # <autolink>
+    r"|[a-zA-Z][a-zA-Z0-9+.-]*://[^\s)\]]+"  # 裸 URL
+)

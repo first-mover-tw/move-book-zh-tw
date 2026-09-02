@@ -262,12 +262,24 @@ def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
     fail-closed 的第二層：修復漏掉就擋下來，不靜默放行。
     """
     zh_n, en_n = _emphases(zh_text), _emphases(en_text)
-    if zh_n < en_n:
-        return [
-            f"強調在翻譯中消失：英文 {en_n} 處、中文只渲染出 {zh_n} 處。"
-            f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`"
-        ]
-    return []
+    if zh_n >= en_n:
+        return []
+    # 只報數字的話，人要自己在整份檔案裡找哪幾處壞掉。把渲染不出來的候選
+    # 位置一併指出來（修復 pass 修不掉的通常就是這些）。
+    body = frontmatter.split(zh_text)[1]
+    mask = glossary.protected_mask(body)
+    suspects = []
+    for m in _UNDERSCORE_EM.finditer(body):
+        if any(mask[i] for i in range(m.start(), m.end())):
+            continue
+        line = body[body.rfind("\n", 0, m.start()) + 1 :].split("\n", 1)[0]
+        if f"<em>{m.group(1)}</em>" not in commonmark.commonmark(line):
+            suspects.append(f"`_{m.group(1)}_`")
+    hint = ("；可疑位置：" + "、".join(suspects[:5])) if suspects else ""
+    return [
+        f"強調在翻譯中消失：英文 {en_n} 處、中文只渲染出 {zh_n} 處。"
+        f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`{hint}"
+    ]
 
 
 def _anchor_ids(text: str) -> set[str]:

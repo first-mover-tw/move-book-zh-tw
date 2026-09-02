@@ -12,6 +12,7 @@ from pathlib import Path
 
 from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
+from .pipeline_patterns import URLISH as _URLISH
 from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -293,7 +294,7 @@ def _repair_fence_comments(zh_body: str, backend: base.Backend) -> str:
 _INPAGE_LINK = re.compile(r"\]\(#([^)#\s]+)\)")
 
 
-
+_IDENTISH = re.compile(r"[A-Za-z0-9_]")
 
 
 def _repair_cjk_emphasis(zh_body: str) -> str:
@@ -313,9 +314,22 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
     層級的破壞，那個判斷的真相來源在 anchors/glossary，這裡不重刻。
     """
     mask = glossary.protected_mask(zh_body)
+    # code 之外，連結/圖片 destination、autolink、裸 URL 也是保護區：含中文的
+    # URL 只會出現在中文譯文裡，底線改成星號就是 404 與圖裂，而 gate 10
+    # 看不到（<em> 不減反增）。
+    for u in _URLISH.finditer(zh_body):
+        for i in range(u.start(), u.end()):
+            mask[i] = True
     out, pos = [], 0
     for m in _UNDERSCORE_EM.finditer(zh_body):
-        if any(mask[i] for i in range(m.start(), min(m.end(), len(mask)))):
+        if any(mask[i] for i in range(m.start(), m.end())):
+            continue
+        # 兩側緊鄰 ASCII 英數或底線時一律不碰：那是識別字（`tx_context`）或
+        # `__粗體__` 的外層，不是強調。少了這條，一行內底線數為奇數時，
+        # 第一個 `_` 會跟真正強調的起始 `_` 配對，把中間整段吃掉。
+        before = zh_body[m.start() - 1] if m.start() else ""
+        after = zh_body[m.end()] if m.end() < len(zh_body) else ""
+        if _IDENTISH.match(before) or _IDENTISH.match(after):
             continue
         # 強調內容必須含 CJK。中文段落裡的強調必然含中文，而 URL
         # （`Lambda_(computer_function)`）與識別字碎片（`_failureabort_`）
