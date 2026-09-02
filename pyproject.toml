@@ -5,6 +5,10 @@ description = "The Move Book, Traditional Chinese (Taiwan)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    # commonmark 是 runtime 依賴，不是測試工具：pipeline 的 _repair_cjk_emphasis
+    # 與 validate 的 gate 10 都要靠它判斷「這段強調渲染得出來嗎」（不重刻
+    # CommonMark 的 flanking 規則）。放錯 group 會讓 CI 在 import 時炸掉。
+    "commonmark>=0.9.1",
     "google-genai>=1.61.0",
     "markdown-it-py>=3.0",
     "opencc-python-reimplemented>=0.1.7",
@@ -13,6 +17,5 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "commonmark>=0.9.1",
     "pytest>=8.0",
 ]
