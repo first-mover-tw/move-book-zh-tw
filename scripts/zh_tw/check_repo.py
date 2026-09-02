@@ -63,6 +63,13 @@ def main() -> int:
                 print(f"{path}: frontmatter {key} 簡體殘留字 {ch!r}", file=sys.stderr)
                 simplified_total += 1
 
+    # scan-only 詞表：只提醒，不計入失敗。它們不能機械替換（多義詞／子字串
+    # 碰撞），也就沒有自動修復路徑；當成錯誤會讓合法中文句子擋住整條管線。
+    for path, text in sorted(files.items()):
+        _, body = frontmatter.split(text)
+        for bad, n in sorted(glossary.scan_only_hits(body).items()):
+            print(f"{path}: ⚠️  待人工判讀 {bad} x{n}", file=sys.stderr)
+
     # gate 10（強調在翻譯中消失）刻意不在這裡跑：判準是「跟英文原文比
     # 少了幾處」，需要中英配對，而 check_repo 只看 working tree 的中文側。
     # 它是 validate.check_file 的寫檔 gate —— 擋在產出那一刻，不是事後盤點。

@@ -143,9 +143,16 @@ def enforce(body: str, table: dict[str, str] | None = None) -> str:
 
 
 def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
-    """預設掃 enforce 表 **加上** scan-only 表 —— scan 的用途是「顯形」，
-    兩張表都該被看見；enforce 只吃 load()，碰不到 scan-only。"""
-    table = table if table is not None else {**load(), **load_scan_only()}
+    """只掃 enforce 表。
+
+    scan-only 的詞**不能**併進來：validate 的 gate 7 與 check_frontmatter
+    都用預設 scan()，且任何 hit 一律轉成 error → 「這筆交易影響了物件的
+    所有權」這種完全正確的中文會讓整個檔案的翻譯硬失敗，而 enforce 依設計
+    不碰它 = 沒有任何自動修復路徑，每輪都要人工。那不是「標記但不替換」，
+    是把靜默改壞句子換成合法句子炸掉管線。scan-only 走 scan_only_hits()，
+    由 check_repo 以 warning 呈現、不影響 exit code。
+    """
+    table = table if table is not None else load()
     mask = protected_mask(body)
     counts: Counter[str] = Counter()
     for protected, seg in _segments(body, mask):
@@ -158,12 +165,32 @@ def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
     return dict(counts)
 
 
+def scan_only_hits(body: str) -> dict[str, int]:
+    """scan-only 詞表的命中數。呈現用，**不得**餵給任何會 fail 的 gate。"""
+    return scan(body, load_scan_only())
+
+
 def prompt_rules(table: dict[str, str] | None = None) -> str:
-    """兩張表都要教給模型：scan-only 的詞不能事後機械替換，
-    只能在產出前就別寫出來。"""
-    table = table if table is not None else {**load(), **load_scan_only()}
-    pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in table.items())
+    """兩張表都要教給模型，但措辭不同。
+
+    scan-only 的詞不能事後機械替換（多義詞／子字串碰撞），只能在產出前就
+    別寫出來；而且它們的「正確用法」往往不是換詞而是改寫句子 ——
+    「交易影響了所有權」的替代不是「交易效果了所有權」。照 enforce 表那樣
+    寫成「用 X 取代 Y」會教模型寫出不合語法的中文。
+    """
+    if table is not None:
+        pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in table.items())
+        return (
+            "使用台灣繁體中文的技術用語。務必遵守以下對照："
+            f"{pairs}。程式碼與 inline code 中的識別字不要翻譯。"
+        )
+    pairs = "、".join(f"{good}（不要用{bad}）" for bad, good in load().items())
+    avoid = "、".join(
+        f"{bad}（名詞語境請用{good}；若{bad}是句中的動詞，請改寫句子）"
+        for bad, good in load_scan_only().items()
+    )
     return (
         "使用台灣繁體中文的技術用語。務必遵守以下對照："
-        f"{pairs}。程式碼與 inline code 中的識別字不要翻譯。"
+        f"{pairs}。另外請避免這些寫法：{avoid}。"
+        "程式碼與 inline code 中的識別字不要翻譯。"
     )

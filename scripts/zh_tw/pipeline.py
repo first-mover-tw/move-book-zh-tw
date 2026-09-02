@@ -300,54 +300,59 @@ _IDENTISH = re.compile(r"[A-Za-z0-9_]")
 def _repair_cjk_emphasis(zh_body: str) -> str:
     """把「因為與 CJK 相鄰而渲染不出來」的 `_..._` 改寫成 `*...*`。
 
-    CommonMark 不允許 `_` 在詞內開合（避免 snake_case 被誤判成強調），
-    而 CJK 字元算 word char。於是 `進行_升級_：` 這種寫法產出的是合法
-    Markdown、卻完全沒有 <em> —— 強調靜靜消失。PR #22 實測：backend 從
-    `*文字*` 改用 `_文字_` 之後，3 個檔的 5 處強調全滅（整檔渲染，<em>
-    由 5 變 0）。八道 gate 全是結構/術語檢查，prettier 也不管語意，
-    這種回歸只有人眼看得到 —— 所以修在產出這一側，不靠人工審查。
+    CommonMark 不允許 `_` 在詞內開合（避免 snake_case 被誤判成強調），而
+    CJK 算 word char。於是 `進行_升級_：` 產出的是**合法 Markdown、卻完全
+    沒有 <em>** —— 強調靜靜消失。PR #22 實測：backend 從 `*文字*` 改用
+    `_文字_` 之後，3 個檔的 5 處強調全滅。八道 gate 全是結構／術語檢查，
+    prettier 只管格式，這種回歸只有人眼看得到，所以修在產出這一側。
 
-    只改「現在渲染不出來、且內容含 CJK」的那些：本來就正確的 `_emphasis_`
-    原樣保留不製造無謂 diff；不含 CJK 的底線對是 URL 或識別字碎片，碰了
-    就是內容破壞。code span 與 fence 由
-    glossary.protected_mask 排除 —— snake_case 識別字被改成星號是編譯
-    層級的破壞，那個判斷的真相來源在 anchors/glossary，這裡不重刻。
+    **逐行 tokenize + 成對決議，不做逐一 regex 配對。** 逐一配對的第一版
+    對真實輸入有三種靜默破壞（外部 review 兩輪實測）：連結內含中文的 URL
+    被改成星號（404、圖裂）、識別字被拆、`__粗體__` 降級成 `_*粗體*_`；
+    而且被跳過的匹配仍會**消耗掉**那個底線，讓下一次配對跨過真正的強調
+    邊界（`與_所有權_的關係，也講_物件_模型` → `與_所有權*的關係，也講*物件_`）。
+    gate 10 對這些全無覆蓋，因為它們讓 <em> 不減反增。
+
+    排除規則（每一條都對應一個實測過的破壞）：
+    - code span / fence：glossary.protected_mask，真相來源不重刻。
+    - 連結/圖片 destination、autolink、裸 URL：URLISH。含中文的 URL 只會
+      出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+    - 緊鄰 ASCII 英數或底線的底線：那是識別字（`tx_context`）或 `__粗體__`
+      的外層，不是強調分隔符 —— 直接不算進 token，而不是「跳過匹配」。
+    - 一行的分隔符數為奇數：配不成對就整行放棄。寧可漏修讓 gate 10 擋下來
+      人工處理，也不要猜一個配對然後靜默改壞。
+    - 內容不含 CJK、或本來就渲染得出來：不動，不製造無謂 diff。
     """
     mask = glossary.protected_mask(zh_body)
-    # code 之外，連結/圖片 destination、autolink、裸 URL 也是保護區：含中文的
-    # URL 只會出現在中文譯文裡，底線改成星號就是 404 與圖裂，而 gate 10
-    # 看不到（<em> 不減反增）。
     for u in _URLISH.finditer(zh_body):
         for i in range(u.start(), u.end()):
             mask[i] = True
+
     out, pos = [], 0
-    for m in _UNDERSCORE_EM.finditer(zh_body):
-        if any(mask[i] for i in range(m.start(), m.end())):
-            continue
-        # 兩側緊鄰 ASCII 英數或底線時一律不碰：那是識別字（`tx_context`）或
-        # `__粗體__` 的外層，不是強調。少了這條，一行內底線數為奇數時，
-        # 第一個 `_` 會跟真正強調的起始 `_` 配對，把中間整段吃掉。
-        before = zh_body[m.start() - 1] if m.start() else ""
-        after = zh_body[m.end()] if m.end() < len(zh_body) else ""
-        if _IDENTISH.match(before) or _IDENTISH.match(after):
-            continue
-        # 強調內容必須含 CJK。中文段落裡的強調必然含中文，而 URL
-        # （`Lambda_(computer_function)`）與識別字碎片（`_failureabort_`）
-        # 不會 —— 第一版沒這條，對全語料掃出 192 處全是這類假陽性，
-        # 照著「修」就是把 URL 改成星號的內容破壞。
-        if not validate.CJK.search(m.group(1)):
-            continue
-        # 「這個寫法渲染得出來嗎」問 commonmark 本人，不自己重刻 CommonMark
-        # 的 left/right-flanking 規則（L2：守衛要觀測真實性質）。以整行為
-        # 判斷單位——強調能不能開合完全取決於前後字元。
-        line_start = zh_body.rfind("\n", 0, m.start()) + 1
-        line_end = zh_body.find("\n", m.end())
-        line = zh_body[line_start : line_end if line_end != -1 else len(zh_body)]
-        if f"<em>{m.group(1)}</em>" in commonmark.commonmark(line):
-            continue
-        out.append(zh_body[pos:m.start()])
-        out.append(f"*{m.group(1)}*")
-        pos = m.end()
+    line_start = 0
+    for line in zh_body.splitlines(keepends=True):
+        line_end = line_start + len(line)
+        # 這一行的強調分隔符候選：非保護區、且兩側都不是 ASCII 英數/底線
+        delims = []
+        for i in range(line_start, line_end):
+            if zh_body[i] != "_" or mask[i]:
+                continue
+            before = zh_body[i - 1] if i else ""
+            after = zh_body[i + 1] if i + 1 < len(zh_body) else ""
+            if _IDENTISH.match(before) or _IDENTISH.match(after):
+                continue
+            delims.append(i)
+        if len(delims) % 2 == 0:
+            for a, b in zip(delims[::2], delims[1::2]):
+                content = zh_body[a + 1 : b]
+                if "_" in content or not validate.CJK.search(content):
+                    continue
+                if f"<em>{content}</em>" in commonmark.commonmark(line):
+                    continue  # 本來就渲染得出來
+                out.append(zh_body[pos:a])
+                out.append(f"*{content}*")
+                pos = b + 1
+        line_start = line_end
     out.append(zh_body[pos:])
     return "".join(out)
 

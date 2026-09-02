@@ -88,8 +88,8 @@ def test_pyproject_declares_runtime_deps():
 
 
 def test_workflows_install_every_runtime_dependency():
-    checked = 0
     for path in WORKFLOWS:
+        checked = 0
         for job, pkgs in _installed(path).items():
             if not _runs_python(path, job):
                 continue
@@ -99,5 +99,8 @@ def test_workflows_install_every_runtime_dependency():
                 f"{path.name} 的 job `{job}` 執行了 scripts.zh_tw 但 pip install "
                 f"少了 {sorted(missing)} —— 管線會在 import 時 ModuleNotFoundError"
             )
-    # 防 vacuous：真的有 job 被檢查到，而不是條件把所有 job 都篩掉了
-    assert checked == len(WORKFLOWS), f"只檢查到 {checked} 個 job，預期 {len(WORKFLOWS)}"
+        # 防 vacuous：每個 workflow 至少有一個 job 被檢查到，而不是
+        # `_runs_python` 的條件把所有 job 都篩掉了。用「至少一個」而非
+        # 「恰好 N 個」——後者把「每個 workflow 恰好一個跑 python 的 job」
+        # 寫死成不變式，加第二個這種 job 就會噴無關的紅。
+        assert checked, f"{path.name} 沒有任何 job 被檢查到（_runs_python 全篩掉了）"

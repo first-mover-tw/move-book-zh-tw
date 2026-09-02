@@ -953,8 +953,11 @@ def test_repair_cjk_emphasis_never_crosses_identifier_boundary():
     識別字被拆、強調錯位、尾巴留下裸底線。gate 10 同樣看不到（<em> 由 0 變 1，
     是增加）。判準：底線緊鄰 ASCII 英數時一律不碰，那是識別字不是強調。
     """
-    text = "本節說明 tx_context 與_所有權_的關係。\n"
-    assert pipeline._repair_cjk_emphasis(text) == text
+    # 正確行為是「識別字不動、強調照修」，不是「整行放棄」——後者是第一版
+    # 過度保守的修法，會讓合法強調永遠修不掉、gate 10 每輪都紅。
+    out = pipeline._repair_cjk_emphasis("本節說明 tx_context 與_所有權_的關係。\n")
+    assert out == "本節說明 tx_context 與*所有權*的關係。\n"
+    assert "tx_context" in out  # 識別字逐字不變
 
 
 def test_repair_cjk_emphasis_never_downgrades_strong():
@@ -964,6 +967,46 @@ def test_repair_cjk_emphasis_never_downgrades_strong():
     對 `**bold**` 的自然對應就是 `__bold__`。
     """
     text = "這是__粗體強調__的說明。\n"
+    assert pipeline._repair_cjk_emphasis(text) == text
+
+
+def test_repair_cjk_emphasis_pairs_delimiters_per_line():
+    """複驗輪 C1：上一版只擋「底線緊鄰 ASCII 英數」，但跨強調邊界的錯誤配對
+    根本不需要 ASCII 相鄰 —— 被跳過的匹配仍然**消耗掉**那個底線，finditer
+    從匹配尾端續掃，下一次配對就跨過真正的邊界：
+
+        說明 tx_context 與_所有權_的關係，也講_物件_模型。
+        → 說明 tx_context 與_所有權*的關係，也講*物件_模型。
+
+    兩處強調被拆掉、憑空造出一個 `*的關係，也講*`，而 gate 10 綠燈放行
+    （英文 1 處、破壞後的中文也剛好渲染出 1 處，數量守恆）。
+    根因是「逐一配對」本身，不是相鄰條件 —— 改成逐行 tokenize + 成對決議。
+    """
+    text = "說明 tx_context 與_所有權_的關係，也講_物件_模型。\n"
+    assert (
+        pipeline._repair_cjk_emphasis(text)
+        == "說明 tx_context 與*所有權*的關係，也講*物件*模型。\n"
+    )
+
+
+def test_repair_cjk_emphasis_still_fixes_emphasis_next_to_strong():
+    """複驗輪 B1：上一版為了擋 `__粗體__` 而過度保守，把同行的合法強調
+    一起放棄 → gate 10 每輪都紅、人工介入率上升，而且 B4 的「可疑位置」
+    還會指向 `_粗體_`，人照著改會把粗體拆掉。粗體不動、強調要修。"""
+    assert (
+        pipeline._repair_cjk_emphasis("這是__粗體__和_強調_。\n")
+        == "這是__粗體__和*強調*。\n"
+    )
+    assert (
+        pipeline._repair_cjk_emphasis("見 https://e.com/中文_頁 後面_重點_說明。\n")
+        == "見 https://e.com/中文_頁 後面*重點*說明。\n"
+    )
+
+
+def test_repair_cjk_emphasis_skips_line_when_delimiters_cannot_be_paired():
+    """配不成對就整行放棄（fail-safe）。寧可漏修讓 gate 10 擋下來人工處理，
+    也不要猜一個配對然後靜默改壞。"""
+    text = "只有一個_底線的中文行。\n"
     assert pipeline._repair_cjk_emphasis(text) == text
 
 
