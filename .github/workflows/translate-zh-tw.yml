@@ -99,7 +99,12 @@ jobs:
           # -d '\n' -r 與下面兩處 xargs 一致：含空白的路徑不被拆詞、空輸入不執行。
           # --result-jsonl：管線自報 ok/touched/failed。Commit step 直接讀這個
           # 數字判「本輪有沒有進展」，不從 git/檔案系統推論（見該 step 註解）。
-          rm -f /tmp/translate_result.jsonl
+          # 「result 檔存在 ⟹ 本輪自報過」這個前提整個押在這行上。
+          # GitHub-hosted runner 是 ephemeral，但換 self-hosted／複用 /tmp 時，
+          # 殘留檔若不可刪（權限、唯讀掛載）rm -f 會靜默成功退出，上一輪的
+          # 成果就混進本輪加總。前提破掉要自己知道。
+          rm -f /tmp/translate_result.jsonl || { echo "::error::無法清除舊 result 檔"; exit 1; }
+          [ -e /tmp/translate_result.jsonl ] && { echo "::error::舊 result 檔仍在"; exit 1; }
           xargs -a /tmp/changed_files.txt -d '\n' -r \
             python -m scripts.zh_tw --backend gemini \
               --english-ref origin/english-main --apply \
@@ -187,7 +192,12 @@ jobs:
             echo "::error::找不到 /tmp/translate_result.jsonl，翻譯步驟沒有自報成果"
             exit 1
           fi
-          OK_TOTAL=$(python - /tmp/translate_result.jsonl <<'PY'
+          # 加總 touched 而不是 ok：ok 是「產出了幾份譯文字串」，`ok += 1` 在
+          # pipeline.py 的 `if apply:` 之外，dry-run 也會累加；touched 只在寫檔
+          # 之後才 add，才是「落盤了幾檔」。兩者在 --apply 下相等，但那是外部
+          # 不變式 —— 日後誰加一個不帶 --apply 的冒煙步驟，讀 ok 就會判成
+          # 「有進展」而 index 是空的，git commit 以 nothing to commit 轉紅。
+          APPLIED=$(python - /tmp/translate_result.jsonl <<'PY'
           import json, sys
 
           total = 0
@@ -195,12 +205,12 @@ jobs:
               for line in fh:
                   line = line.strip()
                   if line:
-                      total += json.loads(line)["ok"]
+                      total += len(json.loads(line)["touched"])
           print(total)
           PY
           )
-          echo "本輪翻譯成功 $OK_TOTAL 檔。"
-          if [ "$OK_TOTAL" = "0" ]; then
+          echo "本輪落盤 $APPLIED 檔。"
+          if [ "$APPLIED" = "0" ]; then
             # 部分成功走 PR 流程、失敗殘量由 cron 續跑；全數失敗才轉紅。
             [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
             exit 0

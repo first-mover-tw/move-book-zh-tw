@@ -802,8 +802,10 @@ def test_run_reports_success_even_when_output_is_byte_identical(tmp_path, monkey
 
     line = json.loads(result.read_text(encoding="utf-8").strip())
     assert line["ok"] == 1
+    # touched 才是消費端（CI）該讀的：它是「落盤了幾檔」，ok 是「產出了幾份
+    # 譯文字串」，`ok += 1` 在 `if apply:` 之外，dry-run 也會累加。
     assert line["touched"] == ["book/x.md"]
-    assert line["failed"] == []
+    assert line["failed"] == {}
 
 
 def test_run_result_is_appended_not_overwritten(tmp_path, monkeypatch):
@@ -815,15 +817,48 @@ def test_run_result_is_appended_not_overwritten(tmp_path, monkeypatch):
     import json
 
     result = tmp_path / "result.jsonl"
-    result.write_text('{"ok": 2, "touched": ["book/old.md"], "failed": []}\n', encoding="utf-8")
+    result.write_text(
+        '{"ok": 2, "touched": ["book/old.md", "book/old2.md"], "failed": {}}\n',
+        encoding="utf-8",
+    )
     _byte_identical_apply(tmp_path, monkeypatch, str(result))
 
     lines = [json.loads(x) for x in result.read_text(encoding="utf-8").splitlines() if x]
-    assert [l["ok"] for l in lines] == [2, 1]
-    assert sum(l["ok"] for l in lines) == 3
+    assert [len(l["touched"]) for l in lines] == [2, 1]
+    assert sum(len(l["touched"]) for l in lines) == 3
 
 
 def test_run_without_result_path_writes_nothing(tmp_path, monkeypatch):
     """不給 result_path 就不該生出檔案（dry-run 與既有呼叫端不受影響）。"""
     _byte_identical_apply(tmp_path, monkeypatch, None)
     assert list(tmp_path.glob("*.jsonl")) == []
+
+
+def test_dry_run_reports_ok_but_empty_touched(tmp_path, monkeypatch):
+    """釘住 ok 與 touched 的語意差：dry-run 產出了譯文（ok=1）但什麼都沒落盤
+    （touched 空）。CI 判「本輪有沒有進展」必須讀 touched —— 讀 ok 的話，
+    日後誰加一個不帶 --apply 的冒煙步驟，就會判成「有進展」而 index 是空的，
+    `git commit` 以 nothing to commit 在 set -e 下轉紅。
+    """
+    import json
+
+    from scripts.zh_tw import manifest as mf
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "book").mkdir()
+    same = "---\ntitle: 標題 (T)\n---\n\n內文。\n"
+    (tmp_path / "book" / "x.md").write_text(same, encoding="utf-8")
+    monkeypatch.setattr(mf, "MANIFEST_PATH", tmp_path / "m.json")
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: same)
+    monkeypatch.setattr(pipeline, "tier", lambda *a, **k: "B")
+    monkeypatch.setattr(pipeline, "assemble", lambda *a, **k: same)
+
+    result = tmp_path / "result.jsonl"
+    ok, failed = pipeline.run(
+        ["book/x.md"], "fake", apply=False, result_path=str(result)
+    )
+
+    assert (ok, failed) == (1, {})
+    line = json.loads(result.read_text(encoding="utf-8").strip())
+    assert line["ok"] == 1
+    assert line["touched"] == []

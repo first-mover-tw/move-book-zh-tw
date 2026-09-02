@@ -14,8 +14,15 @@
   v2 只掃 run 字串、要求 npx/npm exec 與 --write/--check 同一行 → 改用
      `pnpm dlx prettier --write`（不匹配 npx）並在旁邊留一行
      `echo "本機等價：npx --yes prettier@3.9.6 --write"`，守衛照樣全綠。
-否定式沒有這個縫：任何未釘死的 prettier 字樣都會紅，繞不過去。代價是連
+否定式在**判準**上沒有這個縫：任何未釘死的 prettier 字樣都會紅。代價是連
 `echo "run prettier"` 這種散文也會紅 —— 可接受，寫 `prettier@3.9.6` 即可。
+
+已知邊界（文字守衛的本質限制，只能縮小不能歸零，不要宣稱「沒有縫」）：
+- 只掃 step 的 `run` 字串。改用 `- uses: some/prettier-action@v4` 這類 action
+  step，執行的版本完全在觀測範圍外；單獨這樣改會被 vacuity 那條擋下，但同檔
+  只要還留著一句提到 `prettier@3.9.6` 的非註解 echo 就恢復全綠。
+- 前處理的順序本身就是縫（見 `_command_text`）。這個檔連錯兩版都栽在前處理，
+  不是栽在判準。
 """
 
 import json
@@ -34,15 +41,20 @@ _MENTION = re.compile(r"\bprettier(@\d+\.\d+\.\d+)?\b")
 
 
 def _command_text(text: str) -> str:
-    """去掉註解行，並把 shell 續行接回來。
+    """先去掉註解行，再把 shell 續行接回來。
 
-    續行要先接：`npx --yes prettier@3.9.6 \\` + `--write --` 拆成兩行時，
-    逐行判斷會看不出這是同一個命令。
+    **順序不能顛倒。** bash 的註解在換行處就結束，行尾的反斜線不會延續註解，
+    但字串層面的 `\\\n` 合併會 —— 先合併就等於讓一個結尾帶反斜線的註解把下一行
+    真命令吸進自己那行，整條被當註解丟掉，而那行命令在 CI 上照樣執行：
+
+        # 版本釘死說明見 tests/test_prettier_version.py \\
+        npx --yes prettier --write --      ← 從觀測範圍裡消失
+
+    續行仍要接（`npx --yes prettier@3.9.6 \\` + `--write --` 拆兩行時，逐行判斷
+    看不出是同一個命令），只是必須在濾掉註解之後。
     """
-    joined = text.replace("\\\n", " ")
-    return "\n".join(
-        line for line in joined.splitlines() if not line.strip().startswith("#")
-    )
+    lines = [line for line in text.splitlines() if not line.strip().startswith("#")]
+    return "\n".join(lines).replace("\\\n", " ")
 
 
 def _mentions() -> dict[str, list[str | None]]:

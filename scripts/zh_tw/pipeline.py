@@ -373,9 +373,14 @@ def _append_result(
     **append 不是覆寫**：xargs 在清單超過 ARG_MAX 時會把同一批拆成多次呼叫，
     覆寫會讓最後一批洗掉前面幾批的成果。
     """
+    # touched 才是「落盤了幾檔」的本體；ok 是「產出了幾份譯文字串」，
+    # dry-run 下也會累加，兩者只在 apply 下恰好相等。消費端（CI）要判進展
+    # 一律讀 touched，別讀 ok —— 這條等價關係是外部不變式，不是型別保證。
+    # failed 連錯誤訊息一起留（sorted(dict) 只會取到 key），供 post-mortem。
     line = json.dumps(
-        {"ok": ok, "touched": sorted(touched), "failed": sorted(failed)},
+        {"ok": ok, "touched": sorted(touched), "failed": failed},
         ensure_ascii=False,
+        sort_keys=True,
     )
     with open(result_path, "a", encoding="utf-8") as fh:
         fh.write(line + "\n")
