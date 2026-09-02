@@ -128,15 +128,28 @@ jobs:
           # if 沒有 else 分支時一律回 0，不留這個問題。
           : > /tmp/format_files.txt
           while IFS= read -r f; do
-            if [ -n "$f" ] && [ -n "$(git status --porcelain -- "$f")" ]; then
+            [ -n "$f" ] || continue
+            # git status 的 rc 要自己檢查：它包在 `[ -n "$(...)" ]` 裡時，
+            # 非零退出不會被 set -e 攔下，失敗會被讀成「這檔沒變」→ 該檔
+            # 既不格式化也不 git add → 翻譯成果靜默丟棄而 job 還是綠的。
+            if ! status=$(git status --porcelain -- "$f"); then
+              echo "::error::git status 對 $f 失敗"; exit 1
+            fi
+            # -f 與「有變更」兩個條件都要：已刪除的追蹤檔在 porcelain 是
+            # ` D path`（非空）卻不在磁碟上，只看 git 狀態會餵給 prettier
+            # 吃 ENOENT。目前 pipeline 沒有刪檔路徑，但不把正確性押在
+            # 一個外部不變式上。
+            if [ -f "$f" ] && [ -n "$status" ]; then
               printf '%s\n' "$f" >> /tmp/format_files.txt
             fi
           done < /tmp/changed_files.txt
           if [ -s /tmp/format_files.txt ]; then
             # 版本釘死：浮動的 prettier@3 一旦 minor 改變輸出，這裡 --write 的版本
             # 與 prettier.yml gate --check 的版本會在不同時間各自解析，可能一個 3.9
-            # 一個 3.10 → 剛格式化過的 PR 被自己的 gate 擋下。兩處必須同版本。
-            xargs -a /tmp/format_files.txt npx --yes prettier@3.9.6 --write --
+            # 一個 3.10 → 剛格式化過的 PR 被自己的 gate 擋下。三處版本字串由
+            # tests/test_prettier_version.py 守住，不靠人工同步。
+            # -d '\n' 讓含空白的路徑不被拆詞（GNU xargs；runner 是 ubuntu）。
+            xargs -a /tmp/format_files.txt -d '\n' npx --yes prettier@3.9.6 --write --
           else
             echo "本輪工作區零變動，跳過格式化。"
           fi
@@ -151,24 +164,35 @@ jobs:
         if: steps.detect.outputs.count != '0'
         run: |
           set -euo pipefail
+          # 紅燈判定綁「本輪有沒有真的產出翻譯」，不是「index 有沒有 diff」。
+          # staged diff 是代理量，至少有兩條旁路能在零翻譯成功時把它撐成非空
+          # （lessons L2，這個 repo 第三次犯）：
+          #   1. prettier 對「既有但本輪沒翻成、且是舊管線產物」的檔做純格式改動。
+          #      已由 Format step 的清單交集擋掉。
+          #   2. manifest：`_save_manifest_updates`（pipeline.py:359）在 apply 下
+          #      **無條件** save，touched 為空也照寫。只要磁碟上的 manifest 不是
+          #      save() 的 canonical 形式（人工解 merge conflict 後的縮排/鍵序、
+          #      手動編輯、日後調 indent/ensure_ascii），這次寫入就產生純正規化 diff。
+          # 任一條成立 → 「本輪零成功」的紅燈永遠不亮 → 開出零翻譯的 PR →
+          # detect 從此每天因「有未合併 auto PR」秒退 → 管線全綠但靜默停擺。
+          if [ ! -s /tmp/format_files.txt ]; then
+            echo "本輪沒有任何檔案變動。"
+            # 部分成功走 PR 流程、失敗殘量由 cron 續跑；全數失敗才轉紅。
+            [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="auto/zh-tw-${{ github.run_id }}"
+          # checkout -b 在 HEAD 建分支，不動 index/工作區/untracked，
+          # 上面算好的 format_files.txt 不會失效。
           git checkout -b "$BRANCH"
           git add scripts/translation-manifest.json
           # 用 Format step 算好的「真的變動了」清單，不用整份 detect 清單：
           # detect 會列出上游新增、本地尚不存在的檔，翻譯若因配額失敗，
           # `git add -- book/新檔.md` 會以 pathspec did not match 退 128，
           # set -e 下拖垮同批其他已翻成功的檔。
-          if [ -s /tmp/format_files.txt ]; then
-            xargs -a /tmp/format_files.txt git add --
-          fi
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            # 全數失敗才轉紅（部分成功走 PR 流程，失敗殘量由 cron 續跑）
-            [ "${{ steps.translate.outputs.rc }}" = "0" ] || { echo "::error::本輪零成功"; exit 1; }
-            exit 0
-          fi
+          xargs -a /tmp/format_files.txt -d '\n' git add --
           git commit -m "Auto update zh-TW translations (Gemini)"
           git push origin "$BRANCH"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"

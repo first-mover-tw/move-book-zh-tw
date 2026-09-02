@@ -20,6 +20,9 @@ on:
     # 碰到英文語料的 PR 都是必紅，等於沒有 gate。
     branches: [zh-tw-main]
     # 語料沒動就不用跑（只改 scripts/ 或 workflow 的 PR 佔多數）。
+    # ⚠️ 若日後把 Prettier 設成 required status check，未命中 paths 的 PR
+    # 不會產生這個 check，會永遠卡在 "Expected — Waiting for status"。
+    # 要設 required 就得先拿掉 paths 或補一個 dummy job。
     paths:
       - "book/**/*.md"
       - "reference/**/*.md"
