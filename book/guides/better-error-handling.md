@@ -1,10 +1,40 @@
 ---
-description: 改善 Move 智慧合約的錯誤處理 (Improve error handling)：使用具描述性的中止代碼 (abort code) 與錯誤常數 (error constant)，提升在 Sui 上除錯的效率。
+description: 改善 Move 智慧合約中的錯誤處理：在 Sui 上使用具描述性的中止代碼與錯誤常數以獲得更好的除錯效果。
+title: 更好的錯誤處理 (Better Error Handling)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - better
+  - error
+  - handling
+  - error handling
+questions:
+  - What is Better Error Handling in Move?
+  - How do I use Better Error Handling in Move?
+  - 'What is Rule 1: Handle All Possible Scenarios in Move?'
+  - 'What is Rule 2: Abort with Different Codes in Move?'
+answer: 'Improve error handling in Move smart contracts: use descriptive abort codes and error constants for better debugging on Sui.'
+goal:
+  description: 'Reader understands improve error handling in Move smart contracts: use descriptive abort codes and error constants for better debugging on Sui'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 更好的錯誤處理 (Better Error Handling) {#better-error-handling}
 
-每當執行過程遇到中止（abort），交易就會失敗，並將中止代碼（abort code）回傳給呼叫端。Move VM 會回傳中止交易的模組名稱以及中止代碼。這個行為對交易的呼叫端而言並非完全透明，尤其是當單一函式內含多個呼叫同一個可能中止的函式時。在這種情況下，呼叫端將無法得知是哪一次呼叫導致交易中止，也難以除錯或向使用者提供有意義的錯誤訊息。
+每當執行遇到終止時，交易會失敗並將終止代碼回傳給呼叫者。
+Move VM 會回傳終止交易的模組名稱與終止代碼。這種行為對交易的呼叫者而言並非完全透明，特別是當單一函式包含多個可能會終止的相同函式呼叫時。在這種情況下，呼叫者將無法得知是哪一次呼叫終止了交易，這會導致除錯困難，或者難以向使用者提供有意義的錯誤訊息。
 
 ```move
 module book::module_a;
@@ -12,19 +42,19 @@ module book::module_a;
 use book::module_b;
 
 public fun do_something() {
-    let field_1 = module_b::get_field(1); // 可能以 0 中止
+    let field_1 = module_b::get_field(1); // 可能會以 0 終止
     /* ... 大量邏輯 ... */
-    let field_2 = module_b::get_field(2); // 可能以 0 中止
+    let field_2 = module_b::get_field(2); // 可能會以 0 終止
     /* ... 更多邏輯 ... */
-    let field_3 = module_b::get_field(3); // 可能以 0 中止
+    let field_3 = module_b::get_field(3); // 可能會以 0 終止
 }
 ```
 
-上面的範例說明了單一函式內含多個可能中止的呼叫的情況。如果 `do_something` 函式的呼叫端收到中止代碼 `0`，將難以理解是哪一次呼叫 `module_b::get_field` 導致交易中止。為了解決這個問題，有一些常見的模式可以用來改善錯誤處理。
+上述範例說明瞭單一函式包含多個可能終止的呼叫的情況。如果 `do_something` 函式的呼叫者收到終止代碼 `0`，將很難理解是哪一次對 `module_b::get_field` 的呼叫終止了交易。為了常試解決這個問題，有一些常見的模式可以用來改善錯誤處理。
 
-## 規則一：處理所有可能的情境 (Rule 1: Handle All Possible Scenarios) {#rule-1-handle-all-possible-scenarios}
+## 規則 1：處理所有可能的情境 (Rule 1: Handle All Possible Scenarios) {#rule-1-handle-all-possible-scenarios}
 
-一個被認為良好的實務做法是提供一個安全的「檢查」函式，回傳一個布林值來指示某個操作是否可以安全執行。如果 `module_b` 提供了一個 `has_field` 函式，回傳布林值來指示某個欄位是否存在，`do_something` 函式可以重寫如下：
+提供一個安全的「檢查」函式被認為是良好的實踐，該函式會回傳布林值，以指示是否能安全地執行操作。如果 `module_b` 提供了一個 `has_field` 函式來回傳欄位是否存在的情形（布林值），那麼 `do_something` 函式可以改寫如下：
 
 ```move
 module book::module_a;
@@ -45,11 +75,11 @@ public fun do_something() {
 }
 ```
 
-透過在每次呼叫 `module_b::get_field` 之前加上自訂檢查，`module_a` 的開發者掌控了錯誤處理的主導權。而且這也讓實作第二條規則成為可能。
+透過在每次呼叫 `module_b::get_field` 之前加入自訂檢查，`module_a` 的開發者就能掌控錯誤處理，這也允許實作第二個規則。
 
-## 規則二：以不同代碼中止 (Rule 2: Abort with Different Codes) {#rule-2-abort-with-different-codes}
+## 規則 2：使用不同的代碼終止 (Rule 2: Abort with Different Codes) {#rule-2-abort-with-different-codes}
 
-第二個技巧是，一旦中止代碼由呼叫端模組處理，就要針對不同的情境使用不同的中止代碼。這樣一來，呼叫端模組就能向使用者提供有意義的錯誤訊息。`module_a` 可以重寫如下：
+一旦由呼叫者模組處理終止代碼後，第二個技巧是針對不同的情境使用不同的終止代碼。透過這種方式，呼叫者模組可以向使用者提供有意義的錯誤訊息。`module_a` 可以改寫如下：
 
 ```move
 module book::module_a;
@@ -72,11 +102,11 @@ public fun do_something() {
 }
 ```
 
-現在，呼叫端模組就能向使用者提供有意義的錯誤訊息。如果呼叫端收到中止代碼 `0`，就可以轉譯為「欄位 1 不存在」。如果呼叫端收到中止代碼 `1`，就可以轉譯為「欄位 2 不存在」。以此類推。
+現在，呼叫者模組可以向使用者提供有意義的錯誤訊息。如果呼叫者收到終止代碼 `0`，它可以被轉譯為「欄位 1 不存在 (Field 1 does not exist)」。如果呼叫者收到終止代碼 `1`，它可以被轉譯為「欄位 2 不存在 (Field 2 does not exist)」。以此類推。
 
-## 規則三：回傳 `bool` 而非使用 `assert` (Rule 3: Return `bool` Instead of `assert`) {#rule-3-return-bool-instead-of-assert}
+## 規則 3：回傳 `bool` 而不是 `assert` (Rule 3: Return `bool` Instead of `assert`) {#rule-3-return-bool-instead-of-assert}
 
-開發者常常會想新增一個公開函式，斷言（assert）所有條件並中止執行。然而，更好的做法是建立一個回傳布林值的函式。這樣一來，呼叫端模組就能自行處理錯誤並向使用者提供有意義的錯誤訊息。
+開發者經常會忍不住去新增一個公開函式來斷言所有條件並終止執行。然而，建立一個回傳布林值的函式是更好的實踐。透過這種方式，呼叫者模組可以處理錯誤並向使用者提供有意義的錯誤訊息。
 
 ```move
 module book::some_app_assert;
@@ -99,7 +129,7 @@ public fun assert_is_authorized() {
 }
 ```
 
-這個模組可以重寫如下：
+這個模組可以改寫如下：
 
 ```move
 module book::some_app;
@@ -120,10 +150,10 @@ public fun is_authorized(): bool {
     /* 某個條件 */ true
 }
 
-// 在多處使用相同條件與相同中止代碼的情況下，仍可用私有函式來避免程式碼重複
+// 私有函式仍然可以用於避免在多個地方使用相同終止代碼的相同條件時發生程式碼重複
 fun assert_is_authorized() {
     assert!(is_authorized(), ENotAuthorized);
 }
 ```
 
-運用這三條規則，將使錯誤處理對交易的呼叫端更加透明，也能讓其他開發者在自己的模組中使用自訂的中止代碼。
+善用這三個規則將使交易的錯誤處理對呼叫者而言更加透明，並允許其他開發者在其模組中使用自訂的終止代碼。

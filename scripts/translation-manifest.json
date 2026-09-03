@@ -1,7 +1,7 @@
 {
   "book/404.md": "0a449c1fd20be3e3553de023013546132963c498",
   "book/index.md": "9f0252078b8f846a4f1cf5d2b6b7c2d5dde58579",
-  "book/foreword.md": "036c50bce41a816048c910ff6ee7c5dde43a0b8b",
+  "book/foreword.md": "29d3071fab7e27533b61d5019beb6a7ec3859e67",
   "book/your-first-move/hello-world.md": "b7382898b96aa9dcbf1e314503fbe385adea4c8e",
   "book/your-first-move/hello-sui.md": "d0648d3efae8b84d1eebf045cf90b053512e9067",
   "book/appendix/glossary.md": "5f2d37a3e33b53444ed44d4e54b06b397f0a659b",
@@ -108,7 +108,7 @@
   "book/concepts/what-is-a-transaction.md": "dfca66d1ddd0b4be54f50221ccd0e666d92a8ebc",
   "book/concepts/what-is-an-account.md": "f6b1ffd45e1f95df4759fbcc914a27627b072a9f",
   "book/guides/2024-migration-guide.md": "1705909a5d0f0e3dc0dea7dc4aed93afa01ef183",
-  "book/guides/better-error-handling.md": "42ebade91bcf5dfb276b449e352c90d8a5b2afc8",
+  "book/guides/better-error-handling.md": "ac2f1c1f81f1b26b7fd7bdcadc61c8f1a8136a04",
   "book/guides/building-against-limits.md": "1d4059792158364a1b747114db1b2bbb954c1f13",
   "book/guides/code-quality-checklist.md": "c4af47a1990c2bfb13699d878b6bf492c5b05e15",
   "book/guides/index.md": "9487feaf41f08e7f37776177f4a616485a2a76c0",
