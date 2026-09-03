@@ -104,3 +104,35 @@ def test_workflows_install_every_runtime_dependency():
         # 「恰好 N 個」——後者把「每個 workflow 恰好一個跑 python 的 job」
         # 寫死成不變式，加第二個這種 job 就會噴無關的紅。
         assert checked, f"{path.name} 沒有任何 job 被檢查到（_runs_python 全篩掉了）"
+
+
+# --- 容忍部分失敗的步驟必須真的關掉 errexit ---
+
+
+def _step(path: pathlib.Path, name: str) -> str:
+    doc = yaml.safe_load(path.read_text())
+    for job in doc["jobs"].values():
+        for s in job.get("steps", []):
+            if isinstance(s, dict) and s.get("name") == name:
+                return s["run"]
+    raise AssertionError(f"{path.name} 找不到步驟 {name}")
+
+
+def test_translate_step_disables_errexit():
+    """GitHub 的預設 shell 是 `bash --noprofile --norc -eo pipefail {0}`——
+    **`-e` 本來就開著**，而 `set -uo pipefail` 只會「加」選項，關不掉它。
+
+    Translate 步驟的整個設計是「部分失敗不中斷」：配額用盡時 xargs 回 123，
+    但已翻成功的檔案要照常 commit/PR，殘量隔日 cron 接手。它寫的是
+    `set -uo pipefail` 並在後面接 `rc=$?`，看起來像關掉了 errexit，其實沒有。
+    2026-09-03 run 33697227425 實證：`成功 2，失敗 1` → 步驟仍以 123 轉紅 →
+    後面全 skip → 那 2 個翻好的檔案整批丟掉，正是註解裡寫的「前車之鑑」。
+    這個容錯從第一天就沒生效過，只是之前每次都剛好全部成功。
+    """
+    run = _step(ROOT / ".github/workflows/translate-zh-tw.yml", "Translate")
+    assert re.search(r"^\s*set \+e\b", run, re.M), (
+        "Translate 步驟要容忍部分失敗，就必須顯式 `set +e`——"
+        "GitHub 預設 shell 已經帶 -e，`set -uo pipefail` 關不掉"
+    )
+    # 前提斷言：它真的有在自己判斷 rc（否則關掉 -e 只是讓失敗靜默）
+    assert "rc=$?" in run
