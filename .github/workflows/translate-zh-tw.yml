@@ -93,6 +93,14 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           set -uo pipefail
+          # ⚠️ `set +e` 不可省略。GitHub 的預設 shell 是
+          # `bash --noprofile --norc -eo pipefail {0}` —— **-e 本來就開著**，
+          # 而 `set -uo pipefail` 只會「加」選項，關不掉它。少了這一行，
+          # 底下自己判斷 rc 的整套容錯都是裝飾：xargs 一回非 0 就直接死在這裡。
+          # 2026-09-03 run 33697227425 實證：`成功 2，失敗 1` → 步驟以 123 轉紅
+          # → 後面全 skip → 那 2 個翻好的檔案整批丟掉。這個容錯從第一天就沒
+          # 生效過，只是之前每次都剛好全部成功所以沒人發現。
+          set +e
           # 部分失敗不中斷（前車之鑑：配額用盡 → xargs exit 123 → job 死在這裡
           # → 成功檔案從未 commit → 隔日重翻同一批 → 連續紅燈零進度）。
           # 成功檔案的 manifest 已落盤，後續照常 commit/PR；殘量隔日 cron 接手。
