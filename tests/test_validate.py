@@ -744,3 +744,79 @@ def test_simplified_chars_still_flags_bare_gan_zhun():
     """白名單外的 干/准 仍攔：這正是它們的簡體誤用形態。"""
     assert validate.simplified_chars("你在干什麼。\n")  # 干=幹 的簡體用法
     assert validate.simplified_chars("瞄准目標。\n")  # 准=準 的簡體用法
+
+
+# --- gate 11：有序列表序號被重複寫進內文 ---
+
+_FM = '---\ndescription: "x"\n---\n\n'
+
+
+def test_ordered_list_numbering_flags_duplicated_marker():
+    """2026-09-03 run 33730438417 / PR #24 的 foreword.md：機翻把 markdown 的
+    `1.` 又抄進粗體，讀者看到「1. 1. 預設安全性」。結構/術語/簡體/prettier
+    全部看不到。"""
+    bad = _FM + "1. **1. 預設安全性:** 內文\n\n2. **2. 表達力:** 內文\n"
+    errs = validate.check_ordered_list_numbering(bad)
+    assert len(errs) == 2, errs
+    assert all("序號重複" in e for e in errs)
+
+
+def test_ordered_list_numbering_silent_after_fix():
+    good = _FM + "1. **預設安全性:** 內文\n\n2. **表達力:** 內文\n"
+    assert validate.check_ordered_list_numbering(good) == []
+
+
+def test_ordered_list_numbering_matches_identity_not_shape():
+    """判準是身分（前導數字 == 這一項的序號），不是「開頭有數字」。
+
+    lessons L2：用「開頭有沒有數字」這個廉價代理量，會把合法內容
+    （`1. 2024 版本…`）判成缺陷。
+    """
+    assert validate.check_ordered_list_numbering(_FM + "1. 2024 版本引入了新語法\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 甲\n2. 2024 版本\n") == []
+
+
+def test_ordered_list_numbering_honours_start_and_nesting():
+    """序號取自渲染後的 <ol>（含 start= 與巢狀重新計數），不重刻列表編號規則。"""
+    assert validate.check_ordered_list_numbering(_FM + "5. **5. 壞的**\n")
+    assert validate.check_ordered_list_numbering(_FM + "5. **1. 好的**\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 外\n\n   1. **1. 內壞**\n")
+
+
+def test_ordered_list_numbering_ignores_unordered_and_code():
+    """無序列表沒有序號可重複；code fence 內是範例，不是散文。"""
+    assert validate.check_ordered_list_numbering(_FM + "- 1. 這不是有序列表\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "```\n1. 1. 假的\n```\n") == []
+
+
+def test_ordered_list_numbering_no_false_positive_on_corpus():
+    """既有 108 檔語料實測偽陽性 0 —— 這條守衛開下去不會擋到現有內容。"""
+    import pathlib
+
+    hits = {
+        str(p): errs
+        for p in pathlib.Path("book").rglob("*.md")
+        if (errs := validate.check_ordered_list_numbering(p.read_text(encoding="utf-8")))
+    }
+    assert hits == {}
+
+
+def test_ordered_list_numbering_is_wired_into_check_file():
+    """gate 11 必須真的掛在寫檔守門員上。只測函式本身的話，把接線拆掉
+    （check_file 不再呼叫它）測試仍會全綠 —— 守衛等於沒開。"""
+    en = '---\ndescription: "x"\n---\n\n# T\n\n1. **Secure by default:** a\n'
+    zh = '---\ndescription: "x"\n---\n\n# T {#t}\n\n1. **1. 預設安全性:** 甲\n'
+    assert any("序號重複" in e for e in validate.check_file(zh, en))
+
+
+def test_ol_items_does_not_attribute_nested_text_to_outer_item():
+    """子列表有自己的序號序列。把它的文字併進外層，外層項目的「前導文字」
+    就會變成子項目的文字 —— 前導數字對到錯誤的序號（偽陽性或漏報）。"""
+    import commonmark
+
+    items = validate._ol_items(commonmark.commonmark("1. 外\n\n   1. **1. 內壞**\n"))
+    assert len(items) == 2
+    (outer_n, outer_text), (inner_n, inner_text) = items
+    assert (outer_n, inner_n) == (1, 1)
+    assert "內壞" not in outer_text, outer_text
+    assert inner_text.startswith("1. 內壞")

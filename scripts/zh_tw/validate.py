@@ -234,6 +234,9 @@ def check_file(
     # 10. 強調在翻譯中消失（見 check_cjk_emphasis）
     errs += check_cjk_emphasis(zh_text, en_text)
 
+    # 11. 有序列表序號被重複寫進內文（見 check_ordered_list_numbering）
+    errs += check_ordered_list_numbering(zh_text)
+
     return errs
 
 
@@ -281,6 +284,90 @@ def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
         f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`{hint}"
     ]
 
+
+def _ol_items(html: str) -> list[tuple[int, str]]:
+    """從渲染後的 HTML 取出每個有序列表項的 (序號, 項目自身的前導文字)。
+
+    自身：巢狀在項目裡的子列表不算——子列表有自己的序號序列，把它的文字
+    併進來會讓「前導數字」對到錯誤的序號。
+    """
+    from html.parser import HTMLParser
+
+    class _P(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.stack: list[dict] = []  # 每層列表：{"ol": bool, "n": 下一個序號}
+            self.items: list[tuple[int, str]] = []
+            self.buf: list[str] = []
+            self.cur: int | None = None
+
+        def _flush(self):
+            if self.cur is not None:
+                self.items.append((self.cur, "".join(self.buf)))
+            self.cur, self.buf = None, []
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("ol", "ul"):
+                start = 1
+                for k, v in attrs:
+                    if k == "start" and v and v.lstrip("-").isdigit():
+                        start = int(v)
+                self.stack.append({"ol": tag == "ol", "n": start})
+            elif tag == "li" and self.stack:
+                # 這個 flush 是巢狀正確性的支點：子列表的第一個 <li> 開啟時
+                # 結掉外層項目，外層的「前導文字」因此不含子列表內容。
+                self._flush()
+                top = self.stack[-1]
+                if top["ol"]:
+                    self.cur = top["n"]
+                top["n"] += 1
+
+        def handle_endtag(self, tag):
+            if tag in ("ol", "ul"):
+                self._flush()
+                if self.stack:
+                    self.stack.pop()
+            elif tag == "li":
+                self._flush()
+
+        def handle_data(self, data):
+            # 只收「這一項自己」的文字：子列表一開始就 _flush()，cur 歸 None，
+            # 巢狀內容因此不會被算進外層項目。
+            if self.cur is not None:
+                self.buf.append(data)
+
+    p = _P()
+    p.feed(html)
+    p.close()
+    p._flush()
+    return p.items
+
+
+_LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.、．)）]")
+
+
+def check_ordered_list_numbering(zh_text: str) -> list[str]:
+    """gate 11：有序列表的序號被重複寫進項目文字裡。
+
+    機翻把 markdown 的 `1.` 標記又抄進內文，於是 `1. **Secure by default:**`
+    變成 `1.  **1. 預設安全性:**`，讀者看到的是「1. 1. 預設安全性」
+    （2026-09-03 run 33730438417 / PR #24，foreword.md 三項全中）。
+    結構檢查（標題層級、fence 數）、術語、簡體、prettier 全部看不到。
+
+    判準是**身分**不是「開頭有沒有數字」（lessons L2）：項目自身的前導數字
+    要等於這一項的序號才算重複。於是 `1. 2024 版本的…` 這種合法內容
+    （2024 ≠ 1）不會誤判；既有 108 檔語料實測偽陽性 0。
+
+    序號取自渲染後的 `<ol>`（含 `start=` 與巢狀重新計數），不重刻
+    markdown 的列表編號規則——同 gate 10 的作法，問 commonmark 本人。
+    """
+    body = frontmatter.split(zh_text)[1]
+    errs = []
+    for n, text in _ol_items(commonmark.commonmark(body)):
+        m = _LEADING_NUM.match(text)
+        if m and int(m.group(1)) == n:
+            errs.append(f"有序列表序號重複寫進內文：第 {n} 項的文字以「{m.group(0).strip()}」開頭")
+    return errs
 
 def _anchor_ids(text: str) -> set[str]:
     """Docusaurus 只為每個標題產出一個 id：有 {#id} 就只用它，

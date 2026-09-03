@@ -5,7 +5,7 @@ from pathlib import Path
 
 from markdown_it import MarkdownIt
 
-from scripts.zh_tw import frontmatter, glossary
+from scripts.zh_tw import frontmatter, glossary, validate
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _MD = MarkdownIt("commonmark")
@@ -424,3 +424,46 @@ def test_scan_only_terms_are_still_surfaced():
     from scripts.zh_tw import glossary
 
     assert "交易影響" in glossary.scan_only_hits("這筆交易影響了物件的所有權。")
+
+
+# --- 2026-09-03 PR #24 審查產出的詞條（run 33730438417） ---
+
+
+def test_pr24_regressions_are_caught_by_the_table():
+    """這四個詞條各自對應 PR #24 機翻產出的一個真實缺陷。沒有它們，
+    check_repo 對這些句子回報乾淨（實測：CI 6/6 綠、check_repo 0/0/0）。
+    """
+    cases = {
+        "常試": "為了常試解決這個問題，有一些常見的模式。",  # 純錯字
+        "說明瞭": "貢獻附錄則說明瞭如何加入他們。",  # 了/瞭 過度轉換
+        "開發人員": "Move 允許開發人員編寫程式。",  # 語料 開發者 24 : 開發人員 1
+        "創始人": "— Sam Blackshear，Move 創始人",  # creator ≠ founder
+    }
+    for bad, sentence in cases.items():
+        assert glossary.scan(sentence).get(bad) == 1, (bad, sentence)
+
+
+def test_liao_over_conversion_is_not_reachable_by_the_simplified_gate():
+    """「說明瞭」為什麼非得靠詞表：gate 8 用 OpenCC s2tw 逐字轉換，而
+    「了→瞭」正是它的已知假陽性來源（validate.py 開頭的白名單註解），
+    所以字形那一側永遠攔不到它。兩道關卡的分工要有測試釘住。
+    """
+    assert validate.simplified_chars("則說明瞭如何加入。\n") == []
+    assert glossary.scan("則說明瞭如何加入。").get("說明瞭") == 1
+
+
+def test_abort_terminate_stays_scan_only_because_it_is_polysemous():
+    """終止 不進 enforce 表（lessons L9）。
+
+    語料 中止 162 : 終止 19，看起來像該機械替換 —— 但 reference/ 有 4 處
+    的英文原文就是 terminate（generics「terminate for any given input」、
+    enums「terminated with a semicolon」、references「program terminates」
+    ×2），機械替換會把正確句子改壞。scan 讓它顯形、prompt_rules 教模型，
+    enforce 不碰。
+    """
+    assert "終止" not in glossary.load()
+    assert glossary.load_scan_only().get("終止") == "中止"
+    legit = "能力宣告必須以分號終止："
+    assert glossary.scan(legit) == {}  # enforce 側不得命中
+    assert glossary.enforce(legit) == legit  # 也不得被改寫
+    assert glossary.scan_only_hits(legit).get("終止") == 1  # 但要顯形

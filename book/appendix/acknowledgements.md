@@ -34,6 +34,6 @@ goal:
 
 ## Move 社群 (The Move Community) {#the-move-community}
 
-同樣重要的是 Move 社群，正是它塑造了本書的第一版——當時這門語言還沒有任何官方文件。那些提出問題、指出令人困惑的段落、回報錯誤，以及開啟 issue 與 pull request 的讀者們，造就了今日的本書。完整的貢獻者名單可在 [GitHub](https://github.com/MystenLabs/move-book/graphs/contributors) 上查看，而 [貢獻](./contributing) 附錄則說明瞭如何加入他們。
+同樣重要的是 Move 社群，正是它塑造了本書的第一版——當時這門語言還沒有任何官方文件。那些提出問題、指出令人困惑的段落、回報錯誤，以及開啟 issue 與 pull request 的讀者們，造就了今日的本書。完整的貢獻者名單可在 [GitHub](https://github.com/MystenLabs/move-book/graphs/contributors) 上查看，而 [貢獻](./contributing) 附錄則說明了如何加入他們。
 
 最後，如果沒有那些創造 Move 並持續開發至今的人們——最初的 Move 團隊以及推動這門語言發展的眾多貢獻者——這一切都不會存在。與本書同時發布的 [Move 參考手冊](/reference) 便是改編自他們的成果。
