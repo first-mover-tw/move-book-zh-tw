@@ -74,4 +74,7 @@ def get(name: str) -> Backend:
     if name == "gemini":
         from .gemini import GeminiBackend
         return GeminiBackend()
+    if name == "codex":
+        from .codex_cli import CodexCLIBackend
+        return CodexCLIBackend()
     raise ValueError(f"unknown backend: {name}")

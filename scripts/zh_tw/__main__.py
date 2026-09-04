@@ -9,7 +9,9 @@ def main() -> int:
     p.add_argument("--detect", action="store_true", help="列出需要翻譯的檔案（純 git，無 API 依賴）")
     p.add_argument("--orphans", action="store_true", help="列出上游已刪除的檔案")
     p.add_argument("--english-ref", default="english-main")
-    p.add_argument("--backend", default="claude", choices=["fake", "claude", "gemini"])
+    p.add_argument(
+        "--backend", default="claude", choices=["fake", "claude", "gemini", "codex"]
+    )
     p.add_argument("--apply", action="store_true", help="實際寫檔（預設 dry-run）")
     p.add_argument("--limit", type=int, default=0, help="只處理前 N 個檔案，0 為不限")
     p.add_argument(
