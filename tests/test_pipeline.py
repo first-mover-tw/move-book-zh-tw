@@ -1246,13 +1246,19 @@ def test_repair_ol_numbering_known_deadlocks_are_pinned():
 
 
 def test_repair_ol_numbering_only_ever_deletes_the_duplicated_number():
-    """最強的那條後置條件：渲染後的**文字**只准少掉「數字+分隔符」，
-    其他字元一個都不准動。
+    """最強的那條後置條件：渲染後的**文字**只准發生「刪除」，而且每一段被
+    刪掉的都必須是「數字+分隔符」。不准有任何插入或替換。
 
     標籤骨架管結構，這條管內容 —— `_TAG` 只抓標籤名，屬性不在骨架裡
     （`<a href="X">` 與 `<a href="Y">` 骨架相同），所以光靠骨架擋不住
-    「只改文字或屬性」的破壞。兩條一起才涵蓋「渲染結果不變」。
+    「只改文字或屬性」的破壞。
+
+    這條**不能**用「把兩側的數字都正規化掉再比對」來寫：那樣寫的話
+    `1. 甲` → `2. 甲`（序號被改成另一個數字）與 `1. 甲 2. 乙` → `1. 甲 乙`
+    （刪掉別人的序號）都會被判成相等，等於對「改壞」全盲。改用 difflib
+    逐段檢查實際的編輯操作。
     """
+    import difflib
     import html as _html
     import random
     import re as _re
@@ -1260,12 +1266,26 @@ def test_repair_ol_numbering_only_ever_deletes_the_duplicated_number():
     import commonmark
 
     tag = _re.compile(r"<[^>]+>")
+    num = _re.compile(r"\d+\s*[.、．)）]\s*")
 
     def text(md):
         return _html.unescape(tag.sub("", commonmark.commonmark(md)))
 
-    def canon(t):
-        return _re.sub(r"\d+\s*[.、．)）]\s*", "", t)
+    def only_number_deletions(before, after):
+        sm = difflib.SequenceMatcher(None, before, after, autojunk=False)
+        for op, i1, i2, _j1, _j2 in sm.get_opcodes():
+            if op == "equal":
+                continue
+            if op != "delete":
+                return False
+            if not num.fullmatch(before[i1:i2]):
+                return False
+        return True
+
+    # 先確認這個檢查抓得到已知的兩類破壞，否則它就是會執行的註解（L4）
+    assert not only_number_deletions("1. 甲", "2. 甲")
+    assert not only_number_deletions("第 1 節與第 2 節", "第 1 節與第 3 節")
+    assert only_number_deletions("1.  1. 甲", "1.  甲")
 
     atoms = ["1.", "2.", "3.", "-", "**", "*", "_", "`", "甲", "乙", "\n", "\n\n", "   ",
              "1、", "1）", "0.", "5.", "1.0", "```", "> ", "１.", " ", "文字",
@@ -1277,4 +1297,4 @@ def test_repair_ol_numbering_only_ever_deletes_the_duplicated_number():
         out = pipeline._repair_ol_numbering(body)
         if out == body:
             continue
-        assert canon(text(out)) == canon(text(body)), (body, out)
+        assert only_number_deletions(text(body), text(out)), (body, out)
