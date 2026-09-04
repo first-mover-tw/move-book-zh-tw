@@ -350,10 +350,14 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
     return p.items
 
 
-# 分隔符後必須接空白或行尾：否則 `1.0 版本` 的小數點會被當成列表分隔符，
+# 半形 `.` 後面必須接空白或行尾，否則 `1.0 版本` 的小數點會被當成列表分隔符，
 # 對合法內容誤報（外部 review 2026-09-04 實測）。誤報在這裡的代價特別高——
 # pipeline 對 check_file 的任一錯誤直接 raise，該檔就永久寫不出來。
-_LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.、．)）](?=\s|$)")
+#
+# 全形分隔符（、．））不套這個條件：中文列舉「1、預設安全性」後面不接空白
+# 才是常態，一律要求空白會讓 gate 對機翻很常見的這種形態全盲（同一次 review
+# 的第二個 finding）。全形字元不會出現在小數裡，沒有 `1.0` 那個歧義。
+_LEADING_NUM = re.compile(r"^\s*(\d+)\s*(?:\.(?=\s|$)|[、．)）])")
 
 
 def check_ordered_list_numbering(zh_text: str) -> list[str]:

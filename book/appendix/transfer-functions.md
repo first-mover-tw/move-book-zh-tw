@@ -1,5 +1,5 @@
 ---
-description: 快速參考：Sui 傳輸函式 (transfer functions)：傳輸 (transfer)、分享 (share)、凍結 (freeze)、接收 (receive)，及其具備權限 (permissions) 與終端狀態 (end states) 的公開變體 (public variants)。
+description: 快速參考：Sui 轉移函式 (transfer functions)：轉移 (transfer)、分享 (share)、凍結 (freeze)、接收 (receive)，及其具備權限 (permissions) 與終端狀態 (end states) 的公開變體 (public variants)。
 title: '附錄 C: 轉移函式 (Transfer Functions)'
 keywords:
   - Move

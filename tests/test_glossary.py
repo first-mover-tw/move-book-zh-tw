@@ -458,11 +458,15 @@ def test_enforce_never_damages_a_legitimate_sentence():
         "這在正常試驗中不會發生。",  # 正常 + 試驗
         "本節說明瞭解物件模型的方式。",  # 說明 + 瞭解
         "他是這家公司的創始人。",  # founder，不是 creator
-        "`public_*` 傳輸函式接受它們作為引數。",  # transfer functions
+        "`public_*` 轉移函式接受它們作為引數。",  # transfer functions
         "能力宣告必須以分號終止：",  # terminated with a semicolon
     ]
     for s in intact:
         assert glossary.enforce(s) == s, s
+
+    # enforce 表裡的詞條也要有正向覆蓋：它們該改的時候必須真的改。
+    assert glossary.enforce("Move 允許開發人員編寫程式。") == "Move 允許開發者編寫程式。"
+    assert glossary.enforce("如果這激勵了您，請繼續閱讀。") == "如果這激勵了你，請繼續閱讀。"
 
 
 def test_enforce_is_a_noop_on_the_existing_corpus():
@@ -487,9 +491,9 @@ def test_liao_over_conversion_is_not_reachable_by_the_simplified_gate():
 def test_polysemous_terms_stay_out_of_the_enforce_table():
     """lessons L9：多義詞與子字串碰撞不進 enforce 表。
 
-    終止 看起來該機械替換（語料 中止 175 : 終止 5），但 reference/ 有 4 處
+    終止 看起來該機械替換（語料 中止 175 : 終止 5），但 reference/ 有 5 處
     英文原文就是 terminate（enums「terminated with a semicolon」、generics
-    「terminate for any given input」、references「program terminates」×2）。
+    「terminate for any given input」、uses、references「program terminates」×2）。
     傳輸 同理撞 transfer functions。scan 讓它們顯形、prompt_rules 教模型，
     enforce 不碰。
     """
@@ -498,3 +502,18 @@ def test_polysemous_terms_stay_out_of_the_enforce_table():
     for term in ("終止", "傳輸", "常試", "說明瞭", "創始人"):
         assert term not in enforce_table, term
         assert term in scan_only, term
+
+
+def test_scan_only_warnings_have_a_known_baseline():
+    """scan-only 是永遠不會 fail 的頻道，久了就變成沒人看的噪音：真正的新
+    誤用會混在固定幾行 ⚠️ 裡看不出來（外部 review 2026-09-04）。
+
+    釘住預期筆數 —— 數字一變就得有人看一眼是新誤用還是清掉了舊的。
+    目前的 5 處全部是**正確**的「終止」（英文原文就是 terminate）。
+    """
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    hits: Counter[str] = Counter()
+    for path in files:
+        body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
+        hits.update(glossary.scan_only_hits(body))
+    assert dict(hits) == {"終止": 5}, dict(hits)

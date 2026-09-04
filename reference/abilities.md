@@ -7,7 +7,7 @@ description: Move 能力（abilities）參考手冊：copy、drop、store 與 ke
 
 能力 (Abilities) 是 Move 中的一項型別功能，用於控制對給定型別的數值允許執行哪些操作。此系統可以對數值的「線性 (linear)」型別行為進行細粒度控制，並決定數值是否以及如何在儲存中使用（如 Move 的具體部署所定義的，例如區塊鏈的儲存概念）。這是透過對某些位元組碼指令進行存取控制來實現的，因此數值若要與該位元組碼指令一起使用，就必須具備所需的能力（如果需要的話 —— 並非所有指令都受能力的限制）。
 
-對於 Sui 而言，`key` 被用來表示一項 [物件 (Object)](./abilities/object)。物件是儲存的基本單位，每個物件都有一個唯一的 32 位元組 ID。`store` 則用於指示哪些資料可以儲存在物件內部，同時也用於指示哪些型別可以被傳輸到其定義模組之外。
+對於 Sui 而言，`key` 被用來表示一項 [物件 (Object)](./abilities/object)。物件是儲存的基本單位，每個物件都有一個唯一的 32 位元組 ID。`store` 則用於指示哪些資料可以儲存在物件內部，同時也用於指示哪些型別可以被轉移到其定義模組之外。
 
 ## 四種能力
 
@@ -19,7 +19,7 @@ description: Move 能力（abilities）參考手冊：copy、drop、store 與 ke
   - 允許具有此能力的型別的數值被彈出 (popped) 或丟棄 (dropped)。
 - [`store`](#store)
   - 允許具有此能力的型別的數值存在於儲存中的某個數值內。
-  - 對於 Sui 而言，`store` 控制哪些資料可以儲存在 [物件 (Object)](./abilities/object) 內部。`store` 還控制哪些型別可以被傳輸到其定義模組之外。
+  - 對於 Sui 而言，`store` 控制哪些資料可以儲存在 [物件 (Object)](./abilities/object) 內部。`store` 還控制哪些型別可以被轉移到其定義模組之外。
 - [`key`](#key)
   - 允許該型別作為儲存的「鍵 (key)」。表面上，這意味著該數值可以作為儲存中的頂層數值；換句話說，它不需要包含在另一個數值中即可存在於儲存中。
   - 對於 Sui 而言，`key` 被用來表示一項 [物件 (Object)](./abilities/object)。
@@ -32,7 +32,7 @@ description: Move 能力（abilities）參考手冊：copy、drop、store 與 ke
 
 ### `drop`
 
-`drop` 能力允許具有該能力的型別的數值被丟棄。所謂丟棄，是指該數值未被傳輸，並且在 Move 程式執行時被有效地銷毀。因此，這種能力限制了在多處位置忽略數值的能力，包括：
+`drop` 能力允許具有該能力的型別的數值被丟棄。所謂丟棄，是指該數值未被轉移，並且在 Move 程式執行時被有效地銷毀。因此，這種能力限制了在多處位置忽略數值的能力，包括：
 
 - 在本地變數或參數中不使用該數值
 - 在[透過 `;` 連接的序列](./variables#expression-blocks)中不使用該數值
@@ -47,7 +47,7 @@ description: Move 能力（abilities）參考手冊：copy、drop、store 與 ke
 
 如果一個數值具有 `store`，則該數值內包含的所有數值也都具有 `store`。
 
-對於 Sui 而言，`store` 具有雙重職責。它控制哪些數值可以出現在 [物件](/storage/store-ability) 內部，以及哪些物件可以被[傳輸](./abilities/object#transfer-rules)到其定義模組之外。
+對於 Sui 而言，`store` 具有雙重職責。它控制哪些數值可以出現在 [物件](/storage/store-ability) 內部，以及哪些物件可以被[轉移](./abilities/object#transfer-rules)到其定義模組之外。
 
 ### `key`
 

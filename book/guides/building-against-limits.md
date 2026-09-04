@@ -4,7 +4,7 @@ description: Sui 網路限制與其開發應對之道 (Sui network limits and ho
 
 # 針對限制進行開發 (Building Against Limits)
 
-為了保證網路的安全，Sui 設定了某些限制和約束。這些限制旨在防止濫用並確保網路保持穩定和高效。本指南概述了這些限制，以及如何使您的應用程式在這些限制下工作。
+為了保證網路的安全，Sui 設定了某些限制和約束。這些限制旨在防止濫用並確保網路保持穩定和高效。本指南概述了這些限制，以及如何使你的應用程式在這些限制下工作。
 
 ## 交易大小 (Transaction Size)
 
@@ -12,7 +12,7 @@ description: Sui 網路限制與其開發應對之道 (Sui network limits and ho
 
 ## 物件大小 (Object Size)
 
-單個物件的大小限制為 256KB。如果您需要更多儲存空間，可以使用動態欄位（如 Bag）將多個物件連接在一起。
+單個物件的大小限制為 256KB。如果你需要更多儲存空間，可以使用動態欄位（如 Bag）將多個物件連接在一起。
 
 ## 單個純粹參數大小 (Single Pure Argument Size)
 

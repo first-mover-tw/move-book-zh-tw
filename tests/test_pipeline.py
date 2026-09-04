@@ -1080,16 +1080,54 @@ def test_repair_ol_numbering_matches_identity_not_shape():
 
 def test_repair_ol_numbering_never_touches_code():
     """fence 內是範例，不是散文。"""
-    body = "```\n1. 1. 假的\n```\n\n1. 1. 真的\n"
+    body = "```\n1. **1. 假的**\n```\n\n1. **1. 真的**\n"
     out = pipeline._repair_ol_numbering(body)
-    assert "1. 1. 假的" in out
-    assert "1. 1. 真的" not in out
+    assert "1. **1. 假的**" in out  # fence 內是範例，不動
+    assert "1. **真的**" in out  # fence 外的真缺陷要修掉
 
 
-def test_repair_ol_numbering_handles_plain_and_emphasised_forms():
-    assert pipeline._repair_ol_numbering("3. 3. 沒有強調\n") == "3. 沒有強調\n"
+def test_repair_ol_numbering_handles_emphasised_forms():
     assert pipeline._repair_ol_numbering("5. **5. 粗體**\n") == "5. **粗體**\n"
     assert pipeline._repair_ol_numbering("7. _7. 斜體_\n") == "7. _斜體_\n"
+    assert pipeline._repair_ol_numbering("1. ***1. 三星***\n") == "1. ***三星***\n"
+
+
+def test_repair_ol_numbering_never_flattens_a_nested_list():
+    """`1. 1. 甲` 在 CommonMark 是**巢狀列表**，不是重複序號 —— gate 11 對它
+    正確地不報錯。第一版的修復 pass 自己重刻了一套行首 regex，看不出巢狀，
+    把它改寫成 `1. 甲`，靜默拆掉一層 <ol>：gate 前不紅、修完也不紅，沒有
+    任何守衛看得見（2026-09-04 外部 review 實測）。
+
+    這是 lessons L7 的形狀：同一個不變式的兩份獨立實作必然漂移。現在判定權
+    只在 gate 那一側。
+    """
+    import commonmark
+
+    for body in ["1. 1. 甲\n", "3. 3. 沒有強調\n", "1. 1) 甲\n", "1.  1. 甲\n"]:
+        assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body) == []
+        out = pipeline._repair_ol_numbering(body)
+        assert out == body, (body, out)
+        assert commonmark.commonmark(out) == commonmark.commonmark(body)
+
+
+def test_repair_ol_numbering_preserves_ordered_list_structure():
+    """驗收條件之一是「有序列表的結構指紋不變」。拿掉它，修復就能靠改變
+    列表結構去讓 gate 閉嘴。"""
+    body = "1. **1. 甲**\n\n2. **2. 乙**\n\n   1. 內層\n"
+    before = pipeline._ol_shape(body)
+    out = pipeline._repair_ol_numbering(body)
+    assert pipeline._ol_shape(out) == before
+    assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + out) == []
+
+
+def test_repair_ol_numbering_covers_the_forms_the_gate_flags():
+    """gate 判紅、修復卻認不得 = 該檔永久寫不出來。這幾種形態外部 review
+    實測過會死鎖（行尾、三星號、數字與分隔符間有空白、NBSP、全形頓號），
+    現在都由 gate 驅動的候選涵蓋。"""
+    for body in ["1. ***1. 甲***\n", "1. 1 . 甲\n", "1. 1.\u00a0甲\n", "1. 1、甲\n", "1. 1）甲\n"]:
+        assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body), body
+        out = pipeline._repair_ol_numbering(body)
+        assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + out) == [], (body, out)
 
 
 def test_assemble_repairs_ol_numbering_end_to_end():
@@ -1126,3 +1164,35 @@ def test_repair_ol_numbering_leaves_raw_html_lists_to_the_gate():
     body = "<ol><li>1. 重複</li></ol>\n"
     assert pipeline._repair_ol_numbering(body) == body  # 修不掉
     assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body)  # 但擋得住
+
+
+def test_repair_ol_numbering_preserves_shape_for_arbitrary_input():
+    """性質測試：修復**永遠**不准改變有序列表的結構指紋。
+
+    這是外部 review 抓到的那個 blocker 的不變式本身（第一版把 `1. 1. 甲`
+    這種巢狀列表壓平了一層）。用隨機輸入守它，而不是靠幾個手挑的例子——
+    候選規則之後一放寬，這條會先紅。
+    """
+    import random
+
+    atoms = ["1.", "2.", "3.", "-", "**", "*", "_", "`", "甲", "\n", "\n\n", "   ",
+             "1、", "1）", "0.", "5.", "1.0", "```", "> ", "１.", " ", "文字"]
+    random.seed(11)
+    for _ in range(2000):
+        body = "".join(random.choice(atoms) for _ in range(random.randint(1, 18)))
+        out = pipeline._repair_ol_numbering(body)
+        assert pipeline._ol_shape(out) == pipeline._ol_shape(body), (body, out)
+
+
+def test_repair_ol_numbering_never_increases_gate_errors():
+    """修復只准讓 gate 更安靜，不准製造新的缺陷。"""
+    import random
+
+    def errs(b):
+        return len(validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + b))
+
+    atoms = ["1.", "2.", "**", "甲", "\n", "\n\n", "   ", "1、", "1.0", "```", "1）"]
+    random.seed(12)
+    for _ in range(2000):
+        body = "".join(random.choice(atoms) for _ in range(random.randint(1, 15)))
+        assert errs(pipeline._repair_ol_numbering(body)) <= errs(body), body

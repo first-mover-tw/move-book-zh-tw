@@ -1,8 +1,6 @@
 ---
 title: 結構體 (Structs) | 參考手冊
-description:
-  Move struct 參考手冊：定義自訂型別 (type)、位置與具名欄位、能力 (ability)、可見性 (visibility)
-  與資源語意 (resource semantics)。
+description: Move struct 參考手冊：定義自訂型別 (type)、位置與具名欄位、能力 (ability)、可見性 (visibility) 與資源語意 (resource semantics)。
 ---
 
 # 結構體與資源 (Structs and Resources)
@@ -43,7 +41,7 @@ public struct D(D)
 
 ### 能見度 (Visibility) {#visibility}
 
-您可能已經注意到，所有結構體都被宣告為 `public`。這意味著結構體的型別可以在任何其他模組中被參考。然而，結構體的欄位，以及建立或銷毀結構體的能力，仍然在定義該結構體的模組內部。
+你可能已經注意到，所有結構體都被宣告為 `public`。這意味著結構體的型別可以在任何其他模組中被參考。然而，結構體的欄位，以及建立或銷毀結構體的能力，仍然在定義該結構體的模組內部。
 
 在未來，我們計畫增加將結構體宣告為 `public(package)` 或內部的功能，就像[函式](./functions#visibility)一樣。
 
@@ -119,7 +117,7 @@ fun example() {
 }
 ```
 
-對於具有具名欄位的結構體，如果您有一個與欄位名稱相同的區域變數，可以使用以下縮寫：
+對於具有具名欄位的結構體，如果你有一個與欄位名稱相同的區域變數，可以使用以下縮寫：
 
 ```move
 let baz = Baz { foo: foo };
@@ -254,7 +252,7 @@ let bar = Bar(foo);
 let x_ref = &bar.0.x;
 ```
 
-您也可以透過對結構體的參考來借用欄位：
+你也可以透過對結構體的參考來借用欄位：
 
 ```move
 let foo = Foo { x: 3, y: true };
@@ -265,7 +263,7 @@ let x_ref = &foo_ref.x;
 
 ### 讀取與寫入欄位 (Reading and Writing Fields) {#reading-and-writing-fields}
 
-如果您需要讀取並複製欄位的值，可以解參考 (dereference) 該借用的欄位：
+如果你需要讀取並複製欄位的值，可以解參考 (dereference) 該借用的欄位：
 
 ```move
 let foo = Foo { x: 3, y: true };
@@ -336,7 +334,7 @@ foo_ref.x = foo_ref.x + 1;
 - 結構體型別僅能在定義該結構體的模組內建立（「封裝 Pack」）和銷毀（「解裝 Unpack」）。
 - 結構體的欄位僅在定義該結構體的模組內部可存取。
 
-根據這些規則，如果您想在模組外部修改您的結構體，您將需要為其提供公開的 API。本章末尾包含了一些範例。
+根據這些規則，如果你想在模組外部修改你的結構體，你將需要為其提供公開的 API。本章末尾包含了一些範例。
 
 然而，正如[上文能見度部分](#visibility)所述，結構體的「型別 (types)」對其他模組始終可見。
 
@@ -372,7 +370,7 @@ module a::n {
 
 ## 所有權 (Ownership)
 
-如上文[定義結構體](#defining-structs)中所述，結構體預設是線性的且短暫的。這意味著它們不能被複製或捨棄。當建模像貨幣這樣的現實世界資產時，此屬性非常有用，因為您不希望貨幣被重製或在流通中遺失。
+如上文[定義結構體](#defining-structs)中所述，結構體預設是線性的且短暫的。這意味著它們不能被複製或捨棄。當建模像貨幣這樣的現實世界資產時，此屬性非常有用，因為你不希望貨幣被重製或在流通中遺失。
 
 ```move
 module a::m;
@@ -399,7 +397,7 @@ public fun destroying_2(f: &mut Foo) {
 }
 ```
 
-要修正 `fun destroying_1` 範例，您需要手動「解裝 (unpack)」該值：
+要修正 `fun destroying_1` 範例，你需要手動「解裝 (unpack)」該值：
 
 ```move
 module a::m;
@@ -412,9 +410,9 @@ public fun destroying_1_fixed() {
 }
 ```
 
-請記住，您只能在定義結構體的模組內解構結構體。這可以用來強制執行系統中的某些不變數，例如貨幣守恆。
+請記住，你只能在定義結構體的模組內解構結構體。這可以用來強制執行系統中的某些不變數，例如貨幣守恆。
 
-另一方面，如果您的結構體不代表具有價值的東西，您可以加上 `copy` 和 `drop` 能力，以獲得在其他程式語言中更熟悉的結構體行為：
+另一方面，如果你的結構體不代表具有價值的東西，你可以加上 `copy` 和 `drop` 能力，以獲得在其他程式語言中更熟悉的結構體行為：
 
 ```move
 module a::m;

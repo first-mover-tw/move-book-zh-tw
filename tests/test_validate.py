@@ -816,7 +816,10 @@ def test_ordered_list_numbering_needs_a_delimiter_then_whitespace():
     """
     assert validate.check_ordered_list_numbering(_FM + "1. 1.0 版本引入了新語法\n") == []
     assert validate.check_ordered_list_numbering(_FM + "1. 甲\n2. 2.0 版本\n") == []
-    assert validate.check_ordered_list_numbering(_FM + "1. 1、甲項\n") == []
+    # 全形分隔符不套「後接空白」這條：中文列舉「1、甲項」不接空白才是常態，
+    # 一律要求空白會讓 gate 對機翻常見的這種形態全盲。
+    assert validate.check_ordered_list_numbering(_FM + "1. 1、甲項\n")
+    assert validate.check_ordered_list_numbering(_FM + "1. 1）甲項\n")
     assert validate.check_ordered_list_numbering(_FM + "1. **1. 真缺陷**\n")  # 仍要紅
 
 

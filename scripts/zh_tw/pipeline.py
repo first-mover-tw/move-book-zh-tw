@@ -372,10 +372,17 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
     return "".join(out)
 
 
-# 只認「行首列表標記 + 同一個數字 + 分隔符 + 空白」，且允許數字被強調包住
-# （實測的缺陷形態就是 `1.  **1. 文字**`）。判準與 gate 11 一樣是**身分**
-# ——標記的數字要等於內文重複的那個數字，才動它。
-_OL_DUP = re.compile(r"^(?P<indent>[ \t]*)(?P<n>\d+)(?P<mark>[.)])(?P<sp>[ \t]+)(?P<em>\*{1,2}|_{1,2})?(?P=n)[.、．)）][ \t]+")
+# 候選：行首列表標記 + 可選的強調標記 run，後面接「與標記同一個數字 + 分隔符」。
+# 分隔符後的判定刻意交給 gate（見下），這裡只負責產生候選。
+_OL_CAND = re.compile(
+    r"^(?P<head>(?P<indent>[ \t]*)(?P<n>\d+)[.)][ \t]+(?P<em>[*_]*))"
+    r"(?P<dup>(?P=n)\s*[.、．)）]\s*)"
+)
+
+
+def _ol_shape(zh_body: str) -> list[int]:
+    """有序列表的結構指紋：每個項目的序號，依渲染順序。"""
+    return [n for n, _ in validate._ol_items(commonmark.commonmark(zh_body))]
 
 
 def _repair_ol_numbering(zh_body: str) -> str:
@@ -386,28 +393,58 @@ def _repair_ol_numbering(zh_body: str) -> str:
     路徑的話，gate 11 一擋就是該檔永久寫不出來、每輪人工——那是 gate 6/inject
     那次死鎖的同一個家族。
 
-    決定性刪除重複的那一份（Model vs Code 分工：格式化不指望 LLM）。只刪
-    內文側，列表標記保持原樣，強調標記也保留。code fence 內不動。
+    **判定權完全在 gate，這裡只出候選**（lessons L7/L11）。第一版在這裡重刻
+    了一套行首 regex，於是「gate 判紅」與「修復認得」是兩份獨立實作的同一個
+    不變式，立刻漂移：`1. 1. 甲` 在 CommonMark 其實是**巢狀列表**（gate 正確
+    地不報錯），而那份 regex 看不出巢狀，把它改寫成 `1. 甲`，靜默拆掉一層
+    `<ol>`——gate 前不紅、修完也不紅，沒有任何守衛看得見（2026-09-04 外部
+    review 實測）。
 
-    **已知不涵蓋**：裸 HTML 寫成的 `<ol><li>1. …</li></ol>`。gate 11 讀的是
-    渲染後的 HTML（裸 HTML 也算），這個 pass 認的是行首的 markdown 列表
-    標記，兩者範圍不等。6000 例隨機 fuzz 找到的 18 個「gate 紅但修不掉」
-    全部落在這一類。backend 翻譯 markdown、不產裸 HTML 列表，所以留給
-    gate 擋（fail-closed，同 _repair_headings「修不掉就交給 gate 9」的處置）
-    ——不為了消滅殘餘情況去弱化守衛（lessons L5）。
+    現在的流程：gate 不紅就一個字都不動；每個候選改動都要通過兩道驗收——
+    gate 的錯誤數必須嚴格減少，且有序列表的結構指紋（`_ol_shape`）必須不變。
+    兩者都由 gate 那一側的程式碼算出來，不存在第二份判定。
+
+    兩道驗收裡**承重的是錯誤數**：4004 例差分 fuzz 找不到「結構指紋改變但
+    錯誤數仍減少」的輸入，所以指紋這條目前抓不到獨立的失效（單獨拿掉它
+    行為不變）。留著是因為它直接寫出這個 pass 不准做的事——拆掉巢狀列表
+    正是它第一版的缺陷——而且候選規則將來一放寬就會用到。不變式本身由
+    test_repair_ol_numbering_preserves_shape_for_arbitrary_input 用性質測試
+    守著，不是靠這行自證。前置早退則純粹是效能：乾淨的檔案不必逐行試改。
+
+    修不掉的殘餘情況（缺陷跨行、序號被連結或 inline code 包住等）保持原樣，
+    交給 gate fail-closed 擋下——同 _repair_headings「修復候選仍過不了就交給
+    gate 9」的處置。不為了消滅殘餘情況去弱化守衛（lessons L5）。
     """
+    if not validate.check_ordered_list_numbering(frontmatter.join({}, zh_body)):
+        return zh_body
+
     protected = glossary.protected_mask(zh_body)
-    out, pos = [], 0
-    for line in zh_body.splitlines(keepends=True):
-        end = pos + len(line)
-        if not any(protected[pos:end]):
-            m = _OL_DUP.match(line)
-            if m:
-                head = f"{m.group('indent')}{m.group('n')}{m.group('mark')}{m.group('sp')}{m.group('em') or ''}"
-                line = head + line[m.end() :]
-        out.append(line)
-        pos = end
-    return "".join(out)
+    lines = zh_body.splitlines(keepends=True)
+    offsets, pos = [], 0
+    for line in lines:
+        offsets.append(pos)
+        pos += len(line)
+
+    def errs(body: str) -> int:
+        return len(validate.check_ordered_list_numbering(frontmatter.join({}, body)))
+
+    baseline_errs = errs(zh_body)
+    baseline_shape = _ol_shape(zh_body)
+
+    for i, line in enumerate(lines):
+        if any(protected[offsets[i] : offsets[i] + len(line)]):
+            continue
+        m = _OL_CAND.match(line)
+        if not m:
+            continue
+        cand = lines[:]
+        cand[i] = m.group("head") + line[m.end() :]
+        body = "".join(cand)
+        if errs(body) < baseline_errs and _ol_shape(body) == baseline_shape:
+            lines = cand
+            baseline_errs = errs(body)
+
+    return "".join(lines)
 
 
 def _repair_inpage_links(zh_body: str, en_body: str) -> str:

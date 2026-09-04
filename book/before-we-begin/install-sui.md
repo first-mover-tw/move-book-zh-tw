@@ -29,7 +29,7 @@ goal:
 
 # 安裝 Sui (Install Sui) {#install-sui}
 
-Move 是一種編譯式語言，因此您需要安裝一個編譯器才能編寫並執行 Move 程式。該編譯器已包含在 Sui 二進位檔中，可透過以下其中一種方法安裝或下載。
+Move 是一種編譯式語言，因此你需要安裝一個編譯器才能編寫並執行 Move 程式。該編譯器已包含在 Sui 二進位檔中，可透過以下其中一種方法安裝或下載。
 
 ## 透過 suiup 安裝 (Installing via suiup) {#installing-via-suiup}
 
@@ -45,11 +45,11 @@ suiup install sui
 
 ## 下載二進位檔 (Download Binary) {#download-binary}
 
-您可以從[發行頁面](https://github.com/MystenLabs/sui/releases)下載最新的 Sui 二進位檔。該二進位檔適用於 macOS、Linux 和 Windows。為了教育目的和開發，我們建議使用 `mainnet` 版本。
+你可以從[發行頁面](https://github.com/MystenLabs/sui/releases)下載最新的 Sui 二進位檔。該二進位檔適用於 macOS、Linux 和 Windows。為了教育目的和開發，我們建議使用 `mainnet` 版本。
 
 ## 使用 Homebrew (MacOS) 安裝 (Install Using Homebrew (MacOS)) {#install-using-homebrew-macos}
 
-您可以使用 [Homebrew](https://brew.sh/) 套件管理器安裝 Sui。
+你可以使用 [Homebrew](https://brew.sh/) 套件管理器安裝 Sui。
 
 ```bash
 brew install sui
@@ -57,7 +57,7 @@ brew install sui
 
 ## 使用 Chocolatey (Windows) 安裝 (Install Using Chocolatey (Windows)) {#install-using-chocolatey-windows}
 
-您可以使用適用於 Windows 的 [Chocolatey](https://chocolatey.org/install) 套件管理器安裝 Sui。
+你可以使用適用於 Windows 的 [Chocolatey](https://chocolatey.org/install) 套件管理器安裝 Sui。
 
 ```bash
 choco install sui
@@ -65,15 +65,15 @@ choco install sui
 
 ## 使用 Cargo (MacOS, Linux) 建置 (Build Using Cargo (MacOS, Linux)) {#build-using-cargo-macos-linux}
 
-您可以透過使用 Cargo 套件管理器（需要 Rust）來在本地安裝並建置 Sui。
+你可以透過使用 Cargo 套件管理器（需要 Rust）來在本地安裝並建置 Sui。
 
 ```bash
 cargo install --git https://github.com/MystenLabs/sui.git sui --branch mainnet
 ```
 
-如果您要針對 `testnet` 或 `devnet`，請將此處的分支目標更改為 `testnet` 或 `devnet`。
+如果你要針對 `testnet` 或 `devnet`，請將此處的分支目標更改為 `testnet` 或 `devnet`。
 
-請使用以下指令確保您的系統擁有最新的 Rust 版本。
+請使用以下指令確保你的系統擁有最新的 Rust 版本。
 
 ```bash
 rustup update stable

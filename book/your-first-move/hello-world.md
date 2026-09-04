@@ -4,7 +4,7 @@ description: 在 Sui 上建立你的第一個 Move 套件 (package)：學習專�
 
 # 哈囉，世界！
 
-在本章中，您將學習如何建立一個新的 Move 套件、編寫一個簡單的模組、編譯它，並使用 Move CLI 執行測試。請確保您已[安裝 Sui](./../before-we-begin/install-sui.md) 並設定好您的 [IDE 環境](./../before-we-begin/ide-support.md)。執行以下指令來測試 Sui 是否已正確安裝。
+在本章中，你將學習如何建立一個新的 Move 套件、編寫一個簡單的模組、編譯它，並使用 Move CLI 執行測試。請確保你已[安裝 Sui](./../before-we-begin/install-sui.md) 並設定好你的 [IDE 環境](./../before-we-begin/ide-support.md)。執行以下指令來測試 Sui 是否已正確安裝。
 
 ```bash
 # 它應該會印出客戶端版本。例如：sui-client 1.22.0-036299745。
@@ -24,7 +24,7 @@ sui client --version
 
 為了建立一個新程式，我們將使用 `sui move new` 指令，後面接著應用程式的名稱。我們的第一個程式將命名為 `hello_world`。
 
-> 注意：在本章及其他章節中，如果您看到程式碼區塊中的行以 `$` (錢字號) 開頭，表示後續的指令應在終端機中執行。錢字號不應被包含在內。這是終端機環境中顯示指令的常見方式。
+> 注意：在本章及其他章節中，如果你看到程式碼區塊中的行以 `$` (錢字號) 開頭，表示後續的指令應在終端機中執行。錢字號不應被包含在內。這是終端機環境中顯示指令的常見方式。
 
 ```bash
 $ sui move new hello_world
@@ -86,7 +86,7 @@ module hello_world::hello_world;
 
 `tests/` 目錄包含套件測試。編譯器在常規建置過程中會排除這些檔案，但在 _test_ 和 _dev_ 模式下會使用它們。測試是用 Move 編寫的，並標記有 `#[test]` 屬性。測試可以分組在單獨的模組中（通常稱為 _module_name_tests.move_），或在它們所測試的模組內部。
 
-模組、匯入、常數和函式可以用 `#[test_only]` 進行註解。此屬性用於將模組、函式或匯入從建置過程中排除。當您想為測試加入輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
+模組、匯入、常數和函式可以用 `#[test_only]` 進行註解。此屬性用於將模組、函式或匯入從建置過程中排除。當你想為測試加入輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
 
 _hello_world_tests.move_ 檔案包含一個註解掉的測試模組模板：
 
@@ -131,11 +131,11 @@ Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 
 # 從 `hello_world` 資料夾執行
 $ sui move build
 
-# 或者，如果您沒有 `cd` 進入該資料夾
+# 或者，如果你沒有 `cd` 進入該資料夾
 $ sui move build --path hello_world
 ```
 
-它應該在您的控制台輸出以下訊息。
+它應該在你的控制台輸出以下訊息。
 
 ```plaintext
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
@@ -149,7 +149,7 @@ BUILDING hello_world
 
 在編譯期間，Move 編譯器會自動建立一個建置資料夾，其中放置所有已獲取和編譯的依賴項，以及當前套件模組的位元組碼。
 
-> 如果您使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，您應該使用 `.gitignore` 檔案並將 `build` 加入其中。
+> 如果你使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，你應該使用 `.gitignore` 檔案並將 `build` 加入其中。
 
 ## 執行測試
 
@@ -181,13 +181,13 @@ Running Move unit tests
 Test result: OK. Total tests: 1; passed: 1; failed: 0
 ```
 
-如果您在套件資料夾外執行測試，您可以指定套件的路徑：
+如果你在套件資料夾外執行測試，你可以指定套件的路徑：
 
 ```bash
 $ sui move test --path hello_world
 ```
 
-您也可以透過指定字串來一次執行一個或多個測試。所有包含該字串的測試名稱都將被執行：
+你也可以透過指定字串來一次執行一個或多個測試。所有包含該字串的測試名稱都將被執行：
 
 ```bash
 $ sui move test test_hello

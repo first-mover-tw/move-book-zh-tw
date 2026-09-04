@@ -48,11 +48,11 @@ suiup install mvr
 
 ## 下載二進位檔 (Download Binary) {#download-binary}
 
-您可以從 [發布頁面](https://github.com/MystenLabs/mvr/releases) 下載最新的 MVR 二進位檔。此二進位檔適用於 macOS、Linux 和 Windows。與 [Sui](./install-sui.md) 不同，MVR 二進位檔在不同環境之間不會改變，並支援 `testnet` 和 `mainnet`。
+你可以從 [發布頁面](https://github.com/MystenLabs/mvr/releases) 下載最新的 MVR 二進位檔。此二進位檔適用於 macOS、Linux 和 Windows。與 [Sui](./install-sui.md) 不同，MVR 二進位檔在不同環境之間不會改變，並支援 `testnet` 和 `mainnet`。
 
 ## 使用 Cargo 安裝 (Install Using Cargo) {#install-using-cargo}
 
-您可以使用 Cargo 在本地安裝和建置 MVR（需要 Rust）
+你可以使用 Cargo 在本地安裝和建置 MVR（需要 Rust）
 
 ```bash
 cargo install --locked --git https://github.com/mystenlabs/mvr --branch release mvr
