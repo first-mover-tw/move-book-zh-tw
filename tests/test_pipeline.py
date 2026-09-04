@@ -1243,3 +1243,38 @@ def test_repair_ol_numbering_known_deadlocks_are_pinned():
     ]:
         assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body), body
         assert pipeline._repair_ol_numbering(body) == body, body
+
+
+def test_repair_ol_numbering_only_ever_deletes_the_duplicated_number():
+    """最強的那條後置條件：渲染後的**文字**只准少掉「數字+分隔符」，
+    其他字元一個都不准動。
+
+    標籤骨架管結構，這條管內容 —— `_TAG` 只抓標籤名，屬性不在骨架裡
+    （`<a href="X">` 與 `<a href="Y">` 骨架相同），所以光靠骨架擋不住
+    「只改文字或屬性」的破壞。兩條一起才涵蓋「渲染結果不變」。
+    """
+    import html as _html
+    import random
+    import re as _re
+
+    import commonmark
+
+    tag = _re.compile(r"<[^>]+>")
+
+    def text(md):
+        return _html.unescape(tag.sub("", commonmark.commonmark(md)))
+
+    def canon(t):
+        return _re.sub(r"\d+\s*[.、．)）]\s*", "", t)
+
+    atoms = ["1.", "2.", "3.", "-", "**", "*", "_", "`", "甲", "乙", "\n", "\n\n", "   ",
+             "1、", "1）", "0.", "5.", "1.0", "```", "> ", "１.", " ", "文字",
+             "1、2.", "1、# ", "1、> ", "1、- ", "**1.**", "*1.*", "_1._",
+             "[1.](x)", "**1**.", "[1. 甲](u)", "![1. a](i)", "&nbsp;", "1.&nbsp;"]
+    random.seed(99)
+    for _ in range(3000):
+        body = "".join(random.choice(atoms) for _ in range(random.randint(1, 22)))
+        out = pipeline._repair_ol_numbering(body)
+        if out == body:
+            continue
+        assert canon(text(out)) == canon(text(body)), (body, out)

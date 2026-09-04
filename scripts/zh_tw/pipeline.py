@@ -425,6 +425,11 @@ def _repair_ol_numbering(zh_body: str) -> str:
     test_repair_ol_numbering_preserves_shape_for_arbitrary_input 用性質測試
     守著，不是靠這行自證。前置早退則純粹是效能：乾淨的檔案不必逐行試改。
 
+    成本：每個候選都會 render 全文，所以有 N 個缺陷項時是 O(N²)。實測
+    25/50/100/200/400 項 = 0.08/0.29/1.16/4.55/16.6 秒。乾淨的檔案因為
+    開頭那個早退只 render 一次，正常批次不受影響；會付這個代價的只有
+    「真的有一堆重複序號」的檔案，而那本來就是要修的。
+
     修不掉的殘餘情況（缺陷跨行、序號被連結或 inline code 包住等）保持原樣，
     交給 gate fail-closed 擋下——同 _repair_headings「修復候選仍過不了就交給
     gate 9」的處置。不為了消滅殘餘情況去弱化守衛（lessons L5）。
