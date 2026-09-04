@@ -145,6 +145,7 @@ def assemble(
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
     zh_body = _repair_cjk_emphasis(zh_body)
+    zh_body = _repair_flanking_punctuation(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -367,6 +368,95 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
                 out.append(f"*{content}*")
                 pos = b + 1
         line_start = line_end
+    out.append(zh_body[pos:])
+    return "".join(out)
+
+
+# 收尾分隔符「前是標點、後是 CJK」時，CommonMark 判定它不是 right-flanking
+# （標點前綴要求後面是空白或標點），強調收不了尾。中文標點都算標點，所以
+# 「中文（English）」與「標題：」這兩個本專案到處都是的慣例會直接撞上。
+_PUNCT_INSIDE = re.compile(
+    # lookbehind 只排除分隔符本身，**不能用 \w** —— Python 的 \w 涵蓋 CJK，
+    # 用它會把「前面是中文」這個主要案例整批擋掉（實測 6 個案例只修好 1 個）。
+    r"(?<![*_])(?P<d>\*\*|\*|__|_)(?P<inner>[^\s*_][^*_\n]*?)(?P<p>[：:，。、；！？）)】」』…]+)(?P=d)"
+    r"(?=[㐀-鿿豈-﫿])"
+)
+
+
+_BRACKET_PAIRS = {"（": "）", "(": ")", "「": "」", "『": "』", "【": "】", "[": "]"}
+
+
+def _brackets_balanced(text: str) -> bool:
+    """被強調的內容裡，括號必須自己配對 —— 否則把尾巴的括號移出去會拆掉配對。"""
+    stack = []
+    closers = {v: k for k, v in _BRACKET_PAIRS.items()}
+    for ch in text:
+        if ch in _BRACKET_PAIRS:
+            stack.append(ch)
+        elif ch in closers:
+            if not stack or stack.pop() != closers[ch]:
+                return False
+    return not stack
+
+
+def _repair_flanking_punctuation(zh_body: str) -> str:
+    """決定性修復：把黏在收尾分隔符裡面的標點移到外面。
+
+        - **所有權：**每項資產…        →  - **所有權**：每項資產…
+        **淘汰（decommissioned）**攻擊  →  **淘汰（decommissioned）** 攻擊
+
+    **為什麼這個修復可以做，而列表序號那個不行（lessons L16）**：這裡缺陷的
+    「判定」與「修復」是同一個資訊量。判定＝這段強調渲染不出來（問 commonmark
+    本人）；修復＝把標點搬到分隔符外面，**文字內容一個字都不動、只換位置**，
+    改完再問一次 commonmark 就知道成功沒有。L16 那個案例修復要「反推該刪哪段
+    數字」，資訊不在渲染結果裡，所以做不得。
+
+    後置條件是逐一候選驗證的：改完必須真的渲染出強調，否則整個候選放棄
+    （不是整行放棄，因為這個改寫是局部的、不像底線配對那樣有跨候選的狀態）。
+    修復只增加渲染出來的強調、不會減少，而 gate 10 現在是雙向的，多加的那一側
+    也擋得住 —— 兩層方向都有覆蓋（lessons L12 的推論）。
+
+    實測動機：codex 對 `- **Ownership:** Every asset…` 這種清單項一律譯成
+    `- **所有權：**每項資產…`，`object-model.md` 因此英文 6 個粗體、中文渲染
+    出 **0** 個。這是決定性的寫法缺陷，不是隨機遺失，重試永遠修不好。
+    """
+    mask = glossary.emphasis_mask(zh_body)
+    out, pos = [], 0
+    for m in _PUNCT_INSIDE.finditer(zh_body):
+        if any(mask[m.start():m.end()]):
+            continue
+        d, inner, punct = m.group("d"), m.group("inner"), m.group("p")
+        line_start = zh_body.rfind("\n", 0, m.start()) + 1
+        line = zh_body[line_start:].split("\n", 1)[0]
+        tag = "strong" if len(d) == 2 else "em"
+        # 這裡不需要「本來就渲染得出來就跳過」的早退：regex 的 lookahead 要求
+        # 收尾分隔符後面**緊接 CJK**，而那正是 right-flanking 不成立的充分條件
+        # ——匹配到的一定渲染不出來。寫一個永遠不會紅的分支等於寫註解（L5）。
+        old = f"{d}{inner}{punct}{d}"
+        # 只有**句讀**可以移到分隔符外面；右括號類不行 —— 它是被強調內容的
+        # 一部分，搬走會拆掉配對：`**淘汰（decommissioned）**攻擊` 會變成
+        # `**淘汰（decommissioned**）攻擊`，而那個結果**渲染得出來**，後置
+        # 條件「有 <strong>」照樣通過。這正是 lessons L16 的陷阱：後置條件
+        # 證明了「有東西被強調」，證明不了「被強調的是對的東西」。
+        movable = all(ch in "：:，。、；！？…" for ch in punct) and _brackets_balanced(inner)
+        # 兩種修法，依序試，各自驗渲染：
+        #  1. 標點移到分隔符外面 —— 句讀（：，。、；）本來就不屬於被強調的詞。
+        #  2. 收尾分隔符後面補一個空白 —— 標點是被強調內容的一部分時
+        #     （`（decommissioned）`、`「…」`）不能搬走，搬了會拆掉配對。
+        #     英文原文 `- **Ownership:** Every asset` 本來就是「標點在裡面、
+        #     後面一個空白」，所以這個形式其實更忠於原文。
+        cands = [(f"{d}{inner}{punct}{d} ", f"<{tag}>{inner}{punct}</{tag}>")]
+        if movable:
+            # 句讀外移排前面：`**所有權**：每項` 比 `**所有權：** 每項` 中文
+            # 讀起來自然，且與 digital-assets.md 已合入的手修形式一致。
+            cands.insert(0, (f"{d}{inner}{d}{punct}", f"<{tag}>{inner}</{tag}>"))
+        for cand, want in cands:
+            if want in commonmark.commonmark(line.replace(old, cand, 1)):
+                out.append(zh_body[pos:m.start()])
+                out.append(cand)
+                pos = m.end()
+                break
+        # 兩種都救不回來 → 一個字都不動，交給 fail-closed 的 gate（L16）
     out.append(zh_body[pos:])
     return "".join(out)
 

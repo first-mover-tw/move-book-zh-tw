@@ -1131,3 +1131,167 @@ def test_gate_excludes_headings_from_the_emphasis_count():
         " {#trick---_any_-condition}\n\n內文有 *一個* 強調。\n"
     )
     assert validate.check_cjk_emphasis(zh, en) == []
+
+
+# --- _repair_flanking_punctuation（2026-09-04） -----------------------------
+#
+# CommonMark：收尾分隔符前面是標點時，後面必須是空白或標點才算 right-flanking。
+# 中文標點都算標點，所以「中文（English）」與「標題：」這兩個本專案到處都是的
+# 慣例會直接撞上，強調收不了尾。codex 對 `- **Ownership:** Every asset…` 一律
+# 譯成 `- **所有權：**每項資產…`，`object-model.md` 因此英文 6 個粗體、中文渲染
+# 出 0 個 —— 決定性的寫法缺陷，不是隨機遺失，重試永遠修不好。
+
+
+def _rendered_emphases(text):
+    import commonmark as _cm
+
+    html = _cm.commonmark(text)
+    return html.count("<em>") + html.count("<strong>")
+
+
+def test_repair_moves_sentence_punctuation_out_of_the_delimiter():
+    from scripts.zh_tw import pipeline
+
+    src = "- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+    got = pipeline._repair_flanking_punctuation(src)
+    assert got == "- **所有權**：每項資產皆與一名擁有者相關聯。\n", got
+    assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 1
+
+
+def test_repair_never_moves_a_closing_bracket_out_of_the_delimiter():
+    """**這條是 lessons L16 的直接防線。**
+
+    `**淘汰（decommissioned）**攻擊` 若把 `）` 移到分隔符外面會變成
+    `**淘汰（decommissioned**）攻擊` —— 而那個結果**渲染得出來**，
+    「有 <strong>」這個後置條件照樣通過，但左括號已經沒有配對的右括號。
+    後置條件證明了「有東西被強調」，證明不了「被強調的是對的東西」。
+
+    所以右括號類只准補空白、不准外移，另外再加一道「被強調內容的括號必須
+    自己配對」的檢查。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src, want in [
+        ("這是**淘汰（decommissioned）**攻擊的一種。\n",
+         "這是**淘汰（decommissioned）** 攻擊的一種。\n"),
+        ("接受一個*共享物件 (shared object)*時，計數會被設為無窮大。\n",
+         "接受一個*共享物件 (shared object)* 時，計數會被設為無窮大。\n"),
+    ]:
+        got = pipeline._repair_flanking_punctuation(src)
+        assert got == want, got
+        assert "（decommissioned**）" not in got and "(shared object*)" not in got
+        assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 1
+
+
+def test_repair_leaves_already_rendering_emphasis_alone():
+    """本來就渲染得出來的不准動 —— 修復 pass 不製造無謂 diff，也不冒改壞的險。"""
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "正常的 **粗體** 不該被動到。\n",
+        "中文**粗體**中文不該被動到。\n",
+        "程式碼 `a_b` 與 snake_case 不該被動到。\n",
+        "```move\nlet x = **not_markdown**;\n```\n",
+    ]:
+        assert pipeline._repair_flanking_punctuation(src) == src, src
+
+
+def test_repair_gives_up_rather_than_guessing():
+    """兩種修法都救不回來時一個字都不動，交給 fail-closed 的 gate（L16）。"""
+    from scripts.zh_tw import pipeline
+
+    # 分隔符不成對：補空白或外移都湊不出合法強調
+    src = "這是**壞掉的：中文\n"
+    assert pipeline._repair_flanking_punctuation(src) == src
+
+
+def test_brackets_balanced_rejects_unpaired_content():
+    from scripts.zh_tw import pipeline
+
+    assert pipeline._brackets_balanced("淘汰（decommissioned）")
+    assert pipeline._brackets_balanced("沒有括號")
+    assert not pipeline._brackets_balanced("淘汰（decommissioned")
+    assert not pipeline._brackets_balanced("decommissioned）")
+    assert not pipeline._brackets_balanced("（a」")
+
+
+def test_repair_does_not_move_punctuation_out_of_unbalanced_brackets():
+    """殺 mutation「拿掉括號配對檢查」。
+
+    `**壞掉（未配對：**中文` 的尾標點是句讀（可外移），但被強調內容裡有一個
+    沒有配對的左括號。外移會產出 `**壞掉（未配對**：中文` —— 渲染得出來，
+    括號卻更破碎。配對檢查擋的就是這個。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "這是**壞掉（未配對：**中文結尾。\n"
+    got = pipeline._repair_flanking_punctuation(src)
+    assert "未配對**：" not in got, got
+    # 右括號補空白那條路仍可走，但絕不能拆掉括號配對
+    assert got in (src, "這是**壞掉（未配對：** 中文結尾。\n"), got
+
+
+def test_repair_consults_the_renderer_and_gives_up_when_it_says_no():
+    """殺 mutation「不驗渲染，第一個候選直接接受」。
+
+    把 renderer 換成「永遠沒有強調」，修復就必須一個字都不動 —— 證明接受
+    候選的依據真的是渲染結果，不是「改了應該就會好」。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+    assert pipeline._repair_flanking_punctuation(src) != src  # 正常情況會修
+
+    class _Blind:
+        @staticmethod
+        def commonmark(_text):
+            return "<p>沒有任何強調</p>"
+
+    real = pipeline.commonmark
+    pipeline.commonmark = _Blind
+    try:
+        assert pipeline._repair_flanking_punctuation(src) == src
+    finally:
+        pipeline.commonmark = real
+
+
+def test_repair_skips_code_blocks_and_link_destinations():
+    """殺 mutation「不排除 code 區」。
+
+    fence 內的 `**中文：**中文` 是程式碼或範例輸出，改它就是改壞內容；
+    連結目的地同理（`glossary.emphasis_mask` 是共用的真相來源，不重刻）。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "```move\n// **註解：**中文說明\n```\n",
+        "見 [連結](./a/**路徑：**中文.md) 一節。\n",
+        "行內 `**程式碼：**中文` 不動。\n",
+    ]:
+        assert pipeline._repair_flanking_punctuation(src) == src, src
+
+
+def test_assemble_actually_runs_the_flanking_punctuation_repair():
+    """組合層驗證（lessons L7）：修復 pass 必須真的被 `assemble` 呼叫。
+
+    前一批單元測試把 `_repair_flanking_punctuation` 本身測得很仔細，但把
+    `zh_body = _repair_flanking_punctuation(zh_body)` 那一行從管線裡刪掉，
+    80 條測試**全部照樣綠** —— 函式對了、沒人叫它，正是 L7 說的那種缺陷。
+    """
+    import commonmark
+
+    from scripts.zh_tw import frontmatter, pipeline
+
+    class _BrokenEmphasisBackend:
+        """模擬 codex 對 `- **Ownership:** …` 的實際產出：冒號黏在分隔符裡面。"""
+
+        def translate(self, text, *, kind="markdown"):
+            if kind in ("text", "heading"):
+                return "標題 (T)"
+            return "# 標題 (T)\n\n- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+
+    en = "---\ndescription: \"Ownership.\"\n---\n\n# T\n\n- **Ownership:** Every asset has an owner.\n"
+    out = pipeline.assemble(en, "", en, _BrokenEmphasisBackend())
+    body = frontmatter.split(out)[1]
+    assert "**所有權：**每項" not in body, body
+    assert commonmark.commonmark(body).count("<strong>") == 1, body
