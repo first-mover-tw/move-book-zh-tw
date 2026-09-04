@@ -1,83 +1,114 @@
 ---
-description: 標準函式庫 (Standard Library) 概覽：說明字串、向量、選項與型別名稱等每個 Move 套件都能使用的常見模組。
+description: Move 標準函式庫 (Move Standard Library) 概觀：每個 Move 套件 (Move package) 中皆可使用的字串 (strings)、向量 (vectors)、選項 (options) 與型別名稱 (type names) 通用模組 (common modules)。
+title: 標準函式庫 (Standard Library)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - standard
+  - library
+questions:
+  - What is Standard Library in Move?
+  - How do I use Standard Library in Move?
+  - What is Most Common Modules in Move?
+  - What is Integer Modules in Move?
+answer: 'Overview of the Move Standard Library: common modules for strings, vectors, options, and type names available in every Move package.'
+goal:
+  description: 'Reader understands overview of the Move Standard Library: common modules for strings, vectors, options, and type names available in every Move package'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 標準函式庫 (Standard Library) {#standard-library}
 
-Move 標準函式庫提供原生型別與操作相關的功能。它是一組標準模組的集合，不與儲存互動，但提供用於處理與操作資料的基本工具。它是 [Sui 框架](./../programmability/sui-framework) 唯一的依賴項，且與其一同被引入。
+Move 標準函式庫為原生型別與操作提供功能。它是由不與儲存體互動的模組組成之標準
+集合，但提供處理與操作資料的基本工具。它是
+[Sui Framework](./../programmability/sui-framework) 唯一的依賴項，並會與其一同匯入。
 
 ## 最常用的模組 (Most Common Modules) {#most-common-modules}
 
-在本書中，我們會詳細介紹標準函式庫中的大部分模組，不過先概略介紹一下功能也很有幫助，讓你能大致了解有哪些可用功能以及是由哪個模組實作的。
+本書會深入說明標準函式庫中的大多數模組；不過，先概覽其功能也很有幫助，讓你能了解
+可用的功能以及實作這些功能的模組。
 
-<!-- Custom CSS addition in the theme/custom.css  -->
+<!-- 在 theme/custom.css 中新增自訂 CSS -->
 <div class="modules-table">
 
-| Module                                                                           | Description                                                                | Chapter                              |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
-| [std::string](https://docs.sui.io/references/framework/std/string)               | Provides basic string operations                                           | [String](./string)                   |
-| [std::ascii](https://docs.sui.io/references/framework/std/ascii)                 | Provides basic ASCII operations                                            | -                                    |
-| [std::option](https://docs.sui.io/references/framework/std/option)               | Implements `Option<T>`                                                     | [Option](./option)                   |
-| [std::vector](https://docs.sui.io/references/framework/std/vector)               | Native operations on the vector type                                       | [Vector](./vector)                   |
-| [std::internal](https://docs.sui.io/references/framework/std/internal)           | Provides the `Permit<T>` type for module-authorized calls                  | [Internal Permit](./internal-permit) |
-| [std::bcs](https://docs.sui.io/references/framework/std/bcs)                     | Contains the `bcs::to_bytes()` function                                    | [BCS](./../programmability/bcs)      |
-| [std::address](https://docs.sui.io/references/framework/std/address)             | Contains a single `address::length` function                               | [Address](./address)                 |
-| [std::type_name](https://docs.sui.io/references/framework/std/type_name)         | Allows runtime _type reflection_                                           | [Type Reflection](./type-reflection) |
-| [std::hash](https://docs.sui.io/references/framework/std/hash)                   | Hashing functions: `sha2_256` and `sha3_256`                               | -                                    |
-| [std::debug](https://docs.sui.io/references/framework/std/debug)                 | Contains debugging functions, which are available in only in **test** mode | -                                    |
-| [std::unit_test](https://docs.sui.io/references/framework/std/unit_test)         | The `assert_eq!` and `assert_ref_eq!` macros for **test** code             | [Testing](./testing)                 |
-| [std::bit_vector](https://docs.sui.io/references/framework/std/bit_vector)       | Provides operations on bit vectors                                         | -                                    |
-| [std::uq32_32](https://docs.sui.io/references/framework/std/uq32_32)             | Fixed-point arithmetic: the `UQ32_32` type                                 | -                                    |
-| [std::uq64_64](https://docs.sui.io/references/framework/std/uq64_64)             | Fixed-point arithmetic: the `UQ64_64` type                                 | -                                    |
-| [std::fixed_point32](https://docs.sui.io/references/framework/std/fixed_point32) | The `FixedPoint32` type; deprecated in favor of `std::uq32_32`             | -                                    |
+| 模組                                                                             | 說明                                                           | 章節                                 |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------ |
+| [std::string](https://docs.sui.io/references/framework/std/string)               | 提供基本的字串操作                                             | [字串](./string)                     |
+| [std::ascii](https://docs.sui.io/references/framework/std/ascii)                 | 提供基本的 ASCII 操作                                          | -                                    |
+| [std::option](https://docs.sui.io/references/framework/std/option)               | 實作 `Option<T>`                                               | [Option](./option)                   |
+| [std::vector](https://docs.sui.io/references/framework/std/vector)               | 向量型別的原生操作                                             | [向量](./vector)                     |
+| [std::internal](https://docs.sui.io/references/framework/std/internal)           | 為經模組授權的呼叫提供 `Permit<T>` 型別                        | [Internal Permit](./internal-permit) |
+| [std::bcs](https://docs.sui.io/references/framework/std/bcs)                     | 包含 `bcs::to_bytes()` 函式                                    | [BCS](./../programmability/bcs)      |
+| [std::address](https://docs.sui.io/references/framework/std/address)             | 包含唯一的 `address::length` 函式                              | [地址](./address)                    |
+| [std::type_name](https://docs.sui.io/references/framework/std/type_name)         | 允許在執行階段進行 _型別反射_                                  | [型別反射](./type-reflection)        |
+| [std::hash](https://docs.sui.io/references/framework/std/hash)                   | 雜湊函式：`sha2_256` 與 `sha3_256`                             | -                                    |
+| [std::debug](https://docs.sui.io/references/framework/std/debug)                 | 包含偵錯函式，僅可在 **test** 模式中使用                       | -                                    |
+| [std::unit_test](https://docs.sui.io/references/framework/std/unit_test)         | 適用於 **test** 原始碼的 `assert_eq!` 與 `assert_ref_eq!` 巨集 | [測試](./testing)                    |
+| [std::bit_vector](https://docs.sui.io/references/framework/std/bit_vector)       | 提供位元向量的操作                                             | -                                    |
+| [std::uq32_32](https://docs.sui.io/references/framework/std/uq32_32)             | 定點數運算：`UQ32_32` 型別                                     | -                                    |
+| [std::uq64_64](https://docs.sui.io/references/framework/std/uq64_64)             | 定點數運算：`UQ64_64` 型別                                     | -                                    |
+| [std::fixed_point32](https://docs.sui.io/references/framework/std/fixed_point32) | `FixedPoint32` 型別；已淘汰，改用 `std::uq32_32`               | -                                    |
 
 </div>
 
 ## 整數模組 (Integer Modules) {#integer-modules}
 
-Move 標準函式庫提供了一組與整數型別相關的函式。這些函式被拆分到多個模組中，每個模組對應一個特定的整數型別。這些模組不應該被直接引入，因為它們的函式在每個整數值上都可以直接使用。
+Move 標準函式庫提供一組與整數型別相關的函式。這些函式分散於多個模組中，
+每個模組對應特定的整數型別。這些模組不應直接匯入，因為其函式可用於每個整數值。
 
-> 所有模組都提供同一組函式：`min`、`max`、`diff`、
-> `divide_and_round_up`、`sqrt`、`pow` 與 `to_string`；用於轉換為較小型別的檢查型轉換函式——
-> `try_as_u8`、`try_as_u16` 等等；以及巨集（macro），例如 `max_value!` 與迭代
-> 輔助函式 `do!` 與 `range_do!`。
+> 所有模組皆提供相同的一組函式：`min`、`max`、`diff`、
+> `divide_and_round_up`、`sqrt`、`pow` 與 `to_string`；可檢查的較小型別轉換，
+> 例如 `try_as_u8`、`try_as_u16` 等；以及巨集，例如 `max_value!` 與迭代
+> 輔助工具 `do!` 和 `range_do!`。
 
-<!-- Custom CSS addition in the theme/custom.css  -->
+<!-- 在 theme/custom.css 中新增自訂 CSS -->
 <div class="modules-table">
 
-| Module                                                         | Description                   |
-| -------------------------------------------------------------- | ----------------------------- |
-| [std::u8](https://docs.sui.io/references/framework/std/u8)     | Functions for the `u8` type   |
-| [std::u16](https://docs.sui.io/references/framework/std/u16)   | Functions for the `u16` type  |
-| [std::u32](https://docs.sui.io/references/framework/std/u32)   | Functions for the `u32` type  |
-| [std::u64](https://docs.sui.io/references/framework/std/u64)   | Functions for the `u64` type  |
-| [std::u128](https://docs.sui.io/references/framework/std/u128) | Functions for the `u128` type |
-| [std::u256](https://docs.sui.io/references/framework/std/u256) | Functions for the `u256` type |
+| 模組                                                           | 說明              |
+| -------------------------------------------------------------- | ----------------- |
+| [std::u8](https://docs.sui.io/references/framework/std/u8)     | `u8` 型別的函式   |
+| [std::u16](https://docs.sui.io/references/framework/std/u16)   | `u16` 型別的函式  |
+| [std::u32](https://docs.sui.io/references/framework/std/u32)   | `u32` 型別的函式  |
+| [std::u64](https://docs.sui.io/references/framework/std/u64)   | `u64` 型別的函式  |
+| [std::u128](https://docs.sui.io/references/framework/std/u128) | `u128` 型別的函式 |
+| [std::u256](https://docs.sui.io/references/framework/std/u256) | `u256` 型別的函式 |
 
 </div>
 
 ## 匯出的地址 (Exported Addresses) {#exported-addresses}
 
-標準函式庫匯出了單一個具名地址——`std = 0x1`。這就是本書中所使用的 `std` 別名的定義處。
+標準函式庫匯出一個具名地址：`std = 0x1`。本書中使用的 `std` 別名便是在此定義。
 
 ## 隱式匯入 (Implicit Imports) {#implicit-imports}
 
-有些模組會被隱式引入，並在模組中無需明確的 `use` 匯入即可使用。對於標準函式庫而言，這些模組與型別包括：
+部分模組會被隱式匯入，因此可在模組中使用，而無須明確撰寫 `use`
+匯入。對標準函式庫而言，這些模組與型別包括：
 
 - std::vector
 - std::option
 - std::option::Option
 - std::internal
 
-請注意，`std::internal` 是以模組的形式被引入，而非成員：它的成員仍保留模組
-前綴，例如 `internal::Permit<T>` 與 `internal::permit<T>()`——不需要 `use` 陳述式。詳見
-[Internal Permit 內部授權許可](./internal-permit) 章節了解其用法。
+請注意，`std::internal` 是以模組而非成員方式匯入：其成員會保留模組
+前綴，例如 `internal::Permit<T>` 與 `internal::permit<T>()`，無須 `use`
+陳述式。請參閱 [Internal Permit](./internal-permit) 章節，了解其使用方式。
 
-## 匯入不含 Sui 框架的 std (Importing std without Sui Framework) {#importing-std-without-sui-framework}
+## 不使用 Sui Framework 匯入 std (Importing std without Sui Framework) {#importing-std-without-sui-framework}
 
-Move 標準函式庫可以直接被匯入到套件中。然而，光靠 `std` 並
-不足以建構出有意義的應用程式，因為它不提供任何儲存能力，也無法
-與鏈上狀態互動。
+Move 標準函式庫可直接匯入套件。不過，僅有 `std` 並不足以建置有意義的應用程式，
+因為它不提供任何儲存能力，也無法與鏈上狀態互動。
 
 ```toml
 MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "framework/mainnet" }
@@ -86,4 +117,4 @@ MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/s
 ## 原始碼 (Source Code) {#source-code}
 
 Move 標準函式庫的原始碼可在
-[Sui 儲存庫](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/move-stdlib/sources)中取得。
+[Sui 儲存庫](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/move-stdlib/sources) 取得。

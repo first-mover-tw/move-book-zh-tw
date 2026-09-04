@@ -522,3 +522,106 @@ def test_scan_only_warnings_have_a_known_baseline():
         body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
         hits.update(glossary.scan_only_hits(body))
     assert dict(hits) == {"終止": 5}, dict(hits)
+
+
+def test_substitution_mask_covers_link_destinations_and_urls():
+    """enforce/scan 不得碰外部連結目的地與 URL（2026-09-04）。
+
+    `位址`→`地址`、`字符串`→`字串` 這類詞條在 URL 裡出現時，機械替換會直接
+    產出 404 與圖裂，而且**沒有任何 gate 看得見**：gate 10 只看 <em> 有沒有
+    變少，連結壞掉不影響 <em>；prettier 不管語意；check_repo 的連結檢查只驗
+    repo 內相對路徑，外部 URL 不在視野內。
+
+    對稱地，scan() 也必須一起豁免——否則含這些字的合法外部 URL 會讓
+    check_repo 永久紅，而 enforce 又（正確地）不去修它，變成 L16 說的
+    「有守衛沒有修復路徑」的死鎖。
+    """
+    cases = [
+        "詳見 [說明](https://example.com/位址/字符串.html) 一節。",
+        "![圖](../assets/位址圖.png)",
+        "見 <https://zh.wikipedia.org/wiki/記憶體位址> 。",
+        "參考 https://example.com/docs?q=字符串 的說明。",
+    ]
+    for body in cases:
+        assert glossary.enforce(body) == body, body
+        assert glossary.scan(body) == {}, body
+
+
+def test_substitution_mask_still_enforces_link_text_and_surrounding_prose():
+    """保護只到 destination 為止：連結**文字**與前後散文照樣要被替換，
+    否則這道保護就從『別改 URL』擴張成『別改任何帶連結的句子』。"""
+    body = "這個字符串見 [字符串說明](https://example.com/字符串) 的位址欄位。"
+    got = glossary.enforce(body)
+    assert got == "這個字串見 [字串說明](https://example.com/字符串) 的地址欄位。", got
+
+
+def test_substitution_mask_does_not_freeze_inpage_anchors():
+    """頁內 fragment `](#中文標題)` 必須跟著標題一起被替換，不可凍結。
+
+    slug 是從標題文字推導的：enforce 改「## 創建新套件」→「## 建立新套件」時，
+    `](#創建新套件)` 也必須變成 `](#建立新套件)`，否則錨點指不到任何東西。
+    語料現有 6 處中文錨點（hello-world `#建立新套件`、functions `#回傳數值`、
+    packages `#編譯期間的具名地址…`）之所以一致，正是因為同一個 str.replace
+    把兩邊一起改了。
+
+    這條與上一條是一對**相反**的需求：外部 URL 凍結、頁內 fragment 跟動。
+    2026-09-04 加 URL 保護時差點把 fragment 一起凍結，那會讓下一次 enforce
+    靜默產出死錨點。
+    """
+    body = "## 創建新套件\n\n見 [上面](#創建新套件) 與 [外部](https://example.com/創建).\n"
+    got = glossary.enforce(body)
+    assert "## 建立新套件" in got, got
+    assert "](#建立新套件)" in got, got
+    assert "](https://example.com/創建)" in got, got  # 外部 URL 不動
+
+
+def test_emphasis_mask_freezes_inpage_anchors_but_substitution_mask_does_not():
+    """強調修復相反：它把 `_x_` 換成 `*x*`，沒有「同步改標題」這回事，
+    所以頁內 fragment 必須凍結，否則 slug 直接失效。"""
+    body = "見 [連結](#所有權_模型_說明) 一節。\n"
+    # 判準取 destination 本身，不含 `](` 與 `)` 這兩個分隔符 —— 分隔符不可能是
+    # 底線或術語，把它們算進斷言等於拿形態當真實性質（L2）。
+    i = body.index("#所有權")
+    j = body.index(")", i)
+    assert all(glossary.emphasis_mask(body)[i:j]), "頁內 fragment 應落在強調保護區內"
+    assert not any(glossary.substitution_mask(body)[i:j]), "頁內 fragment 不應落在替換保護區內"
+
+
+def test_cross_file_fragment_tracks_the_target_heading():
+    """跨檔 fragment `](./other.md#中文錨點)` 也必須跟著標題一起被替換。
+
+    外部 review 2026-09-04 抓到：原本用 `startswith("](#")` 判「頁內 fragment」，
+    跨檔的一律落進保護區 → 錨點被凍結，但 enforce 對**每個檔**都跑，目標檔的
+    `## 創建新套件` 照樣被改成 `## 建立新套件` → 死錨點。語料有 3 處活實例
+    （pattern-matching.md、macros.md ×2），只是恰好不含術語表詞條，屬潛伏未爆。
+
+    路徑部分必須凍結（那是檔案系統路徑，改了就 404），只有 `#` 之後讓出來。
+    """
+    body = "見 [x](./創建/other.md#創建新套件) 一節。\n"
+    got = glossary.enforce(body)
+    assert got == "見 [x](./創建/other.md#建立新套件) 一節。\n", got
+
+
+def test_reference_style_link_definition_destination_is_protected():
+    """`[標籤]: ./路徑.md` 的 destination 也是連結目的地，不可被術語替換。
+
+    外部 review 2026-09-04：URLISH 三個 alternation 全部漏掉**沒有 scheme** 的
+    ref-def destination，實測 `enforce('[標籤]: ./創建_套件.md')` 會改成
+    `./建立_套件.md`。語料 `book/storage/key-ability.md:51-56` 有 6 個相對路徑
+    ref-def（今天不含術語表詞條，潛伏未爆）。
+    """
+    body = "[標籤]: ./創建_套件.md\n[外部]: https://example.com/位址\n"
+    assert glossary.enforce(body) == body, glossary.enforce(body)
+
+
+def test_angle_bracket_destination_fragment_still_tracks():
+    """`](<#錨點>)` 角括號目的地：判準是解析出 destination 看有沒有 scheme，
+    不是比對 `](#` 前綴，所以這個形態一樣要跟著標題走。"""
+    body = "見 [x](<#創建新套件>) 一節。\n"
+    assert glossary.enforce(body) == "見 [x](<#建立新套件>) 一節。\n", glossary.enforce(body)
+
+
+def test_external_url_fragment_stays_frozen():
+    """帶 scheme 的 fragment 是外部網站的錨點，不由我們的標題決定 → 凍結。"""
+    body = "見 [x](https://example.com/p#創建新套件) 一節。\n"
+    assert glossary.enforce(body) == body, glossary.enforce(body)

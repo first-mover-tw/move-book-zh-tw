@@ -12,7 +12,6 @@ from pathlib import Path
 
 from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
-from .pipeline_patterns import URLISH as _URLISH
 from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -146,6 +145,8 @@ def assemble(
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
     zh_body = _repair_cjk_emphasis(zh_body)
+    zh_body = _repair_flanking_punctuation(zh_body)
+    zh_body = _repair_cjk_wrapped_ascii_emphasis(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -314,19 +315,20 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
     gate 10 對這些全無覆蓋，因為它們讓 <em> 不減反增。
 
     排除規則（每一條都對應一個實測過的破壞）：
-    - code span / fence：glossary.protected_mask，真相來源不重刻。
-    - 連結/圖片 destination、autolink、裸 URL：URLISH。含中文的 URL 只會
-      出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+    - code span / fence + 連結/圖片 destination / autolink / 裸 URL + 頁內
+      fragment：**glossary.emphasis_mask()**，真相來源不重刻。含中文的 URL
+      只會出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+      2026-09-04 之前這裡是 `protected_mask()` 再自己外掛一份 URLISH，而
+      glossary.enforce 那一側沒有外掛 —— 同一個不變式兩份實作、涵蓋範圍還
+      不同，於是 enforce 會把 URL 裡的術語改掉（`位址`→`地址`）。判定權已
+      收進 glossary 一處，見 lessons L15。
     - 緊鄰 ASCII 英數或底線的底線：那是識別字（`tx_context`）或 `__粗體__`
       的外層，不是強調分隔符 —— 直接不算進 token，而不是「跳過匹配」。
     - 一行的分隔符數為奇數：配不成對就整行放棄。寧可漏修讓 gate 10 擋下來
       人工處理，也不要猜一個配對然後靜默改壞。
     - 內容不含 CJK、或本來就渲染得出來：不動，不製造無謂 diff。
     """
-    mask = glossary.protected_mask(zh_body)
-    for u in _URLISH.finditer(zh_body):
-        for i in range(u.start(), u.end()):
-            mask[i] = True
+    mask = glossary.emphasis_mask(zh_body)
 
     out, pos = [], 0
     line_start = 0
@@ -367,6 +369,145 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
                 out.append(f"*{content}*")
                 pos = b + 1
         line_start = line_end
+    out.append(zh_body[pos:])
+    return "".join(out)
+
+
+# 收尾分隔符「前是標點、後是 CJK」時，CommonMark 判定它不是 right-flanking
+# （標點前綴要求後面是空白或標點），強調收不了尾。中文標點都算標點，所以
+# 「中文（English）」與「標題：」這兩個本專案到處都是的慣例會直接撞上。
+_PUNCT_INSIDE = re.compile(
+    # lookbehind 只排除分隔符本身，**不能用 \w** —— Python 的 \w 涵蓋 CJK，
+    # 用它會把「前面是中文」這個主要案例整批擋掉（實測 6 個案例只修好 1 個）。
+    r"(?<![*_])(?P<d>\*\*|\*|__|_)(?P<inner>[^\s*_][^*_\n]*?)(?P<p>[：:，。、；！？）)】」』…]+)(?P=d)"
+    r"(?=[㐀-鿿豈-﫿])"
+)
+
+
+_BRACKET_PAIRS = {"（": "）", "(": ")", "「": "」", "『": "』", "【": "】", "[": "]"}
+
+
+def _brackets_balanced(text: str) -> bool:
+    """被強調的內容裡，括號必須自己配對 —— 否則把尾巴的括號移出去會拆掉配對。"""
+    stack = []
+    closers = {v: k for k, v in _BRACKET_PAIRS.items()}
+    for ch in text:
+        if ch in _BRACKET_PAIRS:
+            stack.append(ch)
+        elif ch in closers:
+            if not stack or stack.pop() != closers[ch]:
+                return False
+    return not stack
+
+
+# `中文_ascii_中文`：`_` 兩側都是 word char（CJK 也算），CommonMark 不允許 `_`
+# 在詞內開合，強調直接消失。實測 codex 對 `` `0` for _none_ and `1` for _some_ ``
+# 一律譯成 `` `0` 代表_none_，`1` 代表_some_ ``，`bcs.md` 因此連續四輪重試都卡在
+# 同一處。
+#
+# **不能靠放寬 `_repair_cjk_emphasis` 的 `_IDENTISH` 來解。** 那條過濾目前把
+# 「任一側是 ASCII」的底線整批排除；改成「兩側都是 ASCII 才排除」會讓全語料多出
+# 248 個分隔符候選（26 檔），其中 `reference/variables.md` 的文法區塊
+# （`_pattern-or-list_ _type-annotation_<sub>_opt_</sub>`）目前是**完全沒進配對
+# 清單**的，一旦進來，整條線的配對序列位移，即使每一對都有「本來就渲染得出來就
+# 跳過」的檢查，**配對本身**仍可能跨過正確的強調邊界 —— lessons L12 那個災難。
+#
+# 所以這裡走一條獨立的窄路徑：用完整形態匹配（前面必須是 CJK、內容不得含 `_`、
+# 收尾後面不得是 ASCII），不碰既有的逐行配對邏輯。內容不變式（L18）天然成立 ——
+# 只換兩個分隔符字元，其餘一個字都不動。
+_CJK_WRAPPED_ASCII_EM = re.compile(
+    r"(?<=[㐀-鿿豈-﫿])_(?P<inner>[A-Za-z0-9][^_\n]*?)_(?![A-Za-z0-9_])"
+)
+
+
+def _repair_cjk_wrapped_ascii_emphasis(zh_body: str) -> str:
+    """把 `中文_ascii_中文` 的底線分隔符換成星號。`_` 不能在詞內開合，`*` 可以。
+
+    後置條件兩條（lessons L18：症狀 + 內容）：
+      1. 症狀：改之前渲染不出強調、改之後渲染得出來。
+      2. 內容：只有兩個分隔符字元變了，其餘逐字元相同（由建構方式保證 ——
+         這裡不移動、不刪除任何字元）。
+    任一條不成立就一個字都不動，交給 fail-closed 的 gate。
+    """
+    mask = glossary.emphasis_mask(zh_body)
+    out, pos = [], 0
+    for m in _CJK_WRAPPED_ASCII_EM.finditer(zh_body):
+        if any(mask[m.start():m.end()]):
+            continue
+        inner = m.group("inner")
+        line_start = zh_body.rfind("\n", 0, m.start()) + 1
+        line = zh_body[line_start:].split("\n", 1)[0]
+        if f"<em>{inner}</em>" in commonmark.commonmark(line):
+            continue  # 本來就渲染得出來（不該發生，但不冒險）
+        if f"<em>{inner}</em>" not in commonmark.commonmark(
+            line.replace(f"_{inner}_", f"*{inner}*", 1)
+        ):
+            continue  # 換了也救不回來 → 放棄
+        out.append(zh_body[pos:m.start()])
+        out.append(f"*{inner}*")
+        pos = m.end()
+    out.append(zh_body[pos:])
+    return "".join(out)
+
+
+def _repair_flanking_punctuation(zh_body: str) -> str:
+    """決定性修復：把黏在收尾分隔符裡面的標點移到外面。
+
+        - **所有權：**每項資產…        →  - **所有權**：每項資產…
+        **淘汰（decommissioned）**攻擊  →  **淘汰（decommissioned）** 攻擊
+
+    **為什麼這個修復可以做，而列表序號那個不行（lessons L16）**：這裡缺陷的
+    「判定」與「修復」是同一個資訊量。判定＝這段強調渲染不出來（問 commonmark
+    本人）；修復＝把標點搬到分隔符外面，**文字內容一個字都不動、只換位置**，
+    改完再問一次 commonmark 就知道成功沒有。L16 那個案例修復要「反推該刪哪段
+    數字」，資訊不在渲染結果裡，所以做不得。
+
+    後置條件是逐一候選驗證的：改完必須真的渲染出強調，否則整個候選放棄
+    （不是整行放棄，因為這個改寫是局部的、不像底線配對那樣有跨候選的狀態）。
+    修復只增加渲染出來的強調、不會減少，而 gate 10 現在是雙向的，多加的那一側
+    也擋得住 —— 兩層方向都有覆蓋（lessons L12 的推論）。
+
+    實測動機：codex 對 `- **Ownership:** Every asset…` 這種清單項一律譯成
+    `- **所有權：**每項資產…`，`object-model.md` 因此英文 6 個粗體、中文渲染
+    出 **0** 個。這是決定性的寫法缺陷，不是隨機遺失，重試永遠修不好。
+    """
+    mask = glossary.emphasis_mask(zh_body)
+    out, pos = [], 0
+    for m in _PUNCT_INSIDE.finditer(zh_body):
+        if any(mask[m.start():m.end()]):
+            continue
+        d, inner, punct = m.group("d"), m.group("inner"), m.group("p")
+        line_start = zh_body.rfind("\n", 0, m.start()) + 1
+        line = zh_body[line_start:].split("\n", 1)[0]
+        tag = "strong" if len(d) == 2 else "em"
+        # 這裡不需要「本來就渲染得出來就跳過」的早退：regex 的 lookahead 要求
+        # 收尾分隔符後面**緊接 CJK**，而那正是 right-flanking 不成立的充分條件
+        # ——匹配到的一定渲染不出來。寫一個永遠不會紅的分支等於寫註解（L5）。
+        old = f"{d}{inner}{punct}{d}"
+        # 只有**句讀**可以移到分隔符外面；右括號類不行 —— 它是被強調內容的
+        # 一部分，搬走會拆掉配對：`**淘汰（decommissioned）**攻擊` 會變成
+        # `**淘汰（decommissioned**）攻擊`，而那個結果**渲染得出來**，後置
+        # 條件「有 <strong>」照樣通過。這正是 lessons L16 的陷阱：後置條件
+        # 證明了「有東西被強調」，證明不了「被強調的是對的東西」。
+        movable = all(ch in "：:，。、；！？…" for ch in punct) and _brackets_balanced(inner)
+        # 兩種修法，依序試，各自驗渲染：
+        #  1. 標點移到分隔符外面 —— 句讀（：，。、；）本來就不屬於被強調的詞。
+        #  2. 收尾分隔符後面補一個空白 —— 標點是被強調內容的一部分時
+        #     （`（decommissioned）`、`「…」`）不能搬走，搬了會拆掉配對。
+        #     英文原文 `- **Ownership:** Every asset` 本來就是「標點在裡面、
+        #     後面一個空白」，所以這個形式其實更忠於原文。
+        cands = [(f"{d}{inner}{punct}{d} ", f"<{tag}>{inner}{punct}</{tag}>")]
+        if movable:
+            # 句讀外移排前面：`**所有權**：每項` 比 `**所有權：** 每項` 中文
+            # 讀起來自然，且與 digital-assets.md 已合入的手修形式一致。
+            cands.insert(0, (f"{d}{inner}{d}{punct}", f"<{tag}>{inner}</{tag}>"))
+        for cand, want in cands:
+            if want in commonmark.commonmark(line.replace(old, cand, 1)):
+                out.append(zh_body[pos:m.start()])
+                out.append(cand)
+                pos = m.end()
+                break
+        # 兩種都救不回來 → 一個字都不動，交給 fail-closed 的 gate（L16）
     out.append(zh_body[pos:])
     return "".join(out)
 

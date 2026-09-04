@@ -1,30 +1,58 @@
 ---
-description: 為 Move 測試產生程式碼覆蓋率報告 (Generate code coverage reports for Move tests)：使用 --coverage 旗標與 sui move coverage 找出未測試的程式碼路徑。
+description: 為 Move 測試產生程式碼涵蓋率 (code coverage) 報告：使用 `--coverage` 旗標和 `sui move coverage` 識別未測試的程式碼路徑。
+title: 產生涵蓋率報告 (Generating Coverage Reports)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - generating
+  - coverage
+  - reports
+questions:
+  - What is Generating Coverage Reports in Move?
+  - How do I use Generating Coverage Reports in Move?
+  - What is Running Tests with Coverage in Move?
+  - What is Coverage Summary in Move?
+answer: 'Generate code coverage reports for Move tests: use the --coverage flag and sui move coverage to identify untested code paths.'
+goal:
+  description: 'Reader understands generate code coverage reports for Move tests: use the --coverage flag and sui move coverage to identify untested code paths'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 產生涵蓋率報告 (Generating Coverage Reports) {#generating-coverage-reports}
+# 產生覆蓋率報告 (Generating Coverage Reports) {#generating-coverage-reports}
 
-程式碼涵蓋率是一項指標,顯示測試執行期間程式碼的哪些部分被執行。它有助於識別未經測試的程式碼路徑,並確保你的測試足夠全面。`sui move test` 上的 `--coverage` 旗標會產生涵蓋率資料,而 `sui move coverage` 則提供分析工具。
+程式碼覆蓋率是一項指標，用於顯示在測試期間執行了程式碼的哪些部分。它有助於識別未經測試的程式碼路徑，並確保測試足夠完整。`sui move test` 上的 `--coverage` 旗標會產生覆蓋率資料，而 `sui move coverage` 提供用於分析這些資料的工具。
 
-## 執行帶有涵蓋率的測試 (Running Tests with Coverage) {#running-tests-with-coverage}
+## 使用覆蓋率執行測試 (Running Tests with Coverage) {#running-tests-with-coverage}
 
-若要產生涵蓋率資料,請使用 `--coverage` 旗標執行你的測試:
+若要產生覆蓋率資料，請使用 `--coverage` 旗標執行測試：
 
 ```bash
 sui move test --coverage
 ```
 
-這將會執行所有測試並收集涵蓋率資訊。涵蓋率資料會儲存在套件根目錄(`Move.toml` 旁邊)的 `.coverage_map.mvcov` 檔案中,並可使用 `sui move coverage` 子指令進行分析。
+這會執行所有測試並收集覆蓋率資訊。覆蓋率資料會儲存在套件根目錄中（位於 `Move.toml` 旁）的 `.coverage_map.mvcov` 檔案，並可使用 `sui move coverage` 子命令進行分析。
 
-## 涵蓋率摘要 (Coverage Summary) {#coverage-summary}
+## 覆蓋率摘要 (Coverage Summary) {#coverage-summary}
 
-`sui move coverage summary` 指令會顯示所有模組涵蓋率的高階概覽:
+`sui move coverage summary` 命令會顯示所有模組覆蓋率的高階概覽：
 
 ```bash
 sui move coverage summary
 ```
 
-這會輸出一個表格,顯示每個模組的涵蓋率百分比:
+這會輸出一個表格，顯示每個模組的覆蓋率百分比：
 
 ```
 +-------------------------+
@@ -41,104 +69,104 @@ Module 0000000000000000000000000000000000000000000000000000000000000000::unteste
 +-------------------------+
 ```
 
-> 在此範例中,模組列在其套件地址的完整 32 位元組形式下 - `0x0`。
+> 模組會列在其套件地址完整的 32 位元組形式之下——在此範例中為 `0x0`。
 
-若要查看依個別函式細分的涵蓋率,請加上 `--summarize-functions` 旗標:
+若要查看依個別函式細分的覆蓋率，請加入 `--summarize-functions` 旗標：
 
 ```bash
 sui move coverage summary --summarize-functions
 ```
 
-若要進行程式化處理,你可以以 CSV 格式輸出結果:
+若要進行程式化處理，可以 CSV 格式輸出結果：
 
 ```bash
 sui move coverage summary --csv
 ```
 
-## 原始碼涵蓋率 (Source Coverage) {#source-coverage}
+## 原始碼覆蓋率 (Source Coverage) {#source-coverage}
 
-`source` 子指令會顯示特定模組的哪些程式碼行被執行:
+`source` 子命令會顯示特定模組中哪些行已執行：
 
 ```bash
 sui move coverage source --module <MODULE_NAME>
 ```
 
-這會顯示帶有涵蓋率標註的原始碼,顯示哪些行被涵蓋(在測試期間執行)以及哪些沒有。這對於識別需要額外測試涵蓋率的特定程式碼路徑很有用。
+這會顯示附有覆蓋率註解的原始碼，指出哪些行已被覆蓋（在測試期間執行），以及哪些行尚未被覆蓋。這對於識別需要額外測試覆蓋率的特定程式碼路徑很有幫助。
 
 ## LCOV 格式 (LCOV Format) {#lcov-format}
 
-若要與外部工具及 CI/CD 流程整合,你可以以 [LCOV 格式](https://github.com/linux-test-project/lcov) 產生涵蓋率報告。LCOV 是一種廣泛支援的格式,可與許多涵蓋率視覺化工具搭配使用。
+若要與外部工具及 CI/CD 管線整合，可以產生 [LCOV 格式](https://github.com/linux-test-project/lcov)的覆蓋率報告。LCOV 是受到廣泛支援的格式，可搭配許多覆蓋率視覺化工具使用。
 
-首先,使用 `--trace` 旗標執行測試以產生必要的追蹤資料:
+首先，使用 `--trace` 旗標執行測試以產生必要的追蹤資料：
 
 ```bash
 sui move test --coverage --trace
 ```
 
-接著產生 LCOV 報告:
+接著產生 LCOV 報告：
 
 ```bash
 sui move coverage lcov
 ```
 
-這會在目前目錄中建立一個 `lcov.info` 檔案。此檔案包含詳細的涵蓋率資訊,可與以下工具搭配使用:
+這會在目前目錄建立 `lcov.info` 檔案。該檔案包含詳細的覆蓋率資訊，可搭配以下工具使用：
 
-- [genhtml](https://github.com/linux-test-project/lcov) - 產生 HTML 涵蓋率報告
+- [genhtml](https://github.com/linux-test-project/lcov) - 產生 HTML 覆蓋率報告
 - [VS Code Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) -
-  在你的編輯器中視覺化涵蓋率
-- [Codecov](https://codecov.io/) / [Coveralls](https://coveralls.io/) - 上傳至涵蓋率追蹤服務
+  在編輯器中視覺化覆蓋率
+- [Codecov](https://codecov.io/) / [Coveralls](https://coveralls.io/) - 上傳至覆蓋率追蹤服務
 
 ### 產生 HTML 報告 (Generating HTML Reports) {#generating-html-reports}
 
-若要從 LCOV 檔案產生 HTML 報告,請使用 `genhtml`(LCOV 套件的一部分):
+若要從 LCOV 檔案產生 HTML 報告，請使用 `genhtml`（LCOV 套件的一部分）：
 
 ```bash
 genhtml lcov.info -o coverage_html
 ```
 
-這會建立一個 `coverage_html` 目錄,其中包含可在瀏覽器中開啟的互動式 HTML 報告。
+這會建立 `coverage_html` 目錄，其中包含可在瀏覽器中開啟的互動式 HTML 報告。
 
-### 差異涵蓋率 (Differential Coverage) {#differential-coverage}
+### 差異覆蓋率 (Differential Coverage) {#differential-coverage}
 
-`lcov` 指令支援透過 `--differential-test` 旗標進行差異涵蓋率分析。這會顯示哪些行是專門由特定測試所涵蓋:
+`lcov` 命令支援使用 `--differential-test` 旗標進行差異覆蓋率分析。這會顯示只有特定測試覆蓋的行：
 
 ```bash
 sui move coverage lcov --differential-test <TEST_NAME>
 ```
 
-僅由指定測試命中的行會顯示為已涵蓋,而由指定測試及其他測試同時命中的行則會顯示為未涵蓋。這有助於識別每個測試提供了哪些獨特的涵蓋範圍。
+只有指定測試命中的行會顯示為已覆蓋，而指定測試與其他測試皆命中的行則會顯示為未覆蓋。這有助於識別每項測試提供的獨特覆蓋率。
 
-### 單一測試涵蓋率 (Single Test Coverage) {#single-test-coverage}
+### 單一測試覆蓋率 (Single Test Coverage) {#single-test-coverage}
 
-若要僅為單一測試產生涵蓋率:
+若要僅產生單一測試的覆蓋率：
 
 ```bash
 sui move coverage lcov --only-test <TEST_NAME>
 ```
 
-這對於理解個別測試的涵蓋範圍很有用。
+這有助於瞭解個別測試的覆蓋範圍。
 
-## 位元組碼涵蓋率 (Bytecode Coverage) {#bytecode-coverage}
+## 位元碼覆蓋率 (Bytecode Coverage) {#bytecode-coverage}
 
-對於進階除錯,你可以查看針對反組譯位元組碼的涵蓋率:
+若要進行進階除錯，可以查看相對於反組譯位元碼的覆蓋率：
 
 ```bash
 sui move coverage bytecode --module <MODULE_NAME>
 ```
 
-這會顯示位元組碼層級的涵蓋率,這對於理解確切哪些指令被執行很有用。
+這會顯示位元碼層級的覆蓋率，有助於瞭解確切執行了哪些指令。
 
 ## 總結 (Summary) {#summary}
 
-| 指令                                                | 說明                              |
+| 命令                                                | 說明                              |
 | --------------------------------------------------- | --------------------------------- |
-| `sui move test --coverage`                          | 執行測試並收集涵蓋率資料          |
-| `sui move test --coverage --trace`                  | 執行帶有追蹤資料的測試(LCOV 所需) |
-| `sui move coverage summary`                         | 顯示每個模組的涵蓋率百分比        |
-| `sui move coverage summary --summarize-functions`   | 顯示依函式細分的涵蓋率            |
-| `sui move coverage summary --csv`                   | 以 CSV 格式輸出涵蓋率摘要         |
-| `sui move coverage source --module <NAME>`          | 顯示模組的逐行涵蓋率              |
-| `sui move coverage lcov`                            | 產生 LCOV 報告(`lcov.info`)       |
-| `sui move coverage lcov --differential-test <TEST>` | 顯示由特定測試專門涵蓋的行        |
-| `sui move coverage lcov --only-test <TEST>`         | 為單一測試產生涵蓋率              |
-| `sui move coverage bytecode --module <NAME>`        | 顯示針對反組譯位元組碼的涵蓋率    |
+| `sui move test --coverage`                          | 執行測試並收集覆蓋率資料          |
+| `sui move test --coverage --trace`                  | 使用追蹤資料執行測試（LCOV 必要） |
+| `sui move coverage summary`                         | 顯示每個模組的覆蓋率百分比        |
+| `sui move coverage summary --summarize-functions`   | 顯示依函式細分的覆蓋率            |
+| `sui move coverage summary --csv`                   | 以 CSV 格式輸出覆蓋率摘要         |
+| `sui move coverage source --module <NAME>`          | 顯示模組逐行的覆蓋率              |
+| `sui move coverage lcov`                            | 產生 LCOV 報告（`lcov.info`）     |
+| `sui move coverage lcov --differential-test <TEST>` | 顯示僅由某項測試覆蓋的行          |
+| `sui move coverage lcov --only-test <TEST>`         | 產生單一測試的覆蓋率              |
+| `sui move coverage bytecode --module <NAME>`        | 顯示相對於反組譯位元碼的覆蓋率    |

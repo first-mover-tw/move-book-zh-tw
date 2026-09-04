@@ -1,35 +1,62 @@
 ---
-title: 中止與斷言 (Abort and Assert) | 參考手冊
-description:
-  'Move 中止與斷言參考手冊：以錯誤代碼中止執行、用 assert! 強制條件、處理交易失敗 (Move abort and assert
-  reference: halt execution with error codes, enforce conditions with assert!, and
-  handle transaction failures)'
+title: 中止 (Abort) 與斷言 (Assert) | 參考手冊
+description: Move 中止 (abort) 與斷言 (assert) 參考：以錯誤碼中止執行、使用 assert! 強制條件，以及處理交易 (transaction) 失敗。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - abort
+  - assert
+  - reference
+  - error handling
+questions:
+  - How does Abort and Assert work in Move?
+  - What is the syntax for Abort and Assert in Move?
+  - What is abort in Move?
+  - What is The type of abort in Move?
+answer: 'Move abort and assert reference: halt execution with error codes, enforce conditions with assert!, and handle transaction failures.'
+goal:
+  description: 'Reader understands move abort and assert reference: halt execution with error codes, enforce conditions with assert!, and handle transaction failures'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 中止與斷言 (Abort and Assert)
+# 中止與斷言 (Abort and Assert) {#abort-and-assert}
 
-[`return`](./functions) 和 `abort` 是兩種結束執行的控制流結構，一個用於當前函式，一個用於整個交易。
+[`return`](./functions) 與 `abort` 是兩種結束執行的控制流程建構；前者結束目前的函式，後者則結束整筆交易。
 
-[在連結章節中可以找到更多關於 `return` 的資訊](./functions#return-expression)
+更多關於 [`return` 的資訊可在連結章節中找到](./functions#return-expression)
 
-## `abort`
+## 中止 (`abort`) {#abort}
 
-`abort` 是一個運算式，它可以不帶參數，也可以只帶一個參數 —— 型別為 `u64` 的 **中止程式碼 (abort code)**。例如：
+`abort` 是一個運算式，可以不接受引數，或只接受一個引數——型別為 `u64` 的**中止代碼**。例如：
 
 ```move
 abort
 abort 42
 ```
 
-`abort` 運算式會停止當前函式的執行，並撤銷當前交易對狀態所做的所有更改（但請注意，這項保證必須由特定 Move 部署的適配器來維護）。沒有「捕捉 (catching)」或以其他方式處理 `abort` 的機制。
+`abort` 運算式會停止目前函式的執行，並還原目前交易對狀態所做的所有變更（但請注意，這項保證必須由特定 Move 部署的轉接器維護）。沒有任何機制可「捕捉」或以其他方式處理 `abort`。
 
-幸運的是，Move 中的交易是「全有或全無 (all or nothing)」的，這意味著只有在交易成功時，才會一次性完成對儲存空間的所有更改。對於 Sui 來說，這意味著不會有物件被修改。
+幸運的是，Move 中的交易是全有或全無的，意即只有在交易成功時，才會一次套用所有對儲存空間的變更。對 Sui 而言，這表示不會修改任何物件。
 
-由於這種變更的交易式提交機制，在中止之後無需擔心撤銷更改。雖然這種方法缺乏靈活性，但它非常簡單且可預測。
+由於這種交易式的變更提交方式，中止後無須擔心要復原變更。雖然這種方法的彈性較低，但非常簡單且可預測。
 
-與 [`return`](./functions) 類似，`abort` 在某些條件無法滿足時對於退出控制流非常有用。
+與 [`return`](./functions) 類似，當某個條件無法滿足時，`abort` 可用於退出控制流程。
 
-在這個範例中，函式將從向量中彈出兩個項目，但如果向量中沒有兩個項目，則會提前中止。
+在此範例中，函式會從向量移除兩個項目，但如果向量不足兩個項目，便會提早中止
+
+<!-- {{#include ../../packages/reference/sources/abort-and-assert.move}} -->
 
 ```move
 fun pop_twice<T>(v: &mut vector<T>): (T, T) {
@@ -38,7 +65,7 @@ fun pop_twice<T>(v: &mut vector<T>): (T, T) {
 }
 ```
 
-這在控制流結構的深層處更為有用。例如，此函式檢查向量中的所有數字是否都小於指定的 `bound`。否則中止：
+這在控制流程建構的深層位置中更加實用。例如，此函式會檢查向量中的所有數字是否都小於指定的 `bound`。否則便中止。
 
 ```move
 fun check_vec(v: &vector<u64>, bound: u64) {
@@ -52,7 +79,7 @@ fun check_vec(v: &vector<u64>, bound: u64) {
 }
 ```
 
-> 將 `macro` 與 `abort` 結合使用：
+> 將 `macro` 與 `abort` 結合：
 
 ```move
 fun check_vec(v: &vector<u64>, bound: u64) {
@@ -60,21 +87,21 @@ fun check_vec(v: &vector<u64>, bound: u64) {
 }
 ```
 
-### `assert`
+### 斷言 (`assert`) {#assert}
 
-`assert` 是 Move 編譯器提供的內建巨集操作。它接受兩個參數：型別為 `bool` 的條件和型別為 `u64` 的程式碼。
-
-```move
-assert!(條件: bool, 程式碼: u64)
-```
-
-由於該操作是一個巨集，因此必須使用 `!` 呼叫。這是為了傳達 `assert` 的參數是按運算式呼叫 (call-by-expression) 的。換句話說，`assert` 不是普通函式，且在位元組碼層級並不存在。它在編譯器內部被替換為：
+`assert` 是由 Move 編譯器提供的內建巨集操作。它接受兩個引數：型別為 `bool` 的條件，以及型別為 `u64` 的代碼。
 
 ```move
-if (條件) () else abort 程式碼
+assert!(condition: bool, code: u64)
 ```
 
-`assert` 比單獨使用 `abort` 更常被使用。上面的 `abort` 範例可以使用 `assert` 重寫：
+由於此操作是巨集，必須使用 `!` 呼叫。這表示 `assert` 的引數採運算式呼叫。換言之，`assert` 並非一般函式，且不存在於位元組碼層級。編譯器會將其替換為：
+
+```move
+if (condition) () else abort code
+```
+
+相較於單獨使用 `abort`，更常使用 `assert`。以上的 `abort` 範例可改寫為使用 `assert`：
 
 ```move
 fun pop_twice<T>(v: &mut vector<T>): (T, T) {
@@ -97,7 +124,7 @@ fun check_vec(v: &vector<u64>, bound: u64) {
 }
 ```
 
-> 將 `macro` 與 `assert` 結合使用：
+> 將 `macro` 與 `assert` 結合：
 
 ```move
 fun check_vec(v: &vector<u64>, bound: u64) {
@@ -105,30 +132,30 @@ fun check_vec(v: &vector<u64>, bound: u64) {
 }
 ```
 
-請注意，由於操作被替換為此 `if-else` 結構，因此 `code` 參數並不總是會被求值。例如：
+請注意，由於此操作會被替換為這個 `if-else`，`code` 的引數並不一定會被求值。例如：
 
 ```move
 assert!(true, 1 / 0)
 ```
 
-這將不會導致算術錯誤，它等價於：
+這不會造成算術錯誤，等同於：
 
 ```move
 if (true) () else abort (1 / 0)
 ```
 
-因此算術運算式永遠不會被評估！
+因此，該算術運算式永遠不會被求值！
 
-### Move VM 中的中止程式碼
+### Move VM 中的中止代碼 (Abort codes in the Move VM) {#abort-codes-in-the-move-vm}
 
-使用 `abort` 時，瞭解 VM 如何使用 `u64` 程式碼非常重要。
+使用 `abort` 時，了解 VM 如何使用 `u64` 代碼非常重要。
 
-通常，在成功執行後，Move VM 以及特定部署的適配器會決定對儲存空間所做的變更。
+通常在成功執行後，Move VM 與特定部署的轉接器會判定對儲存空間所做的變更。
 
-如果觸發了 `abort`，VM 將轉而指示錯誤。該錯誤將包含兩部分資訊：
+如果執行到 `abort`，VM 會改為指出一項錯誤。該錯誤包含兩項資訊：
 
-- 產生中止的模組（套件/地址值和模組名稱）
-- 中止程式碼。
+- 產生中止的模組（套件／地址值與模組名稱）
+- 中止代碼。
 
 例如：
 
@@ -146,11 +173,11 @@ module 0x3::invoker {
 }
 ```
 
-如果一筆交易（例如上面的函式 `always_aborts`）呼叫了 `0x2::example::aborts`，VM 將產生一個錯誤，指出模組 `0x2::example` 和程式碼 `42`。
+如果某筆交易（例如上述的函式 `always_aborts`）呼叫 `0x2::example::aborts`，VM 會產生錯誤，指出模組 `0x2::example` 與代碼 `42`。
 
-這對於在一個模組中將多個相關的中止操作分組在一起非常有用。
+這可用於將多個中止集中歸類於同一模組內。
 
-在這個範例中，該模組在多個函式中使用了兩個不同的錯誤程式碼：
+在此範例中，模組有兩個獨立的錯誤代碼，並在多個函式中使用。
 
 ```move
 module 0::example;
@@ -160,7 +187,7 @@ use std::vector;
 const EEmptyVector: u64 = 0;
 const EIndexOutOfBounds: u64 = 1;
 
-// 將 i 移動到 j，j 移動到 k，k 移動到 i
+// 將 i 移至 j、將 j 移至 k、將 k 移至 i
 public fun rotate_three<T>(v: &mut vector<T>, i: u64, j: u64, k: u64) {
     let n = v.length();
     assert!(n > 0, EEmptyVector);
@@ -183,22 +210,22 @@ public fun remove_twice<T>(v: &mut vector<T>, i: u64, j: u64): (T, T) {
 }
 ```
 
-## `abort` 的型別
+## `abort` 的型別 (The type of `abort`) {#the-type-of-abort}
 
-`abort i` 運算式可以具有任何型別！這是因為這兩種建構都打破了正常的控制流，因此它們永遠不需要求值為該型別的數值。
+`abort i` 運算式可以具有任何型別！這是因為兩種建構都會中斷正常控制流程，因此永遠不需要求值為該型別的值。
 
-以下內容雖然沒什麼用，但可以通過型別檢查：
+以下寫法沒有實際用途，但能通過型別檢查：
 
 ```move
 let y: address = abort 0;
 ```
 
-此行為在某些情況下很有幫助，例如你有一個分支指令，在某些分支上產生數值，但在其他分支上不產生。例如：
+當你有一個分支指令，在部分分支產生值、但並非所有分支都產生值時，這種行為會很有幫助。例如：
 
 ```move
 let b =
     if (x == 0) false
     else if (x == 1) true
     else abort 42;
-//       ^^^^^^^^ `abort 42` 具有型別 `bool`
+//       ^^^^^^^^ `abort 42` 的型別為 `bool`
 ```

@@ -1,22 +1,48 @@
 ---
-description: 了解如何在 Move 中使用 Sui 物件（object）：儲存能力 (storage abilities)、轉移函式 (transfer functions)、所有權規則 (ownership rules) 以及物件生命週期管理 (object lifecycle management)。
+description: 了解如何在 Move 中使用 Sui 物件 (objects)：儲存能力、轉移函式、所有權規則及物件生命週期管理。
+title: 使用物件 (Objects)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - using
+  - objects
+  - object model
+questions:
+  - How does storage work on Sui?
+  - How do I store objects onchain?
+answer: Sui storage covers how objects with key and store abilities are persisted onchain, including transfer functions, storage operations, and the UID/ID system.
+goal:
+  description: Reader understands how objects are stored, transferred, and managed on Sui
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 30
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 使用物件 (Using Objects) {#using-objects}
 
-[物件模型][object-model] 章節從概念上介紹了物件：儲存的單位，具有身分、擁有者，以及形塑執行方式的擁有權狀態。本章將這些概念轉化為程式碼。你將學到如何定義物件型別、如何建立與銷毀物件，以及如何在擁有權狀態之間移動它們 - 轉移、凍結與共享。
+[物件模型][object-model]章節從概念上介紹了物件：具備身分識別、擁有者，以及會影響執行方式之擁有權狀態的儲存單位。本章將這些概念轉化為原始碼。你將學習如何定義物件型別、如何建立及銷毀物件，以及如何在擁有權狀態之間移動物件──轉移、凍結及共享。
 
-各小節彼此銜接,建議依序閱讀:
+各節內容彼此相互建立，建議依序閱讀：
 
-- [能力：Key (Ability: Key)](./key-ability) -讓 struct 轉變為物件的能力;
-- [能力：Store (Ability: Store)](./store-ability) -允許型別被儲存於物件內部的能力,並控制誰可以操作該物件;
-- [Sui 驗證器：內部約束 (Sui Verifier: Internal Constraint)](./internal-constraint) - bytecode 層級的規則,將關鍵操作保留給定義該型別的模組;
-- [儲存函式 (Storage Functions)](./storage-functions) - 將物件放入儲存空間的操作:轉移、凍結與共享;
-- [UID 與 ID (UID and ID)](./uid-and-id) - 每個物件的身分,以及其生命週期;
-- [作為物件接收 (Receiving as Object)](./transfer-to-object) - 讓物件能擁有其他物件的機制。
+- [能力：Key](./key-ability) - 將結構轉換為物件的能力；
+- [能力：Store](./store-ability) - 允許將型別儲存於物件內部，並控制誰能操作該物件的能力；
+- [Sui 驗證器：內部限制](./internal-constraint) - 在位元組碼層級保留關鍵操作給定義該型別之模組的規則；
+- [儲存函式](./storage-functions) - 將物件放入儲存空間的操作：轉移、凍結及共享；
+- [UID 與 ID](./uid-and-id) - 每個物件的身分識別及其生命週期；
+- [以物件身分接收](./transfer-to-object) - 讓物件擁有其他物件的機制。
 
-> 來自 [Sui Framework](./../programmability/sui-framework) 的兩個型別幾乎出現在本章的每一個範例中:`UID` - 儲存在每個物件中的唯一識別碼,以及 `TxContext` - 描述當前交易的特殊值,任何函式都可以將其作為最後一個引數取得。這兩者稍後都會有深入說明(本章的 [UID 與 ID (UID and ID)](./uid-and-id),下一章的 [交易情境 (Transaction Context)](./../programmability/transaction-context));現階段只需知道 `object::new(ctx)` 會使用交易情境來產生一個全新、唯一的 `UID`。
+> [Sui Framework](./../programmability/sui-framework) 中的兩個型別幾乎會出現在本章所有範例中：`UID`──儲存在每個物件中的唯一識別碼──以及 `TxContext`──描述目前交易的特殊值，可作為任何函式的最後一個引數使用。稍後將深入介紹兩者（本章的 [UID 與 ID](./uid-and-id)，以及下一章的 [交易情境](./../programmability/transaction-context)）；剛開始時，只要知道 `object::new(ctx)` 會使用交易情境產生全新且唯一的 `UID` 即可。
 
-如果你還沒讀過 [物件模型][object-model] 章節,建議先從那裡開始,再繼續閱讀本章。
+若你尚未閱讀[物件模型][object-model]章節，建議先從該章開始，再繼續閱讀。
 
 [object-model]: ./../object

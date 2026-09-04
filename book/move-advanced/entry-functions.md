@@ -1,33 +1,50 @@
 ---
-description: Move 中的入口函式 (entry function)：entry 修飾詞如何限制函式只能透過交易呼叫，以及其引數 (argument) 因此獲得的靜態燙手山芋保證 (hot-potato guarantee)。
+description: Move 中的入口函式 (entry functions)：entry 修飾詞 (entry modifier) 如何將函式限制為僅限交易呼叫，以及其引數獲得的靜態燙手山芋保證 (static hot-potato guarantee)。
+title: 入口函式 (Entry Functions)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - entry
+  - functions
+questions:
+  - What is Entry Functions in Move?
+  - How do I use Entry Functions in Move?
+  - What is The Hot Potato Guarantee in Move?
+  - What is The Rules in Move?
+answer: 'Entry functions in Move: how the entry modifier restricts a function to transaction-only calls, and the static hot-potato guarantee its arguments receive in return.'
+goal:
+  description: 'Reader understands entry functions in Move: how the entry modifier restricts a function to transaction-only calls, and the static hot-potato guarantee its arguments receive in return'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 入口函式 (Entry Functions) {#entry-functions}
 
-一個 [`entry`](./../move-basics/visibility#entry-modifier) 函式是一種特殊的可交易呼叫函式——它會刻意*限制*呼叫者的選項。如
-[可見性修飾詞 (Visibility Modifiers)](./../move-basics/visibility) 一章所述，`entry` 不是一種可見性層級，也不是讓函式能夠從
-[交易 (transaction)](./../concepts/what-is-a-transaction) 中被呼叫的常規方式——`public` 函式本來就已經可以被呼叫，而 `public`
-仍然是預設值。`entry` 修飾詞只在*非 public* 函式上才有意義——私有函式或
-`public(package)` 函式——它所建立的是一個具有收窄合約（narrowed contract）的函式，方向有兩個：
+[`entry`](./../move-basics/visibility#entry-modifier) 函式是一種特殊的可由交易呼叫的函式——它刻意 _限制_ 呼叫端的選項。如同 [可見性修飾詞](./../move-basics/visibility)章節所述，`entry` 並非可見性層級，也不是讓函式通常可從[交易](./../concepts/what-is-a-transaction)呼叫的方式——`public` 函式本來就可以，且 `public` 仍是預設值。`entry` 修飾詞只對 _非公開_ 函式有意義——私有或 `public(package)`——它建立的是一個雙向縮限契約的函式：
 
-- *誰能呼叫它：*在自己的模組（或套件）之外，這個函式只能作為交易中的一個命令被呼叫——沒有其他套件能包裝它、對它的結果進行操作，或將它組合進更大的邏輯中；
-- *呼叫能與什麼組合：*傳入的引數必須不受同一筆交易中其他命令所建立的義務所牽連——系統會檢查它們的行為，就像該 `entry`
-  函式是這筆交易中唯一的命令一樣。
+- _誰能呼叫它：_ 在自身模組（或套件）外部，此函式只能作為交易中的命令呼叫——其他套件無法包裝它、對其結果進行操作，或將其建構到更大的邏輯中；
+- _此呼叫可與什麼結合：_ 傳遞給它的引數不得帶有同一筆交易中其他命令建立的義務——系統會檢查其行為是否如同 `entry` 函式是唯一的命令。
 
-第一項限制直接來自可見性規則，已在 Move 基礎篇中介紹過。本章描述的是第二項——關於引數的靜態保證，以及背後的規則。這部分內容需要熟悉
-[熱土豆模式 (hot potato pattern)](./../programmability/hot-potato-pattern)、
-[能力 (abilities)](./../move-basics/abilities-introduction)，以及交易的結構方式，這也是為什麼它被放在這裡而不是 Move 基礎篇的原因。
+第一項限制直接源於可見性規則，並已在 Move 基礎中說明。本章描述第二項——關於引數的靜態保證及其背後規則。本內容需要熟悉[燙手山芋模式](./../programmability/hot-potato-pattern)、[能力](./../move-basics/abilities-introduction)，以及交易的結構，因此放在此處而非 Move 基礎。
 
-## 熱土豆保證 (The Hot Potato Guarantee) {#the-hot-potato-guarantee}
+## 燙手山芋保證 (The Hot Potato Guarantee) {#the-hot-potato-guarantee}
 
-非 `public` 的 `entry` 函式（無論是私有的還是 `public(package)`）的引數，不能與
-[熱土豆 (hot potato)](./../programmability/hot-potato-pattern)——一種型別既沒有 `store` 也沒有 `drop`，因此必須在交易結束前被處理掉的值——有所*糾纏（entangled）*。
-在實務上，這代表引數的行為就像該 `entry` 函式是交易中唯一的命令一樣：在呼叫該 `entry` 函式之後，之前的命令都無法對交易的行為強加影響。
+非 `public` `entry` 函式（私有或 `public(package)`）的引數不能與[燙手山芋](./../programmability/hot-potato-pattern)產生 _糾纏_——亦即型別同時不具有 `store` 與 `drop`，因而必須在交易結束前處理的值。實務上，這表示引數的行為如同 `entry` 函式是交易中唯一的命令：在呼叫 `entry` 函式後，任何先前命令都無法強制交易執行某種行為。
 
-> 這項保證是在交易開始執行*之前*以靜態方式檢查的。違反此規則的交易會驗證失敗，不會被執行。這些規則是在 Sui v1.62 引入的，
-> 取代了先前一套更為嚴格的規則。
+> 此保證會在交易開始執行前 _靜態_ 檢查。違反此保證的交易會驗證失敗，且不會執行。這些規則於 Sui v1.62 導入，取代先前限制更多的一組規則。
 
-典型的動機是*閃電貸 (flash loan)*——借出的資金必須在同一筆交易內償還。一個簡化版的放款方看起來像這樣：
+最典型的動機是 _閃電貸款_——借入必須在同一筆交易中償還的資金。簡化版的貸款方如下：
 
 ```move
 module flash::loan;
@@ -40,8 +57,8 @@ public struct Bank has key {
     holdings: Balance<SUI>,
 }
 
-/// 一個熱土豆：沒有 `store`，沒有 `drop`。一旦被發出，
-/// 交易在它被 `repay` 銷毀之前都無法成功。
+/// 燙手山芋：沒有 `store`、沒有 `drop`。一旦發出，交易
+/// 必須透過呼叫 `repay` 將其銷毀，否則無法成功。
 public struct Loan {
     amount: u64,
 }
@@ -59,29 +76,25 @@ public fun repay(bank: &mut Bank, loan: Loan, repayment: Balance<SUI>) {
 }
 ```
 
-一個撰寫接受 `Coin` 的 `entry` 函式的開發者，可能會想確保這個 coin 真的是被發送者「擁有」的，而不是從這樣一個
-還有未償還義務的 bank 借來的。`entry` 規則正好提供了這樣的保證。
+開發者在撰寫接受 `Coin` 的 `entry` 函式時，可能想確保該代幣確實由傳送者「擁有」，而非向具有未償還義務的銀行借得。`entry` 規則正好提供此保證。
 
 ## 規則 (The Rules) {#the-rules}
 
-驗證機制會追蹤有多少個熱土豆值處於未結清狀態，以及它們可能影響哪些值。以下是一些術語：
+驗證會追蹤有多少燙手山芋值尚未處理，以及它們可能影響哪些值。部分術語如下：
 
-- 一個*值 (value)*是交易命令的任何引數：一個交易輸入、前一個命令的結果，或是 gas coin。
-- 若一個值的型別既沒有 `store` 也沒有 `drop`，該值就是*熱的 (hot)*。這樣就剩下三種可能的形狀：完全沒有任何能力的型別、
-  只有 `copy` 的型別，或只有 `key` 的型別（一個型別不能同時擁有 `key` 和 `copy`，因為 `sui::object::UID` 沒有
-  `copy`）。
-- 每個值都屬於一個*集團 (clique)*——一群曾被一起用作某個命令引數的值，加上該命令的結果。每個集團都會計算其未結清的熱值數量。
+- _值_ 是交易命令的任何引數：交易輸入、前一個命令的結果，或 gas 代幣。
+- 若值的型別同時不具有 `store` 與 `drop`，該值即為 _熱_ 值。這留下三種可能形狀：完全沒有能力的型別、只有 `copy` 的型別，或只有 `key` 的型別（型別不能同時具有 `key` 與 `copy`，因為 `sui::object::UID` 沒有 `copy`）。
+- 每個值都屬於一個 _集團_——一組曾一同作為命令引數使用的值，以及該命令的結果。每個集團都會計算其尚未處理的熱值。
 
-演算法會依序走訪交易中的命令：
+演算法依序走訪交易的命令：
 
-1. 每個交易輸入都以計數為零的方式，開始於自己獨立的集團中。
-2. 當多個值被一起用於某個命令中——無論是傳值還是傳參考——它們的集團會被合併，計數也會相加。
-3. 每有一個熱值被*移動 (moved)*進該命令（以傳值方式取得，而非複製），計數就會遞減。
-4. 若該命令呼叫的是一個非 `public` 的 `entry` 函式，此時合併後集團的計數必須為零。請注意，這代表一個 `entry` 函式*可以*
-   接受熱值——只要它們是所在集團中最後的熱值即可。
-5. 該命令的結果會加入合併後的集團，且每有一個熱結果，計數就會遞增。
+1. 每個交易輸入一開始各自位於一個計數為零的集團。
+2. 當值一同用於某個命令時——以值或參考方式——其集團會合併，並將計數相加。
+3. 每個 _移入_ 命令的熱值都會使計數遞減（以值取得，而非複製）。
+4. 若命令呼叫非 `public` 的 `entry` 函式，合併後集團的計數此時必須為零。請注意，這表示 `entry` 函式 _可以_ 接受熱值——它們只需是其集團中最後的熱值。
+5. 命令的結果會加入合併後的集團，且每個熱結果都會使計數遞增。
 
-讓我們實際走一遍。假設有一個模組包含以下函式：
+讓我們實際看看。假設某模組具有下列函式：
 
 ```move
 module book::example;
@@ -97,67 +110,60 @@ public fun cool(potato: HotPotato) { let HotPotato() = potato; }
 entry fun spend(coin: &mut Coin<SUI>) { /* ... */ }
 ```
 
-下面這筆交易會被拒絕。對 `hot` 的呼叫產生了一個熱土豆，因此當 `spend` 被呼叫時，`Input(0)`
-所在的集團仍有未結清的熱值：
+下列交易會遭拒絕。對 `hot` 的呼叫產生了一個燙手山芋，因此呼叫 `spend` 時，`Input(0)` 所在的集團具有尚未處理的熱值：
 
 ```text
 // 無效交易
-// Input 0: Coin<SUI>
-// cliques: { Input(0) } => 0
+// 輸入 0：Coin<SUI>
+// 集團：{ Input(0) } => 0
 0: book::example::hot(Input(0));
-// cliques: { Input(0), Result(0) } => 1
-1: book::example::spend(Input(0)); // 無效，Input(0) 所在集團的計數 > 0
+// 集團：{ Input(0), Result(0) } => 1
+1: book::example::spend(Input(0)); // 無效，Input(0) 的集團計數 > 0
 2: book::example::cool(Result(0));
 ```
 
-先銷毀熱土豆會讓計數重新歸零，同樣的呼叫就會變成有效：
+先銷毀燙手山芋可使計數回到零，相同的呼叫便會有效：
 
 ```text
 // 有效交易
-// Input 0: Coin<SUI>
-// cliques: { Input(0) } => 0
+// 輸入 0：Coin<SUI>
+// 集團：{ Input(0) } => 0
 0: book::example::hot(Input(0));
-// cliques: { Input(0), Result(0) } => 1
+// 集團：{ Input(0), Result(0) } => 1
 1: book::example::cool(Result(0));
-// cliques: { Input(0) } => 0
-2: book::example::spend(Input(0)); // 有效！Input(0) 所在集團的計數為 0
+// 集團：{ Input(0) } => 0
+2: book::example::spend(Input(0)); // 有效！Input(0) 的集團計數為 0
 ```
 
-集團正是讓這條規則穩固的原因：糾纏會透過*任何*共用的使用方式擴散，而不僅限於直接的方式。以 `flash::loan`
-模組為例，下面的 `Coin` 是從借來的 `Balance` 建立的，從未直接接觸過 `Loan`——但它仍屬於同一個集團，
-在貸款償還之前無法傳入該 `entry` 函式：
+集團讓這項規則更加穩固：糾纏會透過 _任何_ 共用使用方式傳播，而不只是直接使用。使用 `flash::loan` 模組時，下方的 `Coin` 是由借出的 `Balance` 建立，且從未直接接觸 `Loan`——但它們位於相同集團中，因此在償還貸款前，無法將它傳遞給 `entry` 函式：
 
 ```text
 // 無效交易
-// Input 0: flash::loan::Bank
-// Input 1: u64
-// cliques: { Input(0) } => 0, { Input(1) } => 0
+// 輸入 0：flash::loan::Bank
+// 輸入 1：u64
+// 集團：{ Input(0) } => 0，{ Input(1) } => 0
 0: flash::loan::issue(Input(0), Input(1));
-// cliques: { Input(0), NestedResult(0,0), NestedResult(0,1) } => 1
+// 集團：{ Input(0), NestedResult(0,0), NestedResult(0,1) } => 1
 1: sui::coin::from_balance(NestedResult(0,0));
-// cliques: { Input(0), NestedResult(0,1), Result(1) } => 1
-2: book::example::spend(Result(1)); // 無效，Result(1) 所在集團的計數 > 0
+// 集團：{ Input(0), NestedResult(0,1), Result(1) } => 1
+2: book::example::spend(Result(1)); // 無效，Result(1) 的集團計數 > 0
 3: sui::coin::into_balance(Result(1));
 4: flash::loan::repay(Input(0), NestedResult(0,1), Result(3));
 ```
 
-如果貸款在呼叫 `spend` 之前就已償還，這筆交易就會通過驗證。
+若在呼叫 `spend` 前償還貸款，該交易即可通過驗證。
 
-## 共享物件 (Shared Objects) {#shared-objects}
+## 共用物件 (Shared Objects) {#shared-objects}
 
-有一種特殊情況：當一個命令以傳值方式接受一個*共享物件 (shared object)*時，合併後集團的計數會被設為無窮大。
-一個非 `public` 的 `entry` 函式仍然可以直接以傳值方式接受一個共享物件，但不能接受一個先前所在集團曾與共享物件互動過的值。
+有一個特殊情況：當命令以值接受 _共用物件_ 時，合併後集團的計數會設為無限大。非 `public` 的 `entry` 函式仍可直接以值接受共用物件，但不能接受其集團先前曾與共用物件互動的值。
 
-原因在於，以傳值方式取得的共享物件可以像熱土豆一樣，強迫交易其餘部分的行為：它無法被包裝或轉移，因此在交易結束前
-必須被重新共享或刪除。但與熱土豆不同的是，這項義務並不會反映在型別的能力上，因此驗證機制必須假設最壞的情況。
+原因是以值接受的共用物件，能像燙手山芋一樣強制交易其餘部分執行某種行為：它無法被包裝或轉移，因此必須在交易結束前重新設為共用或刪除。但不同於燙手山芋，這項義務無法從型別的能力中看出，因此驗證必須採取最保守的假設。
 
-以傳值方式取得的 [Party 物件](./../appendix/transfer-functions) 也受到相同的限制，
-不過適用範圍比共享物件更窄。
+以值接受的 [Party 物件](./../appendix/transfer-functions)也受相同限制，但適用情況比共用物件更窄。
 
-> 由於這些規則是在執行前以靜態方式套用的，因此它們刻意採取悲觀態度：動態檢查可以更精確，
-> 但靜態檢查更容易描述，也更容易依賴。
+> 由於規則在執行前靜態套用，因此刻意採取保守判斷：動態檢查可以更精確，但靜態檢查更容易描述且可據以依賴。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 基礎篇中的 [可見性修飾詞 (Visibility Modifiers)](./../move-basics/visibility)，介紹 `entry` 的基本概念。
-- Move 參考手冊中的 [可見性 (Visibility)](./../../reference/functions#visibility)。
+- Move 基礎中的 [可見性修飾詞](./../move-basics/visibility)，了解 `entry` 的基礎。
+- Move 參考文件中的 [可見性](./../../reference/functions#visibility)。

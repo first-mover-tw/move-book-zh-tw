@@ -10,6 +10,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import anchors
+from .pipeline_patterns import link_dest_spans
 
 _DEFAULT = Path(__file__).parent / "glossary.json"
 # 標記但不替換的詞表。格式與 glossary.json 相同（違禁詞 -> 正確用法），
@@ -73,6 +74,13 @@ def protected_mask(body: str) -> list[bool]:
       真相來源在 anchors.py，這裡不重刻）。
     - inline code span（_CODE_SPAN，字元級，允許跨行）。
 
+    **這份遮罩的語意是「哪裡是程式碼」，不是「哪裡不可以動」。** validate 的
+    連結檢查、pipeline._repair_inpage_links、FakeBackend 都拿它當前者用；會
+    改寫文字的消費端（enforce/scan/_repair_cjk_emphasis）要的是後者，用
+    substitution_mask() / emphasis_mask()。2026-09-04 曾把 URLISH 直接併進
+    這裡，結果連結檢查看不見連結、4 個測試轉紅 —— 擴張一個共用述詞的涵蓋
+    範圍，等於偷改了所有消費端的語意（lessons L2）。
+
     inline code span 是「區塊內部」的構造，不可能跨越區塊邊界——一個
     fenced code block 的內容裡不會有 CommonMark 意義上的 inline code
     span，反之亦然。之前的作法是讓 _CODE_SPAN 掃過整份 body，只檢查
@@ -117,6 +125,75 @@ def protected_mask(body: str) -> list[bool]:
     return protected
 
 
+def _urlish_mask(body: str, *, protect_fragments: bool) -> list[bool]:
+    """protected_mask() ∪ URLISH，可選擇是否連純頁內 fragment 一起保護。
+
+    `protect_fragments` 是兩類消費端的分水嶺，兩邊需求**相反**：
+
+    - **文字替換**（enforce/scan）要 False。`](#建立新套件)` 這種頁內錨點是從
+      標題文字推導出來的 slug，標題被 enforce 改寫時錨點必須跟著改，否則就
+      指不到任何東西。今天語料裡 6 處中文錨點之所以一致（hello-world 的
+      `#建立新套件`、functions 的 `#回傳數值`、packages 的
+      `#編譯期間的具名地址…`），正是因為同一個 `str.replace` 把標題與錨點
+      一起改了。把 fragment 收進保護區＝凍結錨點卻放行標題，下一次 enforce
+      就產出死連結。
+    - **強調修復**（_repair_cjk_emphasis）要 True。它把 `_x_` 改成 `*x*`，
+      對 slug 而言那是把字元換掉、錨點直接失效；而它又沒有「同步改標題」
+      這回事，所以 fragment 必須凍結。
+
+    外部 URL（`https://…`、autolink、相對路徑檔名）兩邊都要保護：它們不是從
+    本文推導出來的，改了就是 404 與圖裂。
+    """
+    mask = protected_mask(body)
+    # 判定權在 pipeline_patterns.link_dest_spans 一處（與 _repair_cjk_emphasis
+    # 共用），這裡只做聯集。原本在這裡用 `startswith("](#")` 自己判「純頁內
+    # fragment」，那是形態代理：跨檔 fragment 與角括號目的地都會誤判（外部
+    # review 2026-09-04，lessons L2/L15）。
+    for start, end in link_dest_spans(body, protect_fragments=protect_fragments):
+        for k in range(start, end):
+            mask[k] = True
+    return mask
+
+
+def substitution_mask(body: str) -> list[bool]:
+    """逐字元遮罩：True 代表這個字元**不可被術語替換碰到**。
+
+    = protected_mask()（程式碼）∪ 外部 URL／連結目的地／autolink，**但不含**
+    純頁內 fragment（`](#中文標題)`，它必須跟著標題一起改，見 _urlish_mask）。
+    給 glossary.enforce 與 glossary.scan 共用。
+
+    為什麼 URL 要進來：含中文的 URL 在中文譯文裡完全可能出現，`位址`→`地址`、
+    `字符串`→`字串` 這種機械替換會直接產出 404 與圖裂，而且**沒有任何 gate
+    看得見** —— gate 10 只看 <em> 有沒有變少、prettier 不管語意、check_repo
+    的連結檢查只驗 repo 內相對路徑，外部 URL 不在視野內。
+
+    為什麼 scan() 也要一起豁免：否則含這些字的合法外部 URL 會讓 check_repo
+    永久紅，而 enforce 又（正確地）不去修它 —— 有守衛卻沒有修復路徑的死鎖
+    （lessons L16）。
+
+    保護範圍到 destination 為止：連結**文字**與前後散文照樣替換，否則這道
+    保護會從「別改 URL」擴張成「別改任何帶連結的句子」。
+
+    `](dest "title")` 的 title 一併落在保護區內。title 是人可讀的提示文字、
+    理論上該被替換，但為了讓 URLISH 維持**單一份**定義（與 _repair_cjk_emphasis
+    共用同一個 pattern），這裡接受這個保守的過度保護。
+
+    2026-09-04 之前這層保護只存在於 pipeline._repair_cjk_emphasis，它在
+    protected_mask() 的結果上自己外掛一份；glossary 這一側沒有 —— 同一個
+    不變式兩份實作、涵蓋範圍還不同（lessons L15）。
+    """
+    return _urlish_mask(body, protect_fragments=False)
+
+
+def emphasis_mask(body: str) -> list[bool]:
+    """逐字元遮罩：True 代表這個字元**不可被強調修復碰到**。
+
+    = substitution_mask() 再加上純頁內 fragment。給
+    pipeline._repair_cjk_emphasis 用，理由見 _urlish_mask 的 docstring。
+    """
+    return _urlish_mask(body, protect_fragments=True)
+
+
 def _segments(body: str, mask: list[bool]):
     """回傳 (is_protected, segment) 序列，segment 依遮罩值切成連續區段。"""
     n = len(body)
@@ -132,7 +209,7 @@ def _segments(body: str, mask: list[bool]):
 
 def enforce(body: str, table: dict[str, str] | None = None) -> str:
     table = table or load()
-    mask = protected_mask(body)
+    mask = substitution_mask(body)
     out = []
     for protected, seg in _segments(body, mask):
         if not protected:
@@ -153,7 +230,7 @@ def scan(body: str, table: dict[str, str] | None = None) -> dict[str, int]:
     由 check_repo 以 warning 呈現、不影響 exit code。
     """
     table = table if table is not None else load()
-    mask = protected_mask(body)
+    mask = substitution_mask(body)
     counts: Counter[str] = Counter()
     for protected, seg in _segments(body, mask):
         if protected:
