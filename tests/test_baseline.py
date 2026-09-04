@@ -40,14 +40,15 @@ def _show(ref: str, path: str) -> str | None:
 #   book/move-basics/generics.md             4 → 0
 #   book/move-basics/references.md           1 → 0
 #   book/move-basics/struct-methods.md       3 → 0
+# 第三批再清掉兩檔：
+#   book/object/digital-assets.md            1 → 0
+#   book/object/index.md                     1 → 0
 # 是 test_known_emphasis_gaps_table_has_no_stale_entries 逼出來的。
 _KNOWN_EMPHASIS_GAPS = {
     "book/guides/2024-migration-guide.md": 2,
     "book/move-basics/vector.md": 5,
     "book/move-basics/visibility.md": 7,
-    "book/object/digital-assets.md": 1,
     "book/object/fast-path-and-consensus.md": 6,
-    "book/object/index.md": 1,
     "book/object/ownership.md": 1,
     "book/programmability/balance-and-coin.md": 2,
     "book/programmability/bcs.md": 1,
