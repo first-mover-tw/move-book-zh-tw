@@ -510,6 +510,10 @@ def test_scan_only_warnings_have_a_known_baseline():
 
     釘住預期筆數 —— 數字一變就得有人看一眼是新誤用還是清掉了舊的。
     目前的 5 處全部是**正確**的「終止」（英文原文就是 terminate）。
+
+    範圍限 .md —— check_repo.collect() 也只收 .md。`reference/sidebar.yml`
+    的側邊欄標籤不在任何 gate 的視野內，改術語時要人工同步（2026-09-04
+    第三輪外部 review 就是在那裡抓到一處漏改的「終止與斷言」）。
     """
     files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
     hits: Counter[str] = Counter()

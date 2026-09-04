@@ -380,9 +380,23 @@ _OL_CAND = re.compile(
 )
 
 
-def _ol_shape(zh_body: str) -> list[int]:
-    """有序列表的結構指紋：每個項目的序號，依渲染順序。"""
-    return [n for n, _ in validate._ol_items(commonmark.commonmark(zh_body))]
+_TAG = re.compile(r"</?\w+")
+
+
+def _ol_shape(zh_body: str) -> list[str]:
+    """渲染後的標籤骨架：所有 HTML 標籤，依出現順序。
+
+    第一版只取「每個有序列表項的序號」。那個指紋太弱，兩類破壞從它底下
+    整批走過去（2026-09-04 第三輪外部 review 實測）：
+    - `1. **1.** 甲` → 刪掉 `1.` 後前後兩個 `**` 黏成 `****`，強調整個消失、
+      讀者看到字面的星號。序號序列不變。
+    - `1. 1、# 大標題` → 刪掉前綴後 `#` 升格成區塊構造 `<h1>`（`>` 變
+      blockquote、`-` 變 `<ul>`、``` 變 `<pre>` 同理）。序號序列也不變。
+    標籤骨架對這兩類都會變（`<strong>` 消失、`<h1>` 出現），因為它們本來
+    就**是**結構改變——只是不是「序號」那個維度的結構。指紋要涵蓋它宣稱
+    保護的性質（lessons L2）。
+    """
+    return _TAG.findall(commonmark.commonmark(zh_body))
 
 
 def _repair_ol_numbering(zh_body: str) -> str:
@@ -440,9 +454,10 @@ def _repair_ol_numbering(zh_body: str) -> str:
         cand = lines[:]
         cand[i] = m.group("head") + line[m.end() :]
         body = "".join(cand)
-        if errs(body) < baseline_errs and _ol_shape(body) == baseline_shape:
+        n = errs(body)
+        if n < baseline_errs and _ol_shape(body) == baseline_shape:
             lines = cand
-            baseline_errs = errs(body)
+            baseline_errs = n
 
     return "".join(lines)
 

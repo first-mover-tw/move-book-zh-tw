@@ -1167,21 +1167,52 @@ def test_repair_ol_numbering_leaves_raw_html_lists_to_the_gate():
 
 
 def test_repair_ol_numbering_preserves_shape_for_arbitrary_input():
-    """性質測試：修復**永遠**不准改變有序列表的結構指紋。
+    """性質測試：修復**永遠**不准改變渲染後的標籤骨架。
 
-    這是外部 review 抓到的那個 blocker 的不變式本身（第一版把 `1. 1. 甲`
-    這種巢狀列表壓平了一層）。用隨機輸入守它，而不是靠幾個手挑的例子——
-    候選規則之後一放寬，這條會先紅。
+    atom 表要拼得出會出事的組合，否則這條就是會執行的註解（lessons L4）。
+    第一版的 atom 全是單一 token，永遠拼不出「全形分隔符 + 不同數字的
+    半形列表標記」（`1、2.`）這種複合形態，於是把 `_ol_shape` 驗收整條
+    拿掉，這個測試仍然全綠——外部 review 用 20000 例差分 fuzz 才找到分歧。
+    現在複合 atom 與會升格成 block 構造的字元都在表裡。
     """
     import random
 
     atoms = ["1.", "2.", "3.", "-", "**", "*", "_", "`", "甲", "\n", "\n\n", "   ",
-             "1、", "1）", "0.", "5.", "1.0", "```", "> ", "１.", " ", "文字"]
+             "1、", "1）", "0.", "5.", "1.0", "```", "> ", "１.", " ", "文字",
+             # 複合：刪掉前綴後會露出另一個列表標記／區塊標記
+             "1、2.", "1、3.", "1）2.", "1、# ", "1、> ", "1、- ", "1、```",
+             # 數字被 inline 構造包住
+             "**1.**", "*1.*", "_1._", "**1、**", "[1.](x)", "**1**."]
     random.seed(11)
-    for _ in range(2000):
+    for _ in range(4000):
         body = "".join(random.choice(atoms) for _ in range(random.randint(1, 18)))
         out = pipeline._repair_ol_numbering(body)
         assert pipeline._ol_shape(out) == pipeline._ol_shape(body), (body, out)
+
+
+def test_repair_ol_numbering_never_writes_literal_emphasis_markers():
+    """`1. **1.** 甲` 刪掉 `1.` 之後，前後兩個 `**` 會黏成 `****`：強調整個
+    消失、讀者看到字面的星號，而 gate 11 反而變安靜（錯誤數 1→0）、
+    gate 10 也沒接住。這是靜默寫進語料，比原本的缺陷更難發現
+    （2026-09-04 第三輪外部 review 實測）。
+
+    現在標籤骨架驗收會擋下來：<strong>/<em> 消失就是結構改變。修不掉就
+    保持原樣，交給 gate fail-closed。
+    """
+    for body in ["1. **1.** 預設安全性\n", "1. *1.* 甲\n", "1. _1._ 甲\n", "1. **1、** 甲\n"]:
+        out = pipeline._repair_ol_numbering(body)
+        assert out == body, (body, out)
+        assert "****" not in out and "__" not in out
+
+
+def test_repair_ol_numbering_never_promotes_text_to_a_block_construct():
+    """刪掉的前綴原本在遮蔽後面的 block 標記，刪完那個字元就升格：
+    `1. 1、# 大標題` → `1. # 大標題` 會在 li 裡長出 <h1>（`>` → blockquote、
+    `-` → <ul>、``` → <pre> 同理）。序號序列指紋對這些零反應。
+    """
+    for body in ["1. 1、# 大標題\n", "1. 1、> 引言\n", "1. 1、- 項目\n"]:
+        out = pipeline._repair_ol_numbering(body)
+        assert out == body, (body, out)
 
 
 def test_repair_ol_numbering_never_increases_gate_errors():
@@ -1191,8 +1222,24 @@ def test_repair_ol_numbering_never_increases_gate_errors():
     def errs(b):
         return len(validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + b))
 
-    atoms = ["1.", "2.", "**", "甲", "\n", "\n\n", "   ", "1、", "1.0", "```", "1）"]
+    atoms = ["1.", "2.", "**", "甲", "\n", "\n\n", "   ", "1、", "1.0", "```", "1）",
+             "1、2.", "**1.**", "[1.](x)"]
     random.seed(12)
-    for _ in range(2000):
+    for _ in range(4000):
         body = "".join(random.choice(atoms) for _ in range(random.randint(1, 15)))
         assert errs(pipeline._repair_ol_numbering(body)) <= errs(body), body
+
+
+def test_repair_ol_numbering_known_deadlocks_are_pinned():
+    """gate 判紅、候選認不得 → 該檔永久寫不出來。這些形態目前修不掉，
+    fail-closed 是刻意的（不為了消滅殘餘去弱化守衛，lessons L5），但要有
+    測試釘住清單，別讓它悄悄變長。
+    """
+    for body in [
+        "<ol><li>1. 重複</li></ol>\n",  # 裸 HTML 列表
+        "1. **1**. 甲\n",  # 分隔符在強調外
+        "1. [1.](x) 甲\n",  # 序號被連結包住
+        "1. **1.** 甲\n",  # 刪掉會黏成 ****
+    ]:
+        assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body), body
+        assert pipeline._repair_ol_numbering(body) == body, body
