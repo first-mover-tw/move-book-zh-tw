@@ -1,38 +1,72 @@
 ---
-description: 在 Sui 上建立你的第一個 Move 套件 (package)：學習專案結構、撰寫模組 (module)、編譯程式碼，並使用 Move CLI 執行測試。
+description: 在 Sui 上建立你的第一個 Move 套件：了解專案結構、撰寫模組、編譯程式碼，並使用 Move CLI 執行測試。
+title: 你好，世界！
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - hello
+  - world
+questions:
+  - How do I create my first Move project?
+  - How do I write Hello World in Move?
+  - How do I compile and test Move code?
+answer: Create a Move package with sui move new, write a module with a public function, compile with sui move build, and test with sui move test.
+goal:
+  description: Reader can create a Move package, write a module, compile it, and run tests
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 哈囉，世界！
+# 哈囉，世界！ (Hello, World!) {#hello-world}
 
-在本章中，你將學習如何建立一個新的 Move 套件、編寫一個簡單的模組、編譯它，並使用 Move CLI 執行測試。請確保你已[安裝 Sui](./../before-we-begin/install-sui.md) 並設定好你的 [IDE 環境](./../before-we-begin/ide-support.md)。執行以下指令來測試 Sui 是否已正確安裝。
+在本章中，你將學習如何建立新的套件、撰寫簡單的模組、編譯它，並使用 Move CLI
+執行測試。請確認你已[安裝 Sui](./../before-we-begin/install-sui.md)，並設定好你的
+[IDE 環境](./../before-we-begin/ide-support.md)。執行以下命令以測試 Sui 是否已正確安裝。
 
 ```bash
-# 它應該會印出客戶端版本。例如：sui-client 1.22.0-036299745。
+# 應會印出用戶端版本。例如：sui-client 1.22.0-036299745。
 sui client --version
 ```
 
-> Move CLI 是 Move 語言的命令列介面；它內建於 Sui 二進位檔中，並提供一組指令來管理套件、編譯和測試程式碼。
+> Move CLI 是 Move 語言的命令列介面；它內建於 Sui 二進位檔中，
+> 提供一組用於管理套件、編譯及測試程式碼的命令。
 
-本章的結構如下：
+本章結構如下：
 
-- [建立新套件](#建立新套件)
-- [目錄結構](#目錄結構)
-- [編譯套件](#編譯套件)
-- [執行測試](#執行測試)
+- [建立新套件](#create-a-new-package)
+- [目錄結構](#directory-structure)
+- [編譯套件](#compiling-the-package)
+- [執行測試](#running-tests)
 
-## 建立新套件
+## 建立新套件 (Create a New Package) {#create-a-new-package}
 
-為了建立一個新程式，我們將使用 `sui move new` 指令，後面接著應用程式的名稱。我們的第一個程式將命名為 `hello_world`。
+若要建立新程式，我們會使用 `sui move new` 命令，後面接上應用程式名稱。
+我們的第一個程式將命名為 `hello_world`。
 
-> 注意：在本章及其他章節中，如果你看到程式碼區塊中的行以 `$` (錢字號) 開頭，表示後續的指令應在終端機中執行。錢字號不應被包含在內。這是終端機環境中顯示指令的常見方式。
+> 注意：在本章及其他章節中，如果你看到程式碼區塊中的行以 `$`（錢號）
+> 開頭，表示應在終端機中執行其後的命令。不應包含該符號。這是在終端機環境中
+> 顯示命令的常見方式。
 
 ```bash
 $ sui move new hello_world
 ```
 
-`sui move` 指令提供 Move CLI 的存取權限——這是一個內建的編譯器、測試執行器和 Move 相關的實用工具。 `new` 指令後面接著套件名稱，將在一個新資料夾中建立一個新套件。在我們的例子中，資料夾名稱是 "hello_world"。
+`sui move` 命令可存取 Move CLI——一個內建的編譯器、測試執行器及處理所有 Move
+相關事務的工具。`new` 命令後接套件名稱，會在新的資料夾中建立新套件。
+在此例中，資料夾名稱為「hello_world」。
 
-我們可以查看該資料夾的內容，以確認套件已成功建立。
+我們可以檢視資料夾內容，確認套件已成功建立。
 
 ```bash
 $ ls -l hello_world
@@ -41,9 +75,9 @@ sources
 tests
 ```
 
-## 目錄結構
+## 目錄結構 (Directory Structure) {#directory-structure}
 
-Move CLI 將建立應用程式的鷹架，並預先建立目錄結構和所有必要檔案。讓我們看看裡面有什麼。
+Move CLI 會建立應用程式骨架，並預先建立目錄結構及所有必要文件。讓我們看看裡面有什麼。
 
 ```plaintext
 hello_world
@@ -54,20 +88,24 @@ hello_world
     └── hello_world_tests.move
 ```
 
-### 清單文件 (Manifest)
+### 套件清單 (Manifest) {#manifest}
 
-`Move.toml` 檔案，又稱為[套件清單文件](./../concepts/manifest.md)，包含套件的定義和配置設定。Move 編譯器使用它來管理套件中繼資料、獲取依賴項並註冊具名地址。我們將在[概念](./../concepts/index.md)章節中詳細解釋它。
+稱為[套件清單](./../concepts/manifest.md)的 `Move.toml` 文件，包含套件的定義與
+設定。Move Compiler 使用它來管理套件中繼資料、取得依賴項，以及註冊具名地址。
+我們會在[概念](./../concepts/index.md)章節中詳細說明。
 
-> 預設情況下，該套件有一個具名地址——套件的名稱。
+> 預設情況下，套件具有一個具名地址——即套件名稱。
 
 ```toml
 [addresses]
 hello_world = "0x0"
 ```
 
-### 原始碼
+### 原始碼 (Sources) {#sources}
 
-`sources/` 目錄包含原始碼檔案。Move 原始碼檔案具有 _.move_ 副檔名，通常以檔案中定義的模組命名。例如，在我們的案例中，檔案名稱是 _hello_world.move_，並且 Move CLI 已經在裡面放置了註解掉的程式碼：
+`sources/` 目錄包含原始碼文件。Move 原始碼文件使用 _.move_ 副檔名，
+通常會以文件中定義的模組命名。例如，在此例中，文件名稱為
+_hello_world.move_，且 Move CLI 已在其中放入已註解的程式碼：
 
 ```move
 /*
@@ -76,19 +114,27 @@ module hello_world::hello_world;
 */
 ```
 
-> `/*` 和 `*/` 是 Move 中的註解分隔符號。它們之間的所有內容都會被編譯器忽略，可用於文件或備註。我們在[基本語法](./../move-basics/comments.md)中解釋了所有註解程式碼的方法。
+> `/*` 和 `*/` 是 Move 中的註解分隔符號。兩者之間的所有內容都會被編譯器忽略，
+> 可用於文件或附註。我們會在[基本語法](./../move-basics/comments.md)中說明
+> 為程式碼加上註解的所有方式。
 
-註解掉的程式碼是一個模組定義，它以關鍵字 `module` 開頭，後面跟著一個具名地址（或地址文字），以及模組名稱。模組名稱是模組的唯一識別符號，並且在套件內必須是唯一的。模組名稱用於從其他模組或交易中參考該模組。
+已註解的程式碼是模組定義；它以關鍵字 `module` 開頭，後接具名地址（或地址字面值）
+及模組名稱。模組名稱是模組的唯一識別字，且必須在套件內保持唯一。模組名稱用於從
+其他模組或交易參考該模組。
 
-<!-- And the module name has to be a valid Move identifier: alphanumeric with underscores to separate words. A common convention is to call modules (and functions) in snake_case - all lowercase, with underscores. Coding conventions are important for readability and maintainability of the code, we summarize them in the Coding Conventions section. -->
+<!-- 模組名稱也必須是有效的 Move 識別字：可使用英數字元，並以底線分隔字詞。一種常見慣例是以 snake_case 命名模組（及函式）——全部使用小寫字母，並以底線分隔。程式碼慣例對程式碼的可讀性與可維護性很重要，我們會在程式碼撰寫慣例章節中加以總結。 -->
 
-### 測試
+### 測試 (Tests) {#tests}
 
-`tests/` 目錄包含套件測試。編譯器在常規建置過程中會排除這些檔案，但在 _test_ 和 _dev_ 模式下會使用它們。測試是用 Move 編寫的，並標記有 `#[test]` 屬性。測試可以分組在單獨的模組中（通常稱為 _module_name_tests.move_），或在它們所測試的模組內部。
+`tests/` 目錄包含套件測試。編譯器會在一般建置流程中排除這些文件，但會在 _test_
+及 _dev_ 模式中使用它們。測試以 Move 撰寫，並以 `#[test]` 屬性標示。測試可以
+集中於獨立模組中（通常命名為 _module_name_tests.move_），或放在其所測試的模組內。
 
-模組、匯入、常數和函式可以用 `#[test_only]` 進行註解。此屬性用於將模組、函式或匯入從建置過程中排除。當你想為測試加入輔助工具而不將它們包含在將發佈到鏈上的程式碼中時，這會很有用。
+模組、匯入、常數及函式都可以標註 `#[test_only]`。此屬性可用於將模組、函式或匯入
+排除在建置流程之外。當你想為測試加入輔助工具，卻不想將它們納入會發布至鏈上的程式碼時，
+這會很有用。
 
-_hello_world_tests.move_ 檔案包含一個註解掉的測試模組模板：
+_hello_world_tests.move_ 文件包含已註解的測試模組範本：
 
 ```move
 /*
@@ -101,7 +147,7 @@ const ENotImplemented: u64 = 0;
 
 #[test]
 fun test_hello_world() {
-    // 成功
+    // 通過
 }
 
 #[test, expected_failure(abort_code = hello_world::hello_world_tests::ENotImplemented)]
@@ -111,21 +157,26 @@ fun test_hello_world_fail() {
 */
 ```
 
-### 其他資料夾
+### 其他資料夾 (Other Folders) {#other-folders}
 
-此外，Move CLI 支援 `examples/` 資料夾。其中的檔案處理方式與放在 `tests/` 資料夾下的檔案類似——它們只在 _test_ 和 _dev_ 模式下建置。它們是用來展示如何使用套件或如何將其與其他套件整合的範例。最常見的用途是出於文件目的和函式庫套件。
+此外，Move CLI 支援 `examples/` 資料夾。該處的文件會以與置於 `tests/` 資料夾下
+的文件類似方式處理——只會在 _test_ 及 _dev_ 模式中建置。它們用於展示如何使用套件，
+或如何將其與其他套件整合。最常見的使用情境是文件用途及函式庫套件。
 
-## 編譯套件
+## 編譯套件 (Compiling the Package) {#compiling-the-package}
 
-Move 是一種編譯型語言，因此它需要將原始碼檔案編譯成 Move 位元組碼。它僅包含有關模組、其成員和型別所需的資訊，並排除註解和一些識別符（例如，常數的識別符）。
+Move 是編譯式語言，因此需要將原始碼文件編譯為 Move 位元碼。它只包含模組、其成員
+與型別的必要資訊，並排除註解及部分識別字（例如常數的識別字）。
 
-為了展示這些功能，讓我們將 _sources/hello_world.move_ 檔案的內容替換為以下內容：
+為了展示這些功能，請將 _sources/hello_world.move_ 文件內容替換為以下內容：
 
 ```move file=packages/hello_world/sources/hello_world.move anchor=source
 
 ```
 
-在編譯期間，程式碼被建置，但不會執行。編譯後的套件只包含可以由其他模組或在交易中呼叫的函式。我們將在[概念](./../concepts/index.md)章節中解釋這些概念。但現在，讓我們看看當我們執行 _sui move build_ 時會發生什麼。
+在編譯期間，程式碼會被建置，但不會執行。已編譯的套件只包含可由其他模組或交易中
+呼叫的函式。我們會在[概念](./../concepts/index.md)章節中說明這些概念。
+現在，讓我們看看執行 _sui move build_ 時會發生什麼事。
 
 ```bash
 # 從 `hello_world` 資料夾執行
@@ -135,7 +186,7 @@ $ sui move build
 $ sui move build --path hello_world
 ```
 
-它應該在你的控制台輸出以下訊息。
+你的主控台應會輸出以下訊息。
 
 ```plaintext
 UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui.git
@@ -147,27 +198,34 @@ INCLUDING DEPENDENCY MoveStdlib
 BUILDING hello_world
 ```
 
-在編譯期間，Move 編譯器會自動建立一個建置資料夾，其中放置所有已獲取和編譯的依賴項，以及當前套件模組的位元組碼。
+在編譯期間，Move Compiler 會自動建立建置資料夾，並在其中放置所有取得及編譯的
+依賴項，以及目前套件模組的位元碼。
 
-> 如果你使用版本控制系統（例如 Git），則應忽略建置資料夾。例如，你應該使用 `.gitignore` 檔案並將 `build` 加入其中。
+> 如果你使用 Git 等版本控制系統，應忽略建置資料夾。例如，你應使用 `.gitignore`
+> 文件並將 `build` 加入其中。
 
-## 執行測試
+## 執行測試 (Running Tests) {#running-tests}
 
-在我們進行測試之前，我們應該新增一個測試。Move 編譯器支援用 Move 編寫的測試並提供執行環境。測試可以放在原始碼檔案和 `tests/` 資料夾中。測試標記有 `#[test]` 屬性，並會被編譯器自動發現。我們在[測試](./../move-basics/testing.md)部分深入解釋測試。
+在開始測試前，我們應該新增一項測試。Move Compiler 支援以 Move 撰寫的測試，
+並提供執行環境。測試可放在原始碼文件及 `tests/` 資料夾中。測試以 `#[test]`
+屬性標示，且編譯器會自動探索它們。我們會在[測試](./../move-basics/testing.md)
+章節中深入說明測試。
 
-將 `tests/hello_world_tests.move` 的內容替換為以下內容：
+請將 `tests/hello_world_tests.move` 的內容替換為以下內容：
 
 ```move file=packages/hello_world/tests/hello_world_tests.move anchor=test
 
 ```
 
-這裡我們匯入了 `hello_world` 模組，並呼叫其 `hello_world` 函式來測試輸出確實是字串 "Hello, World!"。現在，既然我們已經準備好測試，就讓我們以測試模式編譯套件並執行測試。Move CLI 為此提供了 `test` 指令：
+此處我們匯入 `hello_world` 模組，並呼叫其 `hello_world` 函式，以測試輸出確實是
+字串「Hello, World!」。現在測試已就緒，讓我們以測試模式編譯套件並執行測試。
+Move CLI 為此提供了 `test` 命令：
 
 ```bash
 $ sui move test
 ```
 
-輸出應該與以下內容相似：
+輸出應類似以下內容：
 
 ```plaintext
 INCLUDING DEPENDENCY Bridge
@@ -181,23 +239,24 @@ Running Move unit tests
 Test result: OK. Total tests: 1; passed: 1; failed: 0
 ```
 
-如果你在套件資料夾外執行測試，你可以指定套件的路徑：
+如果你在套件資料夾外執行測試，可以指定套件路徑：
 
 ```bash
 $ sui move test --path hello_world
 ```
 
-你也可以透過指定字串來一次執行一個或多個測試。所有包含該字串的測試名稱都將被執行：
+你也可以藉由指定字串，一次執行單一或多個測試。所有名稱包含該字串的測試都會執行：
 
 ```bash
 $ sui move test test_hello
 ```
 
-## 後續步驟
+## 下一步 (Next Steps) {#next-steps}
 
-在本節中，我們解釋了 Move 套件的基礎知識：其結構、清單文件、建置和測試流程。[在下一頁](./hello-sui)，我們將編寫一個應用程式，並了解程式碼的結構以及該語言能做什麼。
+在本節中，我們說明了 Move 套件的基本概念：其結構、套件清單、建置及測試流程。
+[下一頁](./hello-sui)中，我們將撰寫一個應用程式，看看程式碼的結構以及此語言能做到什麼。
 
-## 延伸閱讀
+## 延伸閱讀 (Further Reading) {#further-reading}
 
-- [套件清單文件](./../concepts/manifest.md)部分
-- [Move 參考文件](./../../reference/packages)中的套件
+- [套件清單](./../concepts/manifest.md)章節
+- [The Move Reference](./../../reference/packages) 中的套件
