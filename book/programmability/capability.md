@@ -41,7 +41,7 @@ capability 模式不只是一種慣例——[Sui Framework](./sui-framework)本�
 
 ## 地址檢查 vs Capability (Address Check vs Capability) {#address-check-vs-capability}
 
-將 object 用作 capability，在區塊鏈程式設計中是相對較新的概念。在其他智能合約語言中，授權通常是透過檢查發送者的地址來完成。這種模式在 Sui 上依然可行，然而，整體建議是使用 capability，以獲得更好的安全性、可發現性與程式碼組織方式。
+將 object 用作 capability，在區塊鏈程式設計中是相對較新的概念。在其他智慧合約語言中，授權通常是透過檢查發送者的地址來完成。這種模式在 Sui 上依然可行，然而，整體建議是使用 capability，以獲得更好的安全性、可發現性與程式碼組織方式。
 
 讓我們來看看，若建立使用者的 `new` 函式改用地址檢查，會是什麼樣子：
 

@@ -1,12 +1,12 @@
 ---
-title: 終止與斷言 (Abort and Assert) | 參考手冊
+title: 中止與斷言 (Abort and Assert) | 參考手冊
 description:
   'Move 中止與斷言參考手冊：以錯誤代碼中止執行、用 assert! 強制條件、處理交易失敗 (Move abort and assert
   reference: halt execution with error codes, enforce conditions with assert!, and
   handle transaction failures)'
 ---
 
-# 終止與斷言 (Abort and Assert)
+# 中止與斷言 (Abort and Assert)
 
 [`return`](./functions) 和 `abort` 是兩種結束執行的控制流結構，一個用於當前函式，一個用於整個交易。
 
@@ -14,7 +14,7 @@ description:
 
 ## `abort`
 
-`abort` 是一個運算式，它可以不帶參數，也可以只帶一個參數 —— 型別為 `u64` 的 **終止程式碼 (abort code)**。例如：
+`abort` 是一個運算式，它可以不帶參數，也可以只帶一個參數 —— 型別為 `u64` 的 **中止程式碼 (abort code)**。例如：
 
 ```move
 abort
@@ -25,11 +25,11 @@ abort 42
 
 幸運的是，Move 中的交易是「全有或全無 (all or nothing)」的，這意味著只有在交易成功時，才會一次性完成對儲存空間的所有更改。對於 Sui 來說，這意味著不會有物件被修改。
 
-由於這種變更的交易式提交機制，在終止之後無需擔心撤銷更改。雖然這種方法缺乏靈活性，但它非常簡單且可預測。
+由於這種變更的交易式提交機制，在中止之後無需擔心撤銷更改。雖然這種方法缺乏靈活性，但它非常簡單且可預測。
 
 與 [`return`](./functions) 類似，`abort` 在某些條件無法滿足時對於退出控制流非常有用。
 
-在這個範例中，函式將從向量中彈出兩個項目，但如果向量中沒有兩個項目，則會提前終止。
+在這個範例中，函式將從向量中彈出兩個項目，但如果向量中沒有兩個項目，則會提前中止。
 
 ```move
 fun pop_twice<T>(v: &mut vector<T>): (T, T) {
@@ -38,7 +38,7 @@ fun pop_twice<T>(v: &mut vector<T>): (T, T) {
 }
 ```
 
-這在控制流結構的深層處更為有用。例如，此函式檢查向量中的所有數字是否都小於指定的 `bound`。否則終止：
+這在控制流結構的深層處更為有用。例如，此函式檢查向量中的所有數字是否都小於指定的 `bound`。否則中止：
 
 ```move
 fun check_vec(v: &vector<u64>, bound: u64) {
@@ -119,7 +119,7 @@ if (true) () else abort (1 / 0)
 
 因此算術運算式永遠不會被評估！
 
-### Move VM 中的終止程式碼
+### Move VM 中的中止程式碼
 
 使用 `abort` 時，瞭解 VM 如何使用 `u64` 程式碼非常重要。
 
@@ -127,8 +127,8 @@ if (true) () else abort (1 / 0)
 
 如果觸發了 `abort`，VM 將轉而指示錯誤。該錯誤將包含兩部分資訊：
 
-- 產生終止的模組（套件/地址值和模組名稱）
-- 終止程式碼。
+- 產生中止的模組（套件/地址值和模組名稱）
+- 中止程式碼。
 
 例如：
 
@@ -148,7 +148,7 @@ module 0x3::invoker {
 
 如果一筆交易（例如上面的函式 `always_aborts`）呼叫了 `0x2::example::aborts`，VM 將產生一個錯誤，指出模組 `0x2::example` 和程式碼 `42`。
 
-這對於在一個模組中將多個相關的終止操作分組在一起非常有用。
+這對於在一個模組中將多個相關的中止操作分組在一起非常有用。
 
 在這個範例中，該模組在多個函式中使用了兩個不同的錯誤程式碼：
 

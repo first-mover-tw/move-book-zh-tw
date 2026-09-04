@@ -2,7 +2,11 @@ import subprocess
 
 import pytest
 
+from pathlib import Path
+
 from scripts.zh_tw import anchors, frontmatter, validate
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 EN = '---\ndescription: "Vectors in Move."\n---\n\n# Vector\n\n```move\nx\n```\n\n## Syntax\n\ntext\n'
 ZH = '---\ndescription: "Move 中的向量。"\n---\n\n# 向量 {#vector}\n\n```move\nx\n```\n\n## 語法 {#syntax}\n\n文字\n'
@@ -744,3 +748,104 @@ def test_simplified_chars_still_flags_bare_gan_zhun():
     """白名單外的 干/准 仍攔：這正是它們的簡體誤用形態。"""
     assert validate.simplified_chars("你在干什麼。\n")  # 干=幹 的簡體用法
     assert validate.simplified_chars("瞄准目標。\n")  # 准=準 的簡體用法
+
+
+# --- gate 11：有序列表序號被重複寫進內文 ---
+
+_FM = '---\ndescription: "x"\n---\n\n'
+
+
+def test_ordered_list_numbering_flags_duplicated_marker():
+    """2026-09-03 run 33730438417 / PR #24 的 foreword.md：機翻把 markdown 的
+    `1.` 又抄進粗體，讀者看到「1. 1. 預設安全性」。結構/術語/簡體/prettier
+    全部看不到。"""
+    bad = _FM + "1. **1. 預設安全性:** 內文\n\n2. **2. 表達力:** 內文\n"
+    errs = validate.check_ordered_list_numbering(bad)
+    assert len(errs) == 2, errs
+    assert all("序號重複" in e for e in errs)
+
+
+def test_ordered_list_numbering_silent_after_fix():
+    good = _FM + "1. **預設安全性:** 內文\n\n2. **表達力:** 內文\n"
+    assert validate.check_ordered_list_numbering(good) == []
+
+
+def test_ordered_list_numbering_matches_identity_not_shape():
+    """判準是身分（前導數字 == 這一項的序號），不是「開頭有數字」。
+
+    lessons L2：用「開頭有沒有數字」這個廉價代理量，會把合法內容
+    （`1. 2024 版本…`）判成缺陷。
+    """
+    assert validate.check_ordered_list_numbering(_FM + "1. 2024 版本引入了新語法\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 甲\n2. 2024 版本\n") == []
+
+
+def test_ordered_list_numbering_honours_start_and_nesting():
+    """序號取自渲染後的 <ol>（含 start= 與巢狀重新計數），不重刻列表編號規則。"""
+    assert validate.check_ordered_list_numbering(_FM + "5. **5. 壞的**\n")
+    assert validate.check_ordered_list_numbering(_FM + "5. **1. 好的**\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 外\n\n   1. **1. 內壞**\n")
+
+
+def test_ordered_list_numbering_ignores_unordered_and_code():
+    """無序列表沒有序號可重複；code fence 內是範例，不是散文。"""
+    assert validate.check_ordered_list_numbering(_FM + "- 1. 這不是有序列表\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "```\n1. 1. 假的\n```\n") == []
+
+
+def test_ordered_list_numbering_no_false_positive_on_corpus():
+    """全語料實測偽陽性 0 —— 這條守衛開下去不會擋到現有內容。
+
+    範圍必須等於 check_repo.collect() 的範圍（book + reference）：守衛只掃
+    book/ 的話，覆蓋面就不等於它宣稱保護的語料（外部 review 2026-09-04）。
+    """
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    assert len(files) > 100, files  # 路徑寫錯時不要靜默通過
+    hits = {
+        str(p): errs
+        for p in files
+        if (errs := validate.check_ordered_list_numbering(p.read_text(encoding="utf-8")))
+    }
+    assert hits == {}
+
+
+def test_ordered_list_numbering_needs_a_delimiter_then_whitespace():
+    """誤報在這道 gate 的代價特別高：pipeline 對 check_file 的任一錯誤直接
+    raise，該檔就永久寫不出來、每輪人工。所以前導數字後面必須是「分隔符 +
+    空白/行尾」，`1.0 版本` 的小數點不算（外部 review 2026-09-04 實測）。
+    """
+    assert validate.check_ordered_list_numbering(_FM + "1. 1.0 版本引入了新語法\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 甲\n2. 2.0 版本\n") == []
+    # 全形分隔符刻意不收：「1、2、3 三種模式都支援」「1）與 2）的差別」是
+    # 合法中文列舉，字面上與「重複的列表標記」無法區分。本 gate 沒有自動
+    # 修復路徑，誤報一次就是該檔永久寫不出來，所以寧可漏報。
+    assert validate.check_ordered_list_numbering(_FM + "1. 1、2、3 三種模式都支援\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 1）與 2）的差別\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. **1. 真缺陷**\n")  # 仍要紅
+
+
+def test_ordered_list_numbering_ignores_inline_code():
+    """`` 1. `1.` 是有序列表標記 `` 是在講標記本身，不是把序號抄進內文。"""
+    assert validate.check_ordered_list_numbering(_FM + "1. `1.` 是有序列表標記\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. <code>1.</code> x\n") == []
+
+
+def test_ordered_list_numbering_is_wired_into_check_file():
+    """gate 11 必須真的掛在寫檔守門員上。只測函式本身的話，把接線拆掉
+    （check_file 不再呼叫它）測試仍會全綠 —— 守衛等於沒開。"""
+    en = '---\ndescription: "x"\n---\n\n# T\n\n1. **Secure by default:** a\n'
+    zh = '---\ndescription: "x"\n---\n\n# T {#t}\n\n1. **1. 預設安全性:** 甲\n'
+    assert any("序號重複" in e for e in validate.check_file(zh, en))
+
+
+def test_ol_items_does_not_attribute_nested_text_to_outer_item():
+    """子列表有自己的序號序列。把它的文字併進外層，外層項目的「前導文字」
+    就會變成子項目的文字 —— 前導數字對到錯誤的序號（偽陽性或漏報）。"""
+    import commonmark
+
+    items = validate._ol_items(commonmark.commonmark("1. 外\n\n   1. **1. 內壞**\n"))
+    assert len(items) == 2
+    (outer_n, outer_text), (inner_n, inner_text) = items
+    assert (outer_n, inner_n) == (1, 1)
+    assert "內壞" not in outer_text, outer_text
+    assert inner_text.startswith("1. 內壞")

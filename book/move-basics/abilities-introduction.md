@@ -1,5 +1,5 @@
 ---
-description: Move 能力 (abilities) 簡介：copy、drop、key 與 store — 這套系統控制型別在智能合約中的行為方式。
+description: Move 能力 (abilities) 簡介：copy、drop、key 與 store — 這套系統控制型別在智慧合約中的行為方式。
 ---
 
 # 能力：簡介 (Abilities: Introduction) {#abilities-introduction}

@@ -1,5 +1,5 @@
 ---
-description: Move 語言中的錯誤處理（Error handling in Move）：使用 abort 以錯誤碼終止執行，並用 assert! 在智能合約中強制檢查條件。
+description: Move 語言中的錯誤處理（Error handling in Move）：使用 abort 以錯誤碼中止執行，並用 assert! 在智慧合約中強制檢查條件。
 ---
 
 # 中止執行 (Aborting Execution) {#aborting-execution}

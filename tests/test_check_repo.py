@@ -91,3 +91,18 @@ def test_main_red_on_any_glossary_violation(monkeypatch):
     }
     monkeypatch.setattr(check_repo, "collect", lambda: files)
     assert check_repo.main() == 1
+
+
+def test_main_reports_ordered_list_numbering(tmp_path, monkeypatch, capsys):
+    """gate 11 必須掛進 check_repo，而且要計入 exit code。
+
+    PR #24 的教訓正是「check_repo 0/0/0 卻有缺陷」：只掛 check_file 等於
+    只防未來重譯，不防已經落地的語料。拆掉計數（numbering_total 不累加）
+    這條就要紅。
+    """
+    bad = '---\ndescription: "d"\n---\n\n# T {#t}\n\n1. **1. 預設安全性:** 甲\n'
+    monkeypatch.setattr(check_repo, "collect", lambda: {"book/x.md": bad})
+    rc = check_repo.main()
+    err = capsys.readouterr().err
+    assert "序號重複" in err
+    assert rc == 1

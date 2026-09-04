@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 import commonmark
+from html.parser import HTMLParser
 from opencc import OpenCC
 
 from . import anchors, frontmatter, glossary
@@ -234,6 +235,9 @@ def check_file(
     # 10. 強調在翻譯中消失（見 check_cjk_emphasis）
     errs += check_cjk_emphasis(zh_text, en_text)
 
+    # 11. 有序列表序號被重複寫進內文（見 check_ordered_list_numbering）
+    errs += check_ordered_list_numbering(zh_text)
+
     return errs
 
 
@@ -281,6 +285,120 @@ def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
         f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`{hint}"
     ]
 
+
+def _ol_items(html: str) -> list[tuple[int, str]]:
+    """從渲染後的 HTML 取出每個有序列表項的 (序號, 項目自身的前導文字)。
+
+    自身：巢狀在項目裡的子列表不算——子列表有自己的序號序列，把它的文字
+    併進來會讓「前導數字」對到錯誤的序號。
+    """
+    class _P(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.stack: list[dict] = []  # 每層列表：{"ol": bool, "n": 下一個序號}
+            self.items: list[tuple[int, str]] = []
+            self.buf: list[str] = []
+            self.cur: int | None = None
+            self.code = 0  # <code>/<pre> 巢狀深度
+
+        def _flush(self):
+            if self.cur is not None:
+                self.items.append((self.cur, "".join(self.buf)))
+            self.cur, self.buf = None, []
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("ol", "ul"):
+                start = 1
+                for k, v in attrs:
+                    if k == "start" and v and v.isdigit():
+                        start = int(v)
+                self.stack.append({"ol": tag == "ol", "n": start})
+            elif tag in ("code", "pre"):
+                self.code += 1
+            elif tag == "li" and self.stack:
+                # 這個 flush 是巢狀正確性的支點：子列表的第一個 <li> 開啟時
+                # 結掉外層項目，外層的「前導文字」因此不含子列表內容。
+                self._flush()
+                top = self.stack[-1]
+                if top["ol"]:
+                    self.cur = top["n"]
+                top["n"] += 1
+
+        def handle_endtag(self, tag):
+            if tag in ("ol", "ul"):
+                self._flush()
+                if self.stack:
+                    self.stack.pop()
+            elif tag in ("code", "pre"):
+                self.code = max(0, self.code - 1)
+            elif tag == "li":
+                self._flush()
+
+        def handle_data(self, data):
+            # 只收「這一項自己」的文字：子列表一開始就 _flush()，cur 歸 None，
+            # 巢狀內容因此不會被算進外層項目。
+            #
+            # inline code 也不算：`1. `1.` 是有序列表標記` 是在講標記本身，
+            # 不是把序號重複寫進內文。
+            if self.cur is not None and not self.code:
+                self.buf.append(data)
+
+    p = _P()
+    p.feed(html)
+    p.close()
+    p._flush()
+    return p.items
+
+
+# 只認**半形列表標記形態**：`N.` 或 `N)` 後面接空白或行尾。這正是實測到的
+# 缺陷形態（機翻抄的是它看到的那個標記，`1.  **1. 前言**`）。
+#
+# 兩個刻意的收窄，都是為了不誤報：
+# 1. 分隔符後必須有空白 —— 否則 `1.0 版本` 的小數點會被當成列表分隔符。
+# 2. 不收全形 、．） —— 「1、2、3 三種模式都支援」「1）與 2）的差別」是
+#    合法的中文列舉，和「重複的列表標記」在字面上無法區分（2026-09-04
+#    第四輪外部 review 實測，兩者都會被判成缺陷）。
+#
+# 收窄的代價是漏掉「1. 1、預設安全性」這種形態。這是刻意的取捨：本 gate
+# 沒有自動修復路徑（見下），誤報一次就是該檔永久寫不出來、每輪重翻重擋；
+# 漏報則只是回到人工審 PR 抓的狀態。fail-closed 的守衛要對誤報格外保守。
+_LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.)](?=\s|$)")
+
+
+def check_ordered_list_numbering(zh_text: str) -> list[str]:
+    """gate 11：有序列表的序號被重複寫進項目文字裡。
+
+    機翻把 markdown 的 `1.` 標記又抄進內文，於是 `1. **Secure by default:**`
+    變成 `1.  **1. 預設安全性:**`，讀者看到的是「1. 1. 預設安全性」
+    （2026-09-03 run 33730438417 / PR #24，foreword.md 三項全中）。
+    結構檢查（標題層級、fence 數）、術語、簡體、prettier 全部看不到。
+
+    判準是**身分**不是「開頭有沒有數字」（lessons L2）：項目自身的前導數字
+    要等於這一項的序號才算重複。於是 `1. 2024 版本的…` 這種合法內容
+    （2024 ≠ 1）不會誤判；既有 108 檔語料實測偽陽性 0。
+
+    序號取自渲染後的 `<ol>`（含 `start=` 與巢狀重新計數），不重刻
+    markdown 的列表編號規則——同 gate 10 的作法，問 commonmark 本人。
+
+    **本 gate 沒有自動修復路徑，是刻意的。** 曾經有一個
+    `pipeline._repair_ol_numbering`，四輪外部 review 抓到七個缺陷後移除。
+    致命的兩個都不是實作瑕疵、而是這條路本身走不通：
+    - lazy 編號列表（每項都寫 `1.`，語料 `reference/packages.md:35-40`
+      真的這樣寫）裡，修好第一項就會讓 gate 轉綠，其餘各項的缺陷**靜默
+      出貨** —— 修復把 fail-closed 的守衛變成假的全綠，比沒有它更糟。
+    - 「刪掉的那段是重複的列表標記」與「那段是合法的中文列舉」在渲染
+      結果上無法區分（`1. 1、2、3 三種模式`），任何後置條件都證明不了
+      前者，因為資訊不在那裡。
+    所以這道 gate 擋下來就是擋下來，交給人處理。相對地，判定要對誤報
+    格外保守（見 _LEADING_NUM 的收窄）——誤報的代價是該檔永久寫不出來。
+    """
+    body = frontmatter.split(zh_text)[1]
+    errs = []
+    for n, text in _ol_items(commonmark.commonmark(body)):
+        m = _LEADING_NUM.match(text)
+        if m and int(m.group(1)) == n:
+            errs.append(f"有序列表序號重複寫進內文：第 {n} 項的文字以「{m.group(0).strip()}」開頭")
+    return errs
 
 def _anchor_ids(text: str) -> set[str]:
     """Docusaurus 只為每個標題產出一個 id：有 {#id} 就只用它，

@@ -70,17 +70,27 @@ def main() -> int:
         for bad, n in sorted(glossary.scan_only_hits(body).items()):
             print(f"{path}: ⚠️  待人工判讀 {bad} x{n}", file=sys.stderr)
 
+    # gate 11（有序列表序號重複寫進內文）掛在這裡：它只看中文側，不需要
+    # 中英配對，所以 gate 10 那個「需要英文原文」的排除理由不適用。
+    # PR #24 的教訓正是「check_repo 0/0/0 卻有缺陷」——只掛 check_file
+    # 等於只防未來重譯，不防已經落地的語料。
+    numbering_total = 0
+    for path, text in sorted(files.items()):
+        for e in validate.check_ordered_list_numbering(text):
+            print(f"{path}: {e}", file=sys.stderr)
+            numbering_total += 1
+
     # gate 10（強調在翻譯中消失）刻意不在這裡跑：判準是「跟英文原文比
     # 少了幾處」，需要中英配對，而 check_repo 只看 working tree 的中文側。
     # 它是 validate.check_file 的寫檔 gate —— 擋在產出那一刻，不是事後盤點。
 
     print(
         f"連結問題 {len(link_errs)} 個，違禁詞共 {glossary_total} 處，"
-        f"簡體殘留字共 {simplified_total} 個",
+        f"簡體殘留字共 {simplified_total} 個，列表序號重複 {numbering_total} 處",
         file=sys.stderr,
     )
 
-    return 1 if (link_errs or glossary_total or simplified_total) else 0
+    return 1 if (link_errs or glossary_total or simplified_total or numbering_total) else 0
 
 
 if __name__ == "__main__":

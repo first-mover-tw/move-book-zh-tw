@@ -1,6 +1,6 @@
 ---
 description: 設定 VSCode 或 IntelliJ IDEA，以便進行 Move 開發 (Move development)，並使用語法突顯 (syntax highlighting)、錯誤檢查 (error checking) 和程式碼格式化 (code formatting) 擴充功能 (extensions)。
-title: 設定您的 IDE
+title: 設定你的 IDE
 keywords:
   - Move
   - Sui
@@ -29,9 +29,9 @@ goal:
       label: Needs answer summary for AI citation
 ---
 
-# 設定您的 IDE (Set Up Your IDE) {#set-up-your-ide}
+# 設定你的 IDE (Set Up Your IDE) {#set-up-your-ide}
 
-Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供語法突顯和錯誤訊息等基本功能，儘管它們在額外功能上有所不同。無論您選擇哪種 IDE，您都需要使用終端機來執行 [Move CLI](./install-sui.md)。
+Move 開發有兩種最受歡迎的 IDE：VSCode 和 IntelliJ IDEA。兩者都提供語法突顯和錯誤訊息等基本功能，儘管它們在額外功能上有所不同。無論你選擇哪種 IDE，你都需要使用終端機來執行 [Move CLI](./install-sui.md)。
 
 > **IntelliJ 外掛程式不支援 Move 2024 版本，部分語法將不會被突顯。**
 

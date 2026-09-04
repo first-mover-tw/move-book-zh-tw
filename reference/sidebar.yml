@@ -38,7 +38,7 @@ referenceSidebar:
       - label: 4. 等式 (Equality)
         id: equality
       - type: category
-        label: 5. 終止與斷言 (Abort and Assert)
+        label: 5. 中止與斷言 (Abort and Assert)
         link:
           id: abort-and-assert
           type: doc

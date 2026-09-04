@@ -1,5 +1,5 @@
 ---
-description: Sui 儲存函式 (Sui storage functions)：在 Move 智能合約中使用 sui::transfer 模組來轉移 (transfer)、共享 (share)、凍結 (freeze) 與接收 (receive) 物件。
+description: Sui 儲存函式 (Sui storage functions)：在 Move 智慧合約中使用 sui::transfer 模組來轉移 (transfer)、共享 (share)、凍結 (freeze) 與接收 (receive) 物件。
 ---
 
 # 儲存函式 (Storage Functions) {#storage-functions}

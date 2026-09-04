@@ -1,27 +1,52 @@
 ---
-description: 安全預設 (security by default)、表達力 (expressiveness) 與直覺的資源管理 (intuitive resource management)，這是 Move 智慧合約背後的設計哲學。
+description: Move 的設計理念：預設安全性 (security by default)、表達能力 (expressiveness)，以及適用於智慧合約 (smart contracts) 的直覺式資源管理 (intuitive resource management)。
+title: 前言 (Foreword)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - foreword
+questions:
+  - What is the design philosophy of Move?
+  - Why was Move created?
+  - What makes Move different from other smart contract languages?
+answer: Move is a smart contract language designed around security by default, expressiveness for digital assets, and intuitive resource management, making it safe for programming with digital assets.
+goal:
+  description: 'Reader understands the design philosophy behind Move: security, expressiveness, and intuitive resource management'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 前言
+# 前言 (Foreword) {#foreword}
 
-本書旨在介紹 Move，這是一種智能合約語言，它擷取了數位資產安全程式設計的精髓。Move 的設計圍繞著以下核心價值：
+本書專為 Move 而作，這是一種智慧合約語言，旨在以數位資產的安全性程式設計為核心。Move 的設計圍繞以下價值觀：
 
-1.  **預設安全：** 不安全的語言嚴重阻礙了智能合約開發的易用性以及數位資產的主流採用。智能合約語言的首要職責是透過設計從根本上防止盡可能多的潛在安全問題（例如：重入攻擊、缺少存取控制檢查、算術溢位等）。Move 的任何變更都應保留或增強其現有的安全保證。
+1.  **預設安全性 (Secure by default)：** 不安全的語言嚴重阻礙了易於存取的智慧合約開發和數位資產的主流採用。智慧合約語言的首要職責是透過建構來預防盡可能多的潛在安全問題（例如重入、遺漏存取控制檢查、算術溢位等）。對 Move 的任何更改都應保留或增強其現有的安全保障。
 
-2.  **天生具備豐富的表現力：** Move 必須讓程式設計師能夠編寫他們能想像到的任何智能合約。但我們關心編寫 Move 的「感覺」與 Move 所能實現的功能同樣重要——該語言應足夠豐富，以提供任務所需的功能，同時又足夠簡約，讓選擇變得顯而易見。Move 工具鏈應該是提升生產力的工具，也是思考夥伴。
+2.  **本質上的表達力 (Expressive by nature)：** Move 必須讓程式設計師能夠編寫他們能想像到的任何智慧合約。但我們關心撰寫 Move 的*感覺*，如同我們關心 Move 允許你做什麼一樣——該語言應足夠豐富，以提供任務所需的特性，同時又足夠精簡，讓選擇顯而易見。Move 工具鏈應該是生產力的增強器和思考夥伴。
 
-3.  **對所有人而言都直觀易懂：** 智能合約只是一個實用應用程式的一部分。Move 應理解其更廣泛的使用情境，並同時考慮智能合約開發者和應用程式開發者進行設計。開發者應能輕鬆學習如何讀取由 Move 管理的狀態、建立由 Move 驅動的交易以及編寫新的 Move 程式碼。
+3.  **所有人的直覺性 (Intuitive for all)：** 智慧合約只是一個有用應用程式的一部分。Move 應該理解其使用的更廣泛背景，並在設計時考慮到智慧合約開發者和應用程式開發者。開發者應該能夠輕鬆學習如何讀取由 Move 管理的狀態、建置由 Move 驅動的交易，以及編寫新的 Move 程式碼。
 
-Move 的核心技術要素包括：
+Move 的核心技術元素包括：
 
-- 透過可程式化**物件**，為數位資產提供安全、熟悉且靈活的抽象層。
-- 一個豐富的**能力**系統（受線性型別啟發），賦予程式設計師對數值如何被建立、銷毀、儲存、複製和轉移的極致控制權。
-- 一個具備強大封裝特性的**模組**系統，可在保持控制的同時實現程式碼重複使用。
-- **動態欄位**，用於在物件之間建立階層式關係。
-- **可程式化交易區塊**（PTB），以實現由 Move 驅動的 API 的原子性客戶端組合。
+- 透過可程式化*物件*，為數位資產提供安全、熟悉且靈活的抽象。
+- 豐富的*能力*系統（受線性型別啟發），賦予程式設計師對值如何建立、銷毀、儲存、複製和轉移的極致控制。
+- 具有強大封裝特性的*模組*系統，可在保持此控制的同時實現程式碼重複使用。
+- _動態欄位_，用於在物件之間建立層級關係。
+- _可程式化交易區塊_ (PTBs)，以實現 Move 驅動 API 的客戶端原子組合。
 
-Move 於 2018 年作為 Facebook Libra 專案的一部分而誕生。它在 2019 年公開亮相，第一個由 Move 驅動的網路於 2020 年啟動。截至 2024 年 4 月，已有許多由 Move 驅動的區塊鏈投入生產，還有數個正在開發中。Move 是一種內嵌語言，具有平台無關的核心，這意味著它在每個使用它的鏈中都會呈現出略微不同的特性。
+Move 誕生於 2018 年，是 Facebook Libra 計畫的一部分。它於 2019 年公開，第一個由 Move 驅動的網路於 2020 年推出。截至 2024 年 4 月，目前有許多由 Move 驅動的鏈正在生產中，還有更多正在開發。Move 是一種嵌入式語言，具有平台無關的核心，這意味著它在使用它的每個鏈中都呈現出略有不同的特性。
 
-建立一種新的程式語言並圍繞它建立社群是一個雄心勃勃的長期專案。一種語言必須在相關方面比替代方案好上一個數量級才有機會，但即便如此，社群的品質比技術基礎更為重要。Move 是一種年輕的語言，但在差異化和社群方面都取得了良好的開端。一群由 Move 核心價值觀團結起來的、雖小但狂熱的智能合約程式設計師和核心貢獻者正在突破智能合約的極限，探索它們所能實現的應用，以及誰能（安全地）編寫它們。如果這激勵了您，請繼續閱讀！
+建立一種新的程式語言並圍繞它建立一個社群，這是一個雄心勃勃的長期計畫。一種語言必須在相關方面比替代方案好一個數量級才有機會，但即使如此，社群的品質比技術基礎更重要。Move 是一種年輕的語言，但在差異化和社群方面都取得了良好的開端。一小群但狂熱的智慧合約程式設計師和核心貢獻者，透過 Move 的價值觀團結一致，正在推動智慧合約能做什麼、它們能實現的應用程式，以及誰能（安全地）編寫它們的極限。如果這激勵了你，請繼續閱讀！
 
 — Sam Blackshear，Move 創作者

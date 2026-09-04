@@ -5,7 +5,7 @@ from pathlib import Path
 
 from markdown_it import MarkdownIt
 
-from scripts.zh_tw import frontmatter, glossary
+from scripts.zh_tw import frontmatter, glossary, validate
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _MD = MarkdownIt("commonmark")
@@ -424,3 +424,101 @@ def test_scan_only_terms_are_still_surfaced():
     from scripts.zh_tw import glossary
 
     assert "交易影響" in glossary.scan_only_hits("這筆交易影響了物件的所有權。")
+
+
+# --- 2026-09-03 PR #24 審查產出的詞條（run 33730438417） ---
+
+
+def test_pr24_regressions_are_surfaced():
+    """四個缺陷各自對應 PR #24 機翻產出的一處真實回歸。沒有詞表，
+    check_repo 對這些句子回報乾淨（實測：CI 6/6 綠、check_repo 0/0/0）。
+
+    只有「開發人員」進 enforce（無碰撞）；其餘三個有子字串碰撞，只能顯形。
+    """
+    assert glossary.scan("Move 允許開發人員編寫程式。").get("開發人員") == 1
+    for bad, sentence in {
+        "常試": "為了常試解決這個問題，有一些常見的模式。",
+        "說明瞭": "貢獻附錄則說明瞭如何加入他們。",
+        "創始人": "— Sam Blackshear，Move 創始人",
+    }.items():
+        assert glossary.scan_only_hits(sentence).get(bad) == 1, (bad, sentence)
+
+
+def test_enforce_never_damages_a_legitimate_sentence():
+    """守衛的維度要等於它承擔的風險（lessons L2）。
+
+    「詞表看得見這個缺陷」與「詞表機械替換起來是安全的」是兩件事。
+    2026-09-04 外部 review 就是從這個缺口抓到三個 blocker：常試 撞
+    通常試/非常試/正常試、說明瞭 撞 說明+瞭解、創始人 撞 founder 的
+    正確用法。這些句子每一條都必須原封不動地通過 enforce。
+    """
+    intact = [
+        "通常試圖使用 assert! 來檢查條件。",  # 通常 + 試圖
+        "開發者非常試著避免這種寫法。",  # 非常 + 試著
+        "這在正常試驗中不會發生。",  # 正常 + 試驗
+        "本節說明瞭解物件模型的方式。",  # 說明 + 瞭解
+        "他是這家公司的創始人。",  # founder，不是 creator
+        "`public_*` 轉移函式接受它們作為引數。",  # transfer functions
+        "能力宣告必須以分號終止：",  # terminated with a semicolon
+    ]
+    for s in intact:
+        assert glossary.enforce(s) == s, s
+
+    # enforce 表裡的詞條也要有正向覆蓋：它們該改的時候必須真的改。
+    assert glossary.enforce("Move 允許開發人員編寫程式。") == "Move 允許開發者編寫程式。"
+    assert glossary.enforce("如果這激勵了您，請繼續閱讀。") == "如果這激勵了你，請繼續閱讀。"
+    assert glossary.enforce("Move 是一種智能合約語言。") == "Move 是一種智慧合約語言。"
+
+
+def test_enforce_is_a_noop_on_the_existing_corpus():
+    """enforce 表是無邊界的 str.replace。任何新詞條若會改動既有語料，
+    要嘛那處本來就錯（該一併修掉），要嘛就是子字串碰撞（不該進表）。
+    兩種情況都不該靜默通過。"""
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    for path in sorted(files):
+        body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
+        assert glossary.enforce(body) == body, path
+
+
+def test_liao_over_conversion_is_not_reachable_by_the_simplified_gate():
+    """「說明瞭」為什麼只能靠詞表顯形：gate 8 用 OpenCC s2tw 逐字轉換，而
+    「了→瞭」正是它的已知假陽性來源（validate.py 開頭的白名單註解），
+    字形那一側永遠攔不到它。兩道關卡的分工要有測試釘住。
+    """
+    assert validate.simplified_chars("則說明瞭如何加入。\n") == []
+    assert glossary.scan_only_hits("則說明瞭如何加入。").get("說明瞭") == 1
+
+
+def test_polysemous_terms_stay_out_of_the_enforce_table():
+    """lessons L9：多義詞與子字串碰撞不進 enforce 表。
+
+    終止 看起來該機械替換（語料 中止 175 : 終止 5），但 reference/ 有 5 處
+    英文原文就是 terminate（enums「terminated with a semicolon」、generics
+    「terminate for any given input」、uses、references「program terminates」×2）。
+    傳輸 同理撞 transfer functions。scan 讓它們顯形、prompt_rules 教模型，
+    enforce 不碰。
+    """
+    enforce_table = glossary.load()
+    scan_only = glossary.load_scan_only()
+    for term in ("終止", "傳輸", "常試", "說明瞭", "創始人"):
+        assert term not in enforce_table, term
+        assert term in scan_only, term
+
+
+def test_scan_only_warnings_have_a_known_baseline():
+    """scan-only 是永遠不會 fail 的頻道，久了就變成沒人看的噪音：真正的新
+    誤用會混在固定幾行 ⚠️ 裡看不出來（外部 review 2026-09-04）。
+
+    釘住預期筆數 —— 數字一變就得有人看一眼是新誤用還是清掉了舊的。
+    目前的 5 處全部是**正確**的「終止」（英文原文就是 terminate）。
+
+    範圍限 .md —— check_repo.collect() 也只收 .md。`reference/sidebar.yml`
+    的側邊欄標籤不在任何 gate 的視野內，改術語時要人工同步（2026-09-04
+    第三輪外部 review 就是在那裡抓到一處漏改的「終止與斷言」）。
+    """
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    hits: Counter[str] = Counter()
+    for path in files:
+        body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
+        hits.update(glossary.scan_only_hits(body))
+    assert dict(hits) == {"終止": 5}, dict(hits)

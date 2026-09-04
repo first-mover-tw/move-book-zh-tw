@@ -172,7 +172,7 @@ fun invoke_abort_always_fun() {
 }
 ```
 
-## Inflating Clever Abort Codes 展開巧妙終止碼 (Inflating Clever Abort Codes) {#inflating-clever-abort-codes}
+## Inflating Clever Abort Codes 展開巧妙中止碼 (Inflating Clever Abort Codes) {#inflating-clever-abort-codes}
 
 Precisely, the layout of a clever abort code is as follows:
 
@@ -188,9 +188,9 @@ Precisely, the layout of a clever abort code is as follows:
 
 此配置中標示為 _reserved_ 的高位元，當有提供 [`#[error(code = N)]`](#explicit-error-codes) 設定的顯式錯誤碼時，也會以獨立的 8-bit 欄位保存該值。
 
-> 若要解碼一個巧妙終止碼，你需要知道發生錯誤的模組，前提是識別字索引或常數索引未被設為 sentinel 值 `0xffff`。
+> 若要解碼一個巧妙中止碼，你需要知道發生錯誤的模組，前提是識別字索引或常數索引未被設為 sentinel 值 `0xffff`。
 
-以下用虛擬碼示範如何解碼巧妙終止碼：
+以下用虛擬碼示範如何解碼巧妙中止碼：
 
 ```rust
 // MoveAbort 中可取得的資訊
