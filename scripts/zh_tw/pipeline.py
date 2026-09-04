@@ -146,7 +146,6 @@ def assemble(
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
     zh_body = _repair_cjk_emphasis(zh_body)
-    zh_body = _repair_ol_numbering(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -370,101 +369,6 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
         line_start = line_end
     out.append(zh_body[pos:])
     return "".join(out)
-
-
-# 候選：行首列表標記 + 可選的強調標記 run，後面接「與標記同一個數字 + 分隔符」。
-# 分隔符後的判定刻意交給 gate（見下），這裡只負責產生候選。
-_OL_CAND = re.compile(
-    r"^(?P<head>(?P<indent>[ \t]*)(?P<n>\d+)[.)][ \t]+(?P<em>[*_]*))"
-    r"(?P<dup>(?P=n)\s*[.、．)）]\s*)"
-)
-
-
-_TAG = re.compile(r"</?\w+")
-
-
-def _ol_shape(zh_body: str) -> list[str]:
-    """渲染後的標籤骨架：所有 HTML 標籤，依出現順序。
-
-    第一版只取「每個有序列表項的序號」。那個指紋太弱，兩類破壞從它底下
-    整批走過去（2026-09-04 第三輪外部 review 實測）：
-    - `1. **1.** 甲` → 刪掉 `1.` 後前後兩個 `**` 黏成 `****`，強調整個消失、
-      讀者看到字面的星號。序號序列不變。
-    - `1. 1、# 大標題` → 刪掉前綴後 `#` 升格成區塊構造 `<h1>`（`>` 變
-      blockquote、`-` 變 `<ul>`、``` 變 `<pre>` 同理）。序號序列也不變。
-    標籤骨架對這兩類都會變（`<strong>` 消失、`<h1>` 出現），因為它們本來
-    就**是**結構改變——只是不是「序號」那個維度的結構。指紋要涵蓋它宣稱
-    保護的性質（lessons L2）。
-    """
-    return _TAG.findall(commonmark.commonmark(zh_body))
-
-
-def _repair_ol_numbering(zh_body: str) -> str:
-    """gate 11 缺陷的修復 pass（enforce 與 gate 同進退，見 _repair_headings）。
-
-    機翻把 markdown 的列表標記 `1.` 又抄進項目內文，讀者看到「1. 1. 前言」
-    （2026-09-03 run 33730438417 / PR #24，foreword.md 三項全中）。沒有修復
-    路徑的話，gate 11 一擋就是該檔永久寫不出來、每輪人工——那是 gate 6/inject
-    那次死鎖的同一個家族。
-
-    **判定權完全在 gate，這裡只出候選**（lessons L7/L11）。第一版在這裡重刻
-    了一套行首 regex，於是「gate 判紅」與「修復認得」是兩份獨立實作的同一個
-    不變式，立刻漂移：`1. 1. 甲` 在 CommonMark 其實是**巢狀列表**（gate 正確
-    地不報錯），而那份 regex 看不出巢狀，把它改寫成 `1. 甲`，靜默拆掉一層
-    `<ol>`——gate 前不紅、修完也不紅，沒有任何守衛看得見（2026-09-04 外部
-    review 實測）。
-
-    現在的流程：gate 不紅就一個字都不動；每個候選改動都要通過兩道驗收——
-    gate 的錯誤數必須嚴格減少，且有序列表的結構指紋（`_ol_shape`）必須不變。
-    兩者都由 gate 那一側的程式碼算出來，不存在第二份判定。
-
-    兩道驗收裡**承重的是錯誤數**：4004 例差分 fuzz 找不到「結構指紋改變但
-    錯誤數仍減少」的輸入，所以指紋這條目前抓不到獨立的失效（單獨拿掉它
-    行為不變）。留著是因為它直接寫出這個 pass 不准做的事——拆掉巢狀列表
-    正是它第一版的缺陷——而且候選規則將來一放寬就會用到。不變式本身由
-    test_repair_ol_numbering_preserves_shape_for_arbitrary_input 用性質測試
-    守著，不是靠這行自證。前置早退則純粹是效能：乾淨的檔案不必逐行試改。
-
-    成本：每個候選都會 render 全文，所以有 N 個缺陷項時是 O(N²)。實測
-    25/50/100/200/400 項 = 0.08/0.29/1.16/4.55/16.6 秒。乾淨的檔案因為
-    開頭那個早退只 render 一次，正常批次不受影響；會付這個代價的只有
-    「真的有一堆重複序號」的檔案，而那本來就是要修的。
-
-    修不掉的殘餘情況（缺陷跨行、序號被連結或 inline code 包住等）保持原樣，
-    交給 gate fail-closed 擋下——同 _repair_headings「修復候選仍過不了就交給
-    gate 9」的處置。不為了消滅殘餘情況去弱化守衛（lessons L5）。
-    """
-    if not validate.check_ordered_list_numbering(frontmatter.join({}, zh_body)):
-        return zh_body
-
-    protected = glossary.protected_mask(zh_body)
-    lines = zh_body.splitlines(keepends=True)
-    offsets, pos = [], 0
-    for line in lines:
-        offsets.append(pos)
-        pos += len(line)
-
-    def errs(body: str) -> int:
-        return len(validate.check_ordered_list_numbering(frontmatter.join({}, body)))
-
-    baseline_errs = errs(zh_body)
-    baseline_shape = _ol_shape(zh_body)
-
-    for i, line in enumerate(lines):
-        if any(protected[offsets[i] : offsets[i] + len(line)]):
-            continue
-        m = _OL_CAND.match(line)
-        if not m:
-            continue
-        cand = lines[:]
-        cand[i] = m.group("head") + line[m.end() :]
-        body = "".join(cand)
-        n = errs(body)
-        if n < baseline_errs and _ol_shape(body) == baseline_shape:
-            lines = cand
-            baseline_errs = n
-
-    return "".join(lines)
 
 
 def _repair_inpage_links(zh_body: str, en_body: str) -> str:
