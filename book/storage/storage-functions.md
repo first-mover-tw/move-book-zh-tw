@@ -119,7 +119,7 @@ public fun public_transfer<T: key + store>(obj: T, recipient: address);
 
 ```
 
-`mint_and_transfer` 函式「理論上」任何人都能呼叫——它是公開的——但它要求第一個參數必須是 `AdminCap` 參考，而 `AdminCap` 物件是由 `0xa11ce` 獨自擁有的。所以實際上只有 `0xa11ce` 能鑄造。這種簡單明確的方式來限制對函式的存取，就是*[能力模式](./../programmability/capability)*，是 Sui 應用程式設計的基石之一。
+`mint_and_transfer` 函式「理論上」任何人都能呼叫——它是公開的——但它要求第一個參數必須是 `AdminCap` 參考，而 `AdminCap` 物件是由 `0xa11ce` 獨自擁有的。所以實際上只有 `0xa11ce` 能鑄造。這種簡單明確的方式來限制對函式的存取，就是 _[能力模式](./../programmability/capability)_，是 Sui 應用程式設計的基石之一。
 
 注意這個範例中兩個物件的差異。`AdminCap` 只有 `key`：模組對它保有完全的控制權，如果模組沒有公開 `transfer_admin_cap` 函式，管理員權限就會是*靈魂綁定*的——無法轉讓出去。`Gift` 則具有 `key + store`：它是用 `public_transfer` 送出的，任何擁有 `Gift` 的人都能在自己的交易中自由地繼續轉移它，不需要這個模組的任何協助。
 
@@ -154,8 +154,8 @@ public fun public_freeze_object<T: key + store>(obj: T);
 一旦呼叫 `create_and_freeze`，`Config` 就會透過其 ID 公開可用，任何人都能呼叫
 `message` 函式 —— 對於一個凍結的物件，不可變參考是人人都能自由取用的。
 
-函式的定義與物件的狀態無關，因此定義一個以可變參考或以值取用凍結型別的函式，
-在語法上完全合法 —— 只是這些函式**無法**用凍結物件來呼叫：
+函式的定義與物件的狀態無關，因此 _定義_ 一個以可變參考或以值取用凍結型別的函式，
+在語法上完全合法 —— 只是這些函式無法用凍結物件來 _呼叫_：
 
 ```move file=packages/samples/sources/storage/storage-functions.move anchor=frozen_uncallable
 
@@ -209,7 +209,7 @@ public fun public_share_object<T: key + store>(obj: T);
 
 ### 特殊案例：共享物件的刪除 (Special Case: Shared Object Deletion) {#special-case-shared-object-deletion}
 
-雖然共享物件通常無法以值的方式取用，但有一種特殊情況例外——如果取用它的函式會將其**刪除**。這是 Sui 儲存模型中的一個特殊案例，用來允許清理共享狀態。讓我們新增一個刪除共享 `Config` 的函式：
+雖然共享物件通常無法以值的方式取用，但有一種特殊情況例外——如果取用它的函式會將其 _刪除_ 。這是 Sui 儲存模型中的一個特殊案例，用來允許清理共享狀態。讓我們新增一個刪除共享 `Config` 的函式：
 
 ```move file=packages/samples/sources/storage/storage-functions.move anchor=delete_shared
 
@@ -249,7 +249,7 @@ public fun transfer_shared(c: Config, to: address) {
 | `share_object`   | 共享     | 只能透過刪除                                         | `public_share_object`   |
 | `party_transfer` | Party    | [取決於權限](./../appendix/transfer-functions#party) | `public_party_transfer` |
 
-- 每個儲存函式都是以**傳值**方式接收物件——把物件放進儲存中會消耗它；
+- 每個儲存函式都是以 _傳值_ 方式接收物件——把物件放進儲存中會消耗它；
 - 內部版本要求該型別必須定義在呼叫的模組中；`public_*` 版本則要求該型別具備 `store` 能力。
 
 ## 下一步 (Next Steps) {#next-steps}

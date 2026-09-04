@@ -80,7 +80,7 @@ struct 的編碼不過就是其欄位依序排列而已。以下範例編碼了 
 
 ### 包裝器 API (Wrapper API) {#wrapper-api}
 
-解碼器是包裝這些 bytes 的一個包裝器：`bcs::new` 函式以傳值方式接收 bytes，接著呼叫端透過呼叫 `peel_*` 函式，由前到後逐一「剝離」出各個值。尚未被解碼的部分會留在包裝器中，並可透過 `into_remainder_bytes` 函式取出。
+解碼器是包裝這些 bytes 的一個包裝器：`bcs::new` 函式以傳值方式接收 bytes，接著呼叫端透過呼叫 `peel_*` 函式，由前到後逐一 _剝離_ 出各個值。尚未被解碼的部分會留在包裝器中，並可透過 `into_remainder_bytes` 函式取出。
 
 ```move file=packages/samples/sources/programmability/bcs.move anchor=decode
 

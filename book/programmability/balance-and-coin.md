@@ -223,7 +223,7 @@ public struct TreasuryCap<phantom T> has key, store {
 }
 ```
 
-擁有 `TreasuryCap` 就是擁有供給權限。它的 `mint` 與 `burn` 函式只是對供給的薄層包裝：`mint` 增加供給並將新的 `Balance` 包裝成 `Coin`，`burn` 解開一個 `Coin` 並依其值減少供給。只要 `TreasuryCap` 存在，就能用 `total_supply` 讀取目前的總量。
+擁有 `TreasuryCap` _就是_ 擁有供給權限。它的 `mint` 與 `burn` 函式只是對供給的薄層包裝：`mint` 增加供給並將新的 `Balance` 包裝成 `Coin`，`burn` 解開一個 `Coin` 並依其值減少供給。只要 `TreasuryCap` 存在，就能用 `total_supply` 讀取目前的總量。
 
 ```move file=packages/samples/sources/programmability/balance-and-coin-3.move anchor=mint_burn
 
@@ -247,7 +247,7 @@ public struct TreasuryCap<phantom T> has key, store {
 
 這兩者都可以在初始化期間（於 `CurrencyInitializer` 上）套用，或是之後在
 共享的 `Currency<T>` 物件上套用。消耗此能力（capability）不僅僅是形式上的儀式：這個轉換會拆解
-`TreasuryCap` 並將其 `Supply<T>` 移入 `Currency` 物件中 —— 這也是為什麼從
+`TreasuryCap` 並將其 `Supply<T>` _移入_ `Currency` 物件中 —— 這也是為什麼從
 這個時間點開始，`Currency` 本身會追蹤總供應量，可透過 `total_supply` 在鏈上讀取。
 
 ## 管理中繼資料 (Managing Metadata) {#managing-metadata}

@@ -192,7 +192,7 @@ public fun borrow_mut<T>(c: &mut List<T>, key: String): &mut T { /* ... */ }
 
 _參見 [String](./../move-basics/string#string-literals)。_
 
-Move 2020 只提供 byte-string 字面值，建構 `String` 需要明確轉換。新版本新增了字串字面值 `"..."`，其型別會根據上下文**推斷**——會變成 `String`、`ascii::String`，或 `vector<u8>`，依需求而定：
+Move 2020 只提供 byte-string 字面值，建構 `String` 需要明確轉換。新版本新增了字串字面值 `"..."`，其型別會根據上下文 _推斷_ ——會變成 `String`、`ascii::String`，或 `vector<u8>`，依需求而定：
 
 ```move
 // Move 2020：位元組，於執行期轉換
@@ -233,7 +233,7 @@ public fun is_empty(s: &Segment): bool {
 
 _請參閱 [巨集函式](./../move-basics/macros)。_
 
-Move 2024 引入了*巨集函式* —— 這是在編譯期於呼叫端展開的函式，可以接受_lambda_作為參數。巨集名稱後面會接 `!` 符號：
+Move 2024 引入了*巨集函式* —— 這是在編譯期於呼叫端展開的函式，可以接受 _lambda_ 作為參數。巨集名稱後面會接 `!` 符號：
 
 ```move
 // 可以透過 `for!(0, 10, |i| call(i));` 呼叫

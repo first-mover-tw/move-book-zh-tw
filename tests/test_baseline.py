@@ -44,19 +44,7 @@ def _show(ref: str, path: str) -> str | None:
 #   book/object/digital-assets.md            1 → 0
 #   book/object/index.md                     1 → 0
 # 是 test_known_emphasis_gaps_table_has_no_stale_entries 逼出來的。
-_KNOWN_EMPHASIS_GAPS = {
-    "book/guides/2024-migration-guide.md": 2,
-    "book/object/ownership.md": 1,
-    "book/programmability/balance-and-coin.md": 2,
-    "book/programmability/bcs.md": 1,
-    "book/storage/storage-functions.md": 5,
-    "reference/abilities.md": 2,
-    "reference/functions/macros.md": 1,
-    "reference/generics.md": 3,
-    "reference/index.md": 1,
-    "reference/structs.md": 1,
-    "reference/variables.md": 1,
-}
+_KNOWN_EMPHASIS_GAPS: dict[str, int] = {}
 
 
 def _em_count(text: str) -> int:
