@@ -579,7 +579,49 @@ def test_emphasis_mask_freezes_inpage_anchors_but_substitution_mask_does_not():
     """強調修復相反：它把 `_x_` 換成 `*x*`，沒有「同步改標題」這回事，
     所以頁內 fragment 必須凍結，否則 slug 直接失效。"""
     body = "見 [連結](#所有權_模型_說明) 一節。\n"
-    i = body.index("](#")
-    j = body.index(")", i) + 1
+    # 判準取 destination 本身，不含 `](` 與 `)` 這兩個分隔符 —— 分隔符不可能是
+    # 底線或術語，把它們算進斷言等於拿形態當真實性質（L2）。
+    i = body.index("#所有權")
+    j = body.index(")", i)
     assert all(glossary.emphasis_mask(body)[i:j]), "頁內 fragment 應落在強調保護區內"
     assert not any(glossary.substitution_mask(body)[i:j]), "頁內 fragment 不應落在替換保護區內"
+
+
+def test_cross_file_fragment_tracks_the_target_heading():
+    """跨檔 fragment `](./other.md#中文錨點)` 也必須跟著標題一起被替換。
+
+    外部 review 2026-09-04 抓到：原本用 `startswith("](#")` 判「頁內 fragment」，
+    跨檔的一律落進保護區 → 錨點被凍結，但 enforce 對**每個檔**都跑，目標檔的
+    `## 創建新套件` 照樣被改成 `## 建立新套件` → 死錨點。語料有 3 處活實例
+    （pattern-matching.md、macros.md ×2），只是恰好不含術語表詞條，屬潛伏未爆。
+
+    路徑部分必須凍結（那是檔案系統路徑，改了就 404），只有 `#` 之後讓出來。
+    """
+    body = "見 [x](./創建/other.md#創建新套件) 一節。\n"
+    got = glossary.enforce(body)
+    assert got == "見 [x](./創建/other.md#建立新套件) 一節。\n", got
+
+
+def test_reference_style_link_definition_destination_is_protected():
+    """`[標籤]: ./路徑.md` 的 destination 也是連結目的地，不可被術語替換。
+
+    外部 review 2026-09-04：URLISH 三個 alternation 全部漏掉**沒有 scheme** 的
+    ref-def destination，實測 `enforce('[標籤]: ./創建_套件.md')` 會改成
+    `./建立_套件.md`。語料 `book/storage/key-ability.md:51-56` 有 6 個相對路徑
+    ref-def（今天不含術語表詞條，潛伏未爆）。
+    """
+    body = "[標籤]: ./創建_套件.md\n[外部]: https://example.com/位址\n"
+    assert glossary.enforce(body) == body, glossary.enforce(body)
+
+
+def test_angle_bracket_destination_fragment_still_tracks():
+    """`](<#錨點>)` 角括號目的地：判準是解析出 destination 看有沒有 scheme，
+    不是比對 `](#` 前綴，所以這個形態一樣要跟著標題走。"""
+    body = "見 [x](<#創建新套件>) 一節。\n"
+    assert glossary.enforce(body) == "見 [x](<#建立新套件>) 一節。\n", glossary.enforce(body)
+
+
+def test_external_url_fragment_stays_frozen():
+    """帶 scheme 的 fragment 是外部網站的錨點，不由我們的標題決定 → 凍結。"""
+    body = "見 [x](https://example.com/p#創建新套件) 一節。\n"
+    assert glossary.enforce(body) == body, glossary.enforce(body)

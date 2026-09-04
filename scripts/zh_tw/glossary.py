@@ -10,7 +10,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import anchors
-from .pipeline_patterns import URLISH
+from .pipeline_patterns import link_dest_spans
 
 _DEFAULT = Path(__file__).parent / "glossary.json"
 # 標記但不替換的詞表。格式與 glossary.json 相同（違禁詞 -> 正確用法），
@@ -145,10 +145,12 @@ def _urlish_mask(body: str, *, protect_fragments: bool) -> list[bool]:
     本文推導出來的，改了就是 404 與圖裂。
     """
     mask = protected_mask(body)
-    for m in URLISH.finditer(body):
-        if not protect_fragments and m.group(0).startswith("](#"):
-            continue  # 純頁內 fragment：必須跟著標題一起被替換
-        for k in range(*m.span()):
+    # 判定權在 pipeline_patterns.link_dest_spans 一處（與 _repair_cjk_emphasis
+    # 共用），這裡只做聯集。原本在這裡用 `startswith("](#")` 自己判「純頁內
+    # fragment」，那是形態代理：跨檔 fragment 與角括號目的地都會誤判（外部
+    # review 2026-09-04，lessons L2/L15）。
+    for start, end in link_dest_spans(body, protect_fragments=protect_fragments):
+        for k in range(start, end):
             mask[k] = True
     return mask
 

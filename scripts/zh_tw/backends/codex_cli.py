@@ -13,12 +13,22 @@ GitHub Actions 裡的 codex 要的是 `OPENAI_API_KEY`，跟本機這份憑證�
    拿到的就是純譯文，不必寫任何剝殼 regex（剝殼 regex 會是 L2 的典型犯案：
    用「輸出長什麼樣」代理「哪一段是答案」）。
 
-2. **`--ignore-user-config`。** 這是 L8（LLM CLI 必須隔離 stdin 與 cwd）在
-   codex 上的對應面：codex 會載入 `~/.codex/config.toml`（模型偏好、hooks）
-   與工作目錄的 AGENTS.md。翻譯呼叫必須讓 prompt 成為**唯一**指令來源 ——
-   台灣用語與術語表全靠 base.py 那三個 prompt（內嵌 glossary.prompt_rules()），
-   被別的指令稀釋就會靜默劣化。auth 不受影響（`--ignore-user-config` 只跳過
-   config.toml，憑證仍走 `CODEX_HOME`）。
+2. **`--ignore-user-config` + 乾淨的 `CODEX_HOME`。** 這是 L8（LLM CLI 必須
+   隔離 stdin 與 cwd）在 codex 上的對應面。翻譯呼叫必須讓 prompt 成為**唯一**
+   指令來源 —— 台灣用語與術語表全靠 base.py 那三個 prompt（內嵌
+   `glossary.prompt_rules()`），被別的指令稀釋就會靜默劣化，而且沒有任何 gate
+   看得見「譯文被另一套指令帶偏」。
+
+   `--ignore-user-config` **只跳過 `$CODEX_HOME/config.toml`**（見
+   `codex exec --help` 的原文：「Do not load $CODEX_HOME/config.toml; auth still
+   uses CODEX_HOME」），**擋不掉 `$CODEX_HOME/AGENTS.md`**。外部 review
+   (2026-09-04) 指出這點，實測證實：這台機器的 `~/.codex/AGENTS.md` 是
+   Pilotfish 的 always-on bootstrap，問 codex「你的指令裡有沒有出現 Pilotfish」
+   會回**「有」**。`-c project_doc_max_bytes=0` 試過，無效。
+
+   修法是給子行程一個**只含 `auth.json` 的臨時 `CODEX_HOME`**：憑證照走
+   （`--help` 明說 auth 用 CODEX_HOME），AGENTS.md / hooks.json / config.toml
+   全部不存在。同一個探針在修法下回**「沒有」**。
 
 3. **`-s read-only` + `--cd <中性 tempdir>` + `--skip-git-repo-check`。**
    codex 是 agent 不是單次補全，預設會想動檔案。read-only sandbox 讓它不能
@@ -40,6 +50,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+# codex 未設 CODEX_HOME 時的預設家目錄。憑證（auth.json）從這裡複製到每次呼叫
+# 的臨時 CODEX_HOME，其餘一律不帶。
+_DEFAULT_CODEX_HOME = Path.home() / ".codex"
+
 from .base import HEADING_PROMPT, SYSTEM_PROMPT, TEXT_PROMPT
 
 
@@ -58,6 +72,17 @@ class CodexCLIBackend:
 
         with tempfile.TemporaryDirectory(prefix="zh-tw-translate-") as neutral:
             out_path = Path(neutral) / "last-message.txt"
+            # 只含憑證的 CODEX_HOME：擋掉 $CODEX_HOME/AGENTS.md 與 hooks.json
+            # （`--ignore-user-config` 只擋 config.toml，見上方 docstring 第 2 點）。
+            codex_home = Path(neutral) / "codex-home"
+            codex_home.mkdir()
+            real_home = Path(os.environ.get("CODEX_HOME") or _DEFAULT_CODEX_HOME)
+            auth = real_home / "auth.json"
+            if auth.is_file():
+                dst = codex_home / "auth.json"
+                dst.write_bytes(auth.read_bytes())
+                os.chmod(dst, 0o600)  # 裡面是 token，別放寬權限
+            env = {**os.environ, "CODEX_HOME": str(codex_home)}
             argv = [
                 "codex", "exec",
                 "--ephemeral",
@@ -83,7 +108,7 @@ class CodexCLIBackend:
             r = subprocess.run(
                 argv,
                 capture_output=True, text=True, timeout=timeout, cwd=neutral,
-                stdin=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL, env=env,
             )
             if r.returncode != 0:
                 raise RuntimeError(f"codex CLI 失敗: {r.stderr[:400] or r.stdout[-400:]}")
