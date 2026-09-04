@@ -146,6 +146,7 @@ def assemble(
     zh_body = _repair_inpage_links(zh_body, en_body)
     zh_body = _repair_cjk_emphasis(zh_body)
     zh_body = _repair_flanking_punctuation(zh_body)
+    zh_body = _repair_cjk_wrapped_ascii_emphasis(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -397,6 +398,56 @@ def _brackets_balanced(text: str) -> bool:
             if not stack or stack.pop() != closers[ch]:
                 return False
     return not stack
+
+
+# `中文_ascii_中文`：`_` 兩側都是 word char（CJK 也算），CommonMark 不允許 `_`
+# 在詞內開合，強調直接消失。實測 codex 對 `` `0` for _none_ and `1` for _some_ ``
+# 一律譯成 `` `0` 代表_none_，`1` 代表_some_ ``，`bcs.md` 因此連續四輪重試都卡在
+# 同一處。
+#
+# **不能靠放寬 `_repair_cjk_emphasis` 的 `_IDENTISH` 來解。** 那條過濾目前把
+# 「任一側是 ASCII」的底線整批排除；改成「兩側都是 ASCII 才排除」會讓全語料多出
+# 248 個分隔符候選（26 檔），其中 `reference/variables.md` 的文法區塊
+# （`_pattern-or-list_ _type-annotation_<sub>_opt_</sub>`）目前是**完全沒進配對
+# 清單**的，一旦進來，整條線的配對序列位移，即使每一對都有「本來就渲染得出來就
+# 跳過」的檢查，**配對本身**仍可能跨過正確的強調邊界 —— lessons L12 那個災難。
+#
+# 所以這裡走一條獨立的窄路徑：用完整形態匹配（前面必須是 CJK、內容不得含 `_`、
+# 收尾後面不得是 ASCII），不碰既有的逐行配對邏輯。內容不變式（L18）天然成立 ——
+# 只換兩個分隔符字元，其餘一個字都不動。
+_CJK_WRAPPED_ASCII_EM = re.compile(
+    r"(?<=[㐀-鿿豈-﫿])_(?P<inner>[A-Za-z0-9][^_\n]*?)_(?![A-Za-z0-9_])"
+)
+
+
+def _repair_cjk_wrapped_ascii_emphasis(zh_body: str) -> str:
+    """把 `中文_ascii_中文` 的底線分隔符換成星號。`_` 不能在詞內開合，`*` 可以。
+
+    後置條件兩條（lessons L18：症狀 + 內容）：
+      1. 症狀：改之前渲染不出強調、改之後渲染得出來。
+      2. 內容：只有兩個分隔符字元變了，其餘逐字元相同（由建構方式保證 ——
+         這裡不移動、不刪除任何字元）。
+    任一條不成立就一個字都不動，交給 fail-closed 的 gate。
+    """
+    mask = glossary.emphasis_mask(zh_body)
+    out, pos = [], 0
+    for m in _CJK_WRAPPED_ASCII_EM.finditer(zh_body):
+        if any(mask[m.start():m.end()]):
+            continue
+        inner = m.group("inner")
+        line_start = zh_body.rfind("\n", 0, m.start()) + 1
+        line = zh_body[line_start:].split("\n", 1)[0]
+        if f"<em>{inner}</em>" in commonmark.commonmark(line):
+            continue  # 本來就渲染得出來（不該發生，但不冒險）
+        if f"<em>{inner}</em>" not in commonmark.commonmark(
+            line.replace(f"_{inner}_", f"*{inner}*", 1)
+        ):
+            continue  # 換了也救不回來 → 放棄
+        out.append(zh_body[pos:m.start()])
+        out.append(f"*{inner}*")
+        pos = m.end()
+    out.append(zh_body[pos:])
+    return "".join(out)
 
 
 def _repair_flanking_punctuation(zh_body: str) -> str:

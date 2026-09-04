@@ -1295,3 +1295,99 @@ def test_assemble_actually_runs_the_flanking_punctuation_repair():
     body = frontmatter.split(out)[1]
     assert "**所有權：**每項" not in body, body
     assert commonmark.commonmark(body).count("<strong>") == 1, body
+
+
+# --- _repair_cjk_wrapped_ascii_emphasis（2026-09-05） -----------------------
+
+
+def test_repair_converts_cjk_wrapped_ascii_underscore_emphasis():
+    """`中文_ascii_中文`：`_` 兩側都是 word char（CJK 也算），不能開合強調。
+
+    實測動機：codex 對 `` `0` for _none_ and `1` for _some_ `` 一律譯成
+    `` `0` 代表_none_，`1` 代表_some_ ``，`bcs.md` 因此連續四輪重試都卡在
+    同一處 —— 決定性缺陷，重試永遠修不好。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "`0` 代表_none_，`1` 代表_some_ — 後面接著該值。\n"
+    got = pipeline._repair_cjk_wrapped_ascii_emphasis(src)
+    assert got == "`0` 代表*none*，`1` 代表*some* — 後面接著該值。\n", got
+    assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 2
+
+
+def test_repair_does_not_touch_identifiers_or_grammar_blocks():
+    """**這條守的是 lessons L12。**
+
+    另一條路是放寬 `_repair_cjk_emphasis` 的 `_IDENTISH`（從「任一側是 ASCII
+    就排除」改成「兩側都是才排除」）。實測那會讓全語料多出 248 個分隔符候選、
+    26 個檔，其中 `reference/variables.md` 的文法區塊目前**完全沒進配對清單**，
+    一旦進來整條線的配對序列位移，配對本身就可能跨過正確的強調邊界。
+
+    所以這裡用完整形態匹配（前面必須是 CJK、內容不得含 `_`、收尾後面不得是
+    ASCII），不碰既有的逐行配對邏輯。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "變數 tx_context 與 snake_case 不該被動到。\n",
+        "> _pattern-or-list_ _type-annotation_<sub>_opt_</sub>\n",
+        "句首 _Move 2020_）本來就渲染得出來，不該被動到。\n",
+        "檔名 _sources/todo_list.move_ 不該被動到。\n",
+        "```move\nlet x = 中文_none_中文;\n```\n",
+    ]:
+        assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src, src
+
+
+def test_assemble_actually_runs_the_cjk_wrapped_ascii_repair():
+    """組合層（lessons L7）：這個修復 pass 也必須真的被 `assemble` 呼叫。"""
+    import commonmark
+
+    from scripts.zh_tw import frontmatter, pipeline
+
+    class _Backend:
+        def translate(self, text, *, kind="markdown"):
+            if kind in ("text", "heading"):
+                return "標題 (T)"
+            return "# 標題 (T)\n\n`0` 代表_none_，`1` 代表_some_。\n"
+
+    en = '---\ndescription: "Option."\n---\n\n# T\n\n`0` for _none_ and `1` for _some_.\n'
+    body = frontmatter.split(pipeline.assemble(en, "", en, _Backend()))[1]
+    assert "代表_none_" not in body, body
+    assert commonmark.commonmark(body).count("<em>") == 2, body
+
+
+def test_repair_requires_the_closing_underscore_not_be_followed_by_ascii():
+    """殺 mutation「拿掉收尾後不得是 ASCII 的條件」。
+
+    `中文_a_b` 的第二個底線後面接著 `b` —— 那是識別字中段，不是收尾分隔符。
+    少了這道 lookahead，`中文_snake_case_中文` 會被拆成
+    `中文*snake*case_中文`，把識別字改壞。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "設定 中文_snake_case_中文 的值。\n"
+    assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src, src
+
+
+def test_repair_verifies_the_result_actually_renders():
+    """殺 mutation「不驗改完是否渲染」。
+
+    把 renderer 換成「永遠沒有強調」，修復就必須一個字都不動 —— 證明接受
+    候選的依據是渲染結果，不是「換成星號應該就會好」。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "`0` 代表_none_，`1` 代表_some_ — 後面接著該值。\n"
+    assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) != src
+
+    class _Blind:
+        @staticmethod
+        def commonmark(_text):
+            return "<p>沒有任何強調</p>"
+
+    real = pipeline.commonmark
+    pipeline.commonmark = _Blind
+    try:
+        assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src
+    finally:
+        pipeline.commonmark = real
