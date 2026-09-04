@@ -1064,3 +1064,70 @@ def test_gate_flags_emphasis_lost_in_translation():
     en2 = "# T {#t}\n\nSee [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function)).\n"
     zh2 = "# 標題 (T) {#t}\n\n見 [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function))。\n"
     assert validate.check_cjk_emphasis(zh2, en2) == []
+
+
+def test_gate_flags_emphasis_added_not_present_in_the_source():
+    """gate 10 是**雙向**的（2026-09-04 使用者裁決）：多加強調一樣要擋。
+
+    原本判準是 `zh_n >= en_n`，只擋「少了」。單向的後果實測過兩次：
+    - 在 SYSTEM_PROMPT 加「強調數量須與原文相同」之後，codex 對
+      `visibility.md` 產出 30/15 —— 強調是原文兩倍，**gate 完全看不見**，
+      會靜默出貨。加強 prompt 把失效從看得見的方向推向看不見的方向。
+    - 同理，「失敗就重試到過」也是對看不見的那一側做選擇性篩選。
+
+    改雙向之後重試才是收斂而不是挑選（lessons L12 的推論：守衛的方向也要
+    涵蓋它保護的對象）。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\nOnly *this* is emphasised.\n"
+    more = "# 標題 (T) {#t}\n\n只有 *這個* 和 *那個* 被強調。\n"
+    exact = "# 標題 (T) {#t}\n\n只有 *這個* 被強調。\n"
+
+    errs = validate.check_cjk_emphasis(more, en)
+    assert errs and "<em> 英文 1 中文 2" in errs[0], errs
+    assert validate.check_cjk_emphasis(exact, en) == []
+
+
+def test_gate_counts_strong_as_well_as_em():
+    """`**粗體**` 與 `*強調*` 是不同元素。把英文的 `_em_` 譯成 `**粗體**`
+    在只數 <em> 的判準下會被算成「少了一個 em」，訊息會誤導人去找底線；
+    而反方向（把 `__strong__` 譯成 `*em*`）舊判準根本看不見。
+
+    實測現場：`package-upgrades.md` 英文 16 em + 2 strong，中文 0 em +
+    15 strong —— 整份被譯成粗體。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\nThis is *emphasis* and this is **bold**.\n"
+    swapped = "# 標題 (T) {#t}\n\n這是 **強調** 而這是 *粗體*。\n"
+
+    # 對調時兩邊的 (em 數, strong 數) 都是 (1, 1) —— 純計數判準完全看不見。
+    # 判準用**型別序列**才抓得到（lessons L2：計數是位置盲的代理量）。
+    errs = validate.check_cjk_emphasis(swapped, en)
+    assert errs, "em 與 strong 對調必須被擋下"
+    assert "順序不符" in errs[0] and "第 1 個強調" in errs[0], errs
+
+    # 對照組：型別對、只是譯文用詞不同 —— 不得誤報
+    ok = "# 標題 (T) {#t}\n\n這是 *強調* 而這是 **粗體**。\n"
+    assert validate.check_cjk_emphasis(ok, en) == []
+
+
+def test_gate_excludes_headings_from_the_emphasis_count():
+    """標題不算。本專案的標題慣例是「中文譯文 (英文原文)」，英文原文一字
+    不差地重複一次 —— 英文標題裡若有強調，中文標題必然算到兩次，再加上
+    `{#anchor}` 在裸 commonmark 下是普通文字、裡面的底線也會被算進去。
+
+    實測現場（全語料唯一一個）：
+    `### 技巧 #1 - _任意_ 條件 (Trick #1 - _any_ Condition) {#trick-1---_any_-condition}`
+    對英文的 1 個 em 產出 3 個。這是慣例的必然結果不是缺陷，標題格式另有
+    gate 9 管。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\n## Trick - _any_ Condition\n\nBody with *one* emphasis.\n"
+    zh = (
+        "# 標題 (T) {#t}\n\n## 技巧 - _任意_ 條件 (Trick - _any_ Condition)"
+        " {#trick---_any_-condition}\n\n內文有 *一個* 強調。\n"
+    )
+    assert validate.check_cjk_emphasis(zh, en) == []

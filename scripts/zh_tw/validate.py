@@ -241,11 +241,50 @@ def check_file(
     return errs
 
 
-def _emphases(text: str) -> int:
-    """渲染後的 <em> 個數。問 commonmark 本人，不重刻 CommonMark 的
-    left/right-flanking 規則。"""
+def _emphases(text: str) -> tuple[str, ...]:
+    """渲染後的強調**型別序列**（document order），**排除標題**。
+
+    回傳例：`("em", "em", "strong")`。用序列不用計數，因為計數是位置盲的
+    代理量（lessons L2）：把英文的 `*em*` 與 `**strong**` 對調，兩邊的
+    (em 數, strong 數) 都還是 (1, 1)，數字判準完全看不見，序列判準一眼就看到。
+
+    問 commonmark 本人，不重刻 CommonMark 的 left/right-flanking 規則。
+
+    為什麼排除標題：本專案的標題慣例是「中文譯文 (英文原文)」，英文原文
+    一字不差地重複一次 —— 英文標題裡若有強調，中文標題必然算到兩次（譯文
+    一次、括號內原文一次），再加上 `{#anchor}` 在裸 commonmark 下是普通文字、
+    裡面的底線也會被算進去。`enum-and-match.md` 的
+    `### 技巧 #1 - _任意_ 條件 (Trick #1 - _any_ Condition) {#trick-1---_any_-condition}`
+    對英文的 1 個 em 產出 3 個。這是慣例的必然結果不是缺陷，標題格式另有
+    gate 9 管，所以這道 gate 只看內文。全語料實測只有這一個檔受影響。
+    """
+    class _Counter(HTMLParser):
+        """在**渲染後的 HTML** 上數，並跳過 <h1>–<h6> 內部。
+
+        刻意不引入第二個 markdown 實作：生產端一律用 `commonmark`，測試端才用
+        `markdown_it`。同一個不變式兩份實作必然漂移（lessons L15），所以這裡
+        接的是 commonmark 自己的輸出。
+        """
+
+        def __init__(self):
+            super().__init__()
+            self.seq: list[str] = []
+            self._depth = 0
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+                self._depth += 1
+            elif self._depth == 0 and tag in ("em", "strong"):
+                self.seq.append(tag)
+
+        def handle_endtag(self, tag):
+            if tag in ("h1", "h2", "h3", "h4", "h5", "h6") and self._depth:
+                self._depth -= 1
+
     body = frontmatter.split(text)[1]
-    return len(re.findall(r"<em>", commonmark.commonmark(body)))
+    c = _Counter()
+    c.feed(commonmark.commonmark(body))
+    return tuple(c.seq)
 
 
 def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
@@ -265,9 +304,11 @@ def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
     修復由 pipeline._repair_cjk_emphasis 決定性完成，這道 gate 是
     fail-closed 的第二層：修復漏掉就擋下來，不靜默放行。
     """
-    zh_n, en_n = _emphases(zh_text), _emphases(en_text)
-    if zh_n >= en_n:
+    zh_seq, en_seq = _emphases(zh_text), _emphases(en_text)
+    if zh_seq == en_seq:
         return []
+    zh_em, en_em = zh_seq.count("em"), en_seq.count("em")
+    zh_st, en_st = zh_seq.count("strong"), en_seq.count("strong")
     # 只報數字的話，人要自己在整份檔案裡找哪幾處壞掉。把渲染不出來的候選
     # 位置一併指出來（修復 pass 修不掉的通常就是這些）。
     body = frontmatter.split(zh_text)[1]
@@ -280,9 +321,25 @@ def check_cjk_emphasis(zh_text: str, en_text: str) -> list[str]:
         if f"<em>{m.group(1)}</em>" not in commonmark.commonmark(line):
             suspects.append(f"`_{m.group(1)}_`")
     hint = ("；可疑位置：" + "、".join(suspects[:5])) if suspects else ""
+    parts = []
+    if zh_em != en_em:
+        parts.append(f"<em> 英文 {en_em} 中文 {zh_em}")
+    if zh_st != en_st:
+        parts.append(f"<strong> 英文 {en_st} 中文 {zh_st}")
+    if not parts:
+        # 數量都對、序列不對 = 某處的 em 與 strong 被對調了。指出第一個分歧點，
+        # 否則人只會看到「數字都一樣」而找不到問題（這正是舊判準的盲區）。
+        i = next(
+            (k for k, (a, b) in enumerate(zip(en_seq, zh_seq)) if a != b),
+            min(len(en_seq), len(zh_seq)),
+        )
+        parts.append(f"數量相同但順序不符：第 {i + 1} 個強調，英文是 {en_seq[i]}、中文是 {zh_seq[i]}")
     return [
-        f"強調在翻譯中消失：英文 {en_n} 處、中文只渲染出 {zh_n} 處。"
-        f"常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調），改用 `*中文*`{hint}"
+        "強調與原文不符（" + "、".join(parts) + "）。"
+        "少了：常見原因是 `_中文_`（CJK 相鄰時 `_` 不能開合強調）改用 `*中文*`、"
+        "`**中文：**後接中文` 收尾分隔符前是標點後是 CJK 收不了尾（冒號移到 `**` 外面）、"
+        "英文的 `_em_` 被譯成 `**粗體**`、譯者用「」取代強調。"
+        "多了：中文自行加了原文沒有的強調" + hint
     ]
 
 

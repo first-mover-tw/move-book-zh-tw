@@ -9,8 +9,6 @@
 
 import subprocess
 
-from markdown_it import MarkdownIt
-
 from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, validate
 
 
@@ -19,46 +17,13 @@ def _show(ref: str, path: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-# 「英文有 <em>、中文渲染不出來」的已知缺口，2026-09-04 全語料普查。
-# 值 = 英文 <em> 數 − 中文 <em> 數。**只准縮小，不准長大，不准出現新檔案。**
-#
-# 成因兩類，都沒有自動修復路徑（判定與修復不是同一個資訊量，lessons L16）：
-#   (a) `*中文 (English)*CJK` —— 收尾 `*` 前面是 `)`（標點）、後面是 CJK，
-#       依 CommonMark 不算 right-flanking，強調收不了尾。這是本專案「中文
-#       (English)」標題慣例自己造成的。修法是把括號移出強調範圍：
-#       `被*移動 (moved)*進` → `被*移動* (moved) 進`（已在 entry-functions.md 示範）。
-#   (b) 英文的 `_em_` 被譯成 `**粗體**` —— 渲染得出來，但元素錯了。
-#
-# 為什麼釘基線而不是直接全修：85 處要逐處對照英文原文判斷「這個 em 對應到
-# 中文哪一段」，是人工工作不是機械替換。釘住讓它不能默默長回去，背景慢慢清。
-# 清完一個檔就把它從這張表刪掉（測試會強迫你刪 —— 缺口變 0 而表上還有值會紅）。
-#
-# 2026-09-04 codex 排乾第一批順手清掉兩檔（重譯時強調寫對了）：
-#   book/guides/upgradeability-practices.md  1 → 0
-#   book/move-basics/copy-ability.md         3 → 0
-# 第二批再清掉三檔：
-#   book/move-basics/generics.md             4 → 0
-#   book/move-basics/references.md           1 → 0
-#   book/move-basics/struct-methods.md       3 → 0
-# 第三批再清掉兩檔：
-#   book/object/digital-assets.md            1 → 0
-#   book/object/index.md                     1 → 0
-# 是 test_known_emphasis_gaps_table_has_no_stale_entries 逼出來的。
-_KNOWN_EMPHASIS_GAPS: dict[str, int] = {}
-
-
-def _em_count(text: str) -> int:
-    _, body = frontmatter.split(text)
-    return MarkdownIt("commonmark").render(body).count("<em>")
-
-
 def _recorded_source(path: str, sha: str) -> str | None:
     r = subprocess.run(["git", "cat-file", "blob", sha], capture_output=True, text=True)
     return r.stdout if r.returncode == 0 else None
 
 
 def test_every_file_is_a_valid_translation_of_its_recorded_source():
-    """全 repo 對**各自 manifest 記錄的那個英文 blob** 過全量 check_file。
+    """全 repo 對**各自 manifest 記錄的那個英文 blob** 過全量 check_file，零豁免。
 
     2026-09-04 改寫（使用者裁決）。原本這裡是三條「翻譯零積壓」的斷言：
     `stale_files(english-main) == []`、`check_file(zh, english-main:HEAD)`、
@@ -71,9 +36,10 @@ def test_every_file_is_a_valid_translation_of_its_recorded_source():
     存的就是 path → 英文 blob sha，資料本來就在。這條在上游前進時保持綠，
     在有人改壞中文檔、或 validate 迴歸時才紅 —— 那才是有程式碼要修的時候。
 
-    唯一的豁免是 `_KNOWN_EMPHASIS_GAPS`（見上方註解）：既有的 85 處強調缺口
-    是人工待辦，不是程式缺陷。豁免是**逐檔逐數字**的，缺口長大或出現新檔
-    一樣紅。
+    這條測試上線時挖出 29 檔 85 處失效強調（被 131 條積壓噪音蓋住看不見），
+    一度用 `_KNOWN_EMPHASIS_GAPS` 逐檔逐數字釘成基線。2026-09-04 已全部清完，
+    豁免機制隨之移除 —— **回到零豁免**。要再加豁免請先讀 lessons L5：豁免額度
+    只要不會因為「已經不需要了」而紅，就等於守衛從沒對它命名的缺陷紅過。
 
     積壓數字本身沒有消失，它在 `python -m scripts.zh_tw --detect` 與
     check_repo 的輸出裡，那是儀表板該待的地方，不是 pytest。
@@ -90,43 +56,9 @@ def test_every_file_is_a_valid_translation_of_its_recorded_source():
             failures[path] = [f"manifest 記錄的英文 blob {sha[:8]} 不存在於 repo"]
             continue
         errs = validate.check_file(zh, en)
-        non_em = [e for e in errs if "強調在翻譯中消失" not in e]
-        if non_em:
-            failures[path] = non_em
-        if len(non_em) == len(errs):
-            continue
-        gap = _em_count(en) - _em_count(zh)
-        allowed = _KNOWN_EMPHASIS_GAPS.get(path)
-        if allowed is None:
-            failures.setdefault(path, []).append(f"新出現的強調缺口 {gap} 處")
-        elif gap > allowed:
-            failures.setdefault(path, []).append(f"強調缺口從 {allowed} 長到 {gap}")
+        if errs:
+            failures[path] = errs
     assert failures == {}, failures
-
-
-def test_known_emphasis_gaps_table_has_no_stale_entries():
-    """清乾淨的檔案必須從 `_KNOWN_EMPHASIS_GAPS` 刪掉。
-
-    沒有這條，那張表就會變成永遠不會縮小的免死金牌 —— 修好了也沒人知道，
-    下一次回歸又躲進同一個豁免額度裡（lessons L5：豁免額度只要不會因為
-    「已經不需要了」而紅，就等於守衛從沒對它命名的缺陷紅過）。
-    """
-    m = manifest.load()
-    files = check_repo.collect()
-    stale = {}
-    for path, allowed in _KNOWN_EMPHASIS_GAPS.items():
-        zh = files.get(path)
-        sha = m.get(path)
-        if zh is None or sha is None:
-            stale[path] = "已不在語料/manifest 中"
-            continue
-        en = _recorded_source(path, sha)
-        if en is None:
-            continue
-        gap = _em_count(en) - _em_count(zh)
-        if gap < allowed:
-            stale[path] = f"實際缺口已降到 {gap}，表上還寫 {allowed}"
-    assert stale == {}, stale
 
 
 def test_no_orphans():
