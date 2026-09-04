@@ -84,3 +84,20 @@ def link_dest_spans(body: str, *, protect_fragments: bool):
             # title 是人可讀的提示文字、理論上該被替換，但語料實測**零個**帶
             # title 的連結（外部 review 2026-09-04 grep 確認），保守保護零成本。
             yield m.span("title")
+
+
+# HTML 註解（可跨行）。註解掉的內容不會被渲染，裡面的連結與錨點都不是真的
+# 連結 —— 例如 `reference/abilities.md` 的 `<!-- TODO：…[動機說明]
+# (#motivating-walkthrough)… -->` 指向一個還沒寫的章節，**英文原文同樣是
+# 懸空的**。舊譯文把整段註解漏譯，所以這個缺口一直沒被看見；2026-09-05 排乾
+# 產出的新譯文把註解保留下來（比較忠實），gate 5 才第一次紅。
+HTML_COMMENT = re.compile(r"<!--[\s\S]*?-->")
+
+
+def html_comment_mask(body: str) -> list[bool]:
+    """逐字元遮罩：True 代表這個字元在 HTML 註解裡。"""
+    mask = [False] * len(body)
+    for m in HTML_COMMENT.finditer(body):
+        for i in range(*m.span()):
+            mask[i] = True
+    return mask

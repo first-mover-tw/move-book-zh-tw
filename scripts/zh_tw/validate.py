@@ -15,6 +15,7 @@ from opencc import OpenCC
 
 from . import anchors, frontmatter, glossary
 from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
+from .pipeline_patterns import html_comment_mask
 
 _CJK = re.compile(r"[一-鿿]")
 CJK = _CJK  # 公開別名：pipeline 的沿用/修復判斷與 gate 4 用同一個 pattern
@@ -595,8 +596,13 @@ def check_links(files: dict[str, str]) -> list[str]:
         # 與 gate 8 相同：code（fence / 縮排 / inline span）內的連結是範例
         # 文字，不是真連結，先遮蔽再掃，否則假陽性會擋寫檔。
         mask = glossary.protected_mask(body)
+        # HTML 註解裡的連結同理：註解掉的內容不會被渲染，錨點懸空無害。
+        # 不併進 protected_mask —— 它的語意是「哪裡是程式碼」，被 5 個消費端
+        # 共用，擴張它等於偷改所有消費端的語意（lessons L2，2026-09-04 已犯過
+        # 一次，把 URLISH 併進去造成 4 個測試轉紅）。
+        comments = html_comment_mask(body)
         for m in _LINK.finditer(body):
-            if mask[m.start()]:
+            if mask[m.start()] or comments[m.start()]:
                 continue
             target, anchor = m.group(1), m.group(2)
             target = target.split("?")[0]  # 剝掉 ?highlight=native 這類 query string

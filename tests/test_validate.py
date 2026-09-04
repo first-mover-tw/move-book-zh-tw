@@ -866,3 +866,41 @@ def test_ol_items_does_not_attribute_nested_text_to_outer_item():
     assert (outer_n, inner_n) == (1, 1)
     assert "內壞" not in outer_text, outer_text
     assert inner_text.startswith("1. 內壞")
+
+
+def test_gate5_skips_links_inside_html_comments():
+    """註解掉的內容不會被渲染，裡面的懸空錨點無害，不該擋寫檔。
+
+    實測現場（2026-09-05 排乾）：`reference/abilities.md` 的
+    `<!-- TODO：…[動機說明](#motivating-walkthrough)… -->` 指向一個還沒寫的
+    章節，**英文原文同樣是懸空的**。舊譯文把整段註解漏譯，所以這個缺口一直
+    沒被看見；新譯文把註解保留下來（比較忠實），gate 5 才第一次紅。
+
+    註解遮罩**不併進 `glossary.protected_mask`** —— 它的語意是「哪裡是程式
+    碼」，被 5 個消費端共用，擴張它等於偷改所有消費端的語意（lessons L2，
+    2026-09-04 已犯過一次：把 URLISH 併進去造成 4 個測試轉紅）。
+    """
+    files = {
+        "a.md": (
+            "# 標題 (T) {#t}\n\n"
+            "<!-- TODO：這一段還沒寫\n\n"
+            "或許可跳至[動機說明](#motivating-walkthrough)章節。 -->\n\n"
+            "正文。\n"
+        )
+    }
+    assert validate.check_links(files) == []
+
+
+def test_gate5_still_flags_dangling_anchors_outside_comments():
+    """對照組：註解**外面**的懸空錨點照樣要擋 —— 否則這道豁免就從
+    「別管註解」擴張成「別管連結」。"""
+    files = {
+        "a.md": (
+            "# 標題 (T) {#t}\n\n"
+            "<!-- 註解裡的[連結](#nope-in-comment) -->\n\n"
+            "正文裡的[連結](#nope-in-body)。\n"
+        )
+    }
+    errs = validate.check_links(files)
+    assert len(errs) == 1, errs
+    assert "nope-in-body" in errs[0] and "nope-in-comment" not in errs[0], errs
