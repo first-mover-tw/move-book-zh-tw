@@ -12,7 +12,6 @@ from pathlib import Path
 
 from . import anchors, chunking, frontmatter, glossary, manifest, sidebar, validate
 from .backends import base
-from .pipeline_patterns import URLISH as _URLISH
 from .pipeline_patterns import UNDERSCORE_EM as _UNDERSCORE_EM
 
 MERGE_BASE = "f2c0a93e1a0422078d3d051e4410ac3edc612016"
@@ -314,19 +313,20 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
     gate 10 對這些全無覆蓋，因為它們讓 <em> 不減反增。
 
     排除規則（每一條都對應一個實測過的破壞）：
-    - code span / fence：glossary.protected_mask，真相來源不重刻。
-    - 連結/圖片 destination、autolink、裸 URL：URLISH。含中文的 URL 只會
-      出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+    - code span / fence + 連結/圖片 destination / autolink / 裸 URL + 頁內
+      fragment：**glossary.emphasis_mask()**，真相來源不重刻。含中文的 URL
+      只會出現在中文譯文裡，而「內容含 CJK」那條過濾對它失效。
+      2026-09-04 之前這裡是 `protected_mask()` 再自己外掛一份 URLISH，而
+      glossary.enforce 那一側沒有外掛 —— 同一個不變式兩份實作、涵蓋範圍還
+      不同，於是 enforce 會把 URL 裡的術語改掉（`位址`→`地址`）。判定權已
+      收進 glossary 一處，見 lessons L15。
     - 緊鄰 ASCII 英數或底線的底線：那是識別字（`tx_context`）或 `__粗體__`
       的外層，不是強調分隔符 —— 直接不算進 token，而不是「跳過匹配」。
     - 一行的分隔符數為奇數：配不成對就整行放棄。寧可漏修讓 gate 10 擋下來
       人工處理，也不要猜一個配對然後靜默改壞。
     - 內容不含 CJK、或本來就渲染得出來：不動，不製造無謂 diff。
     """
-    mask = glossary.protected_mask(zh_body)
-    for u in _URLISH.finditer(zh_body):
-        for i in range(u.start(), u.end()):
-            mask[i] = True
+    mask = glossary.emphasis_mask(zh_body)
 
     out, pos = [], 0
     line_start = 0
