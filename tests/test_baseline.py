@@ -7,7 +7,9 @@
 機械修復），豁免機制（scripts/zh_tw/debt.py）已移除，全語料零違規。
 """
 
+import re
 import subprocess
+from pathlib import Path
 
 from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, validate
 
@@ -90,3 +92,28 @@ def test_no_zh_file_lacks_an_english_source():
     en = {f for f in manifest.tracked_files("english-main") if f.endswith(".md")}
     zh = set(check_repo.collect())
     assert zh - en == set(), sorted(zh - en)
+
+
+def test_every_referenced_sample_file_exists():
+    """語料裡 ```move file=packages/… 引用的範例檔必須真的存在。
+
+    2026-09-05 實證：`book/programmability/scratchpad.md`（上游 2026-08-27 新增
+    的章節，本次排乾第一次翻出中文版）引用
+    `packages/samples/sources/programmability/scratchpad.move`，而**中文分支從來
+    沒有這個檔** —— 上游同步只搬 `english-main`，`packages/` 沒有跟著同步。
+
+    失效形式：pytest 全綠、check_repo 全綠、prettier 全綠，**Vercel 部署失敗**
+    （`MDX compilation failed … File not found`）。八道 gate 全部看不到，因為
+    它們只看 Markdown 本身，不看它引用的外部檔案。這條把判準補上。
+
+    註：`site/packages` 是指向 repo 根 `packages/` 的 symlink，所以引用路徑
+    `packages/…` 直接相對於 repo 根解析。
+    """
+    root = Path(__file__).resolve().parent.parent
+    missing: dict[str, list[str]] = {}
+    for path, text in check_repo.collect().items():
+        for m in re.finditer(r"^```\w*\s+file=(\S+)", text, re.M):
+            ref = m.group(1)
+            if not (root / ref).is_file():
+                missing.setdefault(path, []).append(ref)
+    assert missing == {}, missing
