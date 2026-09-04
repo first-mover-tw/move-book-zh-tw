@@ -4,7 +4,7 @@ description: Move 中的能力模式（Capability Pattern）：在 Sui 智慧合
 
 # Pattern: Capability 能力 (Pattern: Capability) {#pattern-capability}
 
-在程式設計中，**capability（能力）**是一種賦予擁有者執行特定動作權利的權杖（token）。這是一種用來控制對資源與操作存取權的模式。能力最簡單的範例是門的鑰匙：有鑰匙就能開門，沒有鑰匙就不能開門。更實際的範例是 Admin Capability，它允許擁有者執行一般使用者無法執行的管理操作。
+在程式設計中，_capability（能力）_ 是一種賦予擁有者執行特定動作權利的權杖（token）。這是一種用來控制對資源與操作存取權的模式。能力最簡單的範例是門的鑰匙：有鑰匙就能開門，沒有鑰匙就不能開門。更實際的範例是 Admin Capability，它允許擁有者執行一般使用者無法執行的管理操作。
 
 ## Capability 是一個 Object (Capability is an Object) {#capability-is-an-object}
 
@@ -62,6 +62,6 @@ capability 模式不只是一種慣例——[Sui Framework](./sui-framework)本�
 - Object Capability 不需要在函式主體中做額外檢查，因而降低了開發者出錯的機率。
 - 擁有的 Capability 也有助於發現性。`AdminCap` 的擁有者可以在自己的帳戶中看到該 object（透過錢包或瀏覽器），並知道自己擁有管理員權限。這一點在使用地址檢查時較不透明。
 
-然而，地址檢查方式也有自己的優勢。其中一種情況是 **multisig（多重簽名）**地址——由多方共同控制的地址，只有在足夠多方簽署時，交易才算有效。若應用程式的管理員權限屬於一個 multisig 地址，檢查發送者可能會比建構一筆呈現該地址所擁有 capability object 的交易來得簡單。
+然而，地址檢查方式也有自己的優勢。其中一種情況是 _multisig（多重簽名）_ 地址——由多方共同控制的地址，只有在足夠多方簽署時，交易才算有效。若應用程式的管理員權限屬於一個 multisig 地址，檢查發送者可能會比建構一筆呈現該地址所擁有 capability object 的交易來得簡單。
 
-另一種情況是應用程式擁有一個中央 object——例如 config 或 registry——它已經被傳入每個函式中。這樣的 object 可以將管理員地址儲存為一般欄位，檢查它不需要額外的輸入。地址是純資料，因此可以在執行期變更，不需要 package 升級。同樣的概念也讓 **revocation（撤銷）**成為可能：一個已擁有的 capability，一旦被轉移出去，就無法從其擁有者手中取回；但中央 registry 中的一筆條目——先前發出的 capability 的地址或 ID——則可以由管理員隨時移除，立即撤銷存取權。
+另一種情況是應用程式擁有一個中央 object——例如 config 或 registry——它已經被傳入每個函式中。這樣的 object 可以將管理員地址儲存為一般欄位，檢查它不需要額外的輸入。地址是純資料，因此可以在執行期變更，不需要 package 升級。同樣的概念也讓 _revocation（撤銷）_ 成為可能：一個已擁有的 capability，一旦被轉移出去，就無法從其擁有者手中取回；但中央 registry 中的一筆條目——先前發出的 capability 的地址或 ID——則可以由管理員隨時移除，立即撤銷存取權。

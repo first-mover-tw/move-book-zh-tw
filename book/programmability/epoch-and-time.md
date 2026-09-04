@@ -4,7 +4,7 @@ description: 在 Sui Move 中存取時間 (Access Time in Sui Move)：在智慧�
 
 # Epoch 與時間 (Epoch and Time) {#epoch-and-time}
 
-Sui 提供兩種存取當前時間的方式：**epoch** 與 `Clock` 物件。前者代表系統中的操作週期，大約每 24 小時變更一次。後者則提供自 Unix Epoch 以來的毫秒數時間。兩者皆可在程式中自由存取。
+Sui 提供兩種存取當前時間的方式：_epoch_ 與 `Clock` 物件。前者代表系統中的操作週期，大約每 24 小時變更一次。後者則提供自 Unix Epoch 以來的毫秒數時間。兩者皆可在程式中自由存取。
 
 ## 紀元 (Epoch) {#epoch}
 

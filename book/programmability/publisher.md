@@ -4,7 +4,7 @@ description: 發布者物件 (Publisher object) 在 Sui：證明套件權限，�
 
 # 發行者授權 (Publisher Authority) {#publisher-authority}
 
-應用程式經常需要證明**是誰發行了某個型別**。這在數位資產的情境中尤其重要，因為發行者可能為其資產啟用或停用某些功能。Publisher 物件定義於 [Sui Framework](./sui-framework) 中，讓發行者能夠證明其對某型別的**授權**。
+應用程式經常需要證明*是誰發行了某個型別*。這在數位資產的情境中尤其重要，因為發行者可能為其資產啟用或停用某些功能。Publisher 物件定義於 [Sui Framework](./sui-framework) 中，讓發行者能夠證明其對某型別的*授權*。
 
 ## 定義 (Definition) {#definition}
 

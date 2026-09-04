@@ -18,7 +18,7 @@ Move 也有 vector 字面值語法，讓你可以使用 `vector` 關鍵字後面
 
 `vector` 型別是 Move 中的內建型別，不需要從模組匯入。vector 操作是定義在[標準函式庫](./standard-library)的 `std::vector` 模組中，該模組會被隱式匯入，因此可以直接使用而不需要明確的 `use` 陳述式。
 
-> 在本節中，我們使用點語法呼叫 vector 函式，例如使用 `v.length()` 而非 `vector::length(&v)`。這是所謂的**接收者語法（receiver syntax）**，標準函式庫型別開箱即用即可使用此語法；我們會在[結構方法](./struct-methods)一節中說明其運作原理。
+> 在本節中，我們使用點語法呼叫 vector 函式，例如使用 `v.length()` 而非 `vector::length(&v)`。這是所謂的*接收者語法（receiver syntax）*，標準函式庫型別開箱即用即可使用此語法；我們會在[結構方法](./struct-methods)一節中說明其運作原理。
 
 ## 讀取元素 (Reading Elements) {#reading-elements}
 
@@ -28,11 +28,11 @@ Move 也有 vector 字面值語法，讓你可以使用 `vector` 關鍵字後面
 
 ```
 
-> `v[i]` 語法是呼叫 `borrow` 函式的簡寫——它產生的是該元素的[參考](./references)，而不是元素本身。對於像上面整數這類可複製的型別，這個差異並不明顯；而對於無法複製的型別，要將元素**取出** vector 之外，就需要使用下面說明的 `pop_back`、`remove` 或 `swap_remove`。此語法的細節說明於 Move 參考手冊中的[索引語法](./../../reference/index-syntax)。
+> `v[i]` 語法是呼叫 `borrow` 函式的簡寫——它產生的是該元素的[參考](./references)，而不是元素本身。對於像上面整數這類可複製的型別，這個差異並不明顯；而對於無法複製的型別，要將元素*取出* vector 之外，就需要使用下面說明的 `pop_back`、`remove` 或 `swap_remove`。此語法的細節說明於 Move 參考手冊中的[索引語法](./../../reference/index-syntax)。
 
 ## 新增與移除元素 (Adding and Removing Elements) {#adding-and-removing-elements}
 
-可變的 vector 可以增長也可以縮減。最有效率的操作是作用在 vector 的**尾端**——也就是 `push_back` 和 `pop_back`——而 `insert` 和 `remove` 則作用在任意索引位置，並會位移其後所有的元素：
+可變的 vector 可以增長也可以縮減。最有效率的操作是作用在 vector 的*尾端*——也就是 `push_back` 和 `pop_back`——而 `insert` 和 `remove` 則作用在任意索引位置，並會位移其後所有的元素：
 
 ```move file=packages/samples/sources/move-basics/vector.move anchor=methods
 
@@ -64,7 +64,7 @@ Move 也有 vector 字面值語法，讓你可以使用 `vector` 關鍵字後面
 
 ## Vector 巨集 (Vector Macros) {#vector-macros}
 
-讀取、轉換或彙總 vector 中的每一個元素是非常常見的任務，因此標準函式庫為此提供了一組**巨集**。巨集的名稱以 `!` 結尾，並接受一個**匿名函式（lambda）**（以 `|argument| expression` 形式撰寫的行內函式），巨集會將其套用到每個元素上。在底層，巨集會在編譯時展開為一般的迴圈，因此使用巨集在執行期不會產生額外成本：
+讀取、轉換或彙總 vector 中的每一個元素是非常常見的任務，因此標準函式庫為此提供了一組*巨集*。巨集的名稱以 `!` 結尾，並接受一個*匿名函式（lambda）*（以 `|argument| expression` 形式撰寫的行內函式），巨集會將其套用到每個元素上。在底層，巨集會在編譯時展開為一般的迴圈，因此使用巨集在執行期不會產生額外成本：
 
 ```move file=packages/samples/sources/move-basics/vector.move anchor=macros
 

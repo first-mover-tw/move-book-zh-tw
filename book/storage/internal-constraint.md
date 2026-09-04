@@ -4,7 +4,7 @@ description: Sui 驗證器 (Sui Verifier) 內部限制：為何儲存操作 (sto
 
 # Sui 驗證器：內部約束 (Sui Verifier: Internal Constraint) {#sui-verifier-internal-constraint}
 
-在[內部通行證](./../move-basics/internal-permit)章節中，我們介紹了 _內部型別參數_：只接受呼叫模組中定義之型別的型別參數。在該處，`std::internal::permit<T>()` 使用此規則來產生一個證明值。在 Sui 上，同樣的規則_直接_保護少數幾個關鍵的框架函式——不涉及通行證值——而執行此規則的元件就是 _Sui 驗證器_。
+在[內部通行證](./../move-basics/internal-permit)章節中，我們介紹了 _內部型別參數_：只接受呼叫模組中定義之型別的型別參數。在該處，`std::internal::permit<T>()` 使用此規則來產生一個證明值。在 Sui 上，同樣的規則*直接*保護少數幾個關鍵的框架函式——不涉及通行證值——而執行此規則的元件就是 _Sui 驗證器_。
 
 Sui 驗證器是一組位元組碼層級的檢查，會在一般 Move 驗證之上執行，無論是在編譯時期或是套件在鏈上發布時皆然。它的大部分規則都將本章已經描述過的內容形式化——例如[key 能力](./key-ability)章節中的 `id: UID` 首欄位要求。_內部約束_ 是接下來內容中最重要的規則：一個標記了此規則的函式，只能以 _內部_ 型別參數 `T` 呼叫——也就是在呼叫模組中定義的型別。
 
