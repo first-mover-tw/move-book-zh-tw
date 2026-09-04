@@ -117,3 +117,36 @@ def test_every_referenced_sample_file_exists():
             if not (root / ref).is_file():
                 missing.setdefault(path, []).append(ref)
     assert missing == {}, missing
+
+
+def test_every_sidebar_doc_id_resolves_to_an_existing_file():
+    """sidebar 列出的每個 doc id 都必須有對應的 .md。
+
+    2026-09-05 實證：排乾第六批（`c28714a`）把 `programmability/scratchpad`
+    加進 `book/sidebar.yml` —— sidebar 是從 english-main 翻譯過來的，上游有那
+    一章，我們沒有。docusaurus build 因此失敗：
+
+        Invalid sidebar file at "sidebar-book.ts".
+        These sidebar document ids do not exist:
+        - programmability/scratchpad
+
+    失效形式與 `test_every_referenced_sample_file_exists` 同一類：pytest 全綠、
+    check_repo 全綠、prettier 全綠，**只有部署會掛**。八道 gate 都只看單一
+    Markdown 檔本身，看不到「檔案之間的引用關係」。
+
+    **這個缺口會復發**：`sidebar.translate` 每次都從 english-main 重建，只要
+    上游有而我們還沒翻的章節，它就會再被加回來。復發時本測試會先紅，而不是
+    等 CI —— 這正是它的用途。根治要讓 sidebar 同步過濾掉「還沒翻的章節」，
+    屬獨立工項（見 tasks/notes.md）。
+    """
+    root = Path(__file__).resolve().parent.parent
+    missing: dict[str, list[str]] = {}
+    for name in ("book", "reference"):
+        sb = root / name / "sidebar.yml"
+        if not sb.is_file():
+            continue
+        for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", sb.read_text(encoding="utf-8"), re.M):
+            doc_id = m.group(1).strip("'\"")
+            if not (root / name / f"{doc_id}.md").is_file():
+                missing.setdefault(str(sb.relative_to(root)), []).append(doc_id)
+    assert missing == {}, missing
