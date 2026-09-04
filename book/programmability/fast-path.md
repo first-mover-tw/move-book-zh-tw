@@ -1,27 +1,54 @@
 ---
-description: 快速路徑最佳化 (Fast Path Optimization)：為 Sui 設計快速路徑——建構擁有物件（owned object）與共享物件（shared object），以最大化交易平行處理與效能
+description: Sui 快速路徑 (fast path) 的設計：建構擁有 (structure-owned) 與共享物件 (shared objects)，以將交易平行處理 (transaction parallelism) 與效能 (performance) 最大化。
+title: 快速路徑 (Fast Path)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - fast
+  - path
+questions:
+  - What is Fast Path in Move?
+  - How do I use Fast Path in Move?
+  - What is Frozen objects in Move?
+  - What is In Practice in Move?
+answer: 'Design for the fast path in Sui: structure owned vs shared objects to maximize transaction parallelism and performance.'
+goal:
+  description: 'Reader understands design for the fast path in Sui: structure owned vs shared objects to maximize transaction parallelism and performance'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 快速路徑 (Fast Path) {#fast-path}
 
-由於 Sui 的物件模型與資料組織模型，某些操作可以用更有效率且平行化的方式來執行。這稱為**快速路徑（fast path）**。觸及共享狀態的交易需要共識，因為它可能同時被多方存取。然而，如果交易只觸及私有狀態（擁有的物件），就不需要共識。這就是快速路徑。
+由於 Sui 的物件模型與資料組織模型，某些操作可以用更有效率且平行化的方式執行。這稱為**快速路徑**。會接觸共用狀態的交易需要共識，因為多方可以同時存取它。然而，若交易只接觸私有狀態（擁有的物件），則不需要共識。這就是快速路徑。
 
-我們有一個最喜歡的範例：咖啡機與咖啡杯。放置在辦公室的咖啡機是一項共享資源——每個人都能使用，但同一時間只能有一位使用者。另一方面，咖啡杯是一項私有資源——它屬於特定的人，只有那個人能使用它。要煮咖啡，就需要使用咖啡機，如果有其他人正在使用就得等待。然而，一旦咖啡煮好並倒入杯中，這個人就可以拿著杯子喝咖啡，而不需要等待任何人。
+我們最喜歡用咖啡機和咖啡杯來舉例：放在辦公室裡的咖啡機是共用資源——每個人都能使用，但同一時間只能有一位使用者。另一方面，咖啡杯是私有資源——它屬於特定的人，且只有那個人可以使用。要泡咖啡，需要使用咖啡機；若有人正在使用，就必須等待。不過，咖啡泡好並倒入杯中後，這個人便能拿著杯子喝咖啡，無須等待其他人。
 
-同樣的原則適用於 Sui。如果一筆交易只觸及私有狀態（裝有咖啡的杯子），就可以不經共識執行。如果它觸及共享狀態（咖啡機），就需要共識。這就是快速路徑。
+相同原則也適用於 Sui。若交易只接觸私有狀態（裝著咖啡的杯子），便能在不經共識的情況下執行。若接觸共用狀態（咖啡機），則需要共識。這就是快速路徑。
 
 ## 凍結物件 (Frozen objects) {#frozen-objects}
 
-共識只在需要變更共享狀態時才是必要的。如果物件是不可變的，它會被視為「常數」，可以平行存取。凍結物件可以用來在多方之間共享不可變更的資料，而不需要共識。
+只有修改共用狀態時才需要共識。若物件不可變，便會被視為「常數」，且可被平行存取。凍結物件可用於在多方之間分享不可變更的資料，而無須共識。
 
-## 實務操作 (In Practice) {#in-practice}
+## 實務上 (In Practice) {#in-practice}
 
 ```move file=packages/samples/sources/programmability/fast-path.move anchor=main
 
 ```
 
-## 特殊案例：Clock (Special Case: Clock) {#special-case-clock}
+## 特殊案例：時鐘 (Special Case: Clock) {#special-case-clock}
 
-具有保留地址 `0x6` 的 `Clock` 物件是共享物件的一個特殊案例，它在一般交易中不能以可變參考的方式傳遞。嘗試這麼做將不會成功，該交易會被拒絕。由於這項限制，`Clock` 物件只能以不可變的方式存取，這使得交易能夠平行執行而不需要共識。
+具有保留地址 `0x6` 的 `Clock` 物件，是共用物件的一種特殊案例；它無法在一般交易中以可變參考傳遞。嘗試這麼做將不會成功，且交易會遭拒絕。由於此限制，`Clock` 物件只能以不可變方式存取，因此可在無須共識的情況下平行執行交易。
 
-<!-- Add more on why and how -->
+<!-- 補充更多關於原因與方式的內容 -->
