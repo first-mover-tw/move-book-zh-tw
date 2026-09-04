@@ -36,12 +36,13 @@ def _show(ref: str, path: str) -> str | None:
 # 2026-09-04 codex 排乾第一批順手清掉兩檔（重譯時強調寫對了）：
 #   book/guides/upgradeability-practices.md  1 → 0
 #   book/move-basics/copy-ability.md         3 → 0
+# 第二批再清掉三檔：
+#   book/move-basics/generics.md             4 → 0
+#   book/move-basics/references.md           1 → 0
+#   book/move-basics/struct-methods.md       3 → 0
 # 是 test_known_emphasis_gaps_table_has_no_stale_entries 逼出來的。
 _KNOWN_EMPHASIS_GAPS = {
     "book/guides/2024-migration-guide.md": 2,
-    "book/move-basics/generics.md": 4,
-    "book/move-basics/references.md": 1,
-    "book/move-basics/struct-methods.md": 3,
     "book/move-basics/vector.md": 5,
     "book/move-basics/visibility.md": 7,
     "book/object/digital-assets.md": 1,
