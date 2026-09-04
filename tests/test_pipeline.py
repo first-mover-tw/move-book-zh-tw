@@ -287,11 +287,22 @@ def test_translate_body_enforces_glossary_on_values():
     assert meta["description"] == "迴圈"
 
 
+# english-main 上「reference/constants.md 與其中文譯本結構一致」的最後一個
+# commit（2026-07-08）。tier() 比對的是 en_ref 上的結構，所以這個測試必須釘
+# 固定 commit —— 用活的 english-main 會在上游前進的那一刻永久轉紅（lessons
+# L3；本測試 2026-09-04 就是這樣紅的，tier 從 A 變 B）。
+_A_TIER_EN_REF = "c206591aa00e7c9cd7952a1c4e0eb7f82271945e"
+
+
 def test_run_a_tier_file_with_legacy_body_defects_succeeds():
     """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
-    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。"""
-    assert pipeline.tier("reference/constants.md") == "A"  # 釘住走的是 A 路徑
-    ok, failed = pipeline.run(["reference/constants.md"], "fake")
+    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。
+
+    en_ref 釘固定 commit：這條測的是**A 路徑這段組合邏輯**，不是「constants.md
+    今天是不是還在 A 層」。後者是語料狀態，會隨上游漂移，不該讓它決定測試死活。
+    """
+    assert pipeline.tier("reference/constants.md", _A_TIER_EN_REF) == "A"  # 釘住走 A 路徑
+    ok, failed = pipeline.run(["reference/constants.md"], "fake", _A_TIER_EN_REF)
     assert failed == {}
     assert ok == 1
 

@@ -70,10 +70,44 @@ def test_no_orphans_remain():
     assert manifest.orphans("english-main") == []
 
 
-def test_no_stale_files_after_backfill():
-    """backfill 完成（PR 2→104、PR 3→91、PR 4→62、PR 5→42、PR 6→29、
-    PR 7→0）。此後任何 stale 出現都代表上游前進、待週期性同步。"""
-    assert len(manifest.stale_files("english-main")) == 0
+def test_stale_files_reports_exactly_the_changed_paths(monkeypatch):
+    """`stale_files()` 的**行為**：回報 manifest 記錄的 sha 與 ref 現值不同的
+    檔，其餘不回報。
+
+    2026-09-04 改寫（使用者裁決）。原本這裡是 `len(stale_files(...)) == 0`
+    ——「backfill 之後零積壓」。那是**語料狀態不是程式行為**：上游一 sync 就
+    紅（實測 131），翻完就綠，紅了也沒有任何程式碼要修（lessons L4 的壞測試
+    定義）。而且它比對的兩端**都會動**（活 manifest × 活 ref），連 L3 的
+    「釘固定 commit」都救不了它，只能改成合成資料。
+
+    積壓數字沒有消失，它在 `python -m scripts.zh_tw --detect` 的輸出裡 ——
+    那是儀表板該待的地方。
+    """
+    fake = {
+        "book/same.md": "a" * 40,      # 一致 → 不該回報
+        "book/changed.md": "b" * 40,   # 不一致 → 該回報
+        "book/missing-in-manifest.md": None,  # 佔位，下面會刪掉
+    }
+    del fake["book/missing-in-manifest.md"]
+    current = {
+        "book/same.md": "a" * 40,
+        "book/changed.md": "c" * 40,
+        "book/new.md": "d" * 40,       # manifest 沒記錄 → 該回報（從沒翻過）
+    }
+    monkeypatch.setattr(manifest, "load", lambda: dict(fake))
+    monkeypatch.setattr(manifest, "tracked_files", lambda ref: list(current))
+    monkeypatch.setattr(manifest, "blob_sha", lambda ref, path: current.get(path))
+
+    assert manifest.stale_files("whatever") == ["book/changed.md", "book/new.md"]
+
+
+def test_stale_files_ignores_paths_absent_from_the_ref(monkeypatch):
+    """`blob_sha` 回 None（該 ref 上沒有這個檔）時不得回報成 stale ——
+    那是 orphans() 的職責，兩者混在一起會讓「上游刪檔」被誤報成「待翻」。"""
+    monkeypatch.setattr(manifest, "load", lambda: {"book/gone.md": "a" * 40})
+    monkeypatch.setattr(manifest, "tracked_files", lambda ref: ["book/gone.md"])
+    monkeypatch.setattr(manifest, "blob_sha", lambda ref, path: None)
+    assert manifest.stale_files("whatever") == []
 
 
 def test_tracked_files_handles_space_and_nonascii_paths():
