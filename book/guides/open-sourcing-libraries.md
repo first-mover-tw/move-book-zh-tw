@@ -1,28 +1,60 @@
 ---
-description: 開源 Move 函式庫指南：命名慣例、文件撰寫、測試,以及發布可重複使用的套件於 Sui。
+description: Move 函式庫 (Move libraries) 開放原始碼指南：Sui 可重複使用套件的命名慣例、文件、測試與發布。
+title: 程式庫 (Libraries) 開放原始碼
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - open
+  - sourcing
+  - libraries
+questions:
+  - What is Open Sourcing Libraries in Move?
+  - How do I use Open Sourcing Libraries in Move?
+  - What is README in Move?
+  - What is Named Addresses in Move?
+answer: 'Guide to open sourcing Move libraries: naming conventions, documentation, testing, and publishing reusable packages for Sui.'
+goal:
+  description: 'Reader understands guide to open sourcing Move libraries: naming conventions, documentation, testing, and publishing reusable packages for Sui'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 開源函式庫 (Open Sourcing Libraries) {#open-sourcing-libraries}
+# 將函式庫開放原始碼 (Open Sourcing Libraries) {#open-sourcing-libraries}
 
-開源函式庫是為 Move 生態系做出貢獻的絕佳方式。本指南將協助你了解如何開源函式庫、如何撰寫測試，以及如何為函式庫撰寫文件。
+將函式庫開放原始碼是為 Move 生態系做出貢獻的絕佳方式。本指南將協助你
+了解如何將函式庫開放原始碼、如何撰寫測試，以及如何為函式庫編寫文件。
 
 ## README {#readme}
 
-TODO: readme
+TODO：readme
 
-## 具名地址 (Named Addresses) {#named-addresses}
+## 命名地址 (Named Addresses) {#named-addresses}
 
-TODO: named address
+TODO：命名地址
 
 ## 產生文件 (Generating Documentation) {#generating-documentation}
 
-TODO: docgen
+TODO：docgen
 
 ## 新增範例 (Adding Examples) {#adding-examples}
 
-當發布一個預期會被使用的套件（例如 NFT 協議或函式庫）時，展示這個套件該如何使用是很重要的。這時範例就派上用場了。Move 並沒有針對範例的特殊功能，不過有一些慣例用來標示範例。首先，只有 sources 會被納入套件的位元組碼中，因此放在其他目錄的程式碼不會被納入，但仍然會被測試！
+發布預定供他人使用的套件（NFT 協定或函式庫）時，
+展示此套件的使用方式相當重要。這正是範例派上用場的地方。Move 沒有
+針對範例的特殊功能，但有一些用於標記範例的慣例。首先，只有原始碼會納入套件位元碼，
+因此放在不同目錄中的任何程式碼都不會被納入，但仍會接受測試！
 
-這也是為什麼把範例放進獨立的 `examples/` 目錄是個好主意。
+因此，將範例放在獨立的 `examples/` 目錄是個好主意。
 
 ```bash
 sources/
@@ -35,10 +67,10 @@ examples/
 Move.toml
 ```
 
-## 標籤與發行版本（Git） (Tags and Releases (Git)) {#tags-and-releases-git}
+## 標籤與發行版本 (Git) (Tags and Releases (Git)) {#tags-and-releases-git}
 
-TODO: tags and releases
+TODO：標籤與發行版本
 
-## 與閉源相容的技巧 (Tricks to allow compatibility with closed source) {#tricks-to-allow-compatibility-with-closed-source}
+## 實現與封閉原始碼相容的技巧 (Tricks to allow compatibility with closed source) {#tricks-to-allow-compatibility-with-closed-source}
 
-TODO: compatibility via empty functions with signatures
+TODO：透過具有簽章的空函式實現相容性

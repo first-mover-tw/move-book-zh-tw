@@ -32,10 +32,13 @@ def _show(ref: str, path: str) -> str | None:
 # 為什麼釘基線而不是直接全修：85 處要逐處對照英文原文判斷「這個 em 對應到
 # 中文哪一段」，是人工工作不是機械替換。釘住讓它不能默默長回去，背景慢慢清。
 # 清完一個檔就把它從這張表刪掉（測試會強迫你刪 —— 缺口變 0 而表上還有值會紅）。
+#
+# 2026-09-04 codex 排乾第一批順手清掉兩檔（重譯時強調寫對了）：
+#   book/guides/upgradeability-practices.md  1 → 0
+#   book/move-basics/copy-ability.md         3 → 0
+# 是 test_known_emphasis_gaps_table_has_no_stale_entries 逼出來的。
 _KNOWN_EMPHASIS_GAPS = {
     "book/guides/2024-migration-guide.md": 2,
-    "book/guides/upgradeability-practices.md": 1,
-    "book/move-basics/copy-ability.md": 3,
     "book/move-basics/generics.md": 4,
     "book/move-basics/references.md": 1,
     "book/move-basics/struct-methods.md": 3,
