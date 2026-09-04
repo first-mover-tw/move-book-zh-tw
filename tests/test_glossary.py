@@ -467,6 +467,7 @@ def test_enforce_never_damages_a_legitimate_sentence():
     # enforce 表裡的詞條也要有正向覆蓋：它們該改的時候必須真的改。
     assert glossary.enforce("Move 允許開發人員編寫程式。") == "Move 允許開發者編寫程式。"
     assert glossary.enforce("如果這激勵了您，請繼續閱讀。") == "如果這激勵了你，請繼續閱讀。"
+    assert glossary.enforce("Move 是一種智能合約語言。") == "Move 是一種智慧合約語言。"
 
 
 def test_enforce_is_a_noop_on_the_existing_corpus():

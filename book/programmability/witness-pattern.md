@@ -1,5 +1,5 @@
 ---
-description: Move 中的見證者模式 (Witness Pattern)：透過結構體實例化 (struct instantiation) 證明型別所有權，用於 Sui 智能合約中的型別安全授權。
+description: Move 中的見證者模式 (Witness Pattern)：透過結構體實例化 (struct instantiation) 證明型別所有權，用於 Sui 智慧合約中的型別安全授權。
 ---
 
 # 樣式：見證 (Pattern: Witness) {#pattern-witness}

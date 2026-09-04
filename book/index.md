@@ -1,5 +1,5 @@
 ---
-description: Move 程式語言與 Sui 區塊鏈的完整指南，適合智能合約開發者參考。
+description: Move 程式語言與 Sui 區塊鏈的完整指南，適合智慧合約開發者參考。
 ---
 
 # The Move Book 動作語言技術文件 (The Move Book) {#the-move-book}

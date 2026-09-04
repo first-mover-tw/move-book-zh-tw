@@ -1,5 +1,5 @@
 ---
-description: 型別反射 (Type Reflection) — 使用 `std::type_name` 在執行期檢查型別名稱，供智能合約進行動態型別檢查
+description: 型別反射 (Type Reflection) — 使用 `std::type_name` 在執行期檢查型別名稱，供智慧合約進行動態型別檢查
 ---
 
 # 型別反射 (Type Reflection) {#type-reflection}
