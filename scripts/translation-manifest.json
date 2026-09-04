@@ -149,6 +149,5 @@
   "reference/sidebar.yml": "831abc25882f7f339663429a87c6f953fa6f3fe7",
   "book/guides/using-move-registry.md": "86158455ed8efbf7203b12d0bbd2a9b8601584f0",
   "book/sidebar.yml": "113b9f71d70a132a79264be2bc0802826eb79ec3",
-  "book/move-advanced/entry-functions.md": "0a39b7b732d5414600999387cbfa60c969605bbc",
-  "book/programmability/scratchpad.md": "5f2867c9a845b948abfd1f9eb372943f73cd0208"
+  "book/move-advanced/entry-functions.md": "0a39b7b732d5414600999387cbfa60c969605bbc"
 }
