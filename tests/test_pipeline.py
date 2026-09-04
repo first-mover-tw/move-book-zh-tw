@@ -1,3 +1,4 @@
+import re
 import subprocess
 import pytest
 
@@ -1052,3 +1053,76 @@ def test_gate_flags_emphasis_lost_in_translation():
     en2 = "# T {#t}\n\nSee [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function)).\n"
     zh2 = "# 標題 (T) {#t}\n\n見 [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function))。\n"
     assert validate.check_cjk_emphasis(zh2, en2) == []
+
+
+# --- gate 11 的修復 pass ---
+
+
+def test_repair_ol_numbering_removes_the_duplicated_marker():
+    """沒有修復路徑的 gate 是結構性死鎖：pipeline 對 check_file 的任一錯誤
+    直接 raise，該檔就永久寫不出來（同 _repair_headings docstring 的規矩）。"""
+    body = "1.  **1. 預設安全性 (Secure by default):** 內文\n\n2.  **2. 表達力:** 內文\n"
+    out = pipeline._repair_ol_numbering(body)
+    assert out == "1.  **預設安全性 (Secure by default):** 內文\n\n2.  **表達力:** 內文\n"
+    assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + out) == []
+
+
+def test_repair_ol_numbering_matches_identity_not_shape():
+    """只刪「與列表標記同一個數字」的那一份。合法內容一個字都不准動。"""
+    for body in [
+        "1. 1.0 版本引入了新語法\n",
+        "1. 2024 版本\n",
+        "1. `1.` 是有序列表標記\n",
+        "2. 1. 這是不同的數字\n",
+    ]:
+        assert pipeline._repair_ol_numbering(body) == body, body
+
+
+def test_repair_ol_numbering_never_touches_code():
+    """fence 內是範例，不是散文。"""
+    body = "```\n1. 1. 假的\n```\n\n1. 1. 真的\n"
+    out = pipeline._repair_ol_numbering(body)
+    assert "1. 1. 假的" in out
+    assert "1. 1. 真的" not in out
+
+
+def test_repair_ol_numbering_handles_plain_and_emphasised_forms():
+    assert pipeline._repair_ol_numbering("3. 3. 沒有強調\n") == "3. 沒有強調\n"
+    assert pipeline._repair_ol_numbering("5. **5. 粗體**\n") == "5. **粗體**\n"
+    assert pipeline._repair_ol_numbering("7. _7. 斜體_\n") == "7. _斜體_\n"
+
+
+def test_assemble_repairs_ol_numbering_end_to_end():
+    """修復 pass 必須真的掛在 assemble 的鏈上。只測函式本身的話，把接線
+    拆掉（assemble 不再呼叫它）測試仍會全綠 —— 而 gate 11 一擋就是該檔
+    永久寫不出來。
+
+    backend 必須真的產出缺陷形態：FakeBackend 把所有散文換成「中文」，
+    所以要在它的輸出上動手，不能對原文做字串替換（那樣是空轉的測試）。
+    """
+
+    class DupNumberBackend(FakeBackend):
+        def translate(self, text: str, *, kind: str = "markdown") -> str:
+            out = super().translate(text, kind=kind)
+            # 把 `1. 中文` 變成機翻實際產出的 `1. **1. 中文**`
+            return re.sub(r"(?m)^(\d+)\. (?!\*)(.+)$", r"\1. **\1. \2**", out)
+
+    en = '---\ndescription: "desc"\n---\n\n# One\n\n1. Alpha\n\n2. Beta\n'
+    dup = DupNumberBackend().translate("# One\n\n1. Alpha\n\n2. Beta\n")
+    assert "1. **1. " in dup, dup  # 先確認這個 backend 真的會製造缺陷
+
+    out = pipeline.assemble(en, "", "", DupNumberBackend())
+    assert "**1. " not in out, out
+    assert validate.check_ordered_list_numbering(out) == []
+
+
+def test_repair_ol_numbering_leaves_raw_html_lists_to_the_gate():
+    """已知不涵蓋的殘餘情況要用測試釘住，不是靠註解宣稱。
+
+    裸 HTML 列表 gate 11 看得見、這個 pass 認不得 → 檔案被擋下（fail-closed）。
+    這是刻意的取捨：backend 翻譯 markdown、不產裸 HTML 列表，為了這種情況
+    去放寬 gate 才是把守衛弄壞（lessons L5）。
+    """
+    body = "<ol><li>1. 重複</li></ol>\n"
+    assert pipeline._repair_ol_numbering(body) == body  # 修不掉
+    assert validate.check_ordered_list_numbering("---\nx: 1\n---\n\n" + body)  # 但擋得住

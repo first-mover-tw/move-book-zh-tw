@@ -2,7 +2,11 @@ import subprocess
 
 import pytest
 
+from pathlib import Path
+
 from scripts.zh_tw import anchors, frontmatter, validate
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 EN = '---\ndescription: "Vectors in Move."\n---\n\n# Vector\n\n```move\nx\n```\n\n## Syntax\n\ntext\n'
 ZH = '---\ndescription: "Move 中的向量。"\n---\n\n# 向量 {#vector}\n\n```move\nx\n```\n\n## 語法 {#syntax}\n\n文字\n'
@@ -790,15 +794,36 @@ def test_ordered_list_numbering_ignores_unordered_and_code():
 
 
 def test_ordered_list_numbering_no_false_positive_on_corpus():
-    """既有 108 檔語料實測偽陽性 0 —— 這條守衛開下去不會擋到現有內容。"""
-    import pathlib
+    """全語料實測偽陽性 0 —— 這條守衛開下去不會擋到現有內容。
 
+    範圍必須等於 check_repo.collect() 的範圍（book + reference）：守衛只掃
+    book/ 的話，覆蓋面就不等於它宣稱保護的語料（外部 review 2026-09-04）。
+    """
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    assert len(files) > 100, files  # 路徑寫錯時不要靜默通過
     hits = {
         str(p): errs
-        for p in pathlib.Path("book").rglob("*.md")
+        for p in files
         if (errs := validate.check_ordered_list_numbering(p.read_text(encoding="utf-8")))
     }
     assert hits == {}
+
+
+def test_ordered_list_numbering_needs_a_delimiter_then_whitespace():
+    """誤報在這道 gate 的代價特別高：pipeline 對 check_file 的任一錯誤直接
+    raise，該檔就永久寫不出來、每輪人工。所以前導數字後面必須是「分隔符 +
+    空白/行尾」，`1.0 版本` 的小數點不算（外部 review 2026-09-04 實測）。
+    """
+    assert validate.check_ordered_list_numbering(_FM + "1. 1.0 版本引入了新語法\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 甲\n2. 2.0 版本\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. 1、甲項\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. **1. 真缺陷**\n")  # 仍要紅
+
+
+def test_ordered_list_numbering_ignores_inline_code():
+    """`` 1. `1.` 是有序列表標記 `` 是在講標記本身，不是把序號抄進內文。"""
+    assert validate.check_ordered_list_numbering(_FM + "1. `1.` 是有序列表標記\n") == []
+    assert validate.check_ordered_list_numbering(_FM + "1. <code>1.</code> x\n") == []
 
 
 def test_ordered_list_numbering_is_wired_into_check_file():

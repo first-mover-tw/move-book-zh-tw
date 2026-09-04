@@ -429,41 +429,72 @@ def test_scan_only_terms_are_still_surfaced():
 # --- 2026-09-03 PR #24 審查產出的詞條（run 33730438417） ---
 
 
-def test_pr24_regressions_are_caught_by_the_table():
-    """這四個詞條各自對應 PR #24 機翻產出的一個真實缺陷。沒有它們，
+def test_pr24_regressions_are_surfaced():
+    """四個缺陷各自對應 PR #24 機翻產出的一處真實回歸。沒有詞表，
     check_repo 對這些句子回報乾淨（實測：CI 6/6 綠、check_repo 0/0/0）。
+
+    只有「開發人員」進 enforce（無碰撞）；其餘三個有子字串碰撞，只能顯形。
     """
-    cases = {
-        "常試": "為了常試解決這個問題，有一些常見的模式。",  # 純錯字
-        "說明瞭": "貢獻附錄則說明瞭如何加入他們。",  # 了/瞭 過度轉換
-        "開發人員": "Move 允許開發人員編寫程式。",  # 語料 開發者 24 : 開發人員 1
-        "創始人": "— Sam Blackshear，Move 創始人",  # creator ≠ founder
-    }
-    for bad, sentence in cases.items():
-        assert glossary.scan(sentence).get(bad) == 1, (bad, sentence)
+    assert glossary.scan("Move 允許開發人員編寫程式。").get("開發人員") == 1
+    for bad, sentence in {
+        "常試": "為了常試解決這個問題，有一些常見的模式。",
+        "說明瞭": "貢獻附錄則說明瞭如何加入他們。",
+        "創始人": "— Sam Blackshear，Move 創始人",
+    }.items():
+        assert glossary.scan_only_hits(sentence).get(bad) == 1, (bad, sentence)
+
+
+def test_enforce_never_damages_a_legitimate_sentence():
+    """守衛的維度要等於它承擔的風險（lessons L2）。
+
+    「詞表看得見這個缺陷」與「詞表機械替換起來是安全的」是兩件事。
+    2026-09-04 外部 review 就是從這個缺口抓到三個 blocker：常試 撞
+    通常試/非常試/正常試、說明瞭 撞 說明+瞭解、創始人 撞 founder 的
+    正確用法。這些句子每一條都必須原封不動地通過 enforce。
+    """
+    intact = [
+        "通常試圖使用 assert! 來檢查條件。",  # 通常 + 試圖
+        "開發者非常試著避免這種寫法。",  # 非常 + 試著
+        "這在正常試驗中不會發生。",  # 正常 + 試驗
+        "本節說明瞭解物件模型的方式。",  # 說明 + 瞭解
+        "他是這家公司的創始人。",  # founder，不是 creator
+        "`public_*` 傳輸函式接受它們作為引數。",  # transfer functions
+        "能力宣告必須以分號終止：",  # terminated with a semicolon
+    ]
+    for s in intact:
+        assert glossary.enforce(s) == s, s
+
+
+def test_enforce_is_a_noop_on_the_existing_corpus():
+    """enforce 表是無邊界的 str.replace。任何新詞條若會改動既有語料，
+    要嘛那處本來就錯（該一併修掉），要嘛就是子字串碰撞（不該進表）。
+    兩種情況都不該靜默通過。"""
+    files = [p for base in ("book", "reference") for p in (_REPO_ROOT / base).rglob("*.md")]
+    for path in sorted(files):
+        body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
+        assert glossary.enforce(body) == body, path
 
 
 def test_liao_over_conversion_is_not_reachable_by_the_simplified_gate():
-    """「說明瞭」為什麼非得靠詞表：gate 8 用 OpenCC s2tw 逐字轉換，而
+    """「說明瞭」為什麼只能靠詞表顯形：gate 8 用 OpenCC s2tw 逐字轉換，而
     「了→瞭」正是它的已知假陽性來源（validate.py 開頭的白名單註解），
-    所以字形那一側永遠攔不到它。兩道關卡的分工要有測試釘住。
+    字形那一側永遠攔不到它。兩道關卡的分工要有測試釘住。
     """
     assert validate.simplified_chars("則說明瞭如何加入。\n") == []
-    assert glossary.scan("則說明瞭如何加入。").get("說明瞭") == 1
+    assert glossary.scan_only_hits("則說明瞭如何加入。").get("說明瞭") == 1
 
 
-def test_abort_terminate_stays_scan_only_because_it_is_polysemous():
-    """終止 不進 enforce 表（lessons L9）。
+def test_polysemous_terms_stay_out_of_the_enforce_table():
+    """lessons L9：多義詞與子字串碰撞不進 enforce 表。
 
-    語料 中止 162 : 終止 19，看起來像該機械替換 —— 但 reference/ 有 4 處
-    的英文原文就是 terminate（generics「terminate for any given input」、
-    enums「terminated with a semicolon」、references「program terminates」
-    ×2），機械替換會把正確句子改壞。scan 讓它顯形、prompt_rules 教模型，
+    終止 看起來該機械替換（語料 中止 175 : 終止 5），但 reference/ 有 4 處
+    英文原文就是 terminate（enums「terminated with a semicolon」、generics
+    「terminate for any given input」、references「program terminates」×2）。
+    傳輸 同理撞 transfer functions。scan 讓它們顯形、prompt_rules 教模型，
     enforce 不碰。
     """
-    assert "終止" not in glossary.load()
-    assert glossary.load_scan_only().get("終止") == "中止"
-    legit = "能力宣告必須以分號終止："
-    assert glossary.scan(legit) == {}  # enforce 側不得命中
-    assert glossary.enforce(legit) == legit  # 也不得被改寫
-    assert glossary.scan_only_hits(legit).get("終止") == 1  # 但要顯形
+    enforce_table = glossary.load()
+    scan_only = glossary.load_scan_only()
+    for term in ("終止", "傳輸", "常試", "說明瞭", "創始人"):
+        assert term not in enforce_table, term
+        assert term in scan_only, term

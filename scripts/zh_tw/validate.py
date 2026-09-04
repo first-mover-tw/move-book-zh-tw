@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 import commonmark
+from html.parser import HTMLParser
 from opencc import OpenCC
 
 from . import anchors, frontmatter, glossary
@@ -291,8 +292,6 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
     自身：巢狀在項目裡的子列表不算——子列表有自己的序號序列，把它的文字
     併進來會讓「前導數字」對到錯誤的序號。
     """
-    from html.parser import HTMLParser
-
     class _P(HTMLParser):
         def __init__(self):
             super().__init__(convert_charrefs=True)
@@ -300,6 +299,7 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
             self.items: list[tuple[int, str]] = []
             self.buf: list[str] = []
             self.cur: int | None = None
+            self.code = 0  # <code>/<pre> 巢狀深度
 
         def _flush(self):
             if self.cur is not None:
@@ -310,9 +310,11 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
             if tag in ("ol", "ul"):
                 start = 1
                 for k, v in attrs:
-                    if k == "start" and v and v.lstrip("-").isdigit():
+                    if k == "start" and v and v.isdigit():
                         start = int(v)
                 self.stack.append({"ol": tag == "ol", "n": start})
+            elif tag in ("code", "pre"):
+                self.code += 1
             elif tag == "li" and self.stack:
                 # 這個 flush 是巢狀正確性的支點：子列表的第一個 <li> 開啟時
                 # 結掉外層項目，外層的「前導文字」因此不含子列表內容。
@@ -327,13 +329,18 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
                 self._flush()
                 if self.stack:
                     self.stack.pop()
+            elif tag in ("code", "pre"):
+                self.code = max(0, self.code - 1)
             elif tag == "li":
                 self._flush()
 
         def handle_data(self, data):
             # 只收「這一項自己」的文字：子列表一開始就 _flush()，cur 歸 None，
             # 巢狀內容因此不會被算進外層項目。
-            if self.cur is not None:
+            #
+            # inline code 也不算：`1. `1.` 是有序列表標記` 是在講標記本身，
+            # 不是把序號重複寫進內文。
+            if self.cur is not None and not self.code:
                 self.buf.append(data)
 
     p = _P()
@@ -343,7 +350,10 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
     return p.items
 
 
-_LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.、．)）]")
+# 分隔符後必須接空白或行尾：否則 `1.0 版本` 的小數點會被當成列表分隔符，
+# 對合法內容誤報（外部 review 2026-09-04 實測）。誤報在這裡的代價特別高——
+# pipeline 對 check_file 的任一錯誤直接 raise，該檔就永久寫不出來。
+_LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.、．)）](?=\s|$)")
 
 
 def check_ordered_list_numbering(zh_text: str) -> list[str]:

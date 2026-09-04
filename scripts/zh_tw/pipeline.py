@@ -146,6 +146,7 @@ def assemble(
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
     zh_body = _repair_cjk_emphasis(zh_body)
+    zh_body = _repair_ol_numbering(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
@@ -368,6 +369,44 @@ def _repair_cjk_emphasis(zh_body: str) -> str:
                 pos = b + 1
         line_start = line_end
     out.append(zh_body[pos:])
+    return "".join(out)
+
+
+# 只認「行首列表標記 + 同一個數字 + 分隔符 + 空白」，且允許數字被強調包住
+# （實測的缺陷形態就是 `1.  **1. 文字**`）。判準與 gate 11 一樣是**身分**
+# ——標記的數字要等於內文重複的那個數字，才動它。
+_OL_DUP = re.compile(r"^(?P<indent>[ \t]*)(?P<n>\d+)(?P<mark>[.)])(?P<sp>[ \t]+)(?P<em>\*{1,2}|_{1,2})?(?P=n)[.、．)）][ \t]+")
+
+
+def _repair_ol_numbering(zh_body: str) -> str:
+    """gate 11 缺陷的修復 pass（enforce 與 gate 同進退，見 _repair_headings）。
+
+    機翻把 markdown 的列表標記 `1.` 又抄進項目內文，讀者看到「1. 1. 前言」
+    （2026-09-03 run 33730438417 / PR #24，foreword.md 三項全中）。沒有修復
+    路徑的話，gate 11 一擋就是該檔永久寫不出來、每輪人工——那是 gate 6/inject
+    那次死鎖的同一個家族。
+
+    決定性刪除重複的那一份（Model vs Code 分工：格式化不指望 LLM）。只刪
+    內文側，列表標記保持原樣，強調標記也保留。code fence 內不動。
+
+    **已知不涵蓋**：裸 HTML 寫成的 `<ol><li>1. …</li></ol>`。gate 11 讀的是
+    渲染後的 HTML（裸 HTML 也算），這個 pass 認的是行首的 markdown 列表
+    標記，兩者範圍不等。6000 例隨機 fuzz 找到的 18 個「gate 紅但修不掉」
+    全部落在這一類。backend 翻譯 markdown、不產裸 HTML 列表，所以留給
+    gate 擋（fail-closed，同 _repair_headings「修不掉就交給 gate 9」的處置）
+    ——不為了消滅殘餘情況去弱化守衛（lessons L5）。
+    """
+    protected = glossary.protected_mask(zh_body)
+    out, pos = [], 0
+    for line in zh_body.splitlines(keepends=True):
+        end = pos + len(line)
+        if not any(protected[pos:end]):
+            m = _OL_DUP.match(line)
+            if m:
+                head = f"{m.group('indent')}{m.group('n')}{m.group('mark')}{m.group('sp')}{m.group('em') or ''}"
+                line = head + line[m.end() :]
+        out.append(line)
+        pos = end
     return "".join(out)
 
 
