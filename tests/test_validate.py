@@ -558,7 +558,7 @@ def test_gate8_flags_simplified_chars(ch):
     assert any(c == ch for _, c in hits)
 
 
-@pytest.mark.parametrize("ch", ["台", "游", "了", "群", "才", "峰"])
+@pytest.mark.parametrize("ch", ["台", "游", "祕", "了", "群", "才", "峰"])
 def test_gate8_does_not_flag_allowlisted_or_non_simplified_chars(ch):
     body = f"這是一段包含 {ch} 字的文字。\n"
     hits = validate.simplified_chars(body)
@@ -574,6 +574,23 @@ def test_gate8_flags_hk_mainland_variants_not_moe_standard(ch):
     body = f"這是一段包含 {ch} 字的文字。\n"
     hits = validate.simplified_chars(body)
     assert any(c == ch for _, c in hits)
+
+
+def test_gate8_accepts_both_forms_of_the_secret_character():
+    """「祕」與「秘」在台灣並存，兩個都不是簡體字，gate 都不該攔。
+
+    教育部《異體字字典》以「祕」為正字（祕密、神祕），但 OpenCC 的 s2tw 會把
+    祕→秘 —— 逐字套用時就變成「祕是簡體」的假陽性。實測後果：codex 寫「祕密」，
+    `book/programmability/randomness.md` 連續三輪排乾都被這條擋掉，而現有語料
+    2 處寫的是「秘密」。硬要統一得改語料又得加違禁詞，不值得 —— **gate 的職責
+    是攔簡體，不是統一異體字選擇**（2026-09-05 使用者裁決）。
+
+    對照組 `裏`/`着` 仍必須被攔：那兩個是港澳/中國大陸字形，教育部標準是
+    `裡`/`著`，不是同一回事（見上面那條 REJECTED finding）。
+    """
+    for body in ["這是祕密資訊。\n", "這是秘密資訊。\n", "神祕的隨機性。\n"]:
+        assert validate.simplified_chars(body) == [], body
+    assert validate.simplified_chars("这是简体。\n"), "真簡體仍須被攔"
 
 
 def test_gate8_skips_fenced_code():
