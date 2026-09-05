@@ -639,11 +639,26 @@ def _doc_exists(sidebar_path: str, batch: list[str]):
     **本批次要翻的檔案也算存在**。
     """
     root = _REPO_ROOT / Path(sidebar_path).parent
-    in_batch = {str(Path(p)) for p in batch}
+
+    def _norm(p) -> str:
+        """一律正規化成 repo root 底下的相對路徑再比對。
+
+        `stale_files` 給的是相對路徑，但 CLI 也可能收到絕對路徑或 `./x`；
+        直接字串比對會讓絕對路徑永遠對不上，靜默退化成只看磁碟（外部
+        review A7），也就重新打開了上面那個「同批次被剪」的洞。
+        """
+        q = Path(p)
+        q = q if q.is_absolute() else _REPO_ROOT / q
+        try:
+            return str(q.resolve().relative_to(_REPO_ROOT.resolve()))
+        except ValueError:
+            return str(q)
+
+    in_batch = {_norm(p) for p in batch}
 
     def exists(doc_id: str) -> bool:
-        rel = Path(sidebar_path).parent / f"{doc_id}.md"
-        return (root / f"{doc_id}.md").is_file() or str(rel) in in_batch
+        rel = _norm(Path(sidebar_path).parent / f"{doc_id}.md")
+        return (root / f"{doc_id}.md").is_file() or rel in in_batch
 
     return exists
 

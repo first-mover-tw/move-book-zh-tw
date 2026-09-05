@@ -820,3 +820,53 @@ def test_expected_tree_postcondition_catches_a_span_that_deletes_too_much(monkey
     monkeypatch.setattr(sidebar, "_trim", lambda lines, start, end, indent: end + 1)
     with pytest.raises(ValueError, match="與期望樹不符|過度刪除"):
         sidebar.prune_missing(EN_PARTIAL, _exists({"programmability/scratchpad"}))
+
+
+# --- resync_needed：被剪掉的章節翻好之後要回得來（外部 review C1 後半）----
+
+
+def _write_sidebar(tmp_path, name, ids, docs):
+    d = tmp_path / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "sidebar.yml").write_text(
+        "bookSidebar:\n" + "".join(f"  - label: {i}\n    id: {i}\n" for i in ids),
+        encoding="utf-8",
+    )
+    for doc in docs:
+        f = d / f"{doc}.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("# x\n", encoding="utf-8")
+    return d
+
+
+UPSTREAM = "bookSidebar:\n  - label: a\n    id: a\n  - label: b\n    id: b\n"
+
+
+def test_resync_needed_when_a_pruned_chapter_has_since_been_translated(monkeypatch, tmp_path):
+    """上游列著 b、我們的 sidebar 沒列、但 b.md 已經翻好 —— 這正是「上一批
+    被剪掉、這一批翻好了」的狀態，必須重新同步。"""
+    _write_sidebar(tmp_path, "book", ["a"], ["a", "b"])
+    monkeypatch.chdir(tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
+
+
+def test_resync_not_needed_for_a_chapter_that_is_still_untranslated(monkeypatch, tmp_path):
+    """`programmability/scratchpad` 那種「上游有、我們永遠還沒翻」的章節不能
+    讓這個條件一直為真，否則每輪 cron 都會白燒一個批次額度。"""
+    _write_sidebar(tmp_path, "book", ["a"], ["a"])
+    monkeypatch.chdir(tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_resync_terminates_once_the_chapter_is_back_in_the_sidebar(monkeypatch, tmp_path):
+    _write_sidebar(tmp_path, "book", ["a", "b"], ["a", "b"])
+    monkeypatch.chdir(tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_dangling_dash_block_sequence_gets_an_actionable_message():
+    """`-` 單獨一行時 start_mark 落在第一個鍵上，那個 `-` 不在區間裡。
+    期望樹守衛擋得住，但訊息會指向刪除演算法而不是輸入寫法（A1）。"""
+    text = "bookSidebar:\n  -\n    label: A\n    id: gone\n  - label: K\n    id: k\n"
+    with pytest.raises(ValueError, match="分行的 block sequence"):
+        sidebar.prune_missing(text, _exists({"gone"}))

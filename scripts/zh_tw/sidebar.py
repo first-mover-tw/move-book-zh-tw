@@ -201,8 +201,10 @@ def _validate_new_label_format(pairs: list[tuple[str, str]]) -> None:
 # **之前**先把那些條目從英文原文剪掉，讓下游一切（label 沿用、skeleton
 # 不變式、寫檔）都以剪過的版本為準。
 #
-# 剪掉的章節不會遺失：下次同步時只要 `.md` 已經存在就會被重新加回，而它的
-# 中文 label 仍留在舊檔的沿用表裡（`_zh_label_key`），不需要重新呼叫 backend。
+# 剪掉的章節不會遺失，但復原不是自動發生的：寫出去的就是剪過的檔案，所以
+# 那個 label 也從沿用表消失了，回來時要重新呼叫一次 backend。真正讓它回來
+# 的是 `manifest.sidebar_resync_needed()` —— 只看 manifest 的英文 blob SHA
+# 的話，sidebar 被記成最新之後就再也不會被列為 stale。
 
 
 def _mapping(node) -> dict:
@@ -314,6 +316,16 @@ def _span(node, text: str) -> tuple[int, int]:
     if getattr(node, "flow_style", False):
         raise ValueError("不支援 flow style 的 sidebar 條目（無法用行區間刪除）")
     start, end = node.start_mark.line, node.end_mark.line
+    # `-` 單獨一行、內容縮排在下一行的寫法，節點的 start_mark 落在第一個
+    # 鍵上，那個 `-` 不在區間裡，刪完會留下一個 null 條目。期望樹守衛擋得住
+    # 但訊息指向刪除演算法，看不出是輸入寫法的問題（外部 review A1）。
+    lines = text.splitlines()
+    col = node.start_mark.column
+    if col < 2 or lines[start][col - 2:col] != "- ":
+        raise ValueError(
+            "不支援 `-` 與條目內容分行的 block sequence 寫法"
+            f"（第 {start + 1} 行）：無法用行區間表達這個條目"
+        )
     if not text[node.end_mark.index:].strip():
         end = len(text.splitlines())
     return start, end
@@ -398,7 +410,11 @@ def prune_missing(text: str, exists) -> tuple[str, list[str]]:
         expected = yaml.safe_load(text)
         for path, _s, _n in sorted(drops, key=lambda d: d[0], reverse=True):
             _drop_from_data(expected, path)
-        if yaml.safe_load(out) != expected:
+        try:
+            got = yaml.safe_load(out)
+        except yaml.YAMLError as e:
+            raise ValueError(f"剪枝後的輸出無法解析為 YAML: {e}") from e
+        if got != expected:
             raise ValueError("剪枝後的 YAML 與期望樹不符（行刪除與樹修剪不一致）")
 
     return out, dropped_ids
@@ -414,7 +430,10 @@ def _drop_from_data(data, path):
 
 def _assert_prune_is_faithful(text: str, out: str, exists, dropped_ids: list) -> None:
     """獨立於 drops 重新抽 doc id 集合，驗證「該刪的刪了、不該刪的都還在」。"""
-    before, after = _doc_ids_of(text), _doc_ids_of(out)
+    try:
+        before, after = doc_ids(text), doc_ids(out)
+    except yaml.YAMLError as e:  # 刪錯行導致輸出解析不了 —— 收斂成本模組的契約
+        raise ValueError(f"剪枝後的輸出無法解析為 YAML: {e}") from e
 
     lost = [i for i in before if exists(i) and i not in after]
     if lost:
@@ -445,7 +464,8 @@ def _assert_prune_is_faithful(text: str, out: str, exists, dropped_ids: list) ->
         )
 
 
-def _doc_ids_of(text: str) -> list[str]:
+def doc_ids(text: str) -> list[str]:
+    """文字裡所有 `id:` 的值，依出現順序。"""
     root = yaml.compose(text)
     out: list[str] = []
 
@@ -515,3 +535,33 @@ def translate(
     _assert_labels_equal(list(_walk_labels(parsed)), intended)
 
     return out
+
+
+def resync_needed(path: str, upstream_text: str) -> bool:
+    """這份 sidebar 是否該重新同步：上游列著、我們沒列、而那個 `.md` 已經翻好。
+
+    同步會剪掉「還沒翻」的章節，但判準只能看**當下**磁碟上有什麼，而 `run()`
+    是分批的（CI `BATCH_SIZE: 3`）：`book/sidebar.yml` 在 `git ls-tree` 排序裡
+    位於 116 個檔案的第 94 位，後面還有 22 個 `.md`。上游一次新增三章以上時
+    （那必然也會動 sidebar.yml），排在後面的章節在輪到 sidebar 時還沒落盤，
+    會被剪掉；`manifest.record` 隨即把 sidebar 記成最新，而 `stale_files` 只
+    比對英文 blob SHA，於是那些章節即使後來翻好了也永遠回不到側邊欄
+    （外部 review C1）。`_doc_exists` 的 in_batch 只救得了同一批次的。
+
+    這個條件精確且會終止：只有「本地已經有 .md、但我們的 sidebar 沒列」才成立，
+    重新同步一次就消失。永遠不會翻的章節（本地沒有 .md）不會讓它一直為真，
+    所以不會每輪 cron 都白燒一個批次額度——這是「剪到東西就不 record」那個
+    做法的病理，刻意不採用。
+    """
+    from pathlib import Path
+
+    local = Path(path)
+    if not local.is_file():
+        return False
+    try:
+        upstream = doc_ids(upstream_text)
+        have = set(doc_ids(local.read_text(encoding="utf-8")))
+    except yaml.YAMLError:  # 解析不了就交給正常的同步流程處理
+        return False
+    parent = local.parent
+    return any(i not in have and (parent / f"{i}.md").is_file() for i in upstream)

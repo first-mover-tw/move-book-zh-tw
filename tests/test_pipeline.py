@@ -1450,3 +1450,36 @@ def test_doc_exists_resolves_paths_from_the_repo_root_not_the_cwd(monkeypatch, t
     """從子目錄執行時相對路徑會全數判成不存在，而小樣本的比例守衛擋不住。"""
     monkeypatch.chdir(tmp_path)
     assert pipeline._doc_exists("book/sidebar.yml", [])("index") is True
+
+
+def test_doc_exists_matches_batch_entries_given_as_absolute_or_dotted_paths():
+    """CLI 可能收到絕對路徑或 `./x`；直接字串比對會對不上，靜默退化成只看
+    磁碟，也就重新打開了「同批次被剪」的洞（外部 review A7）。"""
+    target = str(pipeline._REPO_ROOT / "book" / "storage" / "derived-object.md")
+    for form in (target, "./book/storage/derived-object.md", "book/storage/derived-object.md"):
+        exists = pipeline._doc_exists("book/sidebar.yml", [form])
+        assert exists("storage/derived-object") is True, form
+
+
+def test_stale_paths_lists_sidebar_when_a_pruned_chapter_came_back(monkeypatch):
+    """跨批次回歸：manifest 認為 sidebar 是最新的（英文 blob 沒變），但我們的
+    sidebar 少列了一個已經翻好的章節 —— 必須靠這條才回得來。"""
+    from scripts.zh_tw import __main__ as cli
+
+    monkeypatch.setattr(cli.manifest, "stale_files", lambda ref: [])
+    monkeypatch.setattr(cli.pipeline, "_show", lambda ref, path: "x")
+    monkeypatch.setattr(
+        cli.sidebar, "resync_needed", lambda path, up: path == "book/sidebar.yml"
+    )
+    assert cli.stale_paths("english-main") == ["book/sidebar.yml"]
+
+
+def test_stale_paths_does_not_duplicate_a_sidebar_already_reported_stale(monkeypatch):
+    from scripts.zh_tw import __main__ as cli
+
+    monkeypatch.setattr(cli.manifest, "stale_files", lambda ref: ["book/sidebar.yml"])
+    monkeypatch.setattr(cli.pipeline, "_show", lambda ref, path: "x")
+    monkeypatch.setattr(
+        cli.sidebar, "resync_needed", lambda path, up: path == "book/sidebar.yml"
+    )
+    assert cli.stale_paths("english-main") == ["book/sidebar.yml"]
