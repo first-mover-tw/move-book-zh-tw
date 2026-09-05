@@ -11,7 +11,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, validate
+from scripts.zh_tw import check_repo, frontmatter, glossary, manifest, sidebar, validate
 
 
 def _show(ref: str, path: str) -> str | None:
@@ -145,8 +145,11 @@ def test_every_sidebar_doc_id_resolves_to_an_existing_file():
         sb = root / name / "sidebar.yml"
         if not sb.is_file():
             continue
-        for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", sb.read_text(encoding="utf-8"), re.M):
-            doc_id = m.group(1).strip("'\"")
+        # 用 `sidebar.doc_ids` 而不是 regex `^\s*id:`：docusaurus 也接受把
+        # doc id 直接寫成序列裡的字串（`- concepts/intro`），regex 對那種寫法
+        # 完全隱形 —— 這道 gate 會全綠而 build 掛在它要防的那個症狀上
+        # （外部 review B2）。判準要對齊「doc 引用」，不是「`id:` 這個鍵」。
+        for doc_id in sidebar.doc_ids(sb.read_text(encoding="utf-8")):
             if not (root / name / f"{doc_id}.md").is_file():
                 missing.setdefault(str(sb.relative_to(root)), []).append(doc_id)
     assert missing == {}, missing

@@ -494,3 +494,610 @@ def test_sidebar_translate_sends_kind_sidebar():
     en = 'items:\n  - label: "Alpha"\n    href: /a\n'
     sidebar.translate(en, "", CapturingBackend())
     assert captured["kind"] == "sidebar"
+
+
+# --- prune_missing：過濾掉「上游有、我們還沒翻」的章節 --------------------
+#
+# 根因見 tests/test_baseline.py::test_every_sidebar_doc_id_resolves_to_an_
+# existing_file —— sidebar 每次從 english-main 重建，未翻章節必然被寫回去，
+# 而 pytest/check_repo/prettier 全綠、只有 docusaurus build 會掛。
+
+EN_PARTIAL = """# comment
+bookSidebar:
+  - label: The Move Book
+    id: index
+  - label: Scratchpad
+    id: programmability/scratchpad
+  - type: category
+    label: Before We Begin
+    link:
+      id: before-we-begin/index
+      type: doc
+    items:
+      - label: Install Sui
+        id: before-we-begin/install-sui
+      - label: Brand New
+        id: before-we-begin/brand-new
+"""
+
+MISSING = {"programmability/scratchpad", "before-we-begin/brand-new"}
+
+
+def _exists(missing):
+    return lambda doc_id: doc_id not in missing
+
+
+def _doc_ids(text: str) -> list[str]:
+    return [m.group(1).strip("'\"") for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", text, re.M)]
+
+
+def test_prune_removes_items_whose_doc_is_missing():
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    assert dropped == ["programmability/scratchpad", "before-we-begin/brand-new"]
+    assert out == """# comment
+bookSidebar:
+  - label: The Move Book
+    id: index
+  - type: category
+    label: Before We Begin
+    link:
+      id: before-we-begin/index
+      type: doc
+    items:
+      - label: Install Sui
+        id: before-we-begin/install-sui
+"""
+
+
+def test_prune_is_byte_identical_when_nothing_missing():
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, lambda _: True)
+    assert out == EN_PARTIAL
+    assert dropped == []
+
+
+def test_prune_kept_lines_are_a_subsequence_of_the_original():
+    """內容不變式（L18）：只准刪整行，不准改任何一行的位元組。"""
+    out, _ = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    src = EN_PARTIAL.splitlines()
+    it = iter(src)
+    assert all(line in it for line in out.splitlines())
+
+
+def test_prune_drops_whole_category_when_all_its_items_are_missing():
+    """空的 `items:` 一樣會讓 docusaurus build 失敗 —— 整個 category 要一起走。"""
+    missing = {"before-we-begin/index", "before-we-begin/install-sui", "before-we-begin/brand-new"}
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, _exists(missing))
+    assert "Before We Begin" not in out
+    assert "items:" not in out
+    assert yaml.safe_load(out)["bookSidebar"] == [
+        {"label": "The Move Book", "id": "index"},
+        {"label": "Scratchpad", "id": "programmability/scratchpad"},
+    ]
+
+
+def test_prune_raises_when_category_link_is_missing_but_children_survive():
+    """判定與修復不是同一個資訊量（L16）：整個 category 刪掉會讓已翻好的
+    子頁面從側邊欄消失，保留又會讓 build 掛 —— 沒有安全的自動解，fail-closed
+    交回人工。"""
+    with pytest.raises(ValueError, match="before-we-begin/index"):
+        sidebar.prune_missing(EN_PARTIAL, _exists({"before-we-begin/index"}))
+
+
+def test_prune_raises_when_everything_would_be_dropped():
+    """`exists` 判準寫錯（路徑/副檔名）時最典型的失效就是全數不存在；
+    靜默產出空 sidebar 比留著壞 doc id 更難查。"""
+    with pytest.raises(ValueError, match="一個條目都不剩"):
+        sidebar.prune_missing(EN_PARTIAL, lambda _: False)
+
+
+def test_prune_keeps_blank_lines_and_comments_that_precede_the_next_item():
+    """YAML 節點的 end_mark 落在**下一個 token**，中間的空行與註解屬於下一項，
+    不能被算進被刪區段。"""
+    text = """bookSidebar:
+  - label: Gone
+    id: nope
+
+  # 這行註解屬於下一項
+  - label: Stay
+    id: index
+"""
+    out, dropped = sidebar.prune_missing(text, _exists({"nope"}))
+    assert dropped == ["nope"]
+    assert out == """bookSidebar:
+
+  # 這行註解屬於下一項
+  - label: Stay
+    id: index
+"""
+
+
+def test_translate_prunes_before_translating_and_never_asks_for_dropped_labels():
+    backend = RecordingBackend()
+    out = sidebar.translate(EN_PARTIAL, "", backend, exists=_exists(MISSING))
+    asked = " ".join(backend.calls)
+    assert "Scratchpad" not in asked
+    assert "Brand New" not in asked
+    assert set(_doc_ids(out)).isdisjoint(MISSING)
+    pruned, _ = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    assert sidebar.skeleton(out) == sidebar.skeleton(pruned)
+
+
+def test_translate_without_exists_is_unchanged():
+    """沒傳 exists 時行為與過去逐位元組相同（既有呼叫端不受影響）。"""
+    out = sidebar.translate(EN, PREV_ZH, EchoBackend())
+    assert sidebar.skeleton(out) == sidebar.skeleton(EN)
+
+
+@pytest.mark.parametrize("name", ["book", "reference"])
+def test_prune_real_upstream_sidebar_leaves_only_resolvable_doc_ids(name):
+    """真實資料：拿 english-main 的 sidebar 對本 repo 的 .md 剪，剪完每個
+    doc id 都必須有檔案 —— 這正是 test_baseline 那條守衛要防的復發。"""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    en = _git_show("english-main", f"{name}/sidebar.yml")
+    out, _ = sidebar.prune_missing(en, lambda i: (root / name / f"{i}.md").is_file())
+    assert [i for i in _doc_ids(out) if not (root / name / f"{i}.md").is_file()] == []
+
+
+def test_prune_raises_when_all_children_missing_but_category_link_exists():
+    """`items: []` 會讓 build 失敗，但整個 category 刪掉會讓已翻好的 index
+    頁從側邊欄消失 —— 與 link 缺失那條同一個形狀，一樣 fail-closed。"""
+    missing = {"before-we-begin/install-sui", "before-we-begin/brand-new"}
+    with pytest.raises(ValueError, match="子項全都還沒翻"):
+        sidebar.prune_missing(EN_PARTIAL, _exists(missing))
+
+
+def test_prune_drops_category_with_no_link_when_all_children_are_missing():
+    """沒有 link 的 category 本身不對應任何頁面，子項全沒翻時整個刪掉不會
+    讓任何已翻內容消失 —— 這條才是 `kept == 0` 的合法出口。"""
+    text = """bookSidebar:
+  - label: Keep Me
+    id: index
+  - type: category
+    label: All New
+    items:
+      - label: A
+        id: new/a
+      - label: B
+        id: new/b
+"""
+    out, dropped = sidebar.prune_missing(text, _exists({"new/a", "new/b"}))
+    # 整個 category 是**一筆**刪除（子項連帶消失），回報用它的 label。
+    assert dropped == ["All New"]
+    assert out == """bookSidebar:
+  - label: Keep Me
+    id: index
+"""
+
+
+# --- 外部 review 整合修復：每一道守衛各自的覆蓋 --------------------------
+#
+# 第一版四條後置條件全部由 `_keep` 的同一份 drops 推導，外部 review 實測
+# 「整條拿掉、472 個測試不變色」。下面每個測試都只打在**一道**守衛上。
+
+
+def _big(n: int, missing: set) -> str:
+    """產生 n 個條目的合成 sidebar，讓比例守衛的最小樣本數門檻生效。"""
+    body = "".join(f"  - label: L{i}\n    id: d{i}\n" for i in range(n))
+    return "bookSidebar:\n" + body
+
+
+def test_ratio_guard_fires_when_more_than_half_the_labels_would_be_dropped():
+    """`exists` 判準寫錯（路徑/cwd/副檔名）的典型失效：剪掉絕大多數條目。
+    第一版分子數「條目筆數」、分母數「label 總數」，單位不同 —— 真實資料
+    110 個 label 剪到剩 1 個仍然不觸發。"""
+    text = _big(20, set())
+    with pytest.raises(ValueError, match=r"剩 1/20"):
+        sidebar.prune_missing(text, lambda i: i == "d0")
+
+
+def test_ratio_guard_does_not_fire_on_a_legitimate_early_stage_repo():
+    """小樣本套比例會把「三章翻了一章」誤判成判準有誤（B5）。"""
+    out, dropped = sidebar.prune_missing(
+        "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: b\n"
+        "  - label: C\n    id: c\n",
+        _exists({"b", "c"}),
+    )
+    assert dropped == ["b", "c"]
+    assert _doc_ids(out) == ["a"]
+
+
+def test_over_deletion_is_caught_even_when_the_keep_judgement_is_wrong(monkeypatch):
+    """後置條件必須獨立於 `_keep`：把判定整個換成「全部刪掉」，守衛仍要紅。
+    第一版的期望樹與子序列檢查都由 drops 推導，這種情形完全無感（C3）。"""
+    # 只讓第一個條目被誤刪 —— 剩下的條目還在，所以「全空」與比例守衛都不會
+    # 觸發，紅的只能是「過度刪除」這一條。
+    real = sidebar._keep
+    calls = {"n": 0}
+
+    def only_first_is_wrong(*a, **k):
+        calls["n"] += 1
+        return False if calls["n"] == 1 else real(*a, **k)
+
+    monkeypatch.setattr(sidebar, "_keep", only_first_is_wrong)
+    with pytest.raises(ValueError, match="過度刪除"):
+        sidebar.prune_missing(EN_PARTIAL, lambda _: True)
+
+
+def test_unresolvable_doc_id_is_caught_even_when_keep_never_drops(monkeypatch):
+    """反方向：判定改成「全部留下」，症狀守衛要抓到留下來的壞 doc id。"""
+    monkeypatch.setattr(sidebar, "_keep", lambda *a, **k: True)
+    with pytest.raises(ValueError, match="仍有無法解析的 doc id"):
+        sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+
+
+def test_postconditions_run_even_when_nothing_is_dropped():
+    """`_keep` 看不到的壞 doc id 不能因為「沒東西要刪」就早退跳過檢查（B1）。"""
+    text = """bookSidebar:
+  - label: A
+    id: a
+  - type: category
+    label: Cat
+    link:
+      id: cat/missing
+      type: doc
+    items:
+      - label: B
+        id: cat/b
+"""
+    with pytest.raises(ValueError, match="cat/missing"):
+        sidebar.prune_missing(text, _exists({"cat/missing"}))
+
+
+def test_node_with_both_id_and_items_has_its_own_id_checked():
+    """帶 `id` 又帶 `items` 的節點，第一版的 items 分支只看 link、永遠不檢查
+    它自己的 id（B1 第二例）。"""
+    text = """bookSidebar:
+  - label: A
+    id: gone
+    items:
+      - label: B
+        id: b
+"""
+    with pytest.raises(ValueError, match="自己的頁面不存在但底下還有已翻好的項目"):
+        sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_flow_style_entry_is_rejected_with_an_actionable_message():
+    """flow style 整條在同一行，行刪除表達不了 —— 第一版會退化成 span 寬度 0，
+    什麼都沒刪卻回報成功，錯誤訊息還指向 exists 判準（B2）。"""
+    text = "bookSidebar:\n  - {label: A, id: a}\n  - {label: B, id: b}\n"
+    with pytest.raises(ValueError, match="flow style"):
+        sidebar.prune_missing(text, _exists({"b"}))
+
+
+def test_file_without_trailing_newline_drops_its_last_entry_correctly():
+    """檔尾沒有換行時最後一個節點的 end_mark 停在自己那行，span 寬度 0（B3）。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: gone"
+    out, dropped = sidebar.prune_missing(text, _exists({"gone"}))
+    assert dropped == ["gone"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n"
+
+
+def test_anchor_alias_is_rejected_instead_of_deleting_the_wrong_lines():
+    """PyYAML 對 alias 回傳同一個 node 物件，兩筆 drop 拿到相同 span，
+    刪兩次就刪掉後面等長的行、產出殘破 YAML（B4）。"""
+    text = """bookSidebar:
+  - &x
+    label: A
+    id: gone
+  - label: K
+    id: k
+  - *x
+"""
+    with pytest.raises(ValueError, match="anchor/alias"):
+        sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_trailing_comment_of_a_dropped_entry_goes_with_it():
+    """尾註的縮排與條目同深，屬於被刪的條目；第一版無條件回縮所有註解行，
+    把它留在原地變成縮排錯亂的孤兒行（B6）。"""
+    text = """bookSidebar:
+  - label: A
+    id: gone
+    # 這行屬於 A
+  - label: B
+    id: b
+"""
+    out, _ = sidebar.prune_missing(text, _exists({"gone"}))
+    assert out == "bookSidebar:\n  - label: B\n    id: b\n"
+
+
+@pytest.mark.parametrize("name", ["book", "reference"])
+def test_real_upstream_sidebar_keeps_exactly_the_docs_that_exist(name):
+    """真實資料上的內容判準：留下的 doc id 必須**恰好**等於上游列表裡通過
+    `exists` 的那些。只斷言「留下的都存在」的話，110 → 1 也會過（A5）。
+
+    刻意不用「至少留下 N 個」這種下界 —— 那是語料狀態（上游一次新增 6 章
+    未翻的章節就會紅，而那是完全正常的狀態），不是程式行為。這條斷言對任何
+    語料狀態都成立。
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent / name
+    en = _git_show("english-main", f"{name}/sidebar.yml")
+
+    def exists(doc_id):
+        return (root / f"{doc_id}.md").is_file()
+
+    # `prune_missing` 不是全函式：category 自己的頁面還沒翻、子項卻翻好了
+    # 的時候會 fail-closed。那是**正確的程式行為**（L16），不是缺陷 —— 而且
+    # `BATCH_SIZE: 3` 下 `newcat/basics.md` 會先於 `newcat/index.md` 被翻，
+    # 這個中間態真的可達。斷言「不會 raise」＝斷言語料狀態（L3），會讓一個
+    # 內容正確的 auto PR 變紅、cron 全部停擺（外部 review B1）。
+    try:
+        out, _ = sidebar.prune_missing(en, exists)
+    except sidebar.FailClosed as e:
+        pytest.skip(f"上游語料目前處於需人工處理的合法中間態: {e}")
+    assert sidebar.doc_ids(out) == [i for i in sidebar.doc_ids(en) if exists(i)]
+
+
+def test_expected_tree_postcondition_catches_a_span_that_deletes_too_much(monkeypatch):
+    """期望樹是「行刪除」與「樹修剪」的交叉驗證：把 span 尾端撐大一行，
+    行刪除就會多吃掉下一個條目的第一行，兩者不再一致。"""
+    monkeypatch.setattr(sidebar, "_trim", lambda lines, start, end, indent: end + 1)
+    with pytest.raises(ValueError, match="與期望樹不符|過度刪除"):
+        sidebar.prune_missing(EN_PARTIAL, _exists({"programmability/scratchpad"}))
+
+
+# --- resync_needed：被剪掉的章節翻好之後要回得來（外部 review C1 後半）----
+
+
+def _at_root(monkeypatch, tmp_path):
+    """把 repo root 指向 tmp —— `resync_needed` 相對 repo root 解析路徑，
+    不是相對 cwd（從子目錄執行時 cwd 相對會全數判成不存在）。"""
+    from scripts.zh_tw import manifest
+
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+
+
+def _write_sidebar(tmp_path, name, ids, docs):
+    d = tmp_path / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "sidebar.yml").write_text(
+        "bookSidebar:\n" + "".join(f"  - label: {i}\n    id: {i}\n" for i in ids),
+        encoding="utf-8",
+    )
+    for doc in docs:
+        f = d / f"{doc}.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("# x\n", encoding="utf-8")
+    return d
+
+
+UPSTREAM = "bookSidebar:\n  - label: a\n    id: a\n  - label: b\n    id: b\n"
+
+
+def test_resync_needed_when_a_pruned_chapter_has_since_been_translated(monkeypatch, tmp_path):
+    """上游列著 b、我們的 sidebar 沒列、但 b.md 已經翻好 —— 這正是「上一批
+    被剪掉、這一批翻好了」的狀態，必須重新同步。"""
+    _write_sidebar(tmp_path, "book", ["a"], ["a", "b"])
+    _at_root(monkeypatch, tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
+
+
+def test_resync_not_needed_for_a_chapter_that_is_still_untranslated(monkeypatch, tmp_path):
+    """`programmability/scratchpad` 那種「上游有、我們永遠還沒翻」的章節不能
+    讓這個條件一直為真，否則每輪 cron 都會白燒一個批次額度。"""
+    _write_sidebar(tmp_path, "book", ["a"], ["a"])
+    _at_root(monkeypatch, tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_resync_terminates_once_the_chapter_is_back_in_the_sidebar(monkeypatch, tmp_path):
+    _write_sidebar(tmp_path, "book", ["a", "b"], ["a", "b"])
+    _at_root(monkeypatch, tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_dangling_dash_block_sequence_gets_an_actionable_message():
+    """`-` 單獨一行時 start_mark 落在第一個鍵上，那個 `-` 不在區間裡。
+    期望樹守衛擋得住，但訊息會指向刪除演算法而不是輸入寫法（A1）。"""
+    text = "bookSidebar:\n  -\n    label: A\n    id: gone\n  - label: K\n    id: k\n"
+    with pytest.raises(ValueError, match="分行的 block sequence"):
+        sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_resync_needed_when_our_sidebar_lists_a_doc_that_does_not_exist(monkeypatch, tmp_path):
+    """反方向：`_doc_exists` 對「本批次正要翻的檔案」是樂觀判定，那個檔案
+    翻譯失敗（配額用盡是 workflow 明確容忍的情況）時 sidebar 會帶著一個
+    dangling doc id 落盤 —— 只看「少列」的方向沒有任何回收機制（B3）。"""
+    _write_sidebar(tmp_path, "book", ["a", "b"], ["a"])  # 列了 b，但 b.md 不存在
+    _at_root(monkeypatch, tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
+
+
+def test_resync_terminates_after_the_dangling_entry_is_pruned(monkeypatch, tmp_path):
+    _write_sidebar(tmp_path, "book", ["a"], ["a"])
+    _at_root(monkeypatch, tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_dash_followed_by_extra_spaces_is_valid_and_not_rejected():
+    """`-   id: a` 是完全合法的 block sequence，dash 與內容也在同一行。
+    固定看 col-2 會誤判成分行寫法，訊息還指向一個不存在的成因（B2）。"""
+    out, dropped = sidebar.prune_missing(
+        "bookSidebar:\n  -   label: A\n      id: a\n  -   label: B\n      id: b\n",
+        _exists({"b"}),
+    )
+    assert dropped == ["b"]
+    assert _doc_ids(out) == ["a"]
+
+
+# `test_resync_needed_on_the_real_repo_is_false` 曾經放在這裡，已移除：
+# 它斷言「repo 當下不處於待重新同步的狀態」，但管線的設計就是會經過那個
+# 狀態（sidebar 被 append 在 stale 清單尾端，workflow 又 head -n 3，目前
+# 37 檔待排乾 —— 某輪把 x.md 翻好之後 resync_needed 立刻為 True）。那一輪
+# 的 auto PR 內容完全正確卻會被這條 gate 判紅，接著「有未合併 auto PR 就
+# 本輪跳過」讓 cron 全部空轉。這正是 test_baseline.py 開頭寫的判準：
+# 語料狀態不是程式行為（L3/L4）。「現在同不同步」屬 --detect 的儀表板。
+
+
+# --- docusaurus 的 doc id 字串簡寫（外部 review B2）------------------------
+#
+# `- concepts/intro` 與 `- {id: concepts/intro}` 對 docusaurus 完全等價。
+# 修復前這種寫法對**三處**同時隱形：`_keep`（`_mapping` 回 {} → 一路 return
+# True）、`doc_ids`（只收 `id:` 鍵）、`test_baseline` 的 gate（regex `^\s*id:`）。
+# 三處是同一個盲點的三個出口 —— 守衛觀測的是「`id:` 這個鍵」，宣稱保護的卻是
+# 「doc 引用解析得到」（L2）。
+
+
+def test_scalar_shorthand_doc_id_is_pruned_when_the_file_is_missing():
+    """修復前：`dropped == []`、輸出一字未改、所有後置條件全綠，而 docusaurus
+    build 掛在原本要修的那個症狀上。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/gone\n  - label: K\n    id: k\n"
+    out, dropped = sidebar.prune_missing(text, _exists({"concepts/gone"}))
+    assert dropped == ["bookSidebar/1"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n  - label: K\n    id: k\n"
+
+
+def test_scalar_shorthand_doc_id_is_visible_to_doc_ids():
+    """`doc_ids` 是後置條件與 baseline gate 共同的判準來源；它看不到的東西，
+    那兩道守衛也看不到。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/intro\n"
+    assert sidebar.doc_ids(text) == ["a", "concepts/intro"]
+
+
+def test_scalar_shorthand_is_pruned_at_the_end_of_file_and_when_nested():
+    """純量節點的 `end_mark` 落在自己結尾而不是下一個 token，區間會退化成
+    寬度 0。這與檔尾那個已知情形同源，但 mapping 條目碰不到。"""
+    eof = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/gone\n"
+    out, dropped = sidebar.prune_missing(eof, _exists({"concepts/gone"}))
+    assert dropped == ["bookSidebar/1"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n"
+
+    nested = (
+        "bookSidebar:\n  - type: category\n    label: C\n"
+        "    link:\n      type: doc\n      id: c\n"
+        "    items:\n      - c/keep\n      - c/gone\n"
+    )
+    out, dropped = sidebar.prune_missing(nested, _exists({"c/gone"}))
+    assert dropped == ["bookSidebar/0/items/1"]
+    assert sidebar.doc_ids(out) == ["c", "c/keep"]
+
+
+def test_fail_closed_is_a_distinct_exception_type():
+    """真實語料測試要能區分「需人工處理的合法中間態」與「判準或輸入壞了」。
+    兩者都是 ValueError 的話，測試只能二選一：把合法中間態當失敗（cron 停擺，
+    外部 review B1），或把真的壞掉當成可以忽略。
+    """
+    text = (
+        "bookSidebar:\n  - type: category\n    label: C\n    link:\n"
+        "      type: doc\n      id: c/index\n    items:\n      - label: K\n        id: c/k\n"
+    )
+    with pytest.raises(sidebar.FailClosed):
+        sidebar.prune_missing(text, _exists({"c/index"}))
+    # 對照組：exists 疑似有誤是另一回事，不該被同一個 except 吃掉。
+    assert not issubclass(type(_exists({})), sidebar.FailClosed)
+
+
+def test_the_ratio_guard_is_a_deliberate_heuristic_not_an_invariant():
+    """`kept * 2 < total`（>= 10 個 label 才套）會擋下「合法但超過半數未翻」
+    的 sidebar。這是**刻意**的取捨，不是沒人想過的邊界：
+
+    它防的是 `exists` 判準整個壞掉（例如相對 cwd 解析 → 全數判成不存在），
+    代價是翻譯進度 < 50% 的 repo 會被誤擋。本 repo 107/108 與 34/34，排乾
+    只會增加已翻檔案，走不到這個狀態。判準若要改成不依賴進度的 identity
+    比對，這條測試會紅 —— 那正是要它紅的時機。
+    """
+    text = "bookSidebar:\n" + "".join(
+        f"  - label: L{i}\n    id: d{i}\n" for i in range(12)
+    )
+    with pytest.raises(ValueError, match="剪掉的條目過多"):
+        sidebar.prune_missing(text, _exists({f"d{i}" for i in range(5, 12)}))
+    # 界線本身也釘住：剛好過半不擋。
+    out, _ = sidebar.prune_missing(text, _exists({f"d{i}" for i in range(6, 12)}))
+    assert len(sidebar.doc_ids(out)) == 6
+
+
+def test_string_arrays_outside_item_position_are_not_doc_ids():
+    """字串簡寫只在**條目位置**成立（根序列與 `items:`），不是「任何序列裡的
+    任何純量」。docusaurus 的 sidebar item 允許 `customProps`，官方例子就有
+    `badges: ['new', 'green']`。
+
+    把那些當 doc id 的話，baseline gate 會誤報 `new.md` 不存在、`prune_missing`
+    的後置條件會 raise —— 一個**合法**的 sidebar 被 fail-closed 永久擋死。
+    這比漏抓更糟：漏抓是 build 掛掉，誤擋是管線寫不出東西又沒有修復路徑
+    （L16：沒有修復路徑的守衛，對誤報要格外保守）。
+    """
+    text = (
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n"
+        "      badges:\n        - new\n        - green\n"
+    )
+    assert sidebar.doc_ids(text) == ["a"]
+    out, dropped = sidebar.prune_missing(text, _exists(set()))
+    assert dropped == []
+    assert out == text
+
+    # 條目位置的簡寫仍然要認得——修法不能靠「不再認純量」來閃過誤報。
+    nested = (
+        "bookSidebar:\n  - type: category\n    label: C\n    items:\n      - c/keep\n"
+        "      - label: D\n        id: d\n        customProps:\n          tags:\n            - x\n"
+    )
+    assert sidebar.doc_ids(nested) == ["c/keep", "d"]
+
+
+def test_category_shorthand_does_not_exist_in_this_pipeline():
+    """docusaurus 支援 category shorthand（任意 label 當鍵、值是子條目陣列），
+    這條管線**不支援**，而且不是我們選擇不支援 —— 是它到不了。
+
+    `site/src/plugins/yaml-sidebar.ts` 夾在 YAML 與 docusaurus 之間，對每個
+    條目做 `if (item.type === undefined) item.type = 'doc'`；docusaurus 判斷
+    shorthand 的條件是 `!item.type`，補過之後永遠不成立。這種寫法會被上游的
+    validateSidebars 以 `"id" is required` 拒收，build 直接掛。
+
+    這裡釘的是「我們不會替一個 build 不起來的 sidebar 編造 doc id」。
+    「上游確實拒收」那一半由 `test_sidebar_oracle.py` 拿上游程式碼實跑。
+
+    歷史：R6→R9 四輪外部 review 都在調「shorthand vs item」的邊界，前一版的
+    `_ITEM_KEYS` 是從語料樣本反推出來的代理量（L20）。爭論的區分不存在。
+    """
+    for text in (
+        "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n",
+        "bookSidebar:\n  Getting started:\n    - doc1\n",
+    ):
+        assert sidebar.doc_ids(text) == []
+
+
+def test_ref_ids_must_resolve_too_and_prune_treats_them_like_docs():
+    """`type: ref` 的 id 不在 `collectSidebarDocIds` 裡，但**一樣得解析得到**：
+    props.js 的 normalizeItem 對 'doc' 與 'ref' 走同一條 `convertDocLink` →
+    `getDocById`，而 getDocById 對不存在的 id 直接 throw。dangling ref 照樣掛
+    build，只是比 `checkSidebarsDocIds` 晚一階。
+
+    這條同時釘 `doc_ids` 與 `prune_missing` 兩端。只釘 `doc_ids` 的話，
+    「`_keep` 剪掉 ref、`doc_ids` 看不見它」這種兩端脫鉤會全綠通過 —— 後置
+    條件是拿 `doc_ids` 比對前後的，它看不見的東西就攔不住（外部 review
+    2026-09-06 的 should-fix；守衛觀測的維度必須等於它保護的性質，L2）。
+    """
+    text = "bookSidebar:\n  - type: doc\n    id: a\n  - type: ref\n    id: b\n"
+    assert sidebar.doc_ids(text) == ["a", "b"]
+
+    # 目標存在 → 一個都不剪，且檔案逐位元組不變。
+    out, dropped = sidebar.prune_missing(text, _exists(set()))
+    assert dropped == []
+    assert out == text
+
+    # 目標不存在 → 跟 doc 條目一樣剪掉，而且後置條件看得見它被剪掉。
+    out, dropped = sidebar.prune_missing(text, _exists({"b"}))
+    assert dropped == ["b"]
+    assert sidebar.doc_ids(out) == ["a"]
+
+
+def test_custom_props_is_opaque_metadata_not_doc_references():
+    """`customProps` 依規格是 `Record<string, unknown>` —— 任意使用者資料，
+    裡面不會有 doc 引用。整棵子樹都不該被掃。
+
+    `badges: ['new','green']` 是官方文件的例子；`customProps: {id: ...}` 則是
+    `0ba8e5c` 之前就有的誤收（任何位置的 `id:` 鍵都收）。兩者同一個正解。
+    """
+    assert sidebar.doc_ids(
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n"
+        "      badges:\n        - new\n        - green\n"
+    ) == ["a"]
+    assert sidebar.doc_ids(
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n      id: something\n"
+    ) == ["a"]
+
+

@@ -8,6 +8,10 @@ import json
 import subprocess
 from pathlib import Path
 
+# repo 根目錄。路徑判斷一律相對它解析，不要相對 cwd —— 從子目錄執行時
+# 相對路徑會全數判成不存在，而剪枝的比例守衛在小樣本上不會擋。
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 MANIFEST_PATH = Path("scripts/translation-manifest.json")
 SIDEBAR_FILES = ("book/sidebar.yml", "reference/sidebar.yml")
 DIRS = ("book", "reference")

@@ -136,6 +136,15 @@ def test_tracked_files_handles_space_and_nonascii_paths():
         # Build tree via temporary index
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = index_file
+        # `git commit-tree` 需要 author/committer identity。GitHub-hosted runner
+        # 沒有預設 identity（同 repo 的 translate-zh-tw.yml 自己就得先
+        # `git config user.name`），hostname 又沒有網域，git 的自動偵測會
+        # fatal。本機綠只是因為開發者的 ~/.gitconfig 有設。測試自己帶，
+        # 不要依賴外部環境。
+        env.update({
+            "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@example.com",
+            "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@example.com",
+        })
         sp.run(
             ["git", "update-index", "--add", "--cacheinfo",
              "100644", space_blob, "book/path with space.md"],
@@ -152,7 +161,7 @@ def test_tracked_files_handles_space_and_nonascii_paths():
         ).stdout.strip()
         commit_sha = sp.run(
             ["git", "commit-tree", tree_sha, "-m", "test"],
-            check=True, capture_output=True, text=True,
+            env=env, check=True, capture_output=True, text=True,
         ).stdout.strip()
 
         # Verify tracked_files returns both paths intact (not split on space)

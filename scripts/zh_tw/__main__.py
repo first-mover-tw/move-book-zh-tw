@@ -1,7 +1,25 @@
 import argparse
 import sys
 
-from . import manifest, pipeline
+from . import manifest, pipeline, sidebar
+
+
+def stale_paths(ref: str) -> list[str]:
+    """需要處理的檔案 = 「英文原文變了」∪「sidebar 少列了已翻好的章節」。
+
+    兩個問題刻意分屬兩個模組：`manifest.stale_files` 只比對英文 blob SHA
+    （純 stdlib，`--detect` 必須能在沒裝翻譯 SDK 的環境跑，那是 CI 沉默五個月
+    的根因），而「我們的 sidebar 少列了什麼」要解析 YAML。合成在這一層，
+    兩邊都不必為對方讓步。理由見 `sidebar.resync_needed`（外部 review C1）。
+    """
+    out = manifest.stale_files(ref)
+    for path in manifest.SIDEBAR_FILES:
+        if path in out:
+            continue
+        upstream = pipeline._show(ref, path)
+        if upstream is not None and sidebar.resync_needed(path, upstream):
+            out.append(path)
+    return out
 
 
 def main() -> int:
@@ -27,7 +45,7 @@ def main() -> int:
     a = p.parse_args()
 
     if a.detect:
-        for f in manifest.stale_files(a.english_ref):
+        for f in stale_paths(a.english_ref):
             print(f)
         return 0
     if a.orphans:
@@ -35,7 +53,7 @@ def main() -> int:
             print(f)
         return 0
 
-    paths = a.files or manifest.stale_files(a.english_ref)
+    paths = a.files or stale_paths(a.english_ref)
     if a.limit:
         paths = paths[: a.limit]
     if not paths:

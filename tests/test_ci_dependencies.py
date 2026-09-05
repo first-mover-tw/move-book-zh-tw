@@ -20,17 +20,37 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 WORKFLOWS = [
     ROOT / ".github/workflows/translate-zh-tw.yml",
     ROOT / ".github/workflows/gemini-smoke.yml",
+    ROOT / ".github/workflows/pytest.yml",
 ]
 # `pkg>=1.2` / `pkg[extra]` → `pkg`
 _DIST = re.compile(r"^([A-Za-z0-9._-]+)")
 
 
+def _names(deps) -> set[str]:
+    return {_DIST.match(d).group(1).lower().replace("_", "-") for d in deps}
+
+
 def _runtime_deps() -> set[str]:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    return {
-        _DIST.match(d).group(1).lower().replace("_", "-")
-        for d in pyproject["project"]["dependencies"]
-    }
+    return _names(pyproject["project"]["dependencies"])
+
+
+def _dev_deps() -> set[str]:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    return _names(pyproject.get("dependency-groups", {}).get("dev", []))
+
+
+def _required(path: pathlib.Path) -> set[str]:
+    """這個 workflow 的 job 需要哪些套件。
+
+    跑測試的 workflow 另外需要 dev group —— `pytest.yml` 與另外兩個的差別
+    正是這一組。只讀 runtime dependencies 的話，日後在 dev 加一個依賴
+    （hypothesis 之類），這道 gate 仍然全綠，而 CI 會在 collection 階段
+    ModuleNotFoundError（外部 review B1）。
+    """
+    if path.name == "pytest.yml":
+        return _runtime_deps() | _dev_deps()
+    return _runtime_deps()
 
 
 def _installed(path: pathlib.Path) -> dict[str, set[str]]:
@@ -63,7 +83,11 @@ def _runs_python(path: pathlib.Path, job_name: str) -> bool:
         for step in job.get("steps", [])
         if isinstance(step, dict) and isinstance(step.get("run"), str)
     )
-    return "scripts.zh_tw" in text
+    # `pytest.yml` 跑的是 `python -m pytest`，不含 "scripts.zh_tw" —— 只認後者
+    # 的話新 workflow 會被靜默篩掉，這道 gate 對它等於不存在（外部 review B2）。
+    # 判準要精確到指令本身：裸的 `"pytest" in text` 連 echo 或註解提到 pytest
+    # 的 job 都會被要求裝齊全部依賴。
+    return "scripts.zh_tw" in text or re.search(r"\bpython -m pytest\b", text)
 
 
 def _pkgs_in(text: str) -> set[str]:
@@ -94,7 +118,7 @@ def test_workflows_install_every_runtime_dependency():
             if not _runs_python(path, job):
                 continue
             checked += 1
-            missing = _runtime_deps() - pkgs
+            missing = _required(path) - pkgs
             assert not missing, (
                 f"{path.name} 的 job `{job}` 執行了 scripts.zh_tw 但 pip install "
                 f"少了 {sorted(missing)} —— 管線會在 import 時 ModuleNotFoundError"
@@ -136,3 +160,17 @@ def test_translate_step_disables_errexit():
     )
     # 前提斷言：它真的有在自己判斷 rc（否則關掉 -e 只是讓失敗靜默）
     assert "rc=$?" in run
+
+
+def test_the_pytest_workflow_is_required_to_install_dev_dependencies():
+    """跑測試的 workflow 需要 dev group，另外兩個不需要 —— 這個差別必須寫在
+    判準裡，不能靠「現在剛好裝了 pytest」。主測試只在**缺套件**時才會響，
+    所以把判準拿掉它不會變色（實測 mutation 存活），這條直接打在判準上。
+    """
+    dev = _dev_deps()
+    assert dev, "pyproject 的 dependency-groups.dev 是空的，這條測試會 vacuous"
+    required = _required(ROOT / ".github/workflows/pytest.yml")
+    assert dev <= required, f"pytest.yml 的判準漏了 dev 依賴: {sorted(dev - required)}"
+    # 真的有被裝上：判準對了但 workflow 沒裝，一樣要紅。
+    installed = set().union(*_installed(ROOT / ".github/workflows/pytest.yml").values())
+    assert dev <= installed, f"pytest.yml 沒裝 dev 依賴: {sorted(dev - installed)}"

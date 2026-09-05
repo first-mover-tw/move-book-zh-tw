@@ -1,5 +1,7 @@
 import re
 import subprocess
+from pathlib import Path
+
 import pytest
 
 from scripts.zh_tw import anchors, frontmatter, manifest, pipeline, validate
@@ -199,7 +201,7 @@ def test_run_routes_sidebar_to_sidebar_module(monkeypatch, tmp_path):
     called = []
     monkeypatch.setattr(
         pipeline.sidebar, "translate",
-        lambda en, prev, backend: called.append("sidebar") or "ok\n",
+        lambda en, prev, backend, exists=None: called.append("sidebar") or "ok\n",
     )
     monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
     ok, failed = pipeline.run(["book/sidebar.yml"], "fake", apply=False)
@@ -1391,3 +1393,198 @@ def test_repair_verifies_the_result_actually_renders():
         assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src
     finally:
         pipeline.commonmark = real
+
+
+
+# --- sidebar exists 判準的測試一律用合成語料 -----------------------------
+#
+# 曾經 hardcode `programmability/scratchpad`（斷言「上游有、我們沒翻」）與
+# `book/storage/derived-object.md`（斷言「上游也沒有」）。兩者都是**語料狀態**
+# 而不是程式行為：前者是 --detect 37 檔清單的第 5 筆，BATCH_SIZE=3 之下約兩輪
+# cron 就會被翻出來，屆時內容完全正確的 auto PR 會被自己的 gate 判紅；後者是
+# 上游哪天新增這一章就三條一起翻。這正是 test_baseline.py 開頭寫下的判準
+# （語料狀態不是程式行為，L3/L4），也正是本輪移除
+# `test_resync_needed_on_the_real_repo_is_false` 的同一個理由。
+
+
+@pytest.fixture
+def fake_book(tmp_path, monkeypatch):
+    """把 repo root 指向 tmp，裡面只有 `book/here.md`。
+
+    `here` 保證存在、`there`/`soon` 保證不存在，都不隨真實語料變動。
+    """
+    from scripts.zh_tw import manifest
+
+    (tmp_path / "book").mkdir()
+    (tmp_path / "book" / "here.md").write_text("# here\n", encoding="utf-8")
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+    return tmp_path
+
+
+def test_run_passes_a_disk_backed_exists_predicate_to_sidebar_translate(monkeypatch, fake_book):
+    """組合層（L7）：`prune_missing` 單元測試全綠但沒接進 pipeline，正是
+    2026-09-05 那次 docusaurus build 失敗的形狀。這裡驗證 run() 真的傳了
+    exists，而且它的判準是「相對於 sidebar 所在目錄的 .md 存不存在」。"""
+    got = {}
+    monkeypatch.setattr(
+        pipeline.sidebar, "translate",
+        lambda en, prev, backend, exists=None: got.setdefault("exists", exists) or "ok\n",
+    )
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
+    pipeline.run(["book/sidebar.yml"], "fake", apply=False)
+
+    exists = got["exists"]
+    assert exists is not None, "run() 沒有把 exists 傳給 sidebar.translate"
+    assert exists("here") is True    # book/here.md 存在
+    assert exists("there") is False  # 沒有對應的 .md
+
+
+def test_run_sidebar_output_has_no_unresolvable_doc_ids():
+    """端到端：實際跑一次 sidebar 同步，輸出的每個 doc id 都要有對應 .md。"""
+    import re
+
+    path = manifest.SIDEBAR_FILES[0]
+    en = pipeline._show("english-main", path)
+    # 只有 zh-tw-main 的 checkout 沒有 english-main，`_show` 回 None，
+    # `translate(None, ...)` 會 TypeError。同檔其他真實語料測試都會 skip
+    # （外部 review A1）。CI 的 pytest.yml 有 fetch，不受影響。
+    if en is None:
+        pytest.skip("english-main not available in this checkout")
+    prev = pipeline._show("HEAD", path) or ""
+    root = pipeline.manifest.REPO_ROOT / Path(path).parent
+    # fail-closed 是合法程式行為，不是缺陷 —— 理由同 test_sidebar 的
+    # `test_real_upstream_sidebar_keeps_exactly_the_docs_that_exist`
+    # （外部 review B1）。
+    try:
+        out = pipeline.sidebar.translate(
+            en, prev, pipeline.base.get("fake"),
+            exists=lambda i: (root / f"{i}.md").is_file(),
+        )
+    except pipeline.sidebar.FailClosed as e:
+        pytest.skip(f"上游語料目前處於需人工處理的合法中間態: {e}")
+    # 判準用 `doc_ids` 而不是 regex：字串簡寫的 doc id 對 `^\s*id:` 隱形
+    # （外部 review B2）。
+    missing = [i for i in pipeline.sidebar.doc_ids(out) if not (root / f"{i}.md").is_file()]
+    assert missing == []
+
+
+def test_doc_exists_counts_files_that_are_being_translated_in_the_same_batch(fake_book):
+    """`run()` 照 stale 清單順序逐檔處理，`book/sidebar.yml` 排在 22 個
+    `book/**.md` 之前 —— 只看磁碟的話那些章節會在同一批次被剪掉，而
+    `manifest.record` 之後 sidebar.yml 不再 stale，永遠回不來。"""
+    exists = pipeline._doc_exists("book/sidebar.yml", ["book/soon.md"])
+
+    assert exists("here") is True    # 磁碟上有
+    assert exists("soon") is True    # 本輪已產出
+    assert exists("there") is False  # 兩者皆非
+
+
+def test_doc_exists_resolves_paths_from_the_repo_root_not_the_cwd(monkeypatch, tmp_path):
+    """從子目錄執行時相對路徑會全數判成不存在，而小樣本的比例守衛擋不住。"""
+    monkeypatch.chdir(tmp_path)
+    assert pipeline._doc_exists("book/sidebar.yml", [])("index") is True
+
+
+def test_doc_exists_matches_batch_entries_given_as_absolute_or_dotted_paths(fake_book):
+    """CLI 可能收到絕對路徑或 `./x`；直接字串比對會對不上，靜默退化成只看
+    磁碟，也就重新打開了「同批次被剪」的洞（外部 review A7）。"""
+    target = str(fake_book / "book" / "soon.md")
+    for form in (target, "./book/soon.md", "book/soon.md"):
+        exists = pipeline._doc_exists("book/sidebar.yml", [form])
+        assert exists("soon") is True, form
+
+
+def test_stale_paths_lists_sidebar_when_a_pruned_chapter_came_back(monkeypatch):
+    """跨批次回歸：manifest 認為 sidebar 是最新的（英文 blob 沒變），但我們的
+    sidebar 少列了一個已經翻好的章節 —— 必須靠這條才回得來。"""
+    from scripts.zh_tw import __main__ as cli
+
+    monkeypatch.setattr(cli.manifest, "stale_files", lambda ref: [])
+    monkeypatch.setattr(cli.pipeline, "_show", lambda ref, path: "x")
+    monkeypatch.setattr(
+        cli.sidebar, "resync_needed", lambda path, up: path == "book/sidebar.yml"
+    )
+    assert cli.stale_paths("english-main") == ["book/sidebar.yml"]
+
+
+def test_stale_paths_does_not_duplicate_a_sidebar_already_reported_stale(monkeypatch):
+    from scripts.zh_tw import __main__ as cli
+
+    monkeypatch.setattr(cli.manifest, "stale_files", lambda ref: ["book/sidebar.yml"])
+    monkeypatch.setattr(cli.pipeline, "_show", lambda ref, path: "x")
+    monkeypatch.setattr(
+        cli.sidebar, "resync_needed", lambda path, up: path == "book/sidebar.yml"
+    )
+    assert cli.stale_paths("english-main") == ["book/sidebar.yml"]
+
+
+def test_run_processes_sidebar_last_so_pruning_sees_what_actually_landed(monkeypatch):
+    """剪枝判準要看既成事實，先跑 sidebar 就只能用樂觀假設（外部 review B1）。"""
+    seen = []
+    monkeypatch.setattr(
+        pipeline.sidebar, "translate",
+        lambda en, prev, backend, exists=None: seen.append("sidebar") or "ok\n",
+    )
+    monkeypatch.setattr(pipeline, "assemble", lambda *a, **k: seen.append("md") or "x\n")
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
+    pipeline.run(["book/sidebar.yml", "book/a.md", "book/b.md"], "fake", apply=False)
+    assert seen == ["md", "md", "sidebar"], "sidebar 必須排在最後"
+
+
+def test_doc_exists_only_trusts_files_that_actually_got_produced(fake_book):
+    """`produced` 是本輪成功產出的檔案，不是「本批次打算翻的」。用後者的話，
+    翻譯失敗的檔案會讓 sidebar 帶著 dangling doc id 落盤，而它下一輪仍在同一
+    批次裡、又被樂觀判定救回去 —— 每輪重演，不動點不存在。"""
+    exists = pipeline._doc_exists("book/sidebar.yml", set())
+    assert exists("soon") is False  # 沒產出就是不存在
+    exists = pipeline._doc_exists("book/sidebar.yml", {"book/soon.md"})
+    assert exists("soon") is True
+
+
+def test_a_persistently_failing_chapter_does_not_keep_the_sidebar_dirty(tmp_path, monkeypatch):
+    """端到端不動點：某章持續翻譯失敗時，sidebar 剪掉它之後就該安定下來，
+    不能每輪 cron 都被列為待同步而白燒一個批次額度（外部 review B1）。"""
+    from scripts.zh_tw import manifest, sidebar as sb
+
+    book = tmp_path / "book"
+    book.mkdir()
+    (book / "a.md").write_text("# a\n", encoding="utf-8")
+    upstream = "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: b\n"
+    (book / "sidebar.yml").write_text(upstream, encoding="utf-8")
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+
+    # b.md 永遠翻不出來（配額用盡／驗證不過）
+    produced = set()
+    exists = pipeline._doc_exists("book/sidebar.yml", produced)
+    pruned, dropped = sb.prune_missing(upstream, exists)
+    assert dropped == ["b"]
+    (book / "sidebar.yml").write_text(pruned, encoding="utf-8")
+
+    # 下一輪：b 仍然翻不出來 —— 兩個方向都不該再要求重新同步
+    assert sb.resync_needed("book/sidebar.yml", upstream) is False
+
+
+def test_run_gives_sidebar_a_predicate_that_rejects_a_failed_batch_file(monkeypatch, fake_book):
+    """組合層（L7）：`_doc_exists` 收到 `produced` 是對的，但 `run()` 若把整批
+    `paths` 傳進去，翻譯失敗的檔案照樣被當存在 —— 單元測試全綠、缺陷仍在。
+    這裡直接攔下 `run()` 實際交給 sidebar 的那個判準來問。"""
+    got = {}
+
+    def boom(*a, **k):
+        raise RuntimeError("配額用盡")
+
+    monkeypatch.setattr(pipeline, "assemble", boom)
+    monkeypatch.setattr(pipeline, "rebuild_frontmatter_only", boom)
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
+    monkeypatch.setattr(
+        pipeline.sidebar, "translate",
+        lambda en, prev, backend, exists=None: got.setdefault("exists", exists) or "ok\n",
+    )
+
+    ok, failed = pipeline.run(
+        ["book/sidebar.yml", "book/soon.md"], "fake", apply=False
+    )
+    assert "book/soon.md" in failed
+    # 那個檔案沒產出 —— sidebar 拿到的判準必須說它不存在，否則 dangling doc id
+    # 會落盤，而它下一輪仍在同一批次裡又被樂觀判定救回去（外部 review B1）。
+    assert got["exists"]("soon") is False

@@ -623,6 +623,50 @@ def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
     manifest.save(fresh)
 
 
+
+def _doc_exists(sidebar_path: str, produced):
+    """sidebar 剪枝用的「這個 doc id 有沒有對應 .md」判準。
+
+    「磁碟上有」不夠：`run()` 是照 stale 清單的順序逐檔處理，`book/sidebar.yml`
+    排在 22 個 `book/**.md` 之前，那些檔案在輪到 sidebar 時還沒落盤。剪掉之後
+    `manifest.record` 又把 sidebar 記成最新，`stale_files` 不再列它——除非上游
+    哪天再動 sidebar.yml，那些章節永遠回不到側邊欄（外部 review C1）。
+
+    所以 `produced` 也算存在——但它是**本輪已經成功產出**的檔案，不是「本批次
+    打算翻的」。用後者是樂觀假設：那個檔案翻譯失敗時（配額用盡、驗證不過），
+    sidebar 會帶著一個 dangling doc id 落盤，而它下一輪仍在同一批次裡、又被
+    樂觀判定救回去 —— 每輪都重演，不動點不存在（外部 review B1）。`run()`
+    因此把 sidebar 排到最後處理，這裡看到的是既成事實。
+    """
+    # 每次讀 `manifest.REPO_ROOT` 而不是 import 時取快照存成模組層變數：
+    # 快照會與 late-bound 讀它的 `sidebar.resync_needed` 對同一個檔案系統
+    # 有不同看法，測試也得記得同時 patch 兩個（外部 review A1）。
+    repo_root = manifest.REPO_ROOT
+    root = repo_root / Path(sidebar_path).parent
+
+    def _norm(p) -> str:
+        """一律正規化成 repo root 底下的相對路徑再比對。
+
+        `stale_files` 給的是相對路徑，但 CLI 也可能收到絕對路徑或 `./x`；
+        直接字串比對會讓絕對路徑永遠對不上，靜默退化成只看磁碟（外部
+        review A7），也就重新打開了上面那個「同批次被剪」的洞。
+        """
+        q = Path(p)
+        q = q if q.is_absolute() else repo_root / q
+        try:
+            return str(q.resolve().relative_to(repo_root.resolve()))
+        except ValueError:
+            return str(q)
+
+    in_batch = {_norm(p) for p in produced}
+
+    def exists(doc_id: str) -> bool:
+        rel = _norm(Path(sidebar_path).parent / f"{doc_id}.md")
+        return (root / f"{doc_id}.md").is_file() or rel in in_batch
+
+    return exists
+
+
 def run(
     paths: list[str],
     backend_name: str,
@@ -635,8 +679,14 @@ def run(
     m = manifest.load()
     ok, failed = 0, {}
     touched: set[str] = set()
+    produced: set[str] = set()
 
-    for path in paths:
+    # sidebar 一定排到最後：它的剪枝判準要看「這一批到底有哪些 .md 真的產出
+    # 來了」，先跑就只能用樂觀假設（見 _doc_exists）。
+    ordered = [p for p in paths if p not in manifest.SIDEBAR_FILES]
+    ordered += [p for p in paths if p in manifest.SIDEBAR_FILES]
+
+    for path in ordered:
         en = _show(en_ref, path)
         if en is None:
             failed[path] = [f"{path} 不存在於 {en_ref}"]
@@ -644,7 +694,11 @@ def run(
         prev = _show("HEAD", path) or ""
         try:
             if path in manifest.SIDEBAR_FILES:
-                out = sidebar.translate(en, prev, backend)
+                # 上游有、我們還沒翻的章節必須先剪掉，否則 doc id 找不到
+                # 對應 .md，docusaurus build 會失敗（見 sidebar.prune_missing）。
+                out = sidebar.translate(
+                    en, prev, backend, exists=_doc_exists(path, produced)
+                )
             elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
             else:
@@ -653,6 +707,7 @@ def run(
         except Exception as e:  # noqa: BLE001
             failed[path] = [str(e)]
             continue
+        produced.add(path)
 
         if apply:
             Path(path).parent.mkdir(parents=True, exist_ok=True)

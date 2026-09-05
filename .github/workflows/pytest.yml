@@ -1,0 +1,87 @@
+# zh-TW 專屬 gate，不是上游檔案 —— 與 prettier.yml 同理刻意獨立成一個檔，
+# 不塞進 test.yml（那是 MystenLabs/move-book 的複製品，改它每次 upstream sync
+# 都要處理衝突）。
+#
+# 為什麼需要這道 gate：整個翻譯管線的守衛都寫在 pytest 裡，但**沒有任何
+# workflow 跑過它**（2026-09-05 實測 `grep -rn pytest .github/workflows/` 零結果）。
+# 於是專門為某個缺陷加的守衛等於不存在 —— 最直接的例子是
+# `test_every_sidebar_doc_id_resolves_to_an_existing_file`：它是為了讓
+# 「sidebar 列了沒翻的章節」在 pytest 先紅、而不是等 docusaurus build 掛掉才
+# 發現，但它從來沒在 CI 執行過，那條路徑原封不動地留著。
+name: Pytest
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    # 除了進 english-main 的 PR 都要跑。english-main 放的是上游英文原文，
+    # 語料狀態測試對它必紅（同 prettier.yml 的理由）。
+    #
+    # 用 branches-ignore 而不是 `branches: [zh-tw-main]`：疊在其他分支上的
+    # PR（stacked PR）base 不是 zh-tw-main，白名單會讓這道 gate 在最需要它的
+    # 那個 PR 上不跑，缺陷要到下一個 PR 才會被發現（外部 review A4）。
+    branches-ignore: [english-main]
+
+concurrency:
+  group: pytest-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # 需要完整歷史：`tests/test_baseline.py` 會 `git cat-file blob <manifest
+      # 記錄的 sha>`（釘固定 sha 的 census 測試），多處會 `git show
+      # english-main:<path>`。淺 clone 會讓它們整批 skip 或直接紅。
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch english-main
+        run: git fetch origin english-main:english-main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # 與 translate-zh-tw.yml 同一組依賴。pytest 另外裝。
+      - name: Install deps
+        run: pip install commonmark pyyaml markdown-it-py opencc-python-reimplemented google-genai pytest
+
+      - name: Run tests
+        run: python -m pytest -q
+
+  # doc_ids 的差分測試需要 site 的 node 依賴（拿上游自己的程式碼當 oracle），
+  # 所以獨立成一個 job：主 job 不必為了它多裝一次 pnpm 依賴，而這裡帶
+  # `SIDEBAR_ORACLE_REQUIRED=1` —— 少了 node_modules 就直接錯誤，不會出現
+  # 「整批 skip 但綠燈」這種假通過（本檔開頭那起事故的同一種形狀）。
+  sidebar-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          cache_dependency_path: site/pnpm-lock.yaml
+
+      - name: Install site dependencies
+        run: pnpm i
+        working-directory: ./site
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # 與上面同一組依賴：`zh_tw.sidebar` 的 import 鏈會拉到整包，裝少了會
+      # ModuleNotFoundError（`test_ci_dependencies.py` 就是盯這個的）。
+      - name: Install deps
+        run: pip install commonmark pyyaml markdown-it-py opencc-python-reimplemented google-genai pytest
+
+      - name: Differential test against the upstream sidebar loader
+        env:
+          SIDEBAR_ORACLE_REQUIRED: "1"
+        run: python -m pytest tests/test_sidebar_oracle.py -q
