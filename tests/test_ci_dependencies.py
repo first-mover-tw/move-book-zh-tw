@@ -20,6 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 WORKFLOWS = [
     ROOT / ".github/workflows/translate-zh-tw.yml",
     ROOT / ".github/workflows/gemini-smoke.yml",
+    ROOT / ".github/workflows/pytest.yml",
 ]
 # `pkg>=1.2` / `pkg[extra]` → `pkg`
 _DIST = re.compile(r"^([A-Za-z0-9._-]+)")
@@ -63,7 +64,9 @@ def _runs_python(path: pathlib.Path, job_name: str) -> bool:
         for step in job.get("steps", [])
         if isinstance(step, dict) and isinstance(step.get("run"), str)
     )
-    return "scripts.zh_tw" in text
+    # `pytest.yml` 跑的是 `python -m pytest`，不含 "scripts.zh_tw" —— 只認後者
+    # 的話新 workflow 會被靜默篩掉，這道 gate 對它等於不存在（外部 review B2）。
+    return "scripts.zh_tw" in text or "pytest" in text
 
 
 def _pkgs_in(text: str) -> set[str]:

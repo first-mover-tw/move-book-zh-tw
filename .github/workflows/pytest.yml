@@ -15,9 +15,13 @@ permissions:
 
 on:
   pull_request:
-    # 只管進 zh-tw-main 的 PR。english-main 放的是上游英文原文，語料狀態測試
-    # 對它必紅（同 prettier.yml 的理由）。
-    branches: [zh-tw-main]
+    # 除了進 english-main 的 PR 都要跑。english-main 放的是上游英文原文，
+    # 語料狀態測試對它必紅（同 prettier.yml 的理由）。
+    #
+    # 用 branches-ignore 而不是 `branches: [zh-tw-main]`：疊在其他分支上的
+    # PR（stacked PR）base 不是 zh-tw-main，白名單會讓這道 gate 在最需要它的
+    # 那個 PR 上不跑，缺陷要到下一個 PR 才會被發現（外部 review A4）。
+    branches-ignore: [english-main]
 
 concurrency:
   group: pytest-${{ github.event.pull_request.number }}
@@ -26,9 +30,11 @@ concurrency:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      # 測試會 `git show english-main:<path>` 與 `git show HEAD:<path>`，
-      # 需要完整歷史與 english-main 分支，淺 clone 會讓它們整批 skip。
+      # 需要完整歷史：`tests/test_baseline.py` 會 `git cat-file blob <manifest
+      # 記錄的 sha>`（釘固定 sha 的 census 測試），多處會 `git show
+      # english-main:<path>`。淺 clone 會讓它們整批 skip 或直接紅。
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

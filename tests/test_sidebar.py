@@ -825,6 +825,14 @@ def test_expected_tree_postcondition_catches_a_span_that_deletes_too_much(monkey
 # --- resync_needed：被剪掉的章節翻好之後要回得來（外部 review C1 後半）----
 
 
+def _at_root(monkeypatch, tmp_path):
+    """把 repo root 指向 tmp —— `resync_needed` 相對 repo root 解析路徑，
+    不是相對 cwd（從子目錄執行時 cwd 相對會全數判成不存在）。"""
+    from scripts.zh_tw import manifest
+
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+
+
 def _write_sidebar(tmp_path, name, ids, docs):
     d = tmp_path / name
     d.mkdir(parents=True, exist_ok=True)
@@ -846,7 +854,7 @@ def test_resync_needed_when_a_pruned_chapter_has_since_been_translated(monkeypat
     """上游列著 b、我們的 sidebar 沒列、但 b.md 已經翻好 —— 這正是「上一批
     被剪掉、這一批翻好了」的狀態，必須重新同步。"""
     _write_sidebar(tmp_path, "book", ["a"], ["a", "b"])
-    monkeypatch.chdir(tmp_path)
+    _at_root(monkeypatch, tmp_path)
     assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
 
 
@@ -854,13 +862,13 @@ def test_resync_not_needed_for_a_chapter_that_is_still_untranslated(monkeypatch,
     """`programmability/scratchpad` 那種「上游有、我們永遠還沒翻」的章節不能
     讓這個條件一直為真，否則每輪 cron 都會白燒一個批次額度。"""
     _write_sidebar(tmp_path, "book", ["a"], ["a"])
-    monkeypatch.chdir(tmp_path)
+    _at_root(monkeypatch, tmp_path)
     assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
 
 
 def test_resync_terminates_once_the_chapter_is_back_in_the_sidebar(monkeypatch, tmp_path):
     _write_sidebar(tmp_path, "book", ["a", "b"], ["a", "b"])
-    monkeypatch.chdir(tmp_path)
+    _at_root(monkeypatch, tmp_path)
     assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
 
 
@@ -877,13 +885,13 @@ def test_resync_needed_when_our_sidebar_lists_a_doc_that_does_not_exist(monkeypa
     翻譯失敗（配額用盡是 workflow 明確容忍的情況）時 sidebar 會帶著一個
     dangling doc id 落盤 —— 只看「少列」的方向沒有任何回收機制（B3）。"""
     _write_sidebar(tmp_path, "book", ["a", "b"], ["a"])  # 列了 b，但 b.md 不存在
-    monkeypatch.chdir(tmp_path)
+    _at_root(monkeypatch, tmp_path)
     assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
 
 
 def test_resync_terminates_after_the_dangling_entry_is_pruned(monkeypatch, tmp_path):
     _write_sidebar(tmp_path, "book", ["a"], ["a"])
-    monkeypatch.chdir(tmp_path)
+    _at_root(monkeypatch, tmp_path)
     assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
 
 
@@ -898,15 +906,10 @@ def test_dash_followed_by_extra_spaces_is_valid_and_not_rejected():
     assert _doc_ids(out) == ["a"]
 
 
-def test_resync_needed_on_the_real_repo_is_false():
-    """真實現況：兩份 sidebar 都同步、doc id 零缺失，不該讓 cron 空轉。"""
-    import subprocess
-
-    for name in ("book", "reference"):
-        path = f"{name}/sidebar.yml"
-        up = subprocess.run(
-            ["git", "show", f"english-main:{path}"], capture_output=True, text=True
-        )
-        if up.returncode != 0:
-            pytest.skip(f"english-main:{path} 不在這個 checkout 裡")
-        assert sidebar.resync_needed(path, up.stdout) is False, path
+# `test_resync_needed_on_the_real_repo_is_false` 曾經放在這裡，已移除：
+# 它斷言「repo 當下不處於待重新同步的狀態」，但管線的設計就是會經過那個
+# 狀態（sidebar 被 append 在 stale 清單尾端，workflow 又 head -n 3，目前
+# 37 檔待排乾 —— 某輪把 x.md 翻好之後 resync_needed 立刻為 True）。那一輪
+# 的 auto PR 內容完全正確卻會被這條 gate 判紅，接著「有未合併 auto PR 就
+# 本輪跳過」讓 cron 全部空轉。這正是 test_baseline.py 開頭寫的判準：
+# 語料狀態不是程式行為（L3/L4）。「現在同不同步」屬 --detect 的儀表板。

@@ -629,14 +629,19 @@ def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
 _REPO_ROOT = manifest.REPO_ROOT
 
 
-def _doc_exists(sidebar_path: str, batch: list[str]):
+def _doc_exists(sidebar_path: str, produced):
     """sidebar 剪枝用的「這個 doc id 有沒有對應 .md」判準。
 
     「磁碟上有」不夠：`run()` 是照 stale 清單的順序逐檔處理，`book/sidebar.yml`
     排在 22 個 `book/**.md` 之前，那些檔案在輪到 sidebar 時還沒落盤。剪掉之後
     `manifest.record` 又把 sidebar 記成最新，`stale_files` 不再列它——除非上游
-    哪天再動 sidebar.yml，那些章節永遠回不到側邊欄（外部 review C1）。所以
-    **本批次要翻的檔案也算存在**。
+    哪天再動 sidebar.yml，那些章節永遠回不到側邊欄（外部 review C1）。
+
+    所以 `produced` 也算存在——但它是**本輪已經成功產出**的檔案，不是「本批次
+    打算翻的」。用後者是樂觀假設：那個檔案翻譯失敗時（配額用盡、驗證不過），
+    sidebar 會帶著一個 dangling doc id 落盤，而它下一輪仍在同一批次裡、又被
+    樂觀判定救回去 —— 每輪都重演，不動點不存在（外部 review B1）。`run()`
+    因此把 sidebar 排到最後處理，這裡看到的是既成事實。
     """
     root = _REPO_ROOT / Path(sidebar_path).parent
 
@@ -654,7 +659,7 @@ def _doc_exists(sidebar_path: str, batch: list[str]):
         except ValueError:
             return str(q)
 
-    in_batch = {_norm(p) for p in batch}
+    in_batch = {_norm(p) for p in produced}
 
     def exists(doc_id: str) -> bool:
         rel = _norm(Path(sidebar_path).parent / f"{doc_id}.md")
@@ -675,8 +680,14 @@ def run(
     m = manifest.load()
     ok, failed = 0, {}
     touched: set[str] = set()
+    produced: set[str] = set()
 
-    for path in paths:
+    # sidebar 一定排到最後：它的剪枝判準要看「這一批到底有哪些 .md 真的產出
+    # 來了」，先跑就只能用樂觀假設（見 _doc_exists）。
+    ordered = [p for p in paths if p not in manifest.SIDEBAR_FILES]
+    ordered += [p for p in paths if p in manifest.SIDEBAR_FILES]
+
+    for path in ordered:
         en = _show(en_ref, path)
         if en is None:
             failed[path] = [f"{path} 不存在於 {en_ref}"]
@@ -687,7 +698,7 @@ def run(
                 # 上游有、我們還沒翻的章節必須先剪掉，否則 doc id 找不到
                 # 對應 .md，docusaurus build 會失敗（見 sidebar.prune_missing）。
                 out = sidebar.translate(
-                    en, prev, backend, exists=_doc_exists(path, paths)
+                    en, prev, backend, exists=_doc_exists(path, produced)
                 )
             elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
@@ -697,6 +708,7 @@ def run(
         except Exception as e:  # noqa: BLE001
             failed[path] = [str(e)]
             continue
+        produced.add(path)
 
         if apply:
             Path(path).parent.mkdir(parents=True, exist_ok=True)

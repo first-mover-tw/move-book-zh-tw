@@ -569,12 +569,14 @@ def resync_needed(path: str, upstream_text: str) -> bool:
     —— 自環，要人工處理才離得開（外部 review B1）。斷路器（連續 N 輪同一個
     sidebar 失敗就告警／移出候選）是獨立工項，見 tasks/notes.md。
     """
-    local = Path(path)
+    from . import manifest  # 延後 import：避免與 manifest 的載入順序耦合
+
+    local = manifest.REPO_ROOT / path
     if not local.is_file():
         return False
     try:
         upstream = doc_ids(upstream_text)
-        have = doc_ids(local.read_text(encoding="utf-8"))
+        have = set(doc_ids(local.read_text(encoding="utf-8")))
     except Exception:  # noqa: BLE001 —— 讀不了/解析不了就交給正常的同步流程
         return False
     parent = local.parent
@@ -582,6 +584,6 @@ def resync_needed(path: str, upstream_text: str) -> bool:
     def translated(doc_id: str) -> bool:
         return (parent / f"{doc_id}.md").is_file()
 
-    missing_from_ours = any(i not in set(have) and translated(i) for i in upstream)
+    missing_from_ours = any(i not in have and translated(i) for i in upstream)
     dangling_in_ours = any(not translated(i) for i in have)
     return missing_from_ours or dangling_in_ours
