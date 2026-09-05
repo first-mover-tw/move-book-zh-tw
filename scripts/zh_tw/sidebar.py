@@ -516,10 +516,12 @@ def doc_ids(text: str) -> list[str]:
       * 序列裡的字串簡寫 `- some/doc` → 收（normalizeItem 會轉成 doc 條目）
       * `type: category` → 只在 `link.type == 'doc'` 時收 `link.id`，再遞迴
         `items`
-      * `type: ref` / `type: link` / 未知型別 → **不收**。ref 的 id 不在
-        `collectSidebarDocIds` 裡，dangling ref 不會觸發那個 build 失敗；
-        多收等於讓合法 sidebar 被 fail-closed 擋死，而那個方向沒有自動
-        修復路徑（lessons L21）。
+      * `type: ref` → 收。`collectSidebarDocIds` 字面上不含 ref，但 props.js
+        的 normalizeItem 對 'doc' 與 'ref' 走同一條 `convertDocLink` →
+        `getDocById`，後者對不存在的 id 直接 throw —— dangling ref 一樣掛
+        build，只是比 `checkSidebarsDocIds` 晚一階。這裡問的是「哪些 id
+        必須解析得到一份 doc」，不是某個函式字面上收了誰。
+      * `type: link` / 未知型別 → 不收（`href` 是外部連結，沒有 doc 要解析）。
       * `customProps` 是任意使用者資料（`Record<string, unknown>`），
         整棵子樹不看（第七輪 B1、第八輪 B2）。
 
@@ -542,7 +544,7 @@ def doc_ids(text: str) -> list[str]:
                     if did is not None:
                         out.append(did)
             walk_items(m.get("items"))
-        elif t == "doc":
+        elif t in ("doc", "ref"):
             did = _doc_id(node)
             if did is not None:
                 out.append(did)

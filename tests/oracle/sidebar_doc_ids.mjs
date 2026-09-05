@@ -27,7 +27,7 @@ const presetRequire = createRequire(require.resolve('@docusaurus/preset-classic'
 const { normalizeSidebars } = presetRequire(
   '@docusaurus/plugin-content-docs/lib/sidebars/normalization.js',
 );
-const { collectSidebarsDocIds } = presetRequire(
+const { collectSidebarsDocIds, transformSidebarItems } = presetRequire(
   '@docusaurus/plugin-content-docs/lib/sidebars/utils.js',
 );
 // index.js 的順序是 normalizeSidebars → validateSidebars → …，validate 這一步
@@ -46,7 +46,10 @@ function processSidebar(sidebar, parentIndex, parentEnumerate = true) {
   let index = 0;
   return sidebar.map((item) => {
     if (typeof item === 'string') return item;
-    const enumerate = (item.enumerate === false ? false : true) && parentEnumerate;
+    // 原檔是寬鬆比較 `==`，這裡照抄不改成 `===`：`enumerate: 0` 之類的
+    // 值在兩者下結果相反，抄本一旦「順手修正」就不再是抄本。
+    // eslint-disable-next-line eqeqeq
+    const enumerate = (item.enumerate == false ? false : true) && parentEnumerate;
     if ('enumerate' in item) delete item.enumerate;
     if (item.type === undefined) item.type = 'doc';
     if (enumerate && item.type === 'category' && item.label && item.link) {
@@ -69,5 +72,22 @@ const sidebars = {};
 for (const [key, value] of Object.entries(parsed)) sidebars[key] = processSidebar(value);
 const normalized = normalizeSidebars(sidebars);
 validateSidebars(normalized);
-const byName = collectSidebarsDocIds(normalized);
+
+// 要問的是「哪些 id **必須**解析得到一份 doc」，不是 collectSidebarDocIds
+// 字面上收了誰。`collectSidebarDocIds` 漏掉 `type: ref`，但 props.js 的
+// normalizeItem 對 'doc' 與 'ref' 走同一條 convertDocLink → getDocById，
+// 而 getDocById 對不存在的 id 直接 throw（props.js:33-45, 83-89）——
+// dangling ref 一樣掛 build，只是比 checkSidebarsDocIds 晚一階。
+//
+// 所以先用上游自己的 transformSidebarItems 把 ref 改寫成 doc，再交給上游
+// 自己的 collectSidebarDocIds。順序仍然由上游決定，這裡不自己走訪。
+const refsAsDocs = Object.fromEntries(
+  Object.entries(normalized).map(([name, items]) => [
+    name,
+    transformSidebarItems(items, (item) =>
+      item.type === 'ref' ? { ...item, type: 'doc' } : item,
+    ),
+  ]),
+);
+const byName = collectSidebarsDocIds(refsAsDocs);
 for (const ids of Object.values(byName)) for (const id of ids) console.log(id);

@@ -1060,16 +1060,29 @@ def test_category_shorthand_does_not_exist_in_this_pipeline():
         assert sidebar.doc_ids(text) == []
 
 
-def test_ref_ids_are_not_doc_ids():
-    """`type: ref` 的 id 不在 `collectSidebarDocIds` 裡 —— dangling ref 不會
-    觸發「These sidebar document ids do not exist」那個 build 失敗，而那正是
-    `prune_missing` 唯一要防的東西。
+def test_ref_ids_must_resolve_too_and_prune_treats_them_like_docs():
+    """`type: ref` 的 id 不在 `collectSidebarDocIds` 裡，但**一樣得解析得到**：
+    props.js 的 normalizeItem 對 'doc' 與 'ref' 走同一條 `convertDocLink` →
+    `getDocById`，而 getDocById 對不存在的 id 直接 throw。dangling ref 照樣掛
+    build，只是比 `checkSidebarsDocIds` 晚一階。
 
-    多收的代價是合法 sidebar 被 fail-closed 擋死、沒有自動修復路徑（L21），
-    所以守衛觀測的維度要**恰好**等於它宣稱保護的性質（L2），不多不少。
+    這條同時釘 `doc_ids` 與 `prune_missing` 兩端。只釘 `doc_ids` 的話，
+    「`_keep` 剪掉 ref、`doc_ids` 看不見它」這種兩端脫鉤會全綠通過 —— 後置
+    條件是拿 `doc_ids` 比對前後的，它看不見的東西就攔不住（外部 review
+    2026-09-06 的 should-fix；守衛觀測的維度必須等於它保護的性質，L2）。
     """
     text = "bookSidebar:\n  - type: doc\n    id: a\n  - type: ref\n    id: b\n"
-    assert sidebar.doc_ids(text) == ["a"]
+    assert sidebar.doc_ids(text) == ["a", "b"]
+
+    # 目標存在 → 一個都不剪，且檔案逐位元組不變。
+    out, dropped = sidebar.prune_missing(text, _exists(set()))
+    assert dropped == []
+    assert out == text
+
+    # 目標不存在 → 跟 doc 條目一樣剪掉，而且後置條件看得見它被剪掉。
+    out, dropped = sidebar.prune_missing(text, _exists({"b"}))
+    assert dropped == ["b"]
+    assert sidebar.doc_ids(out) == ["a"]
 
 
 def test_custom_props_is_opaque_metadata_not_doc_references():
