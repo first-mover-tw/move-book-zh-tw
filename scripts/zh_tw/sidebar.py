@@ -491,67 +491,83 @@ def _assert_prune_is_faithful(text: str, out: str, exists, dropped_ids: list) ->
         )
 
 
-# docusaurus sidebar item 物件的鍵。一個 mapping 只要帶其中任一個就是條目
-# 本身；一個都沒有的就是 category shorthand（鍵是 label、值是子條目陣列）。
-_ITEM_KEYS = frozenset({
-    "type", "id", "label", "link", "items", "href", "className", "customProps",
-    "collapsed", "collapsible", "description", "translatable",
-})
+def _item_type(node) -> str | None:
+    """條目的**有效**型別。
 
-
-def _is_item_mapping(node) -> bool:
-    return bool(_ITEM_KEYS & set(_mapping(node)))
+    沒寫 `type` 時是 `doc` —— 這是 `site/src/plugins/yaml-sidebar.ts` 補的
+    （`if (item.type === undefined) item.type = 'doc'`），不是 docusaurus 的
+    預設。真實語料的多數條目正是這個形狀。
+    """
+    t = _mapping(node).get("type")
+    if t is None:
+        return "doc"
+    return t.value if isinstance(t, yaml.nodes.ScalarNode) else None
 
 
 def doc_ids(text: str) -> list[str]:
-    """文字裡所有 doc id，依出現順序。
+    """會被 docusaurus 檢查「這個 doc 存不存在」的 id，依出現順序。
 
-    兩種寫法都算：`id: <doc>` 與序列裡的字串簡寫 `- <doc>`。只認前者的話，
-    後者對每一個以本函式為基礎的守衛都隱形（外部 review B2）。
+    這個函式的判準必須逐段等於 `collectSidebarDocIds`
+    （`@docusaurus/plugin-content-docs/lib/sidebars/utils.js`）—— 那正是
+    產生 `These sidebar document ids do not exist` 這個 build 失敗的函式，
+    也就是 `prune_missing` 存在的唯一理由。所以：
+
+      * `type: doc`（含省略 type 的預設）→ 收 `id`
+      * 序列裡的字串簡寫 `- some/doc` → 收（normalizeItem 會轉成 doc 條目）
+      * `type: category` → 只在 `link.type == 'doc'` 時收 `link.id`，再遞迴
+        `items`
+      * `type: ref` / `type: link` / 未知型別 → **不收**。ref 的 id 不在
+        `collectSidebarDocIds` 裡，dangling ref 不會觸發那個 build 失敗；
+        多收等於讓合法 sidebar 被 fail-closed 擋死，而那個方向沒有自動
+        修復路徑（lessons L21）。
+      * `customProps` 是任意使用者資料（`Record<string, unknown>`），
+        整棵子樹不看（第七輪 B1、第八輪 B2）。
+
+    判準不再由我推論：`tests/test_sidebar_oracle.py` 拿上游程式碼當 oracle
+    對真實語料與隨機 sidebar 逐一比對（R6→R9 四輪震盪的根因，見 L20）。
     """
     root = yaml.compose(text)
     out: list[str] = []
 
-    def walk(node, item_seq: bool):
-        """`item_seq`：這個節點若是序列，它的元素是不是 sidebar **條目**。
+    def walk_item(node) -> None:
+        m = _mapping(node)
+        t = _item_type(node)
+        if t == "category":
+            # `link` 也可以是 `{type: 'generated-index'}`，那個沒有 doc id。
+            link = m.get("link")
+            if link is not None and _mapping(link).get("type") is not None:
+                lt = _mapping(link)["type"]
+                if isinstance(lt, yaml.nodes.ScalarNode) and lt.value == "doc":
+                    did = _doc_id(link)
+                    if did is not None:
+                        out.append(did)
+            walk_items(m.get("items"))
+        elif t == "doc":
+            did = _doc_id(node)
+            if did is not None:
+                out.append(did)
 
-        字串簡寫只在條目位置成立。對「任何序列裡的任何純量」都套用的話，
-        `customProps` 底下的字串陣列（docusaurus 官方例子的
-        `badges: ['new', 'green']`）會被當成 doc id —— baseline gate 誤報
-        `new.md` 不存在、`prune_missing` 的後置條件 raise，一個**合法**的
-        sidebar 被 fail-closed 擋死（外部 review 第七輪 B1）。
-        """
-        if isinstance(node, yaml.nodes.MappingNode):
-            # category shorthand（`- Getting started: [doc1, doc2]`）是「任意
-            # label 當鍵、值是子條目陣列」的 mapping，沒有任何 sidebar item
-            # 的鍵。只認 `items` 的話它底下的簡寫 doc id 全部漏抓 —— 漏抓
-            # 等於 build 掛掉（第八輪 B1）。
-            shorthand = not _is_item_mapping(node)
-            for k, v in node.value:
-                # `customProps` 依規格是任意使用者資料（`Record<string,
-                # unknown>`），裡面不會有 doc 引用。整棵子樹跳過，才不會把
-                # `customProps: {id: something}` 或 `{badges: [...]}` 當成
-                # doc id 而誤擋合法 sidebar（第七輪 B1、第八輪 B2）。
-                if k.value == "customProps":
-                    continue
-                if k.value == "id" and isinstance(v, yaml.nodes.ScalarNode):
-                    out.append(v.value)
-                else:
-                    walk(v, k.value == "items" or shorthand)
-        elif isinstance(node, yaml.nodes.SequenceNode):
-            for c in node.value:
-                if item_seq and isinstance(c, yaml.nodes.ScalarNode):
-                    out.append(c.value)
-                else:
-                    walk(c, False)
+    def walk_items(node) -> None:
+        """`node` 是條目序列。字串簡寫只在這個位置成立 —— 對「任何序列裡的
+        任何純量」都套用的話，`customProps` 底下的字串陣列（docusaurus 官方
+        例子的 `badges: ['new', 'green']`）會被當成 doc id，一個**合法**的
+        sidebar 就被 fail-closed 擋死（第七輪 B1）。"""
+        if not isinstance(node, yaml.nodes.SequenceNode):
+            return
+        for c in node.value:
+            if isinstance(c, yaml.nodes.ScalarNode):
+                out.append(c.value)
+            elif isinstance(c, yaml.nodes.MappingNode):
+                walk_item(c)
 
     # 根 mapping 的每個值都是條目序列（key 是 sidebar id，如 `bookSidebar`）。
     if isinstance(root, yaml.nodes.MappingNode):
         for _k, v in root.value:
-            walk(v, True)
+            walk_items(v)
     else:
-        walk(root, True)
+        walk_items(root)
     return out
+
 
 def translate(
     en_text: str, prev_zh_text: str, backend: Backend, exists=None

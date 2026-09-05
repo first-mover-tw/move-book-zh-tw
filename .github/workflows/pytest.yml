@@ -52,3 +52,36 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+  # doc_ids 的差分測試需要 site 的 node 依賴（拿上游自己的程式碼當 oracle），
+  # 所以獨立成一個 job：主 job 不必為了它多裝一次 pnpm 依賴，而這裡帶
+  # `SIDEBAR_ORACLE_REQUIRED=1` —— 少了 node_modules 就直接錯誤，不會出現
+  # 「整批 skip 但綠燈」這種假通過（本檔開頭那起事故的同一種形狀）。
+  sidebar-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          cache_dependency_path: site/pnpm-lock.yaml
+
+      - name: Install site dependencies
+        run: pnpm i
+        working-directory: ./site
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # 與上面同一組依賴：`zh_tw.sidebar` 的 import 鏈會拉到整包，裝少了會
+      # ModuleNotFoundError（`test_ci_dependencies.py` 就是盯這個的）。
+      - name: Install deps
+        run: pip install commonmark pyyaml markdown-it-py opencc-python-reimplemented google-genai pytest
+
+      - name: Differential test against the upstream sidebar loader
+        env:
+          SIDEBAR_ORACLE_REQUIRED: "1"
+        run: python -m pytest tests/test_sidebar_oracle.py -q

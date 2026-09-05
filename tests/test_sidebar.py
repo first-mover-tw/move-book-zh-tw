@@ -968,7 +968,8 @@ def test_scalar_shorthand_is_pruned_at_the_end_of_file_and_when_nested():
     assert out == "bookSidebar:\n  - label: A\n    id: a\n"
 
     nested = (
-        "bookSidebar:\n  - label: C\n    link:\n      type: doc\n      id: c\n"
+        "bookSidebar:\n  - type: category\n    label: C\n"
+        "    link:\n      type: doc\n      id: c\n"
         "    items:\n      - c/keep\n      - c/gone\n"
     )
     out, dropped = sidebar.prune_missing(nested, _exists({"c/gone"}))
@@ -1031,24 +1032,44 @@ def test_string_arrays_outside_item_position_are_not_doc_ids():
 
     # 條目位置的簡寫仍然要認得——修法不能靠「不再認純量」來閃過誤報。
     nested = (
-        "bookSidebar:\n  - label: C\n    items:\n      - c/keep\n"
+        "bookSidebar:\n  - type: category\n    label: C\n    items:\n      - c/keep\n"
         "      - label: D\n        id: d\n        customProps:\n          tags:\n            - x\n"
     )
     assert sidebar.doc_ids(nested) == ["c/keep", "d"]
 
 
-def test_category_shorthand_items_are_doc_ids():
-    """docusaurus 的 category shorthand：任意 label 當鍵、值是子條目陣列。
-    官方 sidebar 型別是 `SidebarItem[] | {[label: string]: SidebarItem[]}`。
+def test_category_shorthand_does_not_exist_in_this_pipeline():
+    """docusaurus 支援 category shorthand（任意 label 當鍵、值是子條目陣列），
+    這條管線**不支援**，而且不是我們選擇不支援 —— 是它到不了。
 
-    只把 `items:` 當條目序列的話，這底下的簡寫 doc id 全部漏抓 —— **漏抓等於
-    build 掛掉**（誤收是管線死鎖，兩個方向的代價不同但都不能接受）。
+    `site/src/plugins/yaml-sidebar.ts` 夾在 YAML 與 docusaurus 之間，對每個
+    條目做 `if (item.type === undefined) item.type = 'doc'`；docusaurus 判斷
+    shorthand 的條件是 `!item.type`，補過之後永遠不成立。這種寫法會被上游的
+    validateSidebars 以 `"id" is required` 拒收，build 直接掛。
+
+    這裡釘的是「我們不會替一個 build 不起來的 sidebar 編造 doc id」。
+    「上游確實拒收」那一半由 `test_sidebar_oracle.py` 拿上游程式碼實跑。
+
+    歷史：R6→R9 四輪外部 review 都在調「shorthand vs item」的邊界，前一版的
+    `_ITEM_KEYS` 是從語料樣本反推出來的代理量（L20）。爭論的區分不存在。
     """
-    assert sidebar.doc_ids(
-        "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n"
-    ) == ["doc1", "doc2"]
-    # 省略外層陣列的寫法（根的值直接是 shorthand mapping）
-    assert sidebar.doc_ids("bookSidebar:\n  Getting started:\n    - doc1\n") == ["doc1"]
+    for text in (
+        "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n",
+        "bookSidebar:\n  Getting started:\n    - doc1\n",
+    ):
+        assert sidebar.doc_ids(text) == []
+
+
+def test_ref_ids_are_not_doc_ids():
+    """`type: ref` 的 id 不在 `collectSidebarDocIds` 裡 —— dangling ref 不會
+    觸發「These sidebar document ids do not exist」那個 build 失敗，而那正是
+    `prune_missing` 唯一要防的東西。
+
+    多收的代價是合法 sidebar 被 fail-closed 擋死、沒有自動修復路徑（L21），
+    所以守衛觀測的維度要**恰好**等於它宣稱保護的性質（L2），不多不少。
+    """
+    text = "bookSidebar:\n  - type: doc\n    id: a\n  - type: ref\n    id: b\n"
+    assert sidebar.doc_ids(text) == ["a"]
 
 
 def test_custom_props_is_opaque_metadata_not_doc_references():
@@ -1067,16 +1088,3 @@ def test_custom_props_is_opaque_metadata_not_doc_references():
     ) == ["a"]
 
 
-def test_category_shorthand_is_fail_closed_in_prune_not_silently_broken():
-    """`_keep` 不認得 category shorthand（沒有 `items` 鍵），所以不會去剪它的
-    子項。這個組合本身沒有修復路徑，但 `doc_ids` 認得它之後，後置條件會攔下來
-    fail-closed，而不是靜默出貨一個 build 會掛的 sidebar（L16）。
-
-    這條釘的是「壞掉的方式是可接受的那一種」。真實上游不用 shorthand 寫法
-    （HEAD/english-main × book/reference 實測 0 個），所以是潛在而非現存問題。
-    """
-    with pytest.raises(ValueError, match="剪枝後仍有無法解析的 doc id"):
-        sidebar.prune_missing(
-            "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n",
-            _exists({"doc2"}),
-        )
