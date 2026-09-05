@@ -804,14 +804,25 @@ def test_trailing_comment_of_a_dropped_entry_goes_with_it():
     assert out == "bookSidebar:\n  - label: B\n    id: b\n"
 
 
-def test_real_upstream_book_sidebar_keeps_almost_everything():
-    """內容下界：只斷言「留下的都存在」的話，110 → 1 也會過（A5）。"""
+@pytest.mark.parametrize("name", ["book", "reference"])
+def test_real_upstream_sidebar_keeps_exactly_the_docs_that_exist(name):
+    """真實資料上的內容判準：留下的 doc id 必須**恰好**等於上游列表裡通過
+    `exists` 的那些。只斷言「留下的都存在」的話，110 → 1 也會過（A5）。
+
+    刻意不用「至少留下 N 個」這種下界 —— 那是語料狀態（上游一次新增 6 章
+    未翻的章節就會紅，而那是完全正常的狀態），不是程式行為。這條斷言對任何
+    語料狀態都成立。
+    """
     from pathlib import Path
 
-    root = Path(__file__).resolve().parent.parent
-    en = _git_show("english-main", "book/sidebar.yml")
-    out, dropped = sidebar.prune_missing(en, lambda i: (root / "book" / f"{i}.md").is_file())
-    assert len(sidebar.labels(out)) >= len(sidebar.labels(en)) - 5, dropped
+    root = Path(__file__).resolve().parent.parent / name
+    en = _git_show("english-main", f"{name}/sidebar.yml")
+
+    def exists(doc_id):
+        return (root / f"{doc_id}.md").is_file()
+
+    out, _ = sidebar.prune_missing(en, exists)
+    assert sidebar.doc_ids(out) == [i for i in sidebar.doc_ids(en) if exists(i)]
 
 
 def test_expected_tree_postcondition_catches_a_span_that_deletes_too_much(monkeypatch):
