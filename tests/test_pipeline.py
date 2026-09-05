@@ -1432,3 +1432,21 @@ def test_run_sidebar_output_has_no_unresolvable_doc_ids():
         if not (root / f"{m.group(1).strip(chr(39) + chr(34))}.md").is_file()
     ]
     assert missing == []
+
+
+def test_doc_exists_counts_files_that_are_being_translated_in_the_same_batch():
+    """`run()` 照 stale 清單順序逐檔處理，`book/sidebar.yml` 排在 22 個
+    `book/**.md` 之前 —— 只看磁碟的話那些章節會在同一批次被剪掉，而
+    `manifest.record` 之後 sidebar.yml 不再 stale，永遠回不來。"""
+    batch = ["book/sidebar.yml", "book/storage/derived-object.md"]
+    exists = pipeline._doc_exists("book/sidebar.yml", batch)
+
+    assert exists("index") is True                      # 磁碟上有
+    assert exists("storage/derived-object") is True      # 本批次正要翻
+    assert exists("programmability/scratchpad") is False  # 兩者皆非
+
+
+def test_doc_exists_resolves_paths_from_the_repo_root_not_the_cwd(monkeypatch, tmp_path):
+    """從子目錄執行時相對路徑會全數判成不存在，而小樣本的比例守衛擋不住。"""
+    monkeypatch.chdir(tmp_path)
+    assert pipeline._doc_exists("book/sidebar.yml", [])("index") is True

@@ -586,7 +586,7 @@ def test_prune_raises_when_category_link_is_missing_but_children_survive():
 def test_prune_raises_when_everything_would_be_dropped():
     """`exists` 判準寫錯（路徑/副檔名）時最典型的失效就是全數不存在；
     靜默產出空 sidebar 比留著壞 doc id 更難查。"""
-    with pytest.raises(ValueError, match="剪掉"):
+    with pytest.raises(ValueError, match="一個條目都不剩"):
         sidebar.prune_missing(EN_PARTIAL, lambda _: False)
 
 
@@ -669,3 +669,154 @@ def test_prune_drops_category_with_no_link_when_all_children_are_missing():
   - label: Keep Me
     id: index
 """
+
+
+# --- 外部 review 整合修復：每一道守衛各自的覆蓋 --------------------------
+#
+# 第一版四條後置條件全部由 `_keep` 的同一份 drops 推導，外部 review 實測
+# 「整條拿掉、472 個測試不變色」。下面每個測試都只打在**一道**守衛上。
+
+
+def _big(n: int, missing: set) -> str:
+    """產生 n 個條目的合成 sidebar，讓比例守衛的最小樣本數門檻生效。"""
+    body = "".join(f"  - label: L{i}\n    id: d{i}\n" for i in range(n))
+    return "bookSidebar:\n" + body
+
+
+def test_ratio_guard_fires_when_more_than_half_the_labels_would_be_dropped():
+    """`exists` 判準寫錯（路徑/cwd/副檔名）的典型失效：剪掉絕大多數條目。
+    第一版分子數「條目筆數」、分母數「label 總數」，單位不同 —— 真實資料
+    110 個 label 剪到剩 1 個仍然不觸發。"""
+    text = _big(20, set())
+    with pytest.raises(ValueError, match=r"剩 1/20"):
+        sidebar.prune_missing(text, lambda i: i == "d0")
+
+
+def test_ratio_guard_does_not_fire_on_a_legitimate_early_stage_repo():
+    """小樣本套比例會把「三章翻了一章」誤判成判準有誤（B5）。"""
+    out, dropped = sidebar.prune_missing(
+        "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: b\n"
+        "  - label: C\n    id: c\n",
+        _exists({"b", "c"}),
+    )
+    assert dropped == ["b", "c"]
+    assert _doc_ids(out) == ["a"]
+
+
+def test_over_deletion_is_caught_even_when_the_keep_judgement_is_wrong(monkeypatch):
+    """後置條件必須獨立於 `_keep`：把判定整個換成「全部刪掉」，守衛仍要紅。
+    第一版的期望樹與子序列檢查都由 drops 推導，這種情形完全無感（C3）。"""
+    # 只讓第一個條目被誤刪 —— 剩下的條目還在，所以「全空」與比例守衛都不會
+    # 觸發，紅的只能是「過度刪除」這一條。
+    real = sidebar._keep
+    calls = {"n": 0}
+
+    def only_first_is_wrong(*a, **k):
+        calls["n"] += 1
+        return False if calls["n"] == 1 else real(*a, **k)
+
+    monkeypatch.setattr(sidebar, "_keep", only_first_is_wrong)
+    with pytest.raises(ValueError, match="過度刪除"):
+        sidebar.prune_missing(EN_PARTIAL, lambda _: True)
+
+
+def test_unresolvable_doc_id_is_caught_even_when_keep_never_drops(monkeypatch):
+    """反方向：判定改成「全部留下」，症狀守衛要抓到留下來的壞 doc id。"""
+    monkeypatch.setattr(sidebar, "_keep", lambda *a, **k: True)
+    with pytest.raises(ValueError, match="仍有無法解析的 doc id"):
+        sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+
+
+def test_postconditions_run_even_when_nothing_is_dropped():
+    """`_keep` 看不到的壞 doc id 不能因為「沒東西要刪」就早退跳過檢查（B1）。"""
+    text = """bookSidebar:
+  - label: A
+    id: a
+  - type: category
+    label: Cat
+    link:
+      id: cat/missing
+      type: doc
+    items:
+      - label: B
+        id: cat/b
+"""
+    with pytest.raises(ValueError, match="cat/missing"):
+        sidebar.prune_missing(text, _exists({"cat/missing"}))
+
+
+def test_node_with_both_id_and_items_has_its_own_id_checked():
+    """帶 `id` 又帶 `items` 的節點，第一版的 items 分支只看 link、永遠不檢查
+    它自己的 id（B1 第二例）。"""
+    text = """bookSidebar:
+  - label: A
+    id: gone
+    items:
+      - label: B
+        id: b
+"""
+    with pytest.raises(ValueError, match="自己的頁面不存在但底下還有已翻好的項目"):
+        sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_flow_style_entry_is_rejected_with_an_actionable_message():
+    """flow style 整條在同一行，行刪除表達不了 —— 第一版會退化成 span 寬度 0，
+    什麼都沒刪卻回報成功，錯誤訊息還指向 exists 判準（B2）。"""
+    text = "bookSidebar:\n  - {label: A, id: a}\n  - {label: B, id: b}\n"
+    with pytest.raises(ValueError, match="flow style"):
+        sidebar.prune_missing(text, _exists({"b"}))
+
+
+def test_file_without_trailing_newline_drops_its_last_entry_correctly():
+    """檔尾沒有換行時最後一個節點的 end_mark 停在自己那行，span 寬度 0（B3）。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: gone"
+    out, dropped = sidebar.prune_missing(text, _exists({"gone"}))
+    assert dropped == ["gone"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n"
+
+
+def test_anchor_alias_is_rejected_instead_of_deleting_the_wrong_lines():
+    """PyYAML 對 alias 回傳同一個 node 物件，兩筆 drop 拿到相同 span，
+    刪兩次就刪掉後面等長的行、產出殘破 YAML（B4）。"""
+    text = """bookSidebar:
+  - &x
+    label: A
+    id: gone
+  - label: K
+    id: k
+  - *x
+"""
+    with pytest.raises(ValueError, match="anchor/alias"):
+        sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_trailing_comment_of_a_dropped_entry_goes_with_it():
+    """尾註的縮排與條目同深，屬於被刪的條目；第一版無條件回縮所有註解行，
+    把它留在原地變成縮排錯亂的孤兒行（B6）。"""
+    text = """bookSidebar:
+  - label: A
+    id: gone
+    # 這行屬於 A
+  - label: B
+    id: b
+"""
+    out, _ = sidebar.prune_missing(text, _exists({"gone"}))
+    assert out == "bookSidebar:\n  - label: B\n    id: b\n"
+
+
+def test_real_upstream_book_sidebar_keeps_almost_everything():
+    """內容下界：只斷言「留下的都存在」的話，110 → 1 也會過（A5）。"""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    en = _git_show("english-main", "book/sidebar.yml")
+    out, dropped = sidebar.prune_missing(en, lambda i: (root / "book" / f"{i}.md").is_file())
+    assert len(sidebar.labels(out)) >= len(sidebar.labels(en)) - 5, dropped
+
+
+def test_expected_tree_postcondition_catches_a_span_that_deletes_too_much(monkeypatch):
+    """期望樹是「行刪除」與「樹修剪」的交叉驗證：把 span 尾端撐大一行，
+    行刪除就會多吃掉下一個條目的第一行，兩者不再一致。"""
+    monkeypatch.setattr(sidebar, "_trim", lambda lines, start, end, indent: end + 1)
+    with pytest.raises(ValueError, match="與期望樹不符|過度刪除"):
+        sidebar.prune_missing(EN_PARTIAL, _exists({"programmability/scratchpad"}))

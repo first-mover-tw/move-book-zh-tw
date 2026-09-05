@@ -623,6 +623,31 @@ def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
     manifest.save(fresh)
 
 
+
+# repo 根目錄：`exists` 判準必須用絕對路徑解析。從子目錄執行時相對路徑會
+# 全數判成不存在，而剪枝的比例守衛在小樣本上不會擋（外部 review A3）。
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _doc_exists(sidebar_path: str, batch: list[str]):
+    """sidebar 剪枝用的「這個 doc id 有沒有對應 .md」判準。
+
+    「磁碟上有」不夠：`run()` 是照 stale 清單的順序逐檔處理，`book/sidebar.yml`
+    排在 22 個 `book/**.md` 之前，那些檔案在輪到 sidebar 時還沒落盤。剪掉之後
+    `manifest.record` 又把 sidebar 記成最新，`stale_files` 不再列它——除非上游
+    哪天再動 sidebar.yml，那些章節永遠回不到側邊欄（外部 review C1）。所以
+    **本批次要翻的檔案也算存在**。
+    """
+    root = _REPO_ROOT / Path(sidebar_path).parent
+    in_batch = {str(Path(p)) for p in batch}
+
+    def exists(doc_id: str) -> bool:
+        rel = Path(sidebar_path).parent / f"{doc_id}.md"
+        return (root / f"{doc_id}.md").is_file() or str(rel) in in_batch
+
+    return exists
+
+
 def run(
     paths: list[str],
     backend_name: str,
@@ -646,11 +671,8 @@ def run(
             if path in manifest.SIDEBAR_FILES:
                 # 上游有、我們還沒翻的章節必須先剪掉，否則 doc id 找不到
                 # 對應 .md，docusaurus build 會失敗（見 sidebar.prune_missing）。
-                # 判準是「磁碟上有沒有那個 .md」，相對於 sidebar 所在目錄解析。
-                root = Path(path).parent
                 out = sidebar.translate(
-                    en, prev, backend,
-                    exists=lambda i: (root / f"{i}.md").is_file(),
+                    en, prev, backend, exists=_doc_exists(path, paths)
                 )
             elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
