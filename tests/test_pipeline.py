@@ -1395,7 +1395,33 @@ def test_repair_verifies_the_result_actually_renders():
         pipeline.commonmark = real
 
 
-def test_run_passes_a_disk_backed_exists_predicate_to_sidebar_translate(monkeypatch):
+
+# --- sidebar exists 判準的測試一律用合成語料 -----------------------------
+#
+# 曾經 hardcode `programmability/scratchpad`（斷言「上游有、我們沒翻」）與
+# `book/storage/derived-object.md`（斷言「上游也沒有」）。兩者都是**語料狀態**
+# 而不是程式行為：前者是 --detect 37 檔清單的第 5 筆，BATCH_SIZE=3 之下約兩輪
+# cron 就會被翻出來，屆時內容完全正確的 auto PR 會被自己的 gate 判紅；後者是
+# 上游哪天新增這一章就三條一起翻。這正是 test_baseline.py 開頭寫下的判準
+# （語料狀態不是程式行為，L3/L4），也正是本輪移除
+# `test_resync_needed_on_the_real_repo_is_false` 的同一個理由。
+
+
+@pytest.fixture
+def fake_book(tmp_path, monkeypatch):
+    """把 repo root 指向 tmp，裡面只有 `book/here.md`。
+
+    `here` 保證存在、`there`/`soon` 保證不存在，都不隨真實語料變動。
+    """
+    from scripts.zh_tw import manifest
+
+    (tmp_path / "book").mkdir()
+    (tmp_path / "book" / "here.md").write_text("# here\n", encoding="utf-8")
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+    return tmp_path
+
+
+def test_run_passes_a_disk_backed_exists_predicate_to_sidebar_translate(monkeypatch, fake_book):
     """組合層（L7）：`prune_missing` 單元測試全綠但沒接進 pipeline，正是
     2026-09-05 那次 docusaurus build 失敗的形狀。這裡驗證 run() 真的傳了
     exists，而且它的判準是「相對於 sidebar 所在目錄的 .md 存不存在」。"""
@@ -1409,9 +1435,8 @@ def test_run_passes_a_disk_backed_exists_predicate_to_sidebar_translate(monkeypa
 
     exists = got["exists"]
     assert exists is not None, "run() 沒有把 exists 傳給 sidebar.translate"
-    assert exists("index") is True                     # book/index.md 存在
-    assert exists("programmability/scratchpad") is False  # 上游有、我們沒翻
-    assert exists("concepts/packages") is True           # 判準相對 book/ 解析
+    assert exists("here") is True    # book/here.md 存在
+    assert exists("there") is False  # 沒有對應的 .md
 
 
 def test_run_sidebar_output_has_no_unresolvable_doc_ids():
@@ -1421,7 +1446,7 @@ def test_run_sidebar_output_has_no_unresolvable_doc_ids():
     path = manifest.SIDEBAR_FILES[0]
     en = pipeline._show("english-main", path)
     prev = pipeline._show("HEAD", path) or ""
-    root = Path(path).parent
+    root = pipeline.manifest.REPO_ROOT / Path(path).parent
     out = pipeline.sidebar.translate(
         en, prev, pipeline.base.get("fake"),
         exists=lambda i: (root / f"{i}.md").is_file(),
@@ -1434,16 +1459,15 @@ def test_run_sidebar_output_has_no_unresolvable_doc_ids():
     assert missing == []
 
 
-def test_doc_exists_counts_files_that_are_being_translated_in_the_same_batch():
+def test_doc_exists_counts_files_that_are_being_translated_in_the_same_batch(fake_book):
     """`run()` 照 stale 清單順序逐檔處理，`book/sidebar.yml` 排在 22 個
     `book/**.md` 之前 —— 只看磁碟的話那些章節會在同一批次被剪掉，而
     `manifest.record` 之後 sidebar.yml 不再 stale，永遠回不來。"""
-    batch = ["book/sidebar.yml", "book/storage/derived-object.md"]
-    exists = pipeline._doc_exists("book/sidebar.yml", batch)
+    exists = pipeline._doc_exists("book/sidebar.yml", ["book/soon.md"])
 
-    assert exists("index") is True                      # 磁碟上有
-    assert exists("storage/derived-object") is True      # 本批次正要翻
-    assert exists("programmability/scratchpad") is False  # 兩者皆非
+    assert exists("here") is True    # 磁碟上有
+    assert exists("soon") is True    # 本輪已產出
+    assert exists("there") is False  # 兩者皆非
 
 
 def test_doc_exists_resolves_paths_from_the_repo_root_not_the_cwd(monkeypatch, tmp_path):
@@ -1452,13 +1476,13 @@ def test_doc_exists_resolves_paths_from_the_repo_root_not_the_cwd(monkeypatch, t
     assert pipeline._doc_exists("book/sidebar.yml", [])("index") is True
 
 
-def test_doc_exists_matches_batch_entries_given_as_absolute_or_dotted_paths():
+def test_doc_exists_matches_batch_entries_given_as_absolute_or_dotted_paths(fake_book):
     """CLI 可能收到絕對路徑或 `./x`；直接字串比對會對不上，靜默退化成只看
     磁碟，也就重新打開了「同批次被剪」的洞（外部 review A7）。"""
-    target = str(pipeline._REPO_ROOT / "book" / "storage" / "derived-object.md")
-    for form in (target, "./book/storage/derived-object.md", "book/storage/derived-object.md"):
+    target = str(fake_book / "book" / "soon.md")
+    for form in (target, "./book/soon.md", "book/soon.md"):
         exists = pipeline._doc_exists("book/sidebar.yml", [form])
-        assert exists("storage/derived-object") is True, form
+        assert exists("soon") is True, form
 
 
 def test_stale_paths_lists_sidebar_when_a_pruned_chapter_came_back(monkeypatch):
@@ -1498,14 +1522,14 @@ def test_run_processes_sidebar_last_so_pruning_sees_what_actually_landed(monkeyp
     assert seen == ["md", "md", "sidebar"], "sidebar 必須排在最後"
 
 
-def test_doc_exists_only_trusts_files_that_actually_got_produced():
+def test_doc_exists_only_trusts_files_that_actually_got_produced(fake_book):
     """`produced` 是本輪成功產出的檔案，不是「本批次打算翻的」。用後者的話，
     翻譯失敗的檔案會讓 sidebar 帶著 dangling doc id 落盤，而它下一輪仍在同一
     批次裡、又被樂觀判定救回去 —— 每輪重演，不動點不存在。"""
     exists = pipeline._doc_exists("book/sidebar.yml", set())
-    assert exists("storage/derived-object") is False  # 沒產出就是不存在
-    exists = pipeline._doc_exists("book/sidebar.yml", {"book/storage/derived-object.md"})
-    assert exists("storage/derived-object") is True
+    assert exists("soon") is False  # 沒產出就是不存在
+    exists = pipeline._doc_exists("book/sidebar.yml", {"book/soon.md"})
+    assert exists("soon") is True
 
 
 def test_a_persistently_failing_chapter_does_not_keep_the_sidebar_dirty(tmp_path, monkeypatch):
@@ -1519,7 +1543,6 @@ def test_a_persistently_failing_chapter_does_not_keep_the_sidebar_dirty(tmp_path
     upstream = "bookSidebar:\n  - label: A\n    id: a\n  - label: B\n    id: b\n"
     (book / "sidebar.yml").write_text(upstream, encoding="utf-8")
     monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(pipeline, "_REPO_ROOT", tmp_path)
 
     # b.md 永遠翻不出來（配額用盡／驗證不過）
     produced = set()
@@ -1532,7 +1555,7 @@ def test_a_persistently_failing_chapter_does_not_keep_the_sidebar_dirty(tmp_path
     assert sb.resync_needed("book/sidebar.yml", upstream) is False
 
 
-def test_run_gives_sidebar_a_predicate_that_rejects_a_failed_batch_file(monkeypatch):
+def test_run_gives_sidebar_a_predicate_that_rejects_a_failed_batch_file(monkeypatch, fake_book):
     """組合層（L7）：`_doc_exists` 收到 `produced` 是對的，但 `run()` 若把整批
     `paths` 傳進去，翻譯失敗的檔案照樣被當存在 —— 單元測試全綠、缺陷仍在。
     這裡直接攔下 `run()` 實際交給 sidebar 的那個判準來問。"""
@@ -1550,9 +1573,9 @@ def test_run_gives_sidebar_a_predicate_that_rejects_a_failed_batch_file(monkeypa
     )
 
     ok, failed = pipeline.run(
-        ["book/sidebar.yml", "book/storage/derived-object.md"], "fake", apply=False
+        ["book/sidebar.yml", "book/soon.md"], "fake", apply=False
     )
-    assert "book/storage/derived-object.md" in failed
+    assert "book/soon.md" in failed
     # 那個檔案沒產出 —— sidebar 拿到的判準必須說它不存在，否則 dangling doc id
     # 會落盤，而它下一輪仍在同一批次裡又被樂觀判定救回去（外部 review B1）。
-    assert got["exists"]("storage/derived-object") is False
+    assert got["exists"]("soon") is False

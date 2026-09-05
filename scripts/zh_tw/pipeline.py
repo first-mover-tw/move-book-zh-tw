@@ -624,11 +624,6 @@ def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
 
 
 
-# `exists` 判準必須用絕對路徑解析（外部 review A3）。判定權只有 manifest
-# 那一份，不要在這裡再定義一個會漂移的副本。
-_REPO_ROOT = manifest.REPO_ROOT
-
-
 def _doc_exists(sidebar_path: str, produced):
     """sidebar 剪枝用的「這個 doc id 有沒有對應 .md」判準。
 
@@ -643,7 +638,11 @@ def _doc_exists(sidebar_path: str, produced):
     樂觀判定救回去 —— 每輪都重演，不動點不存在（外部 review B1）。`run()`
     因此把 sidebar 排到最後處理，這裡看到的是既成事實。
     """
-    root = _REPO_ROOT / Path(sidebar_path).parent
+    # 每次讀 `manifest.REPO_ROOT` 而不是 import 時取快照存成模組層變數：
+    # 快照會與 late-bound 讀它的 `sidebar.resync_needed` 對同一個檔案系統
+    # 有不同看法，測試也得記得同時 patch 兩個（外部 review A1）。
+    repo_root = manifest.REPO_ROOT
+    root = repo_root / Path(sidebar_path).parent
 
     def _norm(p) -> str:
         """一律正規化成 repo root 底下的相對路徑再比對。
@@ -653,9 +652,9 @@ def _doc_exists(sidebar_path: str, produced):
         review A7），也就重新打開了上面那個「同批次被剪」的洞。
         """
         q = Path(p)
-        q = q if q.is_absolute() else _REPO_ROOT / q
+        q = q if q.is_absolute() else repo_root / q
         try:
-            return str(q.resolve().relative_to(_REPO_ROOT.resolve()))
+            return str(q.resolve().relative_to(repo_root.resolve()))
         except ValueError:
             return str(q)
 
