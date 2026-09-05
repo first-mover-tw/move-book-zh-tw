@@ -491,6 +491,18 @@ def _assert_prune_is_faithful(text: str, out: str, exists, dropped_ids: list) ->
         )
 
 
+# docusaurus sidebar item 物件的鍵。一個 mapping 只要帶其中任一個就是條目
+# 本身；一個都沒有的就是 category shorthand（鍵是 label、值是子條目陣列）。
+_ITEM_KEYS = frozenset({
+    "type", "id", "label", "link", "items", "href", "className", "customProps",
+    "collapsed", "collapsible", "description", "translatable",
+})
+
+
+def _is_item_mapping(node) -> bool:
+    return bool(_ITEM_KEYS & set(_mapping(node)))
+
+
 def doc_ids(text: str) -> list[str]:
     """文字裡所有 doc id，依出現順序。
 
@@ -510,11 +522,22 @@ def doc_ids(text: str) -> list[str]:
         sidebar 被 fail-closed 擋死（外部 review 第七輪 B1）。
         """
         if isinstance(node, yaml.nodes.MappingNode):
+            # category shorthand（`- Getting started: [doc1, doc2]`）是「任意
+            # label 當鍵、值是子條目陣列」的 mapping，沒有任何 sidebar item
+            # 的鍵。只認 `items` 的話它底下的簡寫 doc id 全部漏抓 —— 漏抓
+            # 等於 build 掛掉（第八輪 B1）。
+            shorthand = not _is_item_mapping(node)
             for k, v in node.value:
+                # `customProps` 依規格是任意使用者資料（`Record<string,
+                # unknown>`），裡面不會有 doc 引用。整棵子樹跳過，才不會把
+                # `customProps: {id: something}` 或 `{badges: [...]}` 當成
+                # doc id 而誤擋合法 sidebar（第七輪 B1、第八輪 B2）。
+                if k.value == "customProps":
+                    continue
                 if k.value == "id" and isinstance(v, yaml.nodes.ScalarNode):
                     out.append(v.value)
                 else:
-                    walk(v, k.value == "items")
+                    walk(v, k.value == "items" or shorthand)
         elif isinstance(node, yaml.nodes.SequenceNode):
             for c in node.value:
                 if item_seq and isinstance(c, yaml.nodes.ScalarNode):

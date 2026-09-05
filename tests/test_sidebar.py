@@ -1035,3 +1035,48 @@ def test_string_arrays_outside_item_position_are_not_doc_ids():
         "      - label: D\n        id: d\n        customProps:\n          tags:\n            - x\n"
     )
     assert sidebar.doc_ids(nested) == ["c/keep", "d"]
+
+
+def test_category_shorthand_items_are_doc_ids():
+    """docusaurus 的 category shorthand：任意 label 當鍵、值是子條目陣列。
+    官方 sidebar 型別是 `SidebarItem[] | {[label: string]: SidebarItem[]}`。
+
+    只把 `items:` 當條目序列的話，這底下的簡寫 doc id 全部漏抓 —— **漏抓等於
+    build 掛掉**（誤收是管線死鎖，兩個方向的代價不同但都不能接受）。
+    """
+    assert sidebar.doc_ids(
+        "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n"
+    ) == ["doc1", "doc2"]
+    # 省略外層陣列的寫法（根的值直接是 shorthand mapping）
+    assert sidebar.doc_ids("bookSidebar:\n  Getting started:\n    - doc1\n") == ["doc1"]
+
+
+def test_custom_props_is_opaque_metadata_not_doc_references():
+    """`customProps` 依規格是 `Record<string, unknown>` —— 任意使用者資料，
+    裡面不會有 doc 引用。整棵子樹都不該被掃。
+
+    `badges: ['new','green']` 是官方文件的例子；`customProps: {id: ...}` 則是
+    `0ba8e5c` 之前就有的誤收（任何位置的 `id:` 鍵都收）。兩者同一個正解。
+    """
+    assert sidebar.doc_ids(
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n"
+        "      badges:\n        - new\n        - green\n"
+    ) == ["a"]
+    assert sidebar.doc_ids(
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n      id: something\n"
+    ) == ["a"]
+
+
+def test_category_shorthand_is_fail_closed_in_prune_not_silently_broken():
+    """`_keep` 不認得 category shorthand（沒有 `items` 鍵），所以不會去剪它的
+    子項。這個組合本身沒有修復路徑，但 `doc_ids` 認得它之後，後置條件會攔下來
+    fail-closed，而不是靜默出貨一個 build 會掛的 sidebar（L16）。
+
+    這條釘的是「壞掉的方式是可接受的那一種」。真實上游不用 shorthand 寫法
+    （HEAD/english-main × book/reference 實測 0 個），所以是潛在而非現存問題。
+    """
+    with pytest.raises(ValueError, match="剪枝後仍有無法解析的 doc id"):
+        sidebar.prune_missing(
+            "bookSidebar:\n  - Getting started:\n      - doc1\n      - doc2\n",
+            _exists({"doc2"}),
+        )
