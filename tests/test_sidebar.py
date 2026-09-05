@@ -870,3 +870,43 @@ def test_dangling_dash_block_sequence_gets_an_actionable_message():
     text = "bookSidebar:\n  -\n    label: A\n    id: gone\n  - label: K\n    id: k\n"
     with pytest.raises(ValueError, match="分行的 block sequence"):
         sidebar.prune_missing(text, _exists({"gone"}))
+
+
+def test_resync_needed_when_our_sidebar_lists_a_doc_that_does_not_exist(monkeypatch, tmp_path):
+    """反方向：`_doc_exists` 對「本批次正要翻的檔案」是樂觀判定，那個檔案
+    翻譯失敗（配額用盡是 workflow 明確容忍的情況）時 sidebar 會帶著一個
+    dangling doc id 落盤 —— 只看「少列」的方向沒有任何回收機制（B3）。"""
+    _write_sidebar(tmp_path, "book", ["a", "b"], ["a"])  # 列了 b，但 b.md 不存在
+    monkeypatch.chdir(tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is True
+
+
+def test_resync_terminates_after_the_dangling_entry_is_pruned(monkeypatch, tmp_path):
+    _write_sidebar(tmp_path, "book", ["a"], ["a"])
+    monkeypatch.chdir(tmp_path)
+    assert sidebar.resync_needed("book/sidebar.yml", UPSTREAM) is False
+
+
+def test_dash_followed_by_extra_spaces_is_valid_and_not_rejected():
+    """`-   id: a` 是完全合法的 block sequence，dash 與內容也在同一行。
+    固定看 col-2 會誤判成分行寫法，訊息還指向一個不存在的成因（B2）。"""
+    out, dropped = sidebar.prune_missing(
+        "bookSidebar:\n  -   label: A\n      id: a\n  -   label: B\n      id: b\n",
+        _exists({"b"}),
+    )
+    assert dropped == ["b"]
+    assert _doc_ids(out) == ["a"]
+
+
+def test_resync_needed_on_the_real_repo_is_false():
+    """真實現況：兩份 sidebar 都同步、doc id 零缺失，不該讓 cron 空轉。"""
+    import subprocess
+
+    for name in ("book", "reference"):
+        path = f"{name}/sidebar.yml"
+        up = subprocess.run(
+            ["git", "show", f"english-main:{path}"], capture_output=True, text=True
+        )
+        if up.returncode != 0:
+            pytest.skip(f"english-main:{path} 不在這個 checkout 裡")
+        assert sidebar.resync_needed(path, up.stdout) is False, path

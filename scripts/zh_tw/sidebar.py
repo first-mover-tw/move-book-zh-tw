@@ -5,6 +5,7 @@
 """
 
 import re
+from pathlib import Path
 
 import yaml
 
@@ -319,9 +320,11 @@ def _span(node, text: str) -> tuple[int, int]:
     # `-` 單獨一行、內容縮排在下一行的寫法，節點的 start_mark 落在第一個
     # 鍵上，那個 `-` 不在區間裡，刪完會留下一個 null 條目。期望樹守衛擋得住
     # 但訊息指向刪除演算法，看不出是輸入寫法的問題（外部 review A1）。
-    lines = text.splitlines()
-    col = node.start_mark.column
-    if col < 2 or lines[start][col - 2:col] != "- ":
+    # 往回掃到第一個非空白字元，必須是同一行上的 `-`。固定看 col-2 會把
+    # `-   id: a`（dash 後多個空白，完全合法）誤判成分行寫法，訊息還指向
+    # 一個不存在的成因（外部 review B2）。
+    head = text.splitlines()[start][:node.start_mark.column].rstrip()
+    if not head.endswith("-"):
         raise ValueError(
             "不支援 `-` 與條目內容分行的 block sequence 寫法"
             f"（第 {start + 1} 行）：無法用行區間表達這個條目"
@@ -538,30 +541,47 @@ def translate(
 
 
 def resync_needed(path: str, upstream_text: str) -> bool:
-    """這份 sidebar 是否該重新同步：上游列著、我們沒列、而那個 `.md` 已經翻好。
+    """這份 sidebar 是否該重新同步。兩個方向都要看：
+
+      * **少列**：上游列著、我們沒列，而那個 `.md` 已經翻好 —— 上一批被剪掉
+        的章節翻好了，該回來。
+      * **多列**：我們列著、但那個 `.md` 不存在 —— `_doc_exists` 對「本批次
+        正要翻的檔案」是樂觀判定（一律當存在），那個檔案要是翻譯失敗（配額
+        用盡是 workflow 明確容忍的情況），sidebar 就帶著一個 dangling doc id
+        落盤，docusaurus build 掛掉。只看少列的方向沒有任何回收機制
+        （外部 review B3）。
 
     同步會剪掉「還沒翻」的章節，但判準只能看**當下**磁碟上有什麼，而 `run()`
     是分批的（CI `BATCH_SIZE: 3`）：`book/sidebar.yml` 在 `git ls-tree` 排序裡
-    位於 116 個檔案的第 94 位，後面還有 22 個 `.md`。上游一次新增三章以上時
-    （那必然也會動 sidebar.yml），排在後面的章節在輪到 sidebar 時還沒落盤，
-    會被剪掉；`manifest.record` 隨即把 sidebar 記成最新，而 `stale_files` 只
-    比對英文 blob SHA，於是那些章節即使後來翻好了也永遠回不到側邊欄
-    （外部 review C1）。`_doc_exists` 的 in_batch 只救得了同一批次的。
+    位於第 94 位，後面還有 22 個 `.md`。上游一次新增三章以上時（那必然也會動
+    sidebar.yml），排在後面的章節在輪到 sidebar 時還沒落盤，會被剪掉；
+    `manifest.record` 隨即把 sidebar 記成最新，而 `stale_files` 只比對英文
+    blob SHA，於是那些章節即使後來翻好也永遠回不到側邊欄（外部 review C1）。
 
-    這個條件精確且會終止：只有「本地已經有 .md、但我們的 sidebar 沒列」才成立，
-    重新同步一次就消失。永遠不會翻的章節（本地沒有 .md）不會讓它一直為真，
-    所以不會每輪 cron 都白燒一個批次額度——這是「剪到東西就不 record」那個
-    做法的病理，刻意不採用。
+    **終止性**：正常路徑會終止 —— 少列的翻好後同步一次就進 `have`，多列的
+    同步一次就被剪掉，兩個方向下輪都是 False。永遠不會翻的章節（本地沒有
+    `.md`）不會讓它為真，所以不會每輪 cron 白燒一個批次額度；這是「剪到東西
+    就不 record」那個做法的病理，刻意不採用。
+
+    **但這不是無條件的**：`_keep` 的兩個 fail-closed 分支（category 自己的頁面
+    缺失卻有存活子項 / 子項全缺但自己的頁面存在）會讓 `prune_missing` 拋例外，
+    `run()` 記成 failed、不寫檔也不 record，於是狀態原封不動、下輪又被列出來
+    —— 自環，要人工處理才離得開（外部 review B1）。斷路器（連續 N 輪同一個
+    sidebar 失敗就告警／移出候選）是獨立工項，見 tasks/notes.md。
     """
-    from pathlib import Path
-
     local = Path(path)
     if not local.is_file():
         return False
     try:
         upstream = doc_ids(upstream_text)
-        have = set(doc_ids(local.read_text(encoding="utf-8")))
-    except yaml.YAMLError:  # 解析不了就交給正常的同步流程處理
+        have = doc_ids(local.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 —— 讀不了/解析不了就交給正常的同步流程
         return False
     parent = local.parent
-    return any(i not in have and (parent / f"{i}.md").is_file() for i in upstream)
+
+    def translated(doc_id: str) -> bool:
+        return (parent / f"{doc_id}.md").is_file()
+
+    missing_from_ours = any(i not in set(have) and translated(i) for i in upstream)
+    dangling_in_ours = any(not translated(i) for i in have)
+    return missing_from_ours or dangling_in_ours

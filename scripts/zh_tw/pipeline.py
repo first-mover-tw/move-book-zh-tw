@@ -624,9 +624,9 @@ def _save_manifest_updates(m: dict[str, str], touched: set[str]) -> None:
 
 
 
-# repo 根目錄：`exists` 判準必須用絕對路徑解析。從子目錄執行時相對路徑會
-# 全數判成不存在，而剪枝的比例守衛在小樣本上不會擋（外部 review A3）。
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+# `exists` 判準必須用絕對路徑解析（外部 review A3）。判定權只有 manifest
+# 那一份，不要在這裡再定義一個會漂移的副本。
+_REPO_ROOT = manifest.REPO_ROOT
 
 
 def _doc_exists(sidebar_path: str, batch: list[str]):
