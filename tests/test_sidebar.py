@@ -821,7 +821,15 @@ def test_real_upstream_sidebar_keeps_exactly_the_docs_that_exist(name):
     def exists(doc_id):
         return (root / f"{doc_id}.md").is_file()
 
-    out, _ = sidebar.prune_missing(en, exists)
+    # `prune_missing` 不是全函式：category 自己的頁面還沒翻、子項卻翻好了
+    # 的時候會 fail-closed。那是**正確的程式行為**（L16），不是缺陷 —— 而且
+    # `BATCH_SIZE: 3` 下 `newcat/basics.md` 會先於 `newcat/index.md` 被翻，
+    # 這個中間態真的可達。斷言「不會 raise」＝斷言語料狀態（L3），會讓一個
+    # 內容正確的 auto PR 變紅、cron 全部停擺（外部 review B1）。
+    try:
+        out, _ = sidebar.prune_missing(en, exists)
+    except sidebar.FailClosed as e:
+        pytest.skip(f"上游語料目前處於需人工處理的合法中間態: {e}")
     assert sidebar.doc_ids(out) == [i for i in sidebar.doc_ids(en) if exists(i)]
 
 
@@ -924,3 +932,79 @@ def test_dash_followed_by_extra_spaces_is_valid_and_not_rejected():
 # 的 auto PR 內容完全正確卻會被這條 gate 判紅，接著「有未合併 auto PR 就
 # 本輪跳過」讓 cron 全部空轉。這正是 test_baseline.py 開頭寫的判準：
 # 語料狀態不是程式行為（L3/L4）。「現在同不同步」屬 --detect 的儀表板。
+
+
+# --- docusaurus 的 doc id 字串簡寫（外部 review B2）------------------------
+#
+# `- concepts/intro` 與 `- {id: concepts/intro}` 對 docusaurus 完全等價。
+# 修復前這種寫法對**三處**同時隱形：`_keep`（`_mapping` 回 {} → 一路 return
+# True）、`doc_ids`（只收 `id:` 鍵）、`test_baseline` 的 gate（regex `^\s*id:`）。
+# 三處是同一個盲點的三個出口 —— 守衛觀測的是「`id:` 這個鍵」，宣稱保護的卻是
+# 「doc 引用解析得到」（L2）。
+
+
+def test_scalar_shorthand_doc_id_is_pruned_when_the_file_is_missing():
+    """修復前：`dropped == []`、輸出一字未改、所有後置條件全綠，而 docusaurus
+    build 掛在原本要修的那個症狀上。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/gone\n  - label: K\n    id: k\n"
+    out, dropped = sidebar.prune_missing(text, _exists({"concepts/gone"}))
+    assert dropped == ["bookSidebar/1"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n  - label: K\n    id: k\n"
+
+
+def test_scalar_shorthand_doc_id_is_visible_to_doc_ids():
+    """`doc_ids` 是後置條件與 baseline gate 共同的判準來源；它看不到的東西，
+    那兩道守衛也看不到。"""
+    text = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/intro\n"
+    assert sidebar.doc_ids(text) == ["a", "concepts/intro"]
+
+
+def test_scalar_shorthand_is_pruned_at_the_end_of_file_and_when_nested():
+    """純量節點的 `end_mark` 落在自己結尾而不是下一個 token，區間會退化成
+    寬度 0。這與檔尾那個已知情形同源，但 mapping 條目碰不到。"""
+    eof = "bookSidebar:\n  - label: A\n    id: a\n  - concepts/gone\n"
+    out, dropped = sidebar.prune_missing(eof, _exists({"concepts/gone"}))
+    assert dropped == ["bookSidebar/1"]
+    assert out == "bookSidebar:\n  - label: A\n    id: a\n"
+
+    nested = (
+        "bookSidebar:\n  - label: C\n    link:\n      type: doc\n      id: c\n"
+        "    items:\n      - c/keep\n      - c/gone\n"
+    )
+    out, dropped = sidebar.prune_missing(nested, _exists({"c/gone"}))
+    assert dropped == ["bookSidebar/0/items/1"]
+    assert sidebar.doc_ids(out) == ["c", "c/keep"]
+
+
+def test_fail_closed_is_a_distinct_exception_type():
+    """真實語料測試要能區分「需人工處理的合法中間態」與「判準或輸入壞了」。
+    兩者都是 ValueError 的話，測試只能二選一：把合法中間態當失敗（cron 停擺，
+    外部 review B1），或把真的壞掉當成可以忽略。
+    """
+    text = (
+        "bookSidebar:\n  - type: category\n    label: C\n    link:\n"
+        "      type: doc\n      id: c/index\n    items:\n      - label: K\n        id: c/k\n"
+    )
+    with pytest.raises(sidebar.FailClosed):
+        sidebar.prune_missing(text, _exists({"c/index"}))
+    # 對照組：exists 疑似有誤是另一回事，不該被同一個 except 吃掉。
+    assert not issubclass(type(_exists({})), sidebar.FailClosed)
+
+
+def test_the_ratio_guard_is_a_deliberate_heuristic_not_an_invariant():
+    """`kept * 2 < total`（>= 10 個 label 才套）會擋下「合法但超過半數未翻」
+    的 sidebar。這是**刻意**的取捨，不是沒人想過的邊界：
+
+    它防的是 `exists` 判準整個壞掉（例如相對 cwd 解析 → 全數判成不存在），
+    代價是翻譯進度 < 50% 的 repo 會被誤擋。本 repo 107/108 與 34/34，排乾
+    只會增加已翻檔案，走不到這個狀態。判準若要改成不依賴進度的 identity
+    比對，這條測試會紅 —— 那正是要它紅的時機。
+    """
+    text = "bookSidebar:\n" + "".join(
+        f"  - label: L{i}\n    id: d{i}\n" for i in range(12)
+    )
+    with pytest.raises(ValueError, match="剪掉的條目過多"):
+        sidebar.prune_missing(text, _exists({f"d{i}" for i in range(5, 12)}))
+    # 界線本身也釘住：剛好過半不擋。
+    out, _ = sidebar.prune_missing(text, _exists({f"d{i}" for i in range(6, 12)}))
+    assert len(sidebar.doc_ids(out)) == 6

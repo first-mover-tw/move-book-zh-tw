@@ -208,6 +208,16 @@ def _validate_new_label_format(pairs: list[tuple[str, str]]) -> None:
 # 的話，sidebar 被記成最新之後就再也不會被列為 stale。
 
 
+class FailClosed(ValueError):
+    """語料處於「需要人工處理」的合法中間態，不是程式缺陷。
+
+    與其他 ValueError 的差別：其他的表示**判準或輸入壞了**（anchor/alias、
+    flow style、exists 疑似有誤），這一個表示**程式判斷正確、但沒有安全的
+    自動動作可做**。呼叫端（尤其是拿真實語料跑的測試）要能區分這兩者——
+    把「不會 raise」當斷言等於斷言語料狀態（L3）。
+    """
+
+
 def _mapping(node) -> dict:
     """把 MappingNode 轉成 {key: 子節點}；非 mapping 回空 dict。"""
     if not isinstance(node, yaml.nodes.MappingNode):
@@ -244,6 +254,14 @@ def _keep(node, path, exists, drops: list, seen: set, text: str) -> bool:
         raise ValueError("不支援使用 YAML anchor/alias 的 sidebar")
     seen.add(id(node))
 
+    # docusaurus 允許把 doc id 直接寫成字串（`- concepts/intro`），與
+    # `- {id: concepts/intro}` 完全等價。不認它的話這種條目會走完整個
+    # `_keep`（`_mapping` 回 {} → own/items/own_pages 全空）然後回 True，
+    # 而且 `doc_ids()` 也看不到它 —— 剪枝、四條後置條件、baseline gate
+    # 三處同時盲掉，build 照樣掛在原本要修的那個症狀上（外部 review B2）。
+    if isinstance(node, yaml.nodes.ScalarNode):
+        return exists(node.value)
+
     own = _doc_id(node)
     items = _mapping(node).get("items")
     if isinstance(items, yaml.nodes.SequenceNode):
@@ -264,7 +282,7 @@ def _keep(node, path, exists, drops: list, seen: set, text: str) -> bool:
         # 個資訊量時，寧可死鎖也不要自動做一個不完整的決定）。
         if missing:
             if kept:
-                raise ValueError(
+                raise FailClosed(
                     f"category 自己的頁面不存在但底下還有已翻好的項目: {missing}"
                     "（整個 category 刪掉會讓那些頁面從側邊欄消失，保留又會讓 build 失敗；"
                     "請先補上該檔或手動處理）"
@@ -272,7 +290,7 @@ def _keep(node, path, exists, drops: list, seen: set, text: str) -> bool:
             return False  # 自己與所有子項都還沒翻 —— 整個 category 一起走
         if kept == 0:
             if own_pages:
-                raise ValueError(
+                raise FailClosed(
                     f"category 的子項全都還沒翻，但它自己的頁面已存在: {own_pages}"
                     "（空的 items 會讓 build 失敗，刪掉整個 category 又會讓該頁面"
                     "從側邊欄消失；請先補上任一子項或手動處理）"
@@ -329,6 +347,12 @@ def _span(node, text: str) -> tuple[int, int]:
             "不支援 `-` 與條目內容分行的 block sequence 寫法"
             f"（第 {start + 1} 行）：無法用行區間表達這個條目"
         )
+    if isinstance(node, yaml.nodes.ScalarNode):
+        # 純量條目（docusaurus 的 doc id 字串簡寫）的 `end_mark` 落在**自己的
+        # 結尾**，不是下一個 token —— 直接用會得到寬度 0 的區間，那一行永遠
+        # 刪不掉。它自己的最後一行要算進去。這與上面 EOF 那個情形同源：
+        # 「end_mark 指向下一個 token」這個前提並非永遠成立。
+        end = node.end_mark.line + 1
     if not text[node.end_mark.index:].strip():
         end = len(text.splitlines())
     return start, end
@@ -468,7 +492,11 @@ def _assert_prune_is_faithful(text: str, out: str, exists, dropped_ids: list) ->
 
 
 def doc_ids(text: str) -> list[str]:
-    """文字裡所有 `id:` 的值，依出現順序。"""
+    """文字裡所有 doc id，依出現順序。
+
+    兩種寫法都算：`id: <doc>` 與序列裡的字串簡寫 `- <doc>`。只認前者的話，
+    後者對每一個以本函式為基礎的守衛都隱形（外部 review B2）。
+    """
     root = yaml.compose(text)
     out: list[str] = []
 
@@ -481,7 +509,11 @@ def doc_ids(text: str) -> list[str]:
                     walk(v)
         elif isinstance(node, yaml.nodes.SequenceNode):
             for c in node.value:
-                walk(c)
+                # 序列元素若是純量，它本身就是 doc id（docusaurus 簡寫）。
+                if isinstance(c, yaml.nodes.ScalarNode):
+                    out.append(c.value)
+                else:
+                    walk(c)
 
     walk(root)
     return out

@@ -1445,17 +1445,26 @@ def test_run_sidebar_output_has_no_unresolvable_doc_ids():
 
     path = manifest.SIDEBAR_FILES[0]
     en = pipeline._show("english-main", path)
+    # 只有 zh-tw-main 的 checkout 沒有 english-main，`_show` 回 None，
+    # `translate(None, ...)` 會 TypeError。同檔其他真實語料測試都會 skip
+    # （外部 review A1）。CI 的 pytest.yml 有 fetch，不受影響。
+    if en is None:
+        pytest.skip("english-main not available in this checkout")
     prev = pipeline._show("HEAD", path) or ""
     root = pipeline.manifest.REPO_ROOT / Path(path).parent
-    out = pipeline.sidebar.translate(
-        en, prev, pipeline.base.get("fake"),
-        exists=lambda i: (root / f"{i}.md").is_file(),
-    )
-    missing = [
-        m.group(1).strip("'\"")
-        for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", out, re.M)
-        if not (root / f"{m.group(1).strip(chr(39) + chr(34))}.md").is_file()
-    ]
+    # fail-closed 是合法程式行為，不是缺陷 —— 理由同 test_sidebar 的
+    # `test_real_upstream_sidebar_keeps_exactly_the_docs_that_exist`
+    # （外部 review B1）。
+    try:
+        out = pipeline.sidebar.translate(
+            en, prev, pipeline.base.get("fake"),
+            exists=lambda i: (root / f"{i}.md").is_file(),
+        )
+    except pipeline.sidebar.FailClosed as e:
+        pytest.skip(f"上游語料目前處於需人工處理的合法中間態: {e}")
+    # 判準用 `doc_ids` 而不是 regex：字串簡寫的 doc id 對 `^\s*id:` 隱形
+    # （外部 review B2）。
+    missing = [i for i in pipeline.sidebar.doc_ids(out) if not (root / f"{i}.md").is_file()]
     assert missing == []
 
 
