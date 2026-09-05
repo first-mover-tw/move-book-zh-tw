@@ -500,22 +500,34 @@ def doc_ids(text: str) -> list[str]:
     root = yaml.compose(text)
     out: list[str] = []
 
-    def walk(node):
+    def walk(node, item_seq: bool):
+        """`item_seq`：這個節點若是序列，它的元素是不是 sidebar **條目**。
+
+        字串簡寫只在條目位置成立。對「任何序列裡的任何純量」都套用的話，
+        `customProps` 底下的字串陣列（docusaurus 官方例子的
+        `badges: ['new', 'green']`）會被當成 doc id —— baseline gate 誤報
+        `new.md` 不存在、`prune_missing` 的後置條件 raise，一個**合法**的
+        sidebar 被 fail-closed 擋死（外部 review 第七輪 B1）。
+        """
         if isinstance(node, yaml.nodes.MappingNode):
             for k, v in node.value:
                 if k.value == "id" and isinstance(v, yaml.nodes.ScalarNode):
                     out.append(v.value)
                 else:
-                    walk(v)
+                    walk(v, k.value == "items")
         elif isinstance(node, yaml.nodes.SequenceNode):
             for c in node.value:
-                # 序列元素若是純量，它本身就是 doc id（docusaurus 簡寫）。
-                if isinstance(c, yaml.nodes.ScalarNode):
+                if item_seq and isinstance(c, yaml.nodes.ScalarNode):
                     out.append(c.value)
                 else:
-                    walk(c)
+                    walk(c, False)
 
-    walk(root)
+    # 根 mapping 的每個值都是條目序列（key 是 sidebar id，如 `bookSidebar`）。
+    if isinstance(root, yaml.nodes.MappingNode):
+        for _k, v in root.value:
+            walk(v, True)
+    else:
+        walk(root, True)
     return out
 
 def translate(

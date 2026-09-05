@@ -1008,3 +1008,30 @@ def test_the_ratio_guard_is_a_deliberate_heuristic_not_an_invariant():
     # 界線本身也釘住：剛好過半不擋。
     out, _ = sidebar.prune_missing(text, _exists({f"d{i}" for i in range(6, 12)}))
     assert len(sidebar.doc_ids(out)) == 6
+
+
+def test_string_arrays_outside_item_position_are_not_doc_ids():
+    """字串簡寫只在**條目位置**成立（根序列與 `items:`），不是「任何序列裡的
+    任何純量」。docusaurus 的 sidebar item 允許 `customProps`，官方例子就有
+    `badges: ['new', 'green']`。
+
+    把那些當 doc id 的話，baseline gate 會誤報 `new.md` 不存在、`prune_missing`
+    的後置條件會 raise —— 一個**合法**的 sidebar 被 fail-closed 永久擋死。
+    這比漏抓更糟：漏抓是 build 掛掉，誤擋是管線寫不出東西又沒有修復路徑
+    （L16：沒有修復路徑的守衛，對誤報要格外保守）。
+    """
+    text = (
+        "bookSidebar:\n  - label: A\n    id: a\n    customProps:\n"
+        "      badges:\n        - new\n        - green\n"
+    )
+    assert sidebar.doc_ids(text) == ["a"]
+    out, dropped = sidebar.prune_missing(text, _exists(set()))
+    assert dropped == []
+    assert out == text
+
+    # 條目位置的簡寫仍然要認得——修法不能靠「不再認純量」來閃過誤報。
+    nested = (
+        "bookSidebar:\n  - label: C\n    items:\n      - c/keep\n"
+        "      - label: D\n        id: d\n        customProps:\n          tags:\n            - x\n"
+    )
+    assert sidebar.doc_ids(nested) == ["c/keep", "d"]
