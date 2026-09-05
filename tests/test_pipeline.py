@@ -1,5 +1,7 @@
 import re
 import subprocess
+from pathlib import Path
+
 import pytest
 
 from scripts.zh_tw import anchors, frontmatter, manifest, pipeline, validate
@@ -199,7 +201,7 @@ def test_run_routes_sidebar_to_sidebar_module(monkeypatch, tmp_path):
     called = []
     monkeypatch.setattr(
         pipeline.sidebar, "translate",
-        lambda en, prev, backend: called.append("sidebar") or "ok\n",
+        lambda en, prev, backend, exists=None: called.append("sidebar") or "ok\n",
     )
     monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
     ok, failed = pipeline.run(["book/sidebar.yml"], "fake", apply=False)
@@ -1391,3 +1393,42 @@ def test_repair_verifies_the_result_actually_renders():
         assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src
     finally:
         pipeline.commonmark = real
+
+
+def test_run_passes_a_disk_backed_exists_predicate_to_sidebar_translate(monkeypatch):
+    """組合層（L7）：`prune_missing` 單元測試全綠但沒接進 pipeline，正是
+    2026-09-05 那次 docusaurus build 失敗的形狀。這裡驗證 run() 真的傳了
+    exists，而且它的判準是「相對於 sidebar 所在目錄的 .md 存不存在」。"""
+    got = {}
+    monkeypatch.setattr(
+        pipeline.sidebar, "translate",
+        lambda en, prev, backend, exists=None: got.setdefault("exists", exists) or "ok\n",
+    )
+    monkeypatch.setattr(pipeline, "_show", lambda ref, path: "bookSidebar:\n  - label: X\n")
+    pipeline.run(["book/sidebar.yml"], "fake", apply=False)
+
+    exists = got["exists"]
+    assert exists is not None, "run() 沒有把 exists 傳給 sidebar.translate"
+    assert exists("index") is True                     # book/index.md 存在
+    assert exists("programmability/scratchpad") is False  # 上游有、我們沒翻
+    assert exists("concepts/packages") is True           # 判準相對 book/ 解析
+
+
+def test_run_sidebar_output_has_no_unresolvable_doc_ids():
+    """端到端：實際跑一次 sidebar 同步，輸出的每個 doc id 都要有對應 .md。"""
+    import re
+
+    path = manifest.SIDEBAR_FILES[0]
+    en = pipeline._show("english-main", path)
+    prev = pipeline._show("HEAD", path) or ""
+    root = Path(path).parent
+    out = pipeline.sidebar.translate(
+        en, prev, pipeline.base.get("fake"),
+        exists=lambda i: (root / f"{i}.md").is_file(),
+    )
+    missing = [
+        m.group(1).strip("'\"")
+        for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", out, re.M)
+        if not (root / f"{m.group(1).strip(chr(39) + chr(34))}.md").is_file()
+    ]
+    assert missing == []

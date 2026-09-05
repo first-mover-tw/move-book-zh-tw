@@ -494,3 +494,178 @@ def test_sidebar_translate_sends_kind_sidebar():
     en = 'items:\n  - label: "Alpha"\n    href: /a\n'
     sidebar.translate(en, "", CapturingBackend())
     assert captured["kind"] == "sidebar"
+
+
+# --- prune_missing：過濾掉「上游有、我們還沒翻」的章節 --------------------
+#
+# 根因見 tests/test_baseline.py::test_every_sidebar_doc_id_resolves_to_an_
+# existing_file —— sidebar 每次從 english-main 重建，未翻章節必然被寫回去，
+# 而 pytest/check_repo/prettier 全綠、只有 docusaurus build 會掛。
+
+EN_PARTIAL = """# comment
+bookSidebar:
+  - label: The Move Book
+    id: index
+  - label: Scratchpad
+    id: programmability/scratchpad
+  - type: category
+    label: Before We Begin
+    link:
+      id: before-we-begin/index
+      type: doc
+    items:
+      - label: Install Sui
+        id: before-we-begin/install-sui
+      - label: Brand New
+        id: before-we-begin/brand-new
+"""
+
+MISSING = {"programmability/scratchpad", "before-we-begin/brand-new"}
+
+
+def _exists(missing):
+    return lambda doc_id: doc_id not in missing
+
+
+def _doc_ids(text: str) -> list[str]:
+    return [m.group(1).strip("'\"") for m in re.finditer(r"^\s*id:\s*(\S+)\s*$", text, re.M)]
+
+
+def test_prune_removes_items_whose_doc_is_missing():
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    assert dropped == ["programmability/scratchpad", "before-we-begin/brand-new"]
+    assert out == """# comment
+bookSidebar:
+  - label: The Move Book
+    id: index
+  - type: category
+    label: Before We Begin
+    link:
+      id: before-we-begin/index
+      type: doc
+    items:
+      - label: Install Sui
+        id: before-we-begin/install-sui
+"""
+
+
+def test_prune_is_byte_identical_when_nothing_missing():
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, lambda _: True)
+    assert out == EN_PARTIAL
+    assert dropped == []
+
+
+def test_prune_kept_lines_are_a_subsequence_of_the_original():
+    """內容不變式（L18）：只准刪整行，不准改任何一行的位元組。"""
+    out, _ = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    src = EN_PARTIAL.splitlines()
+    it = iter(src)
+    assert all(line in it for line in out.splitlines())
+
+
+def test_prune_drops_whole_category_when_all_its_items_are_missing():
+    """空的 `items:` 一樣會讓 docusaurus build 失敗 —— 整個 category 要一起走。"""
+    missing = {"before-we-begin/index", "before-we-begin/install-sui", "before-we-begin/brand-new"}
+    out, dropped = sidebar.prune_missing(EN_PARTIAL, _exists(missing))
+    assert "Before We Begin" not in out
+    assert "items:" not in out
+    assert yaml.safe_load(out)["bookSidebar"] == [
+        {"label": "The Move Book", "id": "index"},
+        {"label": "Scratchpad", "id": "programmability/scratchpad"},
+    ]
+
+
+def test_prune_raises_when_category_link_is_missing_but_children_survive():
+    """判定與修復不是同一個資訊量（L16）：整個 category 刪掉會讓已翻好的
+    子頁面從側邊欄消失，保留又會讓 build 掛 —— 沒有安全的自動解，fail-closed
+    交回人工。"""
+    with pytest.raises(ValueError, match="before-we-begin/index"):
+        sidebar.prune_missing(EN_PARTIAL, _exists({"before-we-begin/index"}))
+
+
+def test_prune_raises_when_everything_would_be_dropped():
+    """`exists` 判準寫錯（路徑/副檔名）時最典型的失效就是全數不存在；
+    靜默產出空 sidebar 比留著壞 doc id 更難查。"""
+    with pytest.raises(ValueError, match="剪掉"):
+        sidebar.prune_missing(EN_PARTIAL, lambda _: False)
+
+
+def test_prune_keeps_blank_lines_and_comments_that_precede_the_next_item():
+    """YAML 節點的 end_mark 落在**下一個 token**，中間的空行與註解屬於下一項，
+    不能被算進被刪區段。"""
+    text = """bookSidebar:
+  - label: Gone
+    id: nope
+
+  # 這行註解屬於下一項
+  - label: Stay
+    id: index
+"""
+    out, dropped = sidebar.prune_missing(text, _exists({"nope"}))
+    assert dropped == ["nope"]
+    assert out == """bookSidebar:
+
+  # 這行註解屬於下一項
+  - label: Stay
+    id: index
+"""
+
+
+def test_translate_prunes_before_translating_and_never_asks_for_dropped_labels():
+    backend = RecordingBackend()
+    out = sidebar.translate(EN_PARTIAL, "", backend, exists=_exists(MISSING))
+    asked = " ".join(backend.calls)
+    assert "Scratchpad" not in asked
+    assert "Brand New" not in asked
+    assert set(_doc_ids(out)).isdisjoint(MISSING)
+    pruned, _ = sidebar.prune_missing(EN_PARTIAL, _exists(MISSING))
+    assert sidebar.skeleton(out) == sidebar.skeleton(pruned)
+
+
+def test_translate_without_exists_is_unchanged():
+    """沒傳 exists 時行為與過去逐位元組相同（既有呼叫端不受影響）。"""
+    out = sidebar.translate(EN, PREV_ZH, EchoBackend())
+    assert sidebar.skeleton(out) == sidebar.skeleton(EN)
+
+
+@pytest.mark.parametrize("name", ["book", "reference"])
+def test_prune_real_upstream_sidebar_leaves_only_resolvable_doc_ids(name):
+    """真實資料：拿 english-main 的 sidebar 對本 repo 的 .md 剪，剪完每個
+    doc id 都必須有檔案 —— 這正是 test_baseline 那條守衛要防的復發。"""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    en = _git_show("english-main", f"{name}/sidebar.yml")
+    out, _ = sidebar.prune_missing(en, lambda i: (root / name / f"{i}.md").is_file())
+    assert [i for i in _doc_ids(out) if not (root / name / f"{i}.md").is_file()] == []
+
+
+def test_prune_raises_when_all_children_missing_but_category_link_exists():
+    """`items: []` 會讓 build 失敗，但整個 category 刪掉會讓已翻好的 index
+    頁從側邊欄消失 —— 與 link 缺失那條同一個形狀，一樣 fail-closed。"""
+    missing = {"before-we-begin/install-sui", "before-we-begin/brand-new"}
+    with pytest.raises(ValueError, match="子項全都還沒翻"):
+        sidebar.prune_missing(EN_PARTIAL, _exists(missing))
+
+
+def test_prune_drops_category_with_no_link_when_all_children_are_missing():
+    """沒有 link 的 category 本身不對應任何頁面，子項全沒翻時整個刪掉不會
+    讓任何已翻內容消失 —— 這條才是 `kept == 0` 的合法出口。"""
+    text = """bookSidebar:
+  - label: Keep Me
+    id: index
+  - type: category
+    label: All New
+    items:
+      - label: A
+        id: new/a
+      - label: B
+        id: new/b
+"""
+    out, dropped = sidebar.prune_missing(text, _exists({"new/a", "new/b"}))
+    # 整個 category 是**一筆**刪除（子項連帶消失），回報用它的 label。
+    assert dropped == ["All New"]
+    assert out == """bookSidebar:
+  - label: Keep Me
+    id: index
+"""

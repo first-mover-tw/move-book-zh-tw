@@ -190,7 +190,202 @@ def _validate_new_label_format(pairs: list[tuple[str, str]]) -> None:
             )
 
 
-def translate(en_text: str, prev_zh_text: str, backend: Backend) -> str:
+# --- 過濾「上游有、我們還沒翻」的章節 ------------------------------------
+#
+# sidebar 每次都從 english-main 全量重建，所以上游新增而我們還沒翻的章節
+# 一定會被寫回 `book/sidebar.yml`，docusaurus build 因為 doc id 找不到對應
+# `.md` 而失敗（2026-09-05 `programmability/scratchpad` 實證）。這裡在翻譯
+# **之前**先把那些條目從英文原文剪掉，讓下游一切（label 沿用、skeleton
+# 不變式、寫檔）都以剪過的版本為準。
+#
+# 剪掉的章節不會遺失：下次同步時只要 `.md` 已經存在就會被重新加回，而它的
+# 中文 label 仍留在舊檔的沿用表裡（`_zh_label_key`），不需要重新呼叫 backend。
+
+
+def _mapping(node) -> dict:
+    """把 MappingNode 轉成 {key: 子節點}；非 mapping 回空 dict。"""
+    if not isinstance(node, yaml.nodes.MappingNode):
+        return {}
+    return {k.value: v for k, v in node.value if isinstance(k, yaml.nodes.ScalarNode)}
+
+
+def _doc_id(node) -> str | None:
+    v = _mapping(node).get("id")
+    return v.value if isinstance(v, yaml.nodes.ScalarNode) else None
+
+
+def _label_of(node) -> str | None:
+    v = _mapping(node).get("label")
+    return v.value if isinstance(v, yaml.nodes.ScalarNode) else None
+
+
+def _link_id(node) -> str | None:
+    link = _mapping(node).get("link")
+    return _doc_id(link) if link is not None else None
+
+
+def _keep(node, path, exists, drops: list) -> bool:
+    """判定一個 sidebar 條目留不留，並把要刪的**子**條目記進 drops。
+
+    判定只有這一處（L15：不讓修剪與驗證各自實作一份「什麼算缺陷」）；
+    文字刪除與後置條件用的期望樹都由這裡產生的 drops 推導。
+    """
+    items = _mapping(node).get("items")
+    if isinstance(items, yaml.nodes.SequenceNode):
+        child_drops: list = []
+        kept = 0
+        for i, child in enumerate(items.value):
+            if _keep(child, path + ["items", i], exists, child_drops):
+                kept += 1
+            else:
+                child_drops.append((path + ["items", i], _span(child), child))
+        link = _link_id(node)
+        # 三種收尾，共同判準是「刪掉會不會讓一個**已經翻好**的頁面從側邊欄
+        # 消失」——會的話一律 fail-closed 交回人工（L16：判定與修復不是同一
+        # 個資訊量時，寧可死鎖也不要自動做一個不完整的決定）。
+        if link is not None and not exists(link):
+            if kept:
+                raise ValueError(
+                    f"category 的 link doc 不存在但底下還有已翻好的項目: {link}"
+                    "（整個 category 刪掉會讓那些頁面從側邊欄消失，保留又會讓 build 失敗；"
+                    "請先補上該檔或手動處理）"
+                )
+            return False  # link 與所有子項都還沒翻 —— 整個 category 一起走
+        if kept == 0:
+            if link is not None:
+                raise ValueError(
+                    f"category 的子項全都還沒翻，但它自己的 link doc 已存在: {link}"
+                    "（空的 items 會讓 build 失敗，刪掉整個 category 又會讓該頁面"
+                    "從側邊欄消失；請先補上任一子項或手動處理）"
+                )
+            return False
+        drops.extend(child_drops)
+        return True
+
+    doc_id = _doc_id(node)
+    return True if doc_id is None else exists(doc_id)
+
+
+def _walk(node, path, exists, drops: list) -> None:
+    """走訪整棵樹；只有序列的元素能被刪（mapping 的值刪掉會破壞結構）。"""
+    if isinstance(node, yaml.nodes.MappingNode):
+        for k, v in node.value:
+            _walk(v, path + [k.value], exists, drops)
+    elif isinstance(node, yaml.nodes.SequenceNode):
+        # _keep 已經遞迴處理完整棵子樹（含 category 的 items），這裡不能再
+        # 往下走，否則同一個條目會被記錄兩次。
+        for i, child in enumerate(node.value):
+            if not _keep(child, path + [i], exists, drops):
+                drops.append((path + [i], _span(child), child))
+
+
+def _span(node) -> tuple[int, int]:
+    """條目佔用的行區間 [start, end)，行號由 YAML 解析器給、不靠 regex 猜邊界。
+
+    `end_mark` 落在**下一個 token**，所以尾端的空行與純註解行其實屬於下一個
+    條目，必須回縮，否則會把別人的註解一起刪掉。
+    """
+    return node.start_mark.line, node.end_mark.line
+
+
+def _trim(lines: list[str], start: int, end: int) -> int:
+    while end - 1 > start and (
+        not lines[end - 1].strip() or lines[end - 1].lstrip().startswith("#")
+    ):
+        end -= 1
+    return end
+
+
+def _drop_from_data(data, path):
+    """對 safe_load 出來的結構套用同一條 path 的刪除，產生期望樹。"""
+    cur = data
+    for key in path[:-1]:
+        cur = cur[key]
+    del cur[path[-1]]
+
+
+def prune_missing(text: str, exists) -> tuple[str, list[str]]:
+    """剪掉 doc id 無法解析成實體檔案的條目。
+
+    回傳 `(剪過的 YAML 文字, 被剪掉的 doc id 清單)`。`exists(doc_id) -> bool`
+    由呼叫端提供（pipeline 傳「磁碟上有沒有那個 .md」）。
+
+    後置條件兩條（L18：症狀消失不等於內容正確）：
+      1. 症狀：輸出裡每個 doc id 都通過 `exists`。
+      2. 內容不變式：輸出的行是輸入行的**子序列**（只刪整行、不改位元組），
+         且 `safe_load(輸出)` 逐節點等於「對解析結果套用同一批刪除」的期望樹。
+    """
+    root = yaml.compose(text)
+    if root is None:
+        raise ValueError("sidebar 無法解析為 YAML")
+
+    drops: list = []
+    _walk(root, [], exists, drops)
+    if not drops:
+        return text, []
+
+    lines = text.splitlines(keepends=True)
+    spans = sorted((_trim(lines, s, e), s) for s, e in (sp for _, sp, _n in drops))
+    kept_lines = list(lines)
+    for end, start in sorted(((e, s) for (e, s) in spans), reverse=True):
+        del kept_lines[start:end]
+    out = "".join(kept_lines)
+
+    # 整個 category 被刪時它自己沒有 doc id，用 label 回報才看得懂是哪一塊。
+    dropped_ids = [
+        _doc_id(n) or _link_id(n) or _label_of(n) or "/".join(map(str, path))
+        for path, _, n in drops
+    ]
+
+    total = len(_LABEL.findall(text))
+    if not _LABEL.findall(out) or len(drops) * 2 > total:
+        raise ValueError(
+            f"剪掉的條目過多（{len(drops)}/{total}），"
+            f"疑似 exists 判準有誤：{dropped_ids[:5]}"
+        )
+
+    expected = yaml.safe_load(text)
+    for path, _, _n in sorted(drops, key=lambda d: d[0], reverse=True):
+        _drop_from_data(expected, path)
+    if yaml.safe_load(out) != expected:
+        raise ValueError("剪枝後的 YAML 與期望樹不符（行刪除與樹修剪不一致）")
+
+    src = iter(text.splitlines())
+    if not all(line in src for line in out.splitlines()):
+        raise ValueError("剪枝改動了保留行的內容（應該只刪整行）")
+
+    for doc_id in _doc_ids_of(out):
+        if not exists(doc_id):
+            raise ValueError(f"剪枝後仍有無法解析的 doc id: {doc_id}")
+
+    return out, dropped_ids
+
+
+def _doc_ids_of(text: str) -> list[str]:
+    root = yaml.compose(text)
+    out: list[str] = []
+
+    def walk(node):
+        if isinstance(node, yaml.nodes.MappingNode):
+            for k, v in node.value:
+                if k.value == "id" and isinstance(v, yaml.nodes.ScalarNode):
+                    out.append(v.value)
+                else:
+                    walk(v)
+        elif isinstance(node, yaml.nodes.SequenceNode):
+            for c in node.value:
+                walk(c)
+
+    walk(root)
+    return out
+
+def translate(
+    en_text: str, prev_zh_text: str, backend: Backend, exists=None
+) -> str:
+    # 先剪掉上游有、我們還沒翻的章節，之後所有步驟（沿用表、skeleton
+    # 不變式、寫檔）都以剪過的英文原文為準。exists 為 None 時完全不剪。
+    if exists is not None:
+        en_text, _ = prune_missing(en_text, exists)
     en_labels = labels(en_text)
 
     # 沿用：把舊中文檔的「中文 (English)」label 拆出 English -> 中文 label 的對照表，

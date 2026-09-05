@@ -644,7 +644,14 @@ def run(
         prev = _show("HEAD", path) or ""
         try:
             if path in manifest.SIDEBAR_FILES:
-                out = sidebar.translate(en, prev, backend)
+                # 上游有、我們還沒翻的章節必須先剪掉，否則 doc id 找不到
+                # 對應 .md，docusaurus build 會失敗（見 sidebar.prune_missing）。
+                # 判準是「磁碟上有沒有那個 .md」，相對於 sidebar 所在目錄解析。
+                root = Path(path).parent
+                out = sidebar.translate(
+                    en, prev, backend,
+                    exists=lambda i: (root / f"{i}.md").is_file(),
+                )
             elif prev and tier(path, en_ref) == "A":
                 out = rebuild_frontmatter_only(en, prev, backend, _prev_en(path, m))
             else:
