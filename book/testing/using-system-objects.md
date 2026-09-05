@@ -1,16 +1,45 @@
 ---
-description: 在 Move 測試中使用系統物件（system objects）：建立並操作 Clock、Random 和 DenyList，以測試時間、隨機性和拒絕清單。
+description: 在 Move 測試中使用系統物件 (system objects)：建立並操作 Clock、Random 和 DenyList，以測試時間、隨機性和拒絕清單。
+title: 在測試中建立及使用系統物件 (System Objects)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - creating
+  - using
+  - system
+  - objects
+  - tests
+questions:
+  - What is Creating and Using System Objects in Tests in Move?
+  - How do I use Creating and Using System Objects in Tests in Move?
+  - What is Clock in Move?
+  - What is Random in Move?
+answer: 'Use system objects in Move tests: create and manipulate Clock, Random, and DenyList for testing time, randomness, and deny lists.'
+goal:
+  description: 'Reader can use system objects in Move tests: create and manipulate Clock, Random, and DenyList for testing time, randomness, and deny lists'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 在測試中建立與使用系統物件 (Creating and Using System Objects in Tests) {#creating-and-using-system-objects-in-tests}
+# 在測試中建立及使用系統物件 (Creating and Using System Objects in Tests) {#creating-and-using-system-objects-in-tests}
 
-有些測試需要 `Clock`、`Random` 或 `DenyList` 等系統物件。這些物件在網路上有
-[固定地址](./../appendix/reserved-addresses.md)，並且在創世（genesis）時建立。在測試中，它們預設不存在，因此 Sui Framework 提供了 `#[test_only]` 函式來建立與操作這些物件。
+有些測試需要 `Clock`、`Random` 或 `DenyList` 等系統物件。這些物件在網路上具有[固定地址](./../appendix/reserved-addresses.md)，並於創世期間建立。在測試中，它們預設不存在，因此 Sui Framework 提供 `#[test_only]` 函式來建立及操作它們。
 
 ## 時鐘 (Clock) {#clock}
 
 [`Clock`](./../programmability/epoch-and-time.md#time) 提供目前的網路時間戳記。
-使用 `clock::create_for_testing` 建立一個，並用 test-only 函式操作時間：
+使用 `clock::create_for_testing` 建立一個時鐘，並使用僅限測試的函式操作時間：
 
 ```move
 use std::unit_test::assert_eq;
@@ -21,7 +50,7 @@ fun test_clock() {
     let ctx = &mut tx_context::dummy();
     let mut clock = clock::create_for_testing(ctx);
 
-    // 從 0 開始
+    // 起始值為 0
     assert_eq!(clock.timestamp_ms(), 0);
 
     // 增加時間（以毫秒為單位）
@@ -37,7 +66,7 @@ fun test_clock() {
 }
 ```
 
-若要在測試情境中共享 `Clock` 以供使用，呼叫 `share_for_testing`：
+若要在測試情境中共用 `Clock`，請呼叫 `share_for_testing`：
 
 ```move
 #[test]
@@ -48,14 +77,14 @@ fun test_shared_clock() {
 }
 ```
 
-## Random 隨機性 (Random) {#random}
+## 隨機性 (Random) {#random}
 
-`Random` 物件提供鏈上隨機性。在測試中，完整的 `Random` 共享物件只能透過 `random::create_for_testing` 在[測試情境](./test-scenario.md)中建立。然而，較好的做法是將程式碼結構設計成核心邏輯接收 `RandomGenerator` 參數——這樣就能在單元測試中直接用 `random::new_generator_for_testing()` 建立 generator，完全繞過 `Random` 物件。這種方式比較好處理，因為 `Random` 需要 `entry` 函式（無法回傳不可丟棄的值），使得斷言結果變得困難。
+`Random` 物件提供鏈上隨機性。在測試中，完整的 `Random` 共享物件只能透過 `random::create_for_testing` 在[測試情境](./test-scenario.md)內建立。然而，較佳的做法是將程式碼架構為讓核心邏輯接受 `RandomGenerator` 參數——如此一來，你可以在單元測試中直接使用 `random::new_generator_for_testing()` 建立產生器，完全略過 `Random` 物件。這會更容易使用，因為 `Random` 需要 `entry` 函式（其無法回傳不可丟棄的值），使得對結果進行斷言更加困難。
 
 ```move
 use sui::random::{Self, Random, RandomGenerator};
 
-// 若要使用 Random，函式必須有 `entry` 修飾詞，因此無法回傳
+// 若要使用 Random，函式必須具有 `entry` 修飾詞，因此無法回傳
 // 值，也不容易測試。
 entry fun my_entry_function(r: &Random, ctx: &mut TxContext) {
     let mut gen = random::new_generator(r, ctx);
@@ -63,7 +92,7 @@ entry fun my_entry_function(r: &Random, ctx: &mut TxContext) {
     result.destroy_or!(abort);
 }
 
-// 內部函式的範例，比進入點更容易測試。
+// 比起入口點更容易測試的內部函式範例。
 public(package) fun inner_function(gen: &mut RandomGenerator): Option<u64> {
     if (gen.generate_bool()) {
         option::some(gen.generate_u64())
@@ -74,23 +103,23 @@ public(package) fun inner_function(gen: &mut RandomGenerator): Option<u64> {
 
 #[test]
 fun test_simple_random() {
-    // 非決定性種子，適合用於 fuzzing。每次執行結果都不同，
-    // 所以不要斷言特定結果。
+    // 非決定性的種子，適用於模糊測試。結果會因不同次
+    // 執行而有所不同，因此不要斷言特定結果。
     let mut gen = random::new_generator_for_testing();
     let _result = inner_function(&mut gen);
 
-    // 決定性（相同種子可重現）
+    // 決定性（使用相同種子時可重現）
     let seed: vector<u8> = "Arbitrary seed bytes";
     let mut gen = random::new_generator_from_seed_for_testing(seed);
     assert!(inner_function(&mut gen).is_none());
 
-    // 不同的種子會得到不同——但仍可重現——的結果
+    // 不同的種子會產生不同但仍可重現的結果
     let mut gen = random::new_generator_from_seed_for_testing("move book");
     assert!(inner_function(&mut gen).is_some());
 }
 ```
 
-對於接收完整 `Random` 共享物件的進入點（唯一可能的方式是以參考 `&Random` 傳入），請使用[測試情境](./test-scenario.md)：
+對於接受完整 `Random` 共享物件的入口點（唯一可行方式是將其作為參考 `&Random` 接受），請使用[測試情境](./test-scenario.md)：
 
 ```move
 use sui::random::{Self, Random};
@@ -106,7 +135,7 @@ fun test_random_shared() {
 
     let mut random = scenario.take_shared<Random>();
 
-    // 以 32 位元組的隨機性初始化（使用前必須執行）
+    // 使用 32 位元組的隨機性初始化（使用前必須執行）
     random.update_randomness_state_for_testing(
         0,
         x"2020202020202020202020202020202020202020202020202020202020202020",
@@ -122,7 +151,8 @@ fun test_random_shared() {
 
 ## 拒絕清單 (DenyList) {#denylist}
 
-`DenyList` 用於受監管的代幣，以封鎖特定地址。可用 `new_for_testing` 建立本地實例，或用 `create_for_testing` 建立共享實例：
+受監管代幣會使用 `DenyList` 封鎖特定地址。使用
+`new_for_testing` 建立區域實例，或使用 `create_for_testing` 建立共享實例：
 
 ```move
 use sui::deny_list;
@@ -133,7 +163,7 @@ use std::unit_test::destroy;
 fun test_deny_list() {
     let mut scenario = test_scenario::begin(@0x0);
 
-    // 建立本地實例以進行簡單測試
+    // 建立供簡單測試使用的區域實例
     let deny_list = deny_list::new_for_testing(scenario.ctx());
     // ... 使用 deny_list
     destroy(deny_list);
@@ -149,7 +179,7 @@ fun test_deny_list() {
 
 ## Coin 與 Balance (Coin and Balance) {#coin-and-balance}
 
-如需測試 coin，請使用 `coin::mint_for_testing` 與 `balance::create_for_testing`：
+若要使用 Coin 進行測試，請使用 `coin::mint_for_testing` 與 `balance::create_for_testing`：
 
 ```move
 use std::unit_test::assert_eq;
@@ -161,7 +191,7 @@ use sui::sui::SUI;
 fun test_coins() {
     let ctx = &mut tx_context::dummy();
 
-    // 建立任意型別的 coin
+    // 建立任意型別的 Coin
     let coin = coin::mint_for_testing<SUI>(1000, ctx);
     assert_eq!(coin.value(), 1000);
 
@@ -169,7 +199,7 @@ fun test_coins() {
     let value = coin.burn_for_testing();
     assert_eq!(value, 1000);
 
-    // 直接建立 balance
+    // 直接建立 Balance
     let balance = balance::create_for_testing<SUI>(500);
     let value = balance.destroy_for_testing();
     assert_eq!(value, 500);
@@ -178,7 +208,8 @@ fun test_coins() {
 
 ## 一次建立所有系統物件 (Create All System Objects at Once) {#create-all-system-objects-at-once}
 
-使用 [Test Scenario](./test-scenario.md) 時，你可以用 `create_system_objects` 一次建立所有系統物件。這會建立並共享 `Clock`、`Random` 與 `DenyList`：
+使用 [測試情境](./test-scenario.md) 時，你可以透過
+`create_system_objects` 一次建立所有系統物件。這會建立並共享 `Clock`、`Random` 與 `DenyList`：
 
 ```move
 use sui::clock::Clock;
@@ -190,8 +221,8 @@ use sui::test_scenario;
 fun test_with_all_system_objects() {
     let mut scenario = test_scenario::begin(@0xA);
 
-    // 以共享物件的形式建立 Clock、Random 與 DenyList
-    // （會推進交易，所以它們會立即可用）
+    // 將 Clock、Random 與 DenyList 建立為共享物件
+    // （會推進交易，因此它們會立即可用）
     scenario.create_system_objects();
 
     // 依型別取得物件
@@ -199,9 +230,9 @@ fun test_with_all_system_objects() {
     let random = scenario.take_shared<Random>();
     let deny_list = scenario.take_shared<DenyList>();
 
-    // ... 使用這些物件
+    // ... 使用物件
 
-    // 使用完畢後歸還
+    // 完成後歸還它們
     test_scenario::return_shared(clock);
     test_scenario::return_shared(random);
     test_scenario::return_shared(deny_list);
@@ -210,10 +241,10 @@ fun test_with_all_system_objects() {
 }
 ```
 
-> 在測試中建立的系統物件不會有在正式網路上那種固定地址。
-> 請使用 `take_shared<T>()` 依型別存取它們，而不是依 ID。
+> 在測試中建立的系統物件，不會具有它們在實際網路上所使用的相同固定地址。
+> 請使用 `take_shared<T>()` 依型別存取它們，而非依 ID 存取。
 
-若要依 ID 取得特定的共享物件，請使用 `take_shared_by_id`：
+若要依 ID 取得特定共享物件，請使用 `take_shared_by_id`：
 
 ```move
 use sui::test_scenario::{Self, most_recent_id_shared};
@@ -223,7 +254,7 @@ fun test_take_by_id() {
     let mut scenario = test_scenario::begin(@0xA);
     scenario.create_system_objects();
 
-    // 取得最近一次共享的 Clock 的 ID
+    // 取得最近建立的共享 Clock 的 ID
     let clock_id = most_recent_id_shared<Clock>().destroy_some();
 
     // 依 ID 取得
@@ -237,7 +268,7 @@ fun test_take_by_id() {
 
 ## 總結 (Summary) {#summary}
 
-| 物件              | 建立方式                                | 僅供測試使用的功能                         |
+| 物件              | 建立方式                                | 僅限測試的功能                             |
 | ----------------- | --------------------------------------- | ------------------------------------------ |
 | `Clock`           | `clock::create_for_testing(ctx)`        | `increment_for_testing`, `set_for_testing` |
 | `Random`          | `random::create_for_testing(ctx)`       | `update_randomness_state_for_testing`      |

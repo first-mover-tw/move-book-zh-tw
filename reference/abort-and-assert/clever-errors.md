@@ -59,7 +59,7 @@ Error from '0x42::a_module::double_except_three' (line 7), abort 'EIsThree': "Th
 
 此訊息的確切格式可能因解碼此巧妙錯誤所使用的工具鏈而有所不同，但只要配合錯誤發生所在的模組，`u64` 中止碼中就包含了產生上述人類可讀錯誤訊息所需的全部資訊。
 
-> 巧妙中止碼的值**不**需要是 `vector<u8>` —— 它可以是 Move 中任何有效的常數型別。
+> 巧妙中止碼的值*不*需要是 `vector<u8>` —— 它可以是 Move 中任何有效的常數型別。
 
 ## 明確錯誤碼 (Explicit Error Codes) {#explicit-error-codes}
 

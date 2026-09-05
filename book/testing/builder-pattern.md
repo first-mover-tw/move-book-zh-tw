@@ -1,52 +1,80 @@
 ---
-description: Move 測試的建構器模式 (Builder pattern)：以合理預設值與方法鏈 (method chaining) 建構複雜的測試物件，讓測試更易讀。
+description: Move 測試的建造者模式 (Builder pattern)：使用合理的預設值與方法串鏈建立複雜的測試物件，提升測試可讀性。
+title: 模式：建造者 (Builder)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - pattern
+  - builder
+  - design patterns
+questions:
+  - 'What is Pattern: Builder in Move?'
+  - 'How do I use Pattern: Builder in Move?'
+  - What is Defining a Builder in Move?
+  - What is Method Chaining in Move?
+answer: 'The Builder pattern for Move tests: construct complex test objects with sensible defaults and method chaining for readable tests.'
+goal:
+  description: 'Reader understands the Builder pattern for Move tests: construct complex test objects with sensible defaults and method chaining for readable tests'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# Pattern: Builder 建構器模式 (Pattern: Builder) {#pattern-builder}
+# 模式：建造者 (Pattern: Builder) {#pattern-builder}
 
-builder 模式用於以彈性且可讀的方式建構具有許多參數的複雜物件。builder 不需要一開始就提供所有參數，而是透過方法呼叫累積設定，並在呼叫 `build()` 時產生最終物件。這個模式在測試中特別有用，因為你經常需要建立帶有些微差異的物件，同時讓大部分欄位保持在合理的預設值。
+建造者模式用於以靈活且易讀的方式建構具有許多參數的複雜物件。建造者不需要預先提供所有參數，而是透過函式呼叫累積設定，並在呼叫 `build()` 時產生最終物件。此模式尤其適合測試，因為你經常需要建立僅有些微差異的物件，同時讓大多數欄位維持合理的預設值。
 
-> 在正式發布的程式碼中，builder 模式可能因為中間結構與多次函式呼叫而引入額外的 gas 成本。這個模式最適合用在不需要考慮 gas、且需要可讀性與可維護性的測試中。
+> 在已發布的原始碼中，建造者模式可能因中介 struct 與多次函式呼叫而增加額外的 gas 成本。此模式最適合 gas 考量無須顧慮、但需要可讀性與可維護性的測試。
 
-## 定義 Builder (Defining a Builder) {#defining-a-builder}
+## 定義建造者 (Defining a Builder) {#defining-a-builder}
 
-builder 結構會鏡射目標物件的欄位，但將它們包在 `Option` 型別中。這讓每個欄位在明確設定前都能維持未設定狀態。典型的 builder 會提供：
+建造者 struct 會對應目標物件的欄位，但會將其包裝為 `Option` 型別。這讓每個欄位都能維持未設定狀態，直到明確完成設定。典型的建造者會提供：
 
-- 一個建立空 builder 的 `new()` 函式
-- 設定個別欄位並回傳 builder 以便鏈式呼叫的 setter 方法
-- 一個 `build()` 函式，會為未設定的欄位使用預設值來建構最終物件
+- 用於建立空白建造者的 `new()` 函式
+- 用於設定個別欄位並回傳建造者以便鏈結呼叫的 setter 方法
+- 使用未設定欄位的預設值建構最終物件的 `build()` 函式
 
 ```move file=packages/samples/sources/testing/builder_pattern.move anchor=user
 
 ```
 
-對應的 builder：
+對應的建造者：
 
 ```move file=packages/samples/sources/testing/builder_pattern_builder.move anchor=user_builder
 
 ```
 
-在這裡，`new()` 函式將所有欄位初始化為 `option::none()`，代表「未設定」狀態。每個 setter 方法會將傳入的值包在 `option::some()` 中，並儲存到對應的欄位。這個模式的關鍵在於 `build()` 函式，它使用 `destroy_or!` 巨集來解開每個 `Option`：如果欄位已被設定，就使用其值；否則巨集會回傳作為第二個引數提供的預設值。這種做法讓測試只需指定它們關心的欄位，同時確保最終物件永遠完全初始化。
+此處的 `new()` 函式會將所有欄位初始化為 `option::none()`，代表「未設定」狀態。每個 setter 方法都會將提供的值包裝為 `option::some()`，並儲存在對應欄位中。此模式的關鍵是 `build()` 函式，它使用 `destroy_or!` 巨集解包每個 `Option`：若欄位已設定，便使用其值；否則，巨集會回傳第二個引數提供的預設值。此方式讓測試只需指定所關心的欄位，同時確保最終物件一律會完整初始化。
 
 ## 使用範例 (Example Usage) {#example-usage}
 
-如果沒有 builder，每個測試都必須指定所有欄位，即使只有一個欄位與該測試相關：
+未使用建造者時，每個測試都必須指定所有欄位，即使測試只與其中一個欄位有關：
 
 ```move file=packages/samples/sources/testing/builder_pattern_builder.move anchor=test_without_builder
 
 ```
 
-有了 builder，測試變得聚焦且能自我說明：
+使用建造者後，測試會更聚焦且具自我說明性：
 
 ```move file=packages/samples/sources/testing/builder_pattern_builder.move anchor=test_with_builder
 
 ```
 
-每個測試都清楚顯示哪個欄位是重點。為 `User` 新增欄位時，只需要更新 builder 的 `build()` 函式加入預設值——既有的測試維持不變。
+每個測試都能清楚顯示哪個欄位重要。若要為 `User` 新增欄位，只需更新建造者的 `build()` 函式並加入預設值——既有測試無須變更。
 
-## 方法鏈式呼叫 (Method Chaining) {#method-chaining}
+## 方法鏈結 (Method Chaining) {#method-chaining}
 
-流暢 builder 語法的關鍵在於方法鏈式呼叫。每個 setter 方法以值的方式接收 `mut self`，修改後回傳修改過的 builder。以下是一個很常見的範例：
+流暢建造者語法的關鍵是方法鏈結。每個 setter 方法會依值接收 `mut self`、修改它，並回傳修改後的建造者。以下是非常常見的範例：
 
 ```move
 public fun is_active(mut self: UserBuilder, is_active: bool): UserBuilder {
@@ -55,7 +83,7 @@ public fun is_active(mut self: UserBuilder, is_active: bool): UserBuilder {
 }
 ```
 
-因為該方法取得 `self` 的所有權並回傳 `UserBuilder`，你可以將多個呼叫鏈接在一起：
+因為此方法取得 `self` 的所有權並回傳 `UserBuilder`，你可以將多個呼叫串連在一起：
 
 ```move
 let user = user_builder::new()
@@ -65,15 +93,15 @@ let user = user_builder::new()
     .build();
 ```
 
-鏈式呼叫中的每個方法都會消耗前一個 builder 並回傳一個新的 builder。最後的 `build()` 呼叫會消耗 builder 並產生目標物件。
+鏈結中的每個方法都會消耗前一個建造者，並回傳新的建造者。最終的 `build()` 呼叫會消耗建造者並產生目標物件。
 
-## 在系統套件中的使用 (Usage in system packages) {#usage-in-system-packages}
+## 在系統套件中的使用方式 (Usage in system packages) {#usage-in-system-packages}
 
-Sui Framework 與 Sui System 套件廣泛使用 builder 進行測試。最值得注意的範例是：
+Sui Framework 與 Sui System 套件廣泛使用建造者進行測試。最顯著的範例如下：
 
 ### Sui System 中的 ValidatorBuilder (ValidatorBuilder in Sui System) {#validatorbuilder-in-sui-system}
 
-`sui-system` 套件中的 [`ValidatorBuilder`][validator-builder] 展示了一個針對具有許多欄位（加密金鑰、網路地址、經濟參數）的複雜型別的完整 builder：
+`Sui System` 套件中的 [`ValidatorBuilder`][validator-builder] 展示了適用於多欄位複雜型別的完整建造者——包含密碼學金鑰、網路地址與經濟參數：
 
 ```move
 use sui_system::validator_builder;
@@ -88,15 +116,15 @@ fun test_validator_operations() {
         .initial_stake(100_000_000)
         .build(ctx);
 
-    // 測試 validator 操作...
+    // 測試驗證器操作……
 }
 ```
 
-`preset(index)` 函式會回傳一個預先填入有效測試預設值——金鑰、地址與經濟參數——的 builder，對應數個預先定義的 validator 之一，所以測試只需覆寫它們關心的欄位。
+`preset(index)` 函式會針對數個預先定義驗證器中的其中一個，回傳已預先填入有效測試預設值——金鑰、地址與經濟參數——的建造者，因此測試只需覆寫所關心的欄位。
 
 ### Sui Framework 中的 TxContextBuilder (TxContextBuilder in Sui Framework) {#txcontextbuilder-in-sui-framework}
 
-[`TxContextBuilder`][tx-context-builder] 允許為特定測試情境自訂交易上下文。這個 builder 會被傳給 `begin_with_context()` 以開始一個情境，或傳給 `next_with_context()` 以推進既有的情境：
+[`TxContextBuilder`][tx-context-builder] 可讓你針對特定測試情境自訂交易 context。建造者會傳遞給 `begin_with_context()` 以啟動情境，或傳遞給 `next_with_context()` 以推進既有情境：
 
 ```move
 use sui::test_scenario as ts;
@@ -109,7 +137,7 @@ fun test_epoch_dependent_logic() {
             .set_epoch_timestamp(1_000_000),
     );
 
-    // 依賴 epoch 的測試邏輯...
+    // 測試依賴 epoch 的邏輯……
 
     test.end();
 }
@@ -117,11 +145,11 @@ fun test_epoch_dependent_logic() {
 
 ## 總結 (Summary) {#summary}
 
-- builder 透過 setter 方法累積設定，並透過 `build()` 產生最終物件。
-- 使用 `Option` 欄位讓設定成為可選項，並在 `build()` 中提供合理的預設值。
-- 方法鏈式呼叫（`fun method(mut self, ...): Self`）建立了流暢的 API。
-- builder 減少測試樣板程式碼，並將測試與目標結構的變動隔離開來。
-- 將這個模式保留給可讀性比 gas 成本更重要的測試工具使用。
+- 建造者會透過 setter 方法累積設定，並透過 `build()` 產生最終物件。
+- 使用 `Option` 欄位讓設定成為選用項目，並在 `build()` 中提供合理的預設值。
+- 方法鏈結（`fun method(mut self, ...): Self`）可建立流暢 API。
+- 建造者可減少測試樣板程式碼，並將測試與目標 struct 的變更隔離。
+- 將此模式保留給可讀性比 gas 成本更重要的測試公用程式。
 
 [validator-builder]: https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-system/tests/builders/validator_builder.move
 [tx-context-builder]: https://github.com/MystenLabs/sui/blob/main/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move

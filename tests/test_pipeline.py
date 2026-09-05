@@ -287,11 +287,22 @@ def test_translate_body_enforces_glossary_on_values():
     assert meta["description"] == "迴圈"
 
 
+# english-main 上「reference/constants.md 與其中文譯本結構一致」的最後一個
+# commit（2026-07-08）。tier() 比對的是 en_ref 上的結構，所以這個測試必須釘
+# 固定 commit —— 用活的 english-main 會在上游前進的那一刻永久轉紅（lessons
+# L3；本測試 2026-09-04 就是這樣紅的，tier 從 A 變 B）。
+_A_TIER_EN_REF = "c206591aa00e7c9cd7952a1c4e0eb7f82271945e"
+
+
 def test_run_a_tier_file_with_legacy_body_defects_succeeds():
     """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
-    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。"""
-    assert pipeline.tier("reference/constants.md") == "A"  # 釘住走的是 A 路徑
-    ok, failed = pipeline.run(["reference/constants.md"], "fake")
+    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。
+
+    en_ref 釘固定 commit：這條測的是**A 路徑這段組合邏輯**，不是「constants.md
+    今天是不是還在 A 層」。後者是語料狀態，會隨上游漂移，不該讓它決定測試死活。
+    """
+    assert pipeline.tier("reference/constants.md", _A_TIER_EN_REF) == "A"  # 釘住走 A 路徑
+    ok, failed = pipeline.run(["reference/constants.md"], "fake", _A_TIER_EN_REF)
     assert failed == {}
     assert ok == 1
 
@@ -1053,3 +1064,330 @@ def test_gate_flags_emphasis_lost_in_translation():
     en2 = "# T {#t}\n\nSee [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function)).\n"
     zh2 = "# 標題 (T) {#t}\n\n見 [Lambda](https://en.wikipedia.org/wiki/Lambda_(computer_function))。\n"
     assert validate.check_cjk_emphasis(zh2, en2) == []
+
+
+def test_gate_flags_emphasis_added_not_present_in_the_source():
+    """gate 10 是**雙向**的（2026-09-04 使用者裁決）：多加強調一樣要擋。
+
+    原本判準是 `zh_n >= en_n`，只擋「少了」。單向的後果實測過兩次：
+    - 在 SYSTEM_PROMPT 加「強調數量須與原文相同」之後，codex 對
+      `visibility.md` 產出 30/15 —— 強調是原文兩倍，**gate 完全看不見**，
+      會靜默出貨。加強 prompt 把失效從看得見的方向推向看不見的方向。
+    - 同理，「失敗就重試到過」也是對看不見的那一側做選擇性篩選。
+
+    改雙向之後重試才是收斂而不是挑選（lessons L12 的推論：守衛的方向也要
+    涵蓋它保護的對象）。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\nOnly *this* is emphasised.\n"
+    more = "# 標題 (T) {#t}\n\n只有 *這個* 和 *那個* 被強調。\n"
+    exact = "# 標題 (T) {#t}\n\n只有 *這個* 被強調。\n"
+
+    errs = validate.check_cjk_emphasis(more, en)
+    assert errs and "<em> 英文 1 中文 2" in errs[0], errs
+    assert validate.check_cjk_emphasis(exact, en) == []
+
+
+def test_gate_counts_strong_as_well_as_em():
+    """`**粗體**` 與 `*強調*` 是不同元素。把英文的 `_em_` 譯成 `**粗體**`
+    在只數 <em> 的判準下會被算成「少了一個 em」，訊息會誤導人去找底線；
+    而反方向（把 `__strong__` 譯成 `*em*`）舊判準根本看不見。
+
+    實測現場：`package-upgrades.md` 英文 16 em + 2 strong，中文 0 em +
+    15 strong —— 整份被譯成粗體。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\nThis is *emphasis* and this is **bold**.\n"
+    swapped = "# 標題 (T) {#t}\n\n這是 **強調** 而這是 *粗體*。\n"
+
+    # 對調時兩邊的 (em 數, strong 數) 都是 (1, 1) —— 純計數判準完全看不見。
+    # 判準用**型別序列**才抓得到（lessons L2：計數是位置盲的代理量）。
+    errs = validate.check_cjk_emphasis(swapped, en)
+    assert errs, "em 與 strong 對調必須被擋下"
+    assert "順序不符" in errs[0] and "第 1 個強調" in errs[0], errs
+
+    # 對照組：型別對、只是譯文用詞不同 —— 不得誤報
+    ok = "# 標題 (T) {#t}\n\n這是 *強調* 而這是 **粗體**。\n"
+    assert validate.check_cjk_emphasis(ok, en) == []
+
+
+def test_gate_excludes_headings_from_the_emphasis_count():
+    """標題不算。本專案的標題慣例是「中文譯文 (英文原文)」，英文原文一字
+    不差地重複一次 —— 英文標題裡若有強調，中文標題必然算到兩次，再加上
+    `{#anchor}` 在裸 commonmark 下是普通文字、裡面的底線也會被算進去。
+
+    實測現場（全語料唯一一個）：
+    `### 技巧 #1 - _任意_ 條件 (Trick #1 - _any_ Condition) {#trick-1---_any_-condition}`
+    對英文的 1 個 em 產出 3 個。這是慣例的必然結果不是缺陷，標題格式另有
+    gate 9 管。
+    """
+    from scripts.zh_tw import validate
+
+    en = "# T {#t}\n\n## Trick - _any_ Condition\n\nBody with *one* emphasis.\n"
+    zh = (
+        "# 標題 (T) {#t}\n\n## 技巧 - _任意_ 條件 (Trick - _any_ Condition)"
+        " {#trick---_any_-condition}\n\n內文有 *一個* 強調。\n"
+    )
+    assert validate.check_cjk_emphasis(zh, en) == []
+
+
+# --- _repair_flanking_punctuation（2026-09-04） -----------------------------
+#
+# CommonMark：收尾分隔符前面是標點時，後面必須是空白或標點才算 right-flanking。
+# 中文標點都算標點，所以「中文（English）」與「標題：」這兩個本專案到處都是的
+# 慣例會直接撞上，強調收不了尾。codex 對 `- **Ownership:** Every asset…` 一律
+# 譯成 `- **所有權：**每項資產…`，`object-model.md` 因此英文 6 個粗體、中文渲染
+# 出 0 個 —— 決定性的寫法缺陷，不是隨機遺失，重試永遠修不好。
+
+
+def _rendered_emphases(text):
+    import commonmark as _cm
+
+    html = _cm.commonmark(text)
+    return html.count("<em>") + html.count("<strong>")
+
+
+def test_repair_moves_sentence_punctuation_out_of_the_delimiter():
+    from scripts.zh_tw import pipeline
+
+    src = "- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+    got = pipeline._repair_flanking_punctuation(src)
+    assert got == "- **所有權**：每項資產皆與一名擁有者相關聯。\n", got
+    assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 1
+
+
+def test_repair_never_moves_a_closing_bracket_out_of_the_delimiter():
+    """**這條是 lessons L16 的直接防線。**
+
+    `**淘汰（decommissioned）**攻擊` 若把 `）` 移到分隔符外面會變成
+    `**淘汰（decommissioned**）攻擊` —— 而那個結果**渲染得出來**，
+    「有 <strong>」這個後置條件照樣通過，但左括號已經沒有配對的右括號。
+    後置條件證明了「有東西被強調」，證明不了「被強調的是對的東西」。
+
+    所以右括號類只准補空白、不准外移，另外再加一道「被強調內容的括號必須
+    自己配對」的檢查。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src, want in [
+        ("這是**淘汰（decommissioned）**攻擊的一種。\n",
+         "這是**淘汰（decommissioned）** 攻擊的一種。\n"),
+        ("接受一個*共享物件 (shared object)*時，計數會被設為無窮大。\n",
+         "接受一個*共享物件 (shared object)* 時，計數會被設為無窮大。\n"),
+    ]:
+        got = pipeline._repair_flanking_punctuation(src)
+        assert got == want, got
+        assert "（decommissioned**）" not in got and "(shared object*)" not in got
+        assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 1
+
+
+def test_repair_leaves_already_rendering_emphasis_alone():
+    """本來就渲染得出來的不准動 —— 修復 pass 不製造無謂 diff，也不冒改壞的險。"""
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "正常的 **粗體** 不該被動到。\n",
+        "中文**粗體**中文不該被動到。\n",
+        "程式碼 `a_b` 與 snake_case 不該被動到。\n",
+        "```move\nlet x = **not_markdown**;\n```\n",
+    ]:
+        assert pipeline._repair_flanking_punctuation(src) == src, src
+
+
+def test_repair_gives_up_rather_than_guessing():
+    """兩種修法都救不回來時一個字都不動，交給 fail-closed 的 gate（L16）。"""
+    from scripts.zh_tw import pipeline
+
+    # 分隔符不成對：補空白或外移都湊不出合法強調
+    src = "這是**壞掉的：中文\n"
+    assert pipeline._repair_flanking_punctuation(src) == src
+
+
+def test_brackets_balanced_rejects_unpaired_content():
+    from scripts.zh_tw import pipeline
+
+    assert pipeline._brackets_balanced("淘汰（decommissioned）")
+    assert pipeline._brackets_balanced("沒有括號")
+    assert not pipeline._brackets_balanced("淘汰（decommissioned")
+    assert not pipeline._brackets_balanced("decommissioned）")
+    assert not pipeline._brackets_balanced("（a」")
+
+
+def test_repair_does_not_move_punctuation_out_of_unbalanced_brackets():
+    """殺 mutation「拿掉括號配對檢查」。
+
+    `**壞掉（未配對：**中文` 的尾標點是句讀（可外移），但被強調內容裡有一個
+    沒有配對的左括號。外移會產出 `**壞掉（未配對**：中文` —— 渲染得出來，
+    括號卻更破碎。配對檢查擋的就是這個。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "這是**壞掉（未配對：**中文結尾。\n"
+    got = pipeline._repair_flanking_punctuation(src)
+    assert "未配對**：" not in got, got
+    # 右括號補空白那條路仍可走，但絕不能拆掉括號配對
+    assert got in (src, "這是**壞掉（未配對：** 中文結尾。\n"), got
+
+
+def test_repair_consults_the_renderer_and_gives_up_when_it_says_no():
+    """殺 mutation「不驗渲染，第一個候選直接接受」。
+
+    把 renderer 換成「永遠沒有強調」，修復就必須一個字都不動 —— 證明接受
+    候選的依據真的是渲染結果，不是「改了應該就會好」。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+    assert pipeline._repair_flanking_punctuation(src) != src  # 正常情況會修
+
+    class _Blind:
+        @staticmethod
+        def commonmark(_text):
+            return "<p>沒有任何強調</p>"
+
+    real = pipeline.commonmark
+    pipeline.commonmark = _Blind
+    try:
+        assert pipeline._repair_flanking_punctuation(src) == src
+    finally:
+        pipeline.commonmark = real
+
+
+def test_repair_skips_code_blocks_and_link_destinations():
+    """殺 mutation「不排除 code 區」。
+
+    fence 內的 `**中文：**中文` 是程式碼或範例輸出，改它就是改壞內容；
+    連結目的地同理（`glossary.emphasis_mask` 是共用的真相來源，不重刻）。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "```move\n// **註解：**中文說明\n```\n",
+        "見 [連結](./a/**路徑：**中文.md) 一節。\n",
+        "行內 `**程式碼：**中文` 不動。\n",
+    ]:
+        assert pipeline._repair_flanking_punctuation(src) == src, src
+
+
+def test_assemble_actually_runs_the_flanking_punctuation_repair():
+    """組合層驗證（lessons L7）：修復 pass 必須真的被 `assemble` 呼叫。
+
+    前一批單元測試把 `_repair_flanking_punctuation` 本身測得很仔細，但把
+    `zh_body = _repair_flanking_punctuation(zh_body)` 那一行從管線裡刪掉，
+    80 條測試**全部照樣綠** —— 函式對了、沒人叫它，正是 L7 說的那種缺陷。
+    """
+    import commonmark
+
+    from scripts.zh_tw import frontmatter, pipeline
+
+    class _BrokenEmphasisBackend:
+        """模擬 codex 對 `- **Ownership:** …` 的實際產出：冒號黏在分隔符裡面。"""
+
+        def translate(self, text, *, kind="markdown"):
+            if kind in ("text", "heading"):
+                return "標題 (T)"
+            return "# 標題 (T)\n\n- **所有權：**每項資產皆與一名擁有者相關聯。\n"
+
+    en = "---\ndescription: \"Ownership.\"\n---\n\n# T\n\n- **Ownership:** Every asset has an owner.\n"
+    out = pipeline.assemble(en, "", en, _BrokenEmphasisBackend())
+    body = frontmatter.split(out)[1]
+    assert "**所有權：**每項" not in body, body
+    assert commonmark.commonmark(body).count("<strong>") == 1, body
+
+
+# --- _repair_cjk_wrapped_ascii_emphasis（2026-09-05） -----------------------
+
+
+def test_repair_converts_cjk_wrapped_ascii_underscore_emphasis():
+    """`中文_ascii_中文`：`_` 兩側都是 word char（CJK 也算），不能開合強調。
+
+    實測動機：codex 對 `` `0` for _none_ and `1` for _some_ `` 一律譯成
+    `` `0` 代表_none_，`1` 代表_some_ ``，`bcs.md` 因此連續四輪重試都卡在
+    同一處 —— 決定性缺陷，重試永遠修不好。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "`0` 代表_none_，`1` 代表_some_ — 後面接著該值。\n"
+    got = pipeline._repair_cjk_wrapped_ascii_emphasis(src)
+    assert got == "`0` 代表*none*，`1` 代表*some* — 後面接著該值。\n", got
+    assert _rendered_emphases(src) == 0 and _rendered_emphases(got) == 2
+
+
+def test_repair_does_not_touch_identifiers_or_grammar_blocks():
+    """**這條守的是 lessons L12。**
+
+    另一條路是放寬 `_repair_cjk_emphasis` 的 `_IDENTISH`（從「任一側是 ASCII
+    就排除」改成「兩側都是才排除」）。實測那會讓全語料多出 248 個分隔符候選、
+    26 個檔，其中 `reference/variables.md` 的文法區塊目前**完全沒進配對清單**，
+    一旦進來整條線的配對序列位移，配對本身就可能跨過正確的強調邊界。
+
+    所以這裡用完整形態匹配（前面必須是 CJK、內容不得含 `_`、收尾後面不得是
+    ASCII），不碰既有的逐行配對邏輯。
+    """
+    from scripts.zh_tw import pipeline
+
+    for src in [
+        "變數 tx_context 與 snake_case 不該被動到。\n",
+        "> _pattern-or-list_ _type-annotation_<sub>_opt_</sub>\n",
+        "句首 _Move 2020_）本來就渲染得出來，不該被動到。\n",
+        "檔名 _sources/todo_list.move_ 不該被動到。\n",
+        "```move\nlet x = 中文_none_中文;\n```\n",
+    ]:
+        assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src, src
+
+
+def test_assemble_actually_runs_the_cjk_wrapped_ascii_repair():
+    """組合層（lessons L7）：這個修復 pass 也必須真的被 `assemble` 呼叫。"""
+    import commonmark
+
+    from scripts.zh_tw import frontmatter, pipeline
+
+    class _Backend:
+        def translate(self, text, *, kind="markdown"):
+            if kind in ("text", "heading"):
+                return "標題 (T)"
+            return "# 標題 (T)\n\n`0` 代表_none_，`1` 代表_some_。\n"
+
+    en = '---\ndescription: "Option."\n---\n\n# T\n\n`0` for _none_ and `1` for _some_.\n'
+    body = frontmatter.split(pipeline.assemble(en, "", en, _Backend()))[1]
+    assert "代表_none_" not in body, body
+    assert commonmark.commonmark(body).count("<em>") == 2, body
+
+
+def test_repair_requires_the_closing_underscore_not_be_followed_by_ascii():
+    """殺 mutation「拿掉收尾後不得是 ASCII 的條件」。
+
+    `中文_a_b` 的第二個底線後面接著 `b` —— 那是識別字中段，不是收尾分隔符。
+    少了這道 lookahead，`中文_snake_case_中文` 會被拆成
+    `中文*snake*case_中文`，把識別字改壞。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "設定 中文_snake_case_中文 的值。\n"
+    assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src, src
+
+
+def test_repair_verifies_the_result_actually_renders():
+    """殺 mutation「不驗改完是否渲染」。
+
+    把 renderer 換成「永遠沒有強調」，修復就必須一個字都不動 —— 證明接受
+    候選的依據是渲染結果，不是「換成星號應該就會好」。
+    """
+    from scripts.zh_tw import pipeline
+
+    src = "`0` 代表_none_，`1` 代表_some_ — 後面接著該值。\n"
+    assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) != src
+
+    class _Blind:
+        @staticmethod
+        def commonmark(_text):
+            return "<p>沒有任何強調</p>"
+
+    real = pipeline.commonmark
+    pipeline.commonmark = _Blind
+    try:
+        assert pipeline._repair_cjk_wrapped_ascii_emphasis(src) == src
+    finally:
+        pipeline.commonmark = real

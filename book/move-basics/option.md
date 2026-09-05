@@ -1,31 +1,57 @@
 ---
-description: 'The Option type in Move: 表示可能不存在的值 (represent a value that may be absent)、建立與檢查選項 (create and inspect options)、安全地取出值 (extract values safely)，並使用選項巨集 (option macros) 處理它們。'
+description: Move 中的選項類型 (Option type)：表示可能不存在的值、建立與檢查選項、安全擷取值，以及使用選項巨集 (option macros) 處理選項。
+title: 選項 (Option)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - option
+questions:
+  - What is Option in Move?
+  - How do I use Option in Move?
+  - What is The Option Type in Move?
+  - What is Creating and Using an Option in Move?
+answer: 'The Option type in Move: represent a value that may be absent, create and inspect options, extract values safely, and process them with option macros.'
+goal:
+  description: 'Reader understands the Option type in Move: represent a value that may be absent, create and inspect options, extract values safely, and process them with option macros'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 選項 (Option) {#option}
 
-有些資料本質上就是選擇性的：使用者可能有、也可能沒有中間名，一次查找可能找到、也可能找不到相符結果。Move 沒有 `null` 或 `undefined` 值——`String` 型別的變數永遠持有一個字串——所以「值不存在」必須用其他方式表達。
+有些資料本質上是可選的：使用者可能有也可能沒有中間名，查詢可能找到也可能找不到相符項目。Move 沒有 `null` 或 `undefined` 值——`String` 型別的變數一定持有一個字串——因此，必須以其他方式表達值不存在的情況。
 
-第一直覺可能是保留一個特殊值當標記：用空字串代表缺少中間名，用零代表缺少數字。這種做法可行——直到空字串變成合法輸入，而每個函式都得記住哪些值是「真實的」、哪些只是佔位符。標準函式庫提供了更好的工具：`Option` 型別，這是 Move 從 Rust 借來的概念。
+第一個直覺可能是保留一個特殊值作為標記：以空字串表示缺少的中間名，以零表示缺少的數字。這種方式可行——直到空字串成為有效輸入，而且每個函式都必須記住哪些值是「實際」值、哪些是預留位置。標準函式庫提供了更好的工具：`Option` 型別，這是 Move 從 Rust 借用的概念。
 
 ## Option 型別 (The Option Type) {#the-option-type}
 
-`Option<Element>` 是對 `Element` 型別值的包裝，它永遠處於兩種狀態之一，慣例上稱為 `Some` 和 `None`：
+`Option<Element>` 是 `Element` 型別值的包裝器，且一定處於兩種狀態之一，慣例上稱為 `Some` 與 `None`：
 
-- `Some` - option 包含一個值；
-- `None` - option 是空的。
+- `Some` - 此選項包含一個值；
+- `None` - 此選項為空。
 
-option 不會與它包裝的值混淆：`Option<String>` 不是 `String`，而且必須先檢查值是否存在並取出，才能使用它。「可能不存在」這件事本身成為型別的一部分，在每個函式簽名中都清楚可見，而不是每個呼叫端都必須記住的一項約定。
+選項不會與其包裝的值混淆：`Option<String>` 並非 `String`，必須先檢查並取出該值才能使用。值可能不存在的情況會成為型別的一部分，顯示在每個簽章中，而非每個呼叫端都必須記住的慣例。
 
-`Option` 定義於[標準函式庫 (Standard Library)](./standard-library)，和 `vector` 一樣是[隱式匯入 (implicit imports)](./standard-library#implicit-imports)——不需要 `use` 陳述式就能在任何模組中使用。`Element` 型別參數讓它成為[泛型 (generic)](./generics)：同一份定義可以服務 `Option<u64>`、`Option<String>` 以及任何其他元素型別。
+`Option` 定義於[標準函式庫](./standard-library)，且如同 `vector`，會被[隱含匯入](./standard-library#implicit-imports)——不需要 `use` 陳述式即可在任何模組中使用。`Element` 型別參數使其成為[泛型](./generics)：同一份定義可用於 `Option<u64>`、`Option<String>` 與任何其他元素型別。
 
-以下是前面問題中的使用者記錄，其中選擇性欄位以 `Option<String>` 表示：
+以下是上述問題中的使用者紀錄，並以 `Option<String>` 表達可選欄位：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=registry
 
 ```
 
-`middle_name` 欄位的型別正是特殊值做法無法表達的：值可能不存在，而且沒有任何 `String`——無論空字串或其他——被拿來當標記。這兩種情況分別用 `option::some(value)` 和 `option::none()` 建構：
+`middle_name` 欄位的型別精確表達了特殊值方式無法表達的內容：該值可能不存在，且沒有任何 `String`——不論是否為空——被保留作為標記。兩種情況分別使用 `option::some(value)` 與 `option::none()` 建立：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=registry_use
 
@@ -33,62 +59,62 @@ option 不會與它包裝的值混淆：`Option<String>` 不是 `String`，而�
 
 ## 建立與使用 Option (Creating and Using an Option) {#creating-and-using-an-option}
 
-建立之後，option 可以檢查是否有值、讀取，以及清空：
+建立後，可以檢查選項是否有值、讀取值，以及將其清空：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=usage
 
 ```
 
-> `borrow` 函式回傳指向該值的*參考 (reference)*——一種不需將值取出 option 就能讀取的方式。參考將在本章稍後的[參考 (References)](./references#immutable-references)小節中介紹。
+> `borrow` 函式會產生該值的*參考*——一種不必將值從選項中取出即可讀取它的方式。本章稍後的[參考](./references#immutable-references)章節將介紹參考。
 
-下表列出 `std::option` 模組中最常用的函式；完整清單請參閱[模組文件][option-stdlib]：
+下表列出 `std::option` 模組最常用的函式；完整清單請參閱[模組文件][option-stdlib]：
 
 <div class="modules-table">
 
-| 函式                   | 說明                                | 何時中止 (Aborts If) |
-| ---------------------- | ----------------------------------- | -------------------- |
-| `is_some`              | 若 option 持有值則回傳 `true`       | -                    |
-| `is_none`              | 若 option 為空則回傳 `true`         | -                    |
-| `contains`             | 若 option 持有指定的值則回傳 `true` | -                    |
-| `borrow`               | 回傳指向值的參考                    | option 為空          |
-| `borrow_mut`           | 回傳指向值的可變參考                | option 為空          |
-| `fill`                 | 將值放入空的 option                 | option 已持有值      |
-| `extract`              | 取出值，使 option 變為空            | option 為空          |
-| `swap`                 | 替換值，回傳舊值                    | option 為空          |
-| `destroy_some`         | 銷毀 option，回傳其值               | option 為空          |
-| `destroy_none`         | 銷毀空的 option                     | option 持有值        |
-| `destroy_with_default` | 銷毀 option，回傳其值或預設值       | -                    |
+| 函式                   | 說明                          | 中止條件   |
+| ---------------------- | ----------------------------- | ---------- |
+| `is_some`              | 若選項持有值則回傳 `true`     | -          |
+| `is_none`              | 若選項為空則回傳 `true`       | -          |
+| `contains`             | 若選項持有指定值則回傳 `true` | -          |
+| `borrow`               | 回傳值的參考                  | 選項為空   |
+| `borrow_mut`           | 回傳值的可變參考              | 選項為空   |
+| `fill`                 | 將值放入空選項                | 選項持有值 |
+| `extract`              | 取出值，並將選項保留為空      | 選項為空   |
+| `swap`                 | 取代值，並回傳舊值            | 選項為空   |
+| `destroy_some`         | 銷毀選項，並回傳值            | 選項為空   |
+| `destroy_none`         | 銷毀空選項                    | 選項持有值 |
+| `destroy_with_default` | 銷毀選項，並回傳值或預設值    | -          |
 
 </div>
 
-和 `vector` 一樣，`Option` 的能力繼承自元素型別：非[可丟棄 (droppable)](./drop-ability)型別的 option 不能被忽略，必須用上述 `destroy_*` 函式之一明確銷毀。
+如同 `vector`，`Option` 會從元素型別繼承其能力：非[可丟棄](./drop-ability)型別的選項不能被忽略，且必須使用上述其中一個 `destroy_*` 函式明確銷毀。
 
 ## Option 巨集 (Option Macros) {#option-macros}
 
-和[向量巨集 (vector macros)](./vector#vector-macros)一樣，option 巨集用單一運算式取代常見的「先檢查再取出」序列：
+如同 [vector 巨集](./vector#vector-macros)，選項巨集會以單一運算式取代常見的先檢查再取出序列：
 
 ```move file=packages/samples/sources/move-basics/option.move anchor=macros
 
 ```
 
-其他常用的巨集包括 `map!`、`filter!`、`extract_or!` 和 `do_ref!`——完整清單可在[模組文件][option-stdlib]中找到，巨集的一般性介紹則在本章稍後的[巨集函式 (Macro Functions)](./macros)小節。
+其他常用巨集包括 `map!`、`filter!`、`extract_or!` 與 `do_ref!`——完整清單可見於[模組文件][option-stdlib]，而一般巨集則會在本章稍後的[巨集函式](./macros)章節中介紹。
 
-## 底層原理 (Under the Hood) {#under-the-hood}
+## 底層實作 (Under the Hood) {#under-the-hood}
 
-`Option` 定義為只有一個欄位的結構：一個 `Element` 的 `vector`，該 vector 永遠不是空的（`None`）就是恰好持有一個值（`Some`）：
+`Option` 被定義為具有單一欄位的結構：一個 `Element` 的 `vector`，它一定為空（`None`）或恰好持有一個值（`Some`）：
 
 ```move
 module std::option;
 
-/// 表示可能存在也可能不存在的值的抽象。
+/// 對可能存在或不存在之值的抽象。
 public struct Option<Element> has copy, drop, store {
     vec: vector<Element>
 }
 ```
 
-> 你可能會驚訝 `Option` 是一個包含 `vector` 的結構，而不是一個 [enum][enum-reference]。這是歷史因素造成的：`Option` 在 Move 語言支援 enum 之前就已經加入了。在 Rust（這個型別的發源地）中，`Option` *就是*一個帶有 `Some` 和 `None` _變體 (variants)_ 的 enum——Move 沿用了這套術語。
+> 你可能會驚訝於 `Option` 是包含 `vector` 的結構，而不是 [enum][enum-reference]。這是歷史因素：在該語言支援 enum 之前，`Option` 就已加入 Move。在其型別起源的 Rust 中，`Option`*是*具有 `Some` 與 `None`*變體*的 enum——Move 保留了這個術語。
 
-這種內部表示方式屬於實作細節：上述函式與巨集已涵蓋一般用途，`vec` 欄位不會被直接存取。
+此表示法屬於實作細節：上述函式與巨集涵蓋了一般用法，而 `vec` 欄位絕不會被直接存取。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 

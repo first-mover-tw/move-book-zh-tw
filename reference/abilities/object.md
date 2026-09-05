@@ -1,29 +1,57 @@
 ---
 title: Sui 物件 (Object) | 參考手冊
-description: Sui 物件參考手冊 (Sui Object Reference)：key 能力如何定義物件、UID 需求，以及物件在 Sui 區塊鏈上的儲存方式。
+description: Sui 物件參考 (Sui Object reference)：key 能力 (key ability) 如何定義物件、UID 要求，以及 Sui 區塊鏈上的物件儲存
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - sui
+  - object
+  - reference
+  - object model
+questions:
+  - How does Sui Object work in Move?
+  - What is the syntax for Sui Object in Move?
+  - What is Object Rules in Move?
+  - What is Transfer Rules in Move?
+answer: 'Sui Object reference: how the key ability defines objects, UID requirements, and object storage on the Sui blockchain.'
+goal:
+  description: 'Reader understands sui Object reference: how the key ability defines objects, UID requirements, and object storage on the Sui blockchain'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# Sui 物件 (Sui Objects)
+# Sui 物件 (Sui Objects) {#sui-objects}
 
-在 Sui 中，`key` 被用來表示一個 _物件 (object)_。物件是 Sui 中儲存資料的唯一方式——允許資料在交易之間持久化。
+在 Sui 中，`key` 用於表示一個*物件*。物件是在 Sui 中儲存資料的唯一方式，讓資料能在交易之間持續存在。
 
-欲了解更多詳情，請參閱 Sui 文件：
+如需更多詳細資料，請參閱 Sui 文件中的：
 
-- [物件模型 (The Object Model)](https://docs.sui.io/concepts/object-model)
-- [物件的 Move 規則 (Move Rules for Objects)](https://docs.sui.io/concepts/sui-move-concepts#global-unique)
-- [轉移物件 (Transferring Objects)](https://docs.sui.io/concepts/transfers)
+- [物件模型](https://docs.sui.io/guides/developer/objects)
+- [物件的 Move 規則](https://docs.sui.io/concepts/sui-move-concepts#global-unique)
+- [轉移物件](https://docs.sui.io/guides/developer/objects/transfers)
 
-## 物件規則 (Object Rules)
+## 物件規則 (Object Rules) {#object-rules}
 
-物件是一個具備 [`key`](../abilities.md#key) 能力的 [`結構體 (struct)`](../structs.md)。結構體的第一個欄位必須是 `id: sui::object::UID`。這個 32 位元組的欄位（包裝在 [`地址 (address)`](../primitive-types/address.md) 上的強型別封裝）隨後被用於唯一標識該物件。
+物件是具有 [`key`](../abilities.md#key) 能力的 [`struct`](../structs.md)。結構的第一個欄位必須是 `id: sui::object::UID`。此 32 位元組欄位（[`address`](../primitive-types/address.md) 的強型別包裝）會用於唯一識別該物件。
 
-請注意，由於 `sui::object::UID` 僅具備 `store` 能力（它不具備 `copy` 或 `drop`），因此沒有物件具備 `copy` 或 `drop` 能力。
+請注意，由於 `sui::object::UID` 僅具有 `store` 能力（不具有 `copy` 或 `drop`），因此沒有任何物件具有 `copy` 或 `drop`。
 
 ## 轉移規則 (Transfer Rules) {#transfer-rules}
 
-物件可以在 `sui::transfer` 模組中更改其所有權並進行轉移。該模組中的許多函式都有「公共 (public)」和「私有 (private)」變體，其中「私有」變體只能在定義該物件型別的模組內部呼叫。「公共」變體僅在物件具備 `store` 能力時才能被呼叫。
+物件可以在 `sui::transfer` 模組中變更其擁有權並進行轉移。模組中的許多函式都有「公開」與「私有」變體，其中「私有」變體只能在定義物件型別的模組內呼叫。「公開」變體則只有在物件具有 `store` 時才能呼叫。
 
-例如，如果我們在模組 `my_module` 中定義了兩個物件 `A` 和 `B`：
+例如，假設我們在模組 `my_module` 中定義了兩個物件 `A` 與 `B`：
 
 ```move
 module a::my_module;
@@ -37,4 +65,4 @@ public struct B has key, store {
 }
 ```
 
-`A` 只能在 `a::my_module` 內部使用 `sui::transfer::transfer` 進行轉移，而 `B` 則可以使用 `sui::transfer::public_transfer` 在任何地方進行轉移。這些規則由 Sui 中的自訂型別系統（位元組碼驗證器 bytecode verifier）規則強制執行。
+`A` 只能在 `a::my_module` 內使用 `sui::transfer::transfer` 進行轉移，而 `B` 可在任何位置使用 `sui::transfer::public_transfer` 進行轉移。這些規則由 Sui 中的自訂型別系統（位元碼驗證器）規則強制執行。

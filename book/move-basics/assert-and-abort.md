@@ -1,85 +1,113 @@
 ---
-description: Move 語言中的錯誤處理（Error handling in Move）：使用 abort 以錯誤碼中止執行，並用 assert! 在智慧合約中強制檢查條件。
+description: Move 中的錯誤處理：使用 abort 以錯誤碼中止執行，並使用 assert! 在智慧合約中強制執行條件。
+title: 中止執行 (Aborting Execution)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - aborting
+  - execution
+  - error handling
+questions:
+  - What is Aborting Execution in Move?
+  - How do I use Aborting Execution in Move?
+  - What is Abort in Move?
+  - What is Omitting the Abort Code in Move?
+answer: 'Error handling in Move: use abort to halt execution with error codes and assert! to enforce conditions in smart contracts.'
+goal:
+  description: 'Reader understands error handling in Move: use abort to halt execution with error codes and assert! to enforce conditions in smart contracts'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
 # 中止執行 (Aborting Execution) {#aborting-execution}
 
-一筆交易只會以兩種方式結束：要嘛成功，它所做的所有變更都會被套用並提交到區塊鏈上；要嘛*中止*（abort），所有變更都不會被套用。沒有中間狀態：交易不能部分成功，深層巢狀函式呼叫中的中止會讓整筆交易失敗。這種全有或全無的模型，正是讓 Move 中的錯誤處理變得簡單且可預測的原因——函式永遠不需要復原自己的變更，因為一次中止就會一次撤銷所有東西。
+一筆交易會以兩種方式之一結束：要麼成功，且其所做的所有變更都會套用並提交至區塊鏈；要麼會 _中止_，且不會套用任何變更。兩者之間沒有其他可能：交易無法部分成功，而深度巢狀函式呼叫中的中止會使整筆交易失敗。這種全有或全無的模型讓 Move 中的錯誤處理變得簡單且可預測——函式永遠不需要復原其變更，因為中止會一次復原所有內容。
 
-> Move 中沒有 catch 機制。中止無法被攔截或恢復：它一定會讓整筆交易失敗。這是一項設計選擇——它用彈性換取簡單性，使得系統不可能陷入部分更新的狀態。
+> Move 中沒有 catch 機制。中止無法被攔截或從中復原：它總是會讓整筆交易失敗。這是一項設計選擇——以彈性換取簡潔，並使部分更新的狀態不可能發生。
 
-在本節中，我們會探討 Move 提供的中止工具：`abort` 運算式、`assert!` 巨集，以及定義錯誤代碼與錯誤訊息的慣例。
+本節將介紹 Move 提供的中止工具：`abort` 運算式、`assert!` 巨集，以及定義錯誤碼與錯誤訊息的慣例。
 
 ## 中止 (Abort) {#abort}
 
-`abort` 關鍵字會立即停止執行。它通常會附帶一個*中止代碼*（abort code）——型別為 `u64` 的[整數](./primitive-types)——這個代碼會連同中止所在模組的識別資訊，一起回傳給交易的呼叫端。以下是一個範例：
+`abort` 關鍵字會立即停止執行。它通常會指定一個 _中止碼_——型別為 `u64` 的[整數](./primitive-types)——並與中止之模組的身分一併回傳給交易的呼叫端。以下是一個範例：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=abort
 
 ```
 
-上述程式碼當然會以中止代碼 `1` 中止。
+上述程式碼當然會以中止碼 `1` 中止。
 
-有兩項關於中止代碼的特性值得及早內化：
+中止碼有兩項特性，值得及早牢記：
 
-- 中止代碼是*模組區域性的*。兩個不同模組都可能以代碼 `1` 中止，但它們代表不同的意思；呼叫端必須連同產生該代碼的模組一起解讀這個代碼。
-- 中止代碼不攜帶訊息。區塊鏈只會記錄數字代碼和中止的位置——讓代碼可讀是模組作者的責任，這也是下方[錯誤常數](#error-constants)與[錯誤訊息](#error-messages)存在的目的。
+- 中止碼是 _模組區域_ 的。兩個不同模組都可以使用碼 `1` 中止，但它們代表不同意義；呼叫端必須將該碼與產生它的模組一併解讀。
+- 中止碼不帶有訊息。區塊鏈只記錄數值碼與中止位置——讓這些碼易於理解是模組作者的責任，這正是下方的[錯誤常數](#error-constants)與[錯誤訊息](#error-messages)用途所在。
 
-## 省略中止代碼 (Omitting the Abort Code) {#omitting-the-abort-code}
+## 省略中止碼 (Omitting the Abort Code) {#omitting-the-abort-code}
 
-原始碼中可以省略中止代碼——單獨一個 `abort` 運算式在 Move 中是合法的：
+原始碼中可以省略中止碼——單獨的 `abort` 運算式是有效的 Move 程式碼：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=clean_abort
 
 ```
 
-不過省略不代表不存在：呼叫端仍然會收到一個 `u64` 中止代碼，由編譯器自動衍生。這個衍生出來的代碼使用下方[錯誤訊息](#error-messages)中描述的 clever-error 編碼方式——它攜帶了模組與失敗發生的原始碼行號，而常數名稱與數值則留空。
+不過，省略不代表不存在：呼叫端仍會收到一個由編譯器自動推導的 `u64` 中止碼。推導出的碼使用下方[錯誤訊息](#error-messages)所述的 clever-error 編碼——它包含模組與失敗所在的原始碼行，而常數名稱與值則留空。
 
-這種形式有時被稱為*乾淨中止*（clean abort），很適合用在完全不預期會被執行到的分支——例如涵蓋不可能出現數值的 `match` 運算式的萬用分支（見[列舉與 Match](./enum-and-match)）。由於衍生出來的代碼只指出失敗發生的位置，但完全沒有說明其*意義*，因此對於外部呼叫端實際上有可能觸發的情況，應優先使用明確的代碼或錯誤訊息。
+這種形式有時稱為 _乾淨中止_，很適合根本不應可達的分支——例如涵蓋不可能出現值的 `match` 運算式萬用字元分支（請參閱 [列舉與 Match](./enum-and-match)）。由於推導出的碼會指向失敗位置，卻不說明其 _意義_，對於外部呼叫端實際可以觸發的條件，應優先使用明確的碼或錯誤訊息。
 
-## 斷言! (assert!) {#assert}
+## 斷言巨集 (assert!) {#assert}
 
-`assert!` 巨集是一個內建巨集，用來檢查一個條件，若條件為假則中止。它是你原本要手寫的 `if` + `abort` 組合的簡寫，也是 Move 程式碼中目前為止最常見的中止方式。第一個參數是條件；第二個（可選的）參數是中止代碼——當它被省略時，會自動衍生出一個代碼，方式與單獨 `abort` 相同：
+`assert!` 巨集是內建巨集，用來檢查條件，並在條件為 false 時中止。它是原本需手動撰寫的 `if` + `abort` 組合之簡寫，也是 Move 程式碼中最常見的中止方式。第一個引數是條件；第二個選用引數是中止碼——省略時，會如同單獨的 `abort` 一樣自動推導一個碼：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=assert
 
 ```
 
-一個常見的做法是把 assert 放在函式的開頭——先檢查所有條件，再執行變更。由於中止會回復整筆交易，這麼做並非安全性上的必要條件，但它能讓函式的需求一目了然，並避免在注定會被丟棄的工作上浪費 [gas](./../concepts/what-is-a-transaction)。
+常見做法是在函式開頭放置斷言——先檢查所有條件，再進行變更。由於中止會還原整筆交易，這並非安全性所必需；但它能讓函式的需求一目了然，並避免將必然捨棄的工作浪費[gas](./../concepts/what-is-a-transaction)。
 
 ## 錯誤常數 (Error Constants) {#error-constants}
 
-像 `assert!(user_has_access, 1)` 這樣的原始數字代碼，完全無法告訴讀者哪裡出了問題。為了讓錯誤代碼具有描述性，好的做法是將它們定義為[常數](./constants)。錯誤常數有自己的命名慣例——`E` 後面接上 CamelCase 描述——這使它們與一般的 `ALL_CAPS` 常數有所區別：
+像 `assert!(user_has_access, 1)` 這樣的原始數值碼，無法告訴讀者哪裡出錯。為了讓錯誤碼具有描述性，最佳做法是將其定義為[常數](./constants)。錯誤常數遵循專屬命名慣例——以 `E` 加上 CamelCase 描述組成——使其與一般的 `ALL_CAPS` 常數有所區別：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=error_const
 
 ```
 
-錯誤常數屬於一般的 `u64` 常數，編譯器不會給予任何特殊處理。然而，遵循這個慣例能讓程式碼具有自我說明性——`assert!(user_has_access, ENoAccess)` 讀起來就像一句話——而收到中止代碼的呼叫端，可以在模組的原始碼中找到對應的常數。一份寫得好的模組，會為它可能產生的每一種中止情境定義一個錯誤常數。
+錯誤常數是一般的 `u64` 常數，編譯器不會對它們作任何特殊處理。不過，遵循此慣例可讓程式碼自我說明——`assert!(user_has_access, ENoAccess)` 讀起來就像一句話——而收到中止碼的呼叫端也能在模組的原始碼中找到相符的常數。撰寫良好的模組會為其可能產生的每種中止情境定義錯誤常數。
 
 ## 錯誤訊息 (Error Messages) {#error-messages}
 
-Move 2024 引入了 _clever errors_（聰明錯誤）——用 `#[error]` 屬性標記的錯誤常數。與一般錯誤常數不同，它們可以是任意型別——最常用的是 `vector<u8>`，用來存放人類可讀的錯誤訊息：
+Move 2024 引入了 _clever errors_——以 `#[error]` 屬性標記的錯誤常數。不同於一般錯誤常數，它們可以是任何型別——最有用的是儲存人類可讀錯誤訊息的 `vector<u8>`：
 
 ```move file=packages/samples/sources/move-basics/assert-and-abort.move anchor=error_attribute
 
 ```
 
-這個屬性並不會改變中止的本質：交易仍然會以一個 `u64` 中止代碼失敗。改變的是這個代碼的內容——編譯器會把中止所在的原始碼行號（對於像 `assert!` 這樣的巨集，是呼叫端所在的行號）以及對常數名稱與數值的參考，打包進代碼中。理解此格式的工具——Sui CLI、瀏覽器（explorer）、SDK——會將其解包並顯示完整資訊，類似下方這樣：
+此屬性不會改變中止的本質：交易仍會以 `u64` 中止碼失敗。改變的是該碼的內容——編譯器會將中止的原始碼行號（對於 `assert!` 這類巨集，則是呼叫位置所在行）以及常數名稱和值的參考打包至其中。能理解此格式的工具——Sui CLI、瀏覽器、SDK——會將其解包並顯示完整資訊，例如：
 
 ```text
-Error from 'book::assert_abort::update_value' (line 15), abort 'EValueTooLow':
-"The value is too low, it should be at least 10"
+來自 'book::assert_abort::update_value'（第 15 行）的錯誤，中止 'EValueTooLow'：
+「值過低，至少應為 10」
 ```
 
-錯誤訊息省去了查找數字代碼含義的需要，這在面向大眾的應用程式中尤其重要，因為閱讀失敗訊息的人往往不是模組的作者。這種編碼方式的另一面是，clever abort 代碼的數字值取決於原始碼的排版：重新排版模組或新增一行都會改變這個值。應該用名稱來參考這些常數——絕不要用它們編譯後的數字值。這種編碼的確切格式，記錄在 Move 參考手冊的[Clever Errors](./../../reference/abort-and-assert/clever-errors)中。
+錯誤訊息免除了查詢數值碼意義的需求，這在面向公眾的應用程式中特別重要，因為閱讀失敗訊息的人通常不是模組作者。此編碼的另一面是，clever 中止碼的數值取決於原始碼版面配置：重新格式化模組或新增一行都會改變它。請依名稱參考這些常數——切勿依其編譯後的數值參考。編碼的確切版面配置請參閱 Move 參考文件中的 [Clever Errors](./../../reference/abort-and-assert/clever-errors)。
 
 ## 測試中的中止 (Aborts in Tests) {#aborts-in-tests}
 
-中止和其他行為一樣，值得被測試。`#[expected_failure]` 屬性用來標記一個預期會中止的測試，其 `abort_code` 參數會斷言確切的代碼——若函式成功執行，或以不同的代碼中止，該測試就會失敗。我們會在[測試](./testing)一節中更詳細地介紹這個屬性。
+中止和其他行為一樣值得測試。`#[expected_failure]` 屬性會標記預期應中止的測試，而其 `abort_code` 引數會斷言確切的碼——若函式成功或以不同碼中止，測試便會失敗。我們會在[測試](./testing)章節中更詳細介紹此屬性。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 
-- Move 參考手冊中的[Abort and Assert](./../../reference/abort-and-assert)。
-- Move 參考手冊中的[Clever Errors](./../../reference/abort-and-assert/clever-errors)。
-- 我們建議閱讀[更好的錯誤處理](./../guides/better-error-handling)指南，以了解 Move 中錯誤處理的最佳實務。
+- Move 參考文件中的 [Abort and Assert](./../../reference/abort-and-assert)。
+- Move 參考文件中的 [Clever Errors](./../../reference/abort-and-assert/clever-errors)。
+- 建議閱讀 [Better Error Handling](./../guides/better-error-handling) 指南，了解 Move 錯誤處理的最佳實務。

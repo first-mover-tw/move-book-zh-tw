@@ -1,31 +1,62 @@
 ---
-description: Sui 網路限制與其開發應對之道 (Sui network limits and how to build within them)：物件大小 (object size)、動態欄位 (dynamic fields)、交易限制 (transaction limits) 與協定約束 (protocol constraints)。
+description: Sui 網路 (Sui network) 限制及其因應建置方式：物件大小、動態欄位、交易限制與協定限制。
+title: 在限制下建置 (Building Against Limits)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - building
+  - against
+  - limits
+questions:
+  - What is Building Against Limits in Move?
+  - How do I use Building Against Limits in Move?
+  - What is Transaction Size in Move?
+  - What is Object Size in Move?
+answer: 'Sui network limits and how to build within them: object size, dynamic fields, transaction limits, and protocol constraints.'
+goal:
+  description: 'Reader understands sui network limits and how to build within them: object size, dynamic fields, transaction limits, and protocol constraints'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 針對限制進行開發 (Building Against Limits)
+# 在限制下建置 (Building Against Limits) {#building-against-limits}
 
-為了保證網路的安全，Sui 設定了某些限制和約束。這些限制旨在防止濫用並確保網路保持穩定和高效。本指南概述了這些限制，以及如何使你的應用程式在這些限制下工作。
+為了確保網路的安全性與資安防護，Sui 設有特定的限制與約束。這些限制旨在防止濫用，並確保網路維持穩定且有效率。
+本指南概述這些限制與約束，以及如何建置能在其範圍內運作的應用程式。
 
-## 交易大小 (Transaction Size)
+這些限制定義於協定設定中，並由網路強制執行。若超出任何限制，交易將遭到拒絕或中止。這些限制屬於協定的一部分，因此只能透過網路升級來變更。
 
-單筆交易的大小限制為 128KB。這包括交易負載 (payload)、簽章和中繼資料的大小。
+## 交易大小 (Transaction Size) {#transaction-size}
 
-## 物件大小 (Object Size)
+交易大小限制為 128KB。這包含交易承載資料、交易簽章及交易中繼資料的大小。若交易超出此限制，將遭網路拒絕。
 
-單個物件的大小限制為 256KB。如果你需要更多儲存空間，可以使用動態欄位（如 Bag）將多個物件連接在一起。
+## 物件大小 (Object Size) {#object-size}
 
-## 單個純粹參數大小 (Single Pure Argument Size)
+物件大小限制為 256KB。這包含物件資料的大小。若物件超出此限制，將遭網路拒絕。雖然單一物件無法略過此限制，但若需要更大規模的儲存選項，可以使用基礎物件，並透過動態欄位（例如 Bag）附加其他物件。
 
-單個純粹參數的大小限制為 16KB。
+## 單一純引數大小 (Single Pure Argument Size) {#single-pure-argument-size}
 
-## 建立物件（和動態欄位）的最大數量
+單一純引數的大小限制為 16KB。大於此限制的交易引數將導致執行失敗。因此，若要建立超過約 500 個地址的向量（假設單一地址為 32 位元組），就必須在 Transaction Block 或 Move 函式中動態合併。`vector::append()` 等標準函式可以合併兩個約 16KB 的向量，產生約 32KB 的資料作為單一值。
 
-單次交易中可以建立的最大物件數量為 2048 個。這也影響到[動態欄位](./../programmability/dynamic-fields.md)，因為鍵和值都是物件。
+## 建立物件（及動態欄位）的最大數量 (Maximum Number of Objects (and Dynamic Fields) Created) {#maximum-number-of-objects-and-dynamic-fields-created}
 
-## 存取動態欄位的最大數量
+單一交易可建立的物件數量上限為 2048。若交易嘗試建立超過 2048 個物件，將遭網路拒絕。這也會影響[動態欄位](./../programmability/dynamic-fields.md)，因為索引鍵和值皆為物件。因此，單一交易可建立的[動態欄位](./../programmability/dynamic-fields.md)數量上限為 1000。此限制同樣適用於動態物件欄位。
 
-單次交易中可以存取的最大動態欄位數量為 1000 個。
+## 存取動態欄位的最大數量 (Maximum Number of Dynamic Fields Accessed) {#maximum-number-of-dynamic-fields-accessed}
 
-## 事件的最大數量
+單一交易可存取的動態欄位數量上限為 1000。若交易嘗試存取超過 1000 個動態欄位，將遭網路拒絕。
 
-單次交易中可以發出的最大事件數量為 1024 個。
+## 事件最大數量 (Maximum Number of Events) {#maximum-number-of-events}
+
+單一交易可發出事件的數量上限為 1024。若交易嘗試發出超過 1024 個事件，將會中止。

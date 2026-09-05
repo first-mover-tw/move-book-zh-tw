@@ -1,37 +1,65 @@
 ---
-description: Move 如何原生處理數位資產 (digital assets)：從同質化代幣 (fungible tokens) 到 NFT，具備內建安全性與型別層級的資源保證 (type-level resource guarantees)。
+description: Move (Move) 如何原生處理數位資產：從同質化代幣到 NFT，具備內建安全性與型別層級的資源保證。
+title: Move－數位資產語言 (Language for Digital Assets)
+keywords:
+  - Move
+  - Sui
+  - Move tutorial
+  - move
+  - language
+  - digital
+  - assets
+questions:
+  - What is Move - Language for Digital Assets in Move?
+  - How do I use Move - Language for Digital Assets in Move?
+answer: 'How Move handles digital assets natively: from fungible tokens to NFTs, with built-in safety and type-level resource guarantees.'
+goal:
+  description: 'Reader understands how Move handles digital assets natively: from fungible tokens to NFTs, with built-in safety and type-level resource guarantees'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# Move - 數位資產的語言 (Move - Language for Digital Assets) {#move---language-for-digital-assets}
+# Move——數位資產語言 (Move - Language for Digital Assets) {#move---language-for-digital-assets}
 
-智慧合約程式語言在歷史上一直專注於定義與管理數位資產。舉例來說，以太坊的 ERC-20 標準率先建立了一套與數位貨幣代幣互動的標準，為區塊鏈上建立與管理數位貨幣立下了藍圖。隨後，ERC-721 標準的推出標誌著重大演進，讓非同質化代幣（NFT）的概念普及開來，這種代幣代表獨特且不可分割的資產。這些標準為我們今日所見的複雜數位資產打下了基礎。
+智慧合約程式設計語言在歷史上一直著重於定義及管理數位資產。例如，Ethereum 的 ERC-20 標準率先制定了一組與數位貨幣代幣互動的標準，建立了在區塊鏈上建立及管理數位貨幣的藍圖。隨後，ERC-721 標準的推出標誌著重大演進，普及了非同質化代幣（NFT）的概念，亦即代表獨特且不可分割資產的代幣。這些標準為我們今日所見的複雜數位資產奠定了基礎。
 
-<!-- ## Move and Digital Assets -->
+<!-- ## Move 與數位資產 (Move and Digital Assets) -->
 
-<!-- note: consider "native" -> "fine-grained" -->
+<!-- 註：考慮將 "native" 改為 "fine-grained" -->
 
-然而，以太坊的程式設計模型缺乏對資產的原生表示方式。從外部來看，ERC-20 代幣的行為就像資產一樣，但在合約內部，它僅僅是帳本中的條目——一個地址對應餘額的映射——在語言層面上並不存在真正代表資產的值。從一開始，Move 的目標就是為資產提供第一等抽象，為思考與撰寫資產相關程式開啟了新的途徑。
+然而，Ethereum 的程式設計模型缺乏資產的原生表示法。從外部來看，ERC-20 代幣的行為如同資產；但在合約內部，它僅以帳本中的項目存在——亦即地址到餘額的對應關係——而語言中沒有任何一個值 _就是_ 該資產。Move 從一開始便致力於為資產提供一級抽象，開闢思考及程式設計資產的新途徑。
 
-<!-- Move was initially created in 2018 as part of the Libra project. The language was designed to address shortcomings in existing smart contract languages, especially in handling assets and access control. The Move language aims to provide first-class abstractions for these concepts, improving the safety and productivity of smart contract programming. -->
+<!-- Move 最初於 2018 年作為 Libra 專案的一部分建立。此語言旨在解決既有智慧合約語言的不足，尤其是在處理資產及存取控制方面。Move 語言旨在為這些概念提供一級抽象，以提升智慧合約程式設計的安全性及生產力。 -->
 
-值得特別強調的是，哪些特性對資產而言是不可或缺的：
+務必突顯資產不可或缺的特性：
 
-- **所有權（Ownership）：** 每一項資產都與一位擁有者相關聯，這反映了現實世界中所有權的直觀概念，就像你可以擁有一輛車一樣，你也可以擁有一項數位資產。Move 以這樣的方式強制執行所有權：一旦資產被*移動（moved）*，前一位擁有者就完全喪失對它的任何控制權。這個機制確保了所有權轉移的清晰與安全。
+- **所有權**：每項資產皆與一名擁有者相關聯，如同實體世界中直觀的所有權概念：正如你擁有一輛車，你也可以擁有數位資產。Move 以這樣的方式強制實施所有權：一旦資產被 _移動_，原擁有者便完全失去對它的任何控制權。此機制確保所有權明確且安全地變更。
 
-- **不可複製（Non-copyable）：** 在現實世界中，獨一無二的物品無法輕易地被複製。Move 將這個原則套用到數位資產上，確保它們在程式中無法被任意複製。這項特性對於維持數位資產的稀缺性與獨特性至關重要，反映出實體資產本身的內在價值。
+- **不可複製**：在真實世界中，獨特物品無法毫不費力地複製。Move 將此原則套用至數位資產，確保它們無法在程式中任意複製。此特性對於維持數位資產的稀缺性及獨特性至關重要，並反映實體資產的內在價值。
 
-- **不可丟棄（Non-discardable）：** 就像你不會在毫無痕跡的情況下不小心弄丟一間房子或一輛車，Move 確保程式中任何資產都不會被丟棄或遺失。相反地，資產必須被明確地轉移或銷毀。這項特性保證了數位資產能被審慎地處理，避免意外遺失，並確保資產管理過程中的可課責性。
+- **不可丟棄**：如同你無法在不留痕跡的情況下意外遺失房屋或汽車，Move 確保任何資產都不會在程式中遭到丟棄或遺失。資產必須明確地轉移或銷毀。此特性確保數位資產受到審慎處理，防止意外遺失，並確保資產管理的可追責性。
 
-上述三項特性，你其實已經以語言特性的形式接觸過了。所有權由[移動語意](./../move-basics/ownership-and-scope)強制執行：以傳值方式傳遞一個值會將其*移動*，而先前的作用域則喪失存取權。而能力系統則控制著另外兩項特性：沒有 [`copy`](./../move-basics/copy-ability) 能力的結構體無法被複製，沒有 [`drop`](./../move-basics/drop-ability) 能力的結構體則無法被丟棄。在[Move 基礎](./../move-basics)這一章看似是一組限制的東西，實際上正是為資產建模量身打造的工具組：一個既沒有 `copy` 也沒有 `drop` 能力的型別，在每次被建立時都*必須*被明確地處理——儲存、轉移，或銷毀。
+你已經將這三項特性都視為語言功能接觸過了。所有權由[移動語意](./../move-basics/ownership-and-scope)強制實施：以值傳遞一個值會將其 _移動_，而先前的作用域會失去存取權。能力系統則控制另外兩項特性：沒有 [`copy`](./../move-basics/copy-ability) 能力的結構無法複製，沒有 [`drop`](./../move-basics/drop-ability) 能力的結構無法丟棄。在 [Move 基礎](./../move-basics)章節中看似一組限制的內容，實際上正是建模資產所需的完整工具組：同時不具備 `copy` 及 `drop` 的型別，每次建立時都 _必須_ 明確處理——儲存、轉移或銷毀。
 
 ## 總結 (Summary) {#summary}
 
-- Move 的設計目標是為數位資產提供第一等抽象，讓開發者能夠原生地建立與管理資產。
-- 數位資產的必要特性包括所有權、不可複製性與不可丟棄性，而 Move 在其設計中強制執行這些特性。
-- 這些特性直接對應到你已經認識的語言特性：移動語意，以及 `copy` 與 `drop` 能力。
-- Move 的資產模型反映了現實世界中的資產管理方式，確保資產所有權與轉移過程的安全性與可課責性。
+- Move 的設計目標是為數位資產提供一級抽象，讓開發者能以原生方式建立及管理資產。
+- 數位資產的必要特性包括所有權、不可複製性及不可丟棄性，Move 會透過其設計強制實施這些特性。
+- 這些特性直接對應到你已經熟悉的語言功能：移動語意，以及 `copy` 和 `drop` 能力。
+- Move 的資產模型反映真實世界的資產管理，確保安全且可追責的資產所有權及轉移。
 
 ## 延伸閱讀 (Further Reading) {#further-reading}
 
-- [Move: A Language With Programmable Resources (pdf)](https://developers.diem.com/papers/diem-move-a-language-with-programmable-resources/2019-06-18.pdf)，作者 Sam Blackshear、Evan Cheng、David L. Dill、Victor Gao、Ben Maurer、Todd Nowacki、Alistair Pott、
+- [Move：具備可程式化資源的語言（PDF）](https://developers.diem.com/papers/diem-move-a-language-with-programmable-resources/2019-06-18.pdf)
+  作者為 Sam Blackshear、Evan Cheng、David L. Dill、Victor Gao、Ben Maurer、Todd Nowacki、Alistair Pott、
   Shaz Qadeer、Rain、Dario Russi、Stephane Sezer、Tim Zakian、Runtian Zhou\*

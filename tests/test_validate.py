@@ -558,7 +558,7 @@ def test_gate8_flags_simplified_chars(ch):
     assert any(c == ch for _, c in hits)
 
 
-@pytest.mark.parametrize("ch", ["台", "游", "了", "群", "才", "峰"])
+@pytest.mark.parametrize("ch", ["台", "游", "祕", "了", "群", "才", "峰"])
 def test_gate8_does_not_flag_allowlisted_or_non_simplified_chars(ch):
     body = f"這是一段包含 {ch} 字的文字。\n"
     hits = validate.simplified_chars(body)
@@ -574,6 +574,23 @@ def test_gate8_flags_hk_mainland_variants_not_moe_standard(ch):
     body = f"這是一段包含 {ch} 字的文字。\n"
     hits = validate.simplified_chars(body)
     assert any(c == ch for _, c in hits)
+
+
+def test_gate8_accepts_both_forms_of_the_secret_character():
+    """「祕」與「秘」在台灣並存，兩個都不是簡體字，gate 都不該攔。
+
+    教育部《異體字字典》以「祕」為正字（祕密、神祕），但 OpenCC 的 s2tw 會把
+    祕→秘 —— 逐字套用時就變成「祕是簡體」的假陽性。實測後果：codex 寫「祕密」，
+    `book/programmability/randomness.md` 連續三輪排乾都被這條擋掉，而現有語料
+    2 處寫的是「秘密」。硬要統一得改語料又得加違禁詞，不值得 —— **gate 的職責
+    是攔簡體，不是統一異體字選擇**（2026-09-05 使用者裁決）。
+
+    對照組 `裏`/`着` 仍必須被攔：那兩個是港澳/中國大陸字形，教育部標準是
+    `裡`/`著`，不是同一回事（見上面那條 REJECTED finding）。
+    """
+    for body in ["這是祕密資訊。\n", "這是秘密資訊。\n", "神祕的隨機性。\n"]:
+        assert validate.simplified_chars(body) == [], body
+    assert validate.simplified_chars("这是简体。\n"), "真簡體仍須被攔"
 
 
 def test_gate8_skips_fenced_code():
@@ -849,3 +866,41 @@ def test_ol_items_does_not_attribute_nested_text_to_outer_item():
     assert (outer_n, inner_n) == (1, 1)
     assert "內壞" not in outer_text, outer_text
     assert inner_text.startswith("1. 內壞")
+
+
+def test_gate5_skips_links_inside_html_comments():
+    """註解掉的內容不會被渲染，裡面的懸空錨點無害，不該擋寫檔。
+
+    實測現場（2026-09-05 排乾）：`reference/abilities.md` 的
+    `<!-- TODO：…[動機說明](#motivating-walkthrough)… -->` 指向一個還沒寫的
+    章節，**英文原文同樣是懸空的**。舊譯文把整段註解漏譯，所以這個缺口一直
+    沒被看見；新譯文把註解保留下來（比較忠實），gate 5 才第一次紅。
+
+    註解遮罩**不併進 `glossary.protected_mask`** —— 它的語意是「哪裡是程式
+    碼」，被 5 個消費端共用，擴張它等於偷改所有消費端的語意（lessons L2，
+    2026-09-04 已犯過一次：把 URLISH 併進去造成 4 個測試轉紅）。
+    """
+    files = {
+        "a.md": (
+            "# 標題 (T) {#t}\n\n"
+            "<!-- TODO：這一段還沒寫\n\n"
+            "或許可跳至[動機說明](#motivating-walkthrough)章節。 -->\n\n"
+            "正文。\n"
+        )
+    }
+    assert validate.check_links(files) == []
+
+
+def test_gate5_still_flags_dangling_anchors_outside_comments():
+    """對照組：註解**外面**的懸空錨點照樣要擋 —— 否則這道豁免就從
+    「別管註解」擴張成「別管連結」。"""
+    files = {
+        "a.md": (
+            "# 標題 (T) {#t}\n\n"
+            "<!-- 註解裡的[連結](#nope-in-comment) -->\n\n"
+            "正文裡的[連結](#nope-in-body)。\n"
+        )
+    }
+    errs = validate.check_links(files)
+    assert len(errs) == 1, errs
+    assert "nope-in-body" in errs[0] and "nope-in-comment" not in errs[0], errs
