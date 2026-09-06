@@ -33,6 +33,14 @@ def cjk_anchor_hits(files: dict[str, str]) -> list[tuple[str, str]]:
     所以這裡的命中一定是人手動寫進語料的。那不是錯誤——docusaurus 吃得下，
     沿用它也是正確的 tier 1 行為——但它會產出 CJK URL，值得有人看一眼。
     比照 scan-only：只提醒，不計入 exit code。
+
+    偵測範圍是 validate.CJK（`[一-鿿]`，U+4E00–9FFF 常用漢字區 URO），
+    不是完整的 CJK Unicode 範圍——擴充區 A/B（如 㐀、𠀀）、相容漢字
+    （如 豈）、假名、注音等不在其中，不會被計入命中。這裡刻意不就地
+    放寬 validate.CJK：那是全 repo 共用的 pattern，這個函式若自己另開
+    一份定義，就是本分支要消滅的「三份定義互相漂移」重演（見 anchors.py
+    ANCHOR_SUFFIX 上方註解）。要擴大涵蓋範圍，改動點是 validate.CJK
+    本身，不是這裡。
     """
     hits: list[tuple[str, str]] = []
     for path, text in sorted(files.items()):

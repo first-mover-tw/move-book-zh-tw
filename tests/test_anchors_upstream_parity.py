@@ -2,6 +2,14 @@
 
 判準只要還是「我維護的一份推論」，就會有第五輪(lessons L23)。這裡不推論:
 把上游 regex 原文移植過來對拍，並用版本漂移守衛逼人在升級時回去看一眼。
+
+誠實的範圍聲明：UPSTREAM_REGEX（下面 compile 出來的版本）與
+anchors._ANCHOR 是同一個 pattern 字串、upstream_parse_id() 與
+anchors.existing_anchor() 是逐行相同的邏輯，所以 CASES / fuzz 對拍在
+數學上是恆等式，測不出「pattern 字串本身抄錯上游」——它只抓得到
+「_ANCHOR 之後漂離了這個字串」的迴歸。真正釘住「這串字串等不等於上游
+原始碼」的是 UPSTREAM_PATTERN 常數 + test_docusaurus_version_has_not_drifted
+裡的身分斷言，加上人工回看 markdownHeadingIdUtils.ts 原始碼。
 """
 
 import json
@@ -15,7 +23,12 @@ from scripts.zh_tw import anchors
 #       parseMarkdownHeadingId(heading, 'classic')
 #   const customHeadingIdRegex = /\s*\{#(?<id>(?:.(?!\{#|\}))*.)\}$/;
 UPSTREAM_VERSION = "3.10.2"
-UPSTREAM_REGEX = re.compile(r"\s*\{#((?:.(?!\{#|\}))*.)\}$")
+
+# 上游 pattern 的 Python 移植，以**字串**形式釘死。刻意不在這裡 re.compile ——
+# 一旦 compile 並拿來對拍，這個檔案就成了同一個不變式的第二份實作，
+# 而那正是整條分支要消滅的東西（見 spec 第三節）。
+UPSTREAM_PATTERN = r"\s*\{#((?:.(?!\{#|\}))*.)\}$"
+UPSTREAM_REGEX = re.compile(UPSTREAM_PATTERN)
 
 
 def upstream_parse_id(heading: str) -> str | None:
@@ -28,9 +41,15 @@ def upstream_parse_id(heading: str) -> str | None:
 def test_docusaurus_version_has_not_drifted():
     """升級 docusaurus 時這條會紅 —— 去看 markdownHeadingIdUtils.ts 的
     customHeadingIdRegex 有沒有變，確認後再改 UPSTREAM_VERSION。
-    沒有這條守衛，上游改了判準我們不會知道(靜默腐化)。"""
+    沒有這條守衛，上游改了判準我們不會知道(靜默腐化)。
+
+    第二個斷言是這個檔案裡唯一不是恆等式的檢查：CASES / fuzz 對拍測的是
+    「_ANCHOR 有沒有漂離 UPSTREAM_PATTERN」，這條測的是「UPSTREAM_PATTERN
+    這串字串本身有沒有漂離 anchors._ANCHOR 目前的 pattern」——兩者合起來
+    才覆蓋得到 anchors._ANCHOR 被改動但沒人回頭核對上游原始碼的情況。"""
     pkg = json.loads(Path("site/package.json").read_text(encoding="utf-8"))
     assert pkg["dependencies"]["@docusaurus/core"] == UPSTREAM_VERSION
+    assert anchors.ANCHOR_SUFFIX.pattern == UPSTREAM_PATTERN
 
 
 CASES = [
@@ -82,6 +101,13 @@ def test_generator_covers_the_curated_repros():
 
 
 def test_parity_under_fuzz():
+    """誠實聲明：UPSTREAM_REGEX 與 anchors._ANCHOR 目前是同一個 pattern
+    字串，upstream_parse_id() 與 anchors.existing_anchor() 逐行邏輯相同，
+    所以這 20000 次 fuzz 對拍是恆等式——它能抓到的是「_ANCHOR 漂離了
+    UPSTREAM_PATTERN 這個釘死的字串」，抓不到「這個字串本身就抄錯了
+    上游」。後者由 test_docusaurus_version_has_not_drifted 的
+    pattern == UPSTREAM_PATTERN 斷言 + 人工回看上游原始碼負責，
+    這裡的高次數不代表已經驗證過正確性本身。"""
     rng = random.Random(20260906)
     for _ in range(20000):
         s = _gen(rng)

@@ -28,6 +28,17 @@ _MD = MarkdownIt("commonmark")
 # 上游的 regex 結尾是 `}$`（沒有 \s*），因為它拿到的 heading 文字已經被
 # markdown 解析器 trim 過。本模組在 helper 入口顯式 rstrip 來對齊這個前提，
 # 而不是在 regex 上加一個上游沒有的 \s* —— 那就又是第二份定義了。
+#
+# 【以下為 review 推測，未實跑 docusaurus，標註供後續驗證】
+# 這份定義要等於消費者，還有一個前提沒寫出來：尾端的 `{#id}` 必須是
+# 「純文字」。本模組把 regex 套在 anchors.headings() 回的 markdown inline
+# token 原始源碼上；docusaurus 是套在 mdast toString() 之後的純文字
+# 上 —— toString() 已經去掉 inline code 的反引號、emphasis 的 `*`/`_`、
+# link 語法，也已解開 escape 與 HTML entity。所以像 ``## Foo `{#bar}` ``
+# 或 `## Foo \{#bar\}` 這類標題，兩邊的判定可能不同：本模組看到的原始字元
+# 序列與 docusaurus 看到的純文字不是同一份輸入。
+# 這個分歧不是本次改動造成的 —— 舊的窄版 regex 一樣有同樣的分歧，
+# 不是新引入的迴歸。語料實測目前是 0 命中（沒有任何標題落在這個分歧區）。
 _ANCHOR = re.compile(r"\s*\{#((?:.(?!\{#|\}))*.)\}$")
 ANCHOR_SUFFIX = _ANCHOR  # 公開別名：validate / backends.fake 的唯一入口
 _INLINE_CODE = re.compile(r"`([^`]+)`")
@@ -152,9 +163,14 @@ def existing_anchor(heading: str) -> str | None:
 
 
 def strip_anchor(heading: str) -> str:
-    """剝掉尾端的 `{#id}`。不做前後 strip —— 由呼叫端決定，
-    因為 pipeline._repair_headings 與 validate.heading_suffix_error
-    對空白的處理時機不同。"""
+    """剝掉尾端的 `{#id}`。
+
+    輸入端會先 `rstrip()`——這不是清理措辭，而是讓 regex 結尾的 `$`
+    貼齊上游前提（heading 已被 markdown 解析器 trim 過），對齊 `_ANCHOR`
+    上方註解所述的等式；拿掉這個 rstrip 就會踩到與上游的真分歧。
+
+    回傳值本身不做前後 strip —— 由呼叫端決定，因為 pipeline._repair_headings
+    與 validate.heading_suffix_error 對空白的處理時機不同。"""
     return _ANCHOR.sub("", heading.rstrip())
 
 
