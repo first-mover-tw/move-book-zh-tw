@@ -85,9 +85,18 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
     穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
     定位到小範圍）。重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋，
     fail-closed 不變 —— 這裡是自動修復路徑，不是放寬。"""
-    # 驗 gate 1+2 兩個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
+    # 驗 gate 1+2+10 三個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
     # 標題照過，join 後卻把下一個 chunk 的標題吞進未閉合 fence（L7 實錄：
     # variables.md 21→19，單獨翻每個 chunk 都正常）。
+    #
+    # gate 10（強調型別序列）也在這裡驗：2026-09-06 那 8 個排不乾的檔，失效
+    # 形式一律是 backend 把 `*em*` 譯成粗體/引號/直接不譯，而 gate 10 的
+    # 「可疑位置」提示是空的 —— 代表不是 `_中文_` 渲染不出來（那有決定性修復
+    # pass），是譯文根本沒有那個強調。這種缺陷的判定與修復不是同一個資訊量
+    # （L16：修復要知道「原文哪一段被強調」，那個資訊在譯文裡已經不存在），
+    # 所以不寫修復 pass，改用與標題同一套的 chunk 級重試把失效定位到小範圍。
+    # **判定權沒有第二份實作**：直接呼叫 gate 本人（L15），chunk 沒有
+    # frontmatter，`check_cjk_emphasis` 對裸 body 一樣成立。
     want = [lv for lv, _ in anchors.headings(chunk_text)]
     want_fences = anchors.fence_lines(chunk_text)
     out = ""
@@ -97,6 +106,7 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
             ok = (
                 [lv for lv, _ in anchors.headings(out)] == want
                 and anchors.fence_lines(out) == want_fences
+                and not validate.check_cjk_emphasis(out, chunk_text)
             )
         except anchors.FrontmatterPassedIn:
             # backend 幻覺出 YAML frontmatter —— 正是重試該吸收的垃圾輸出，
