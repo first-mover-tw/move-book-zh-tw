@@ -260,3 +260,42 @@ def test_fence_lines_raises_when_passed_full_document_with_frontmatter():
     full_doc = '---\ndescription: "x"\n---\n\n# Real\n```\nx\n```\n'
     with pytest.raises(anchors.FrontmatterPassedIn):
         anchors.fence_lines(full_doc)
+
+
+def test_existing_anchor_accepts_cjk_id():
+    """docusaurus 的 id 可以是「除了 {# 和 } 以外的任何字元」，包含 CJK。
+    這條在收斂前是紅的：舊 _ANCHOR 只收 [A-Za-z0-9_-]+。"""
+    assert anchors.existing_anchor("中止與斷言 {#終止與斷言-abort-and-assert}") == (
+        "終止與斷言-abort-and-assert"
+    )
+
+
+def test_slugify_strips_cjk_anchor_instead_of_folding_it_in():
+    """舊行為把認不得的 CJK id 當成標題文字，slug 變成「標題-id」兩段相連。"""
+    assert anchors.slugify("中止與斷言 {#終止與斷言-abort-and-assert}") == "中止與斷言"
+
+
+def test_strip_anchor_returns_heading_without_id():
+    assert anchors.strip_anchor("Foo {#bar}") == "Foo"
+    assert anchors.strip_anchor("Foo") == "Foo"
+    assert anchors.strip_anchor("Foo {#中文}") == "Foo"
+
+
+def test_anchor_id_is_stripped_like_upstream():
+    """上游對取出的 id 做 .trim()。"""
+    assert anchors.existing_anchor("Foo {# bar }") == "bar"
+
+
+def test_only_the_last_anchor_group_is_the_id():
+    """上游 regex 的 id 不能含 `{#` 或 `}`，且必須貼著字串結尾。
+    `A {#a} {#b}` 的 id 是 b，而 `{#a}` 留在標題文字裡（與 docusaurus 一致）。"""
+    assert anchors.existing_anchor("A {#a} {#b}") == "b"
+    assert anchors.strip_anchor("A {#a} {#b}") == "A {#a}"
+
+
+def test_empty_id_is_not_an_anchor():
+    assert anchors.existing_anchor("Foo {#}") is None
+
+
+def test_double_closing_brace_is_not_an_anchor():
+    assert anchors.existing_anchor("Foo {#a}}") is None

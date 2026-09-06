@@ -16,7 +16,20 @@ from . import frontmatter
 
 _MD = MarkdownIt("commonmark")
 
-_ANCHOR = re.compile(r"\s*\{#([A-Za-z0-9_-]+)\}\s*$")
+# 移植自 @docusaurus/utils 3.10.2 src/markdownHeadingIdUtils.ts 的
+# parseMarkdownHeadingId(heading, 'classic')：
+#     /\s*\{#(?<id>(?:.(?!\{#|\}))*.)\}$/
+# 上游原始碼的註解：「The ID can contain any characters except `{#` and `}`」。
+#
+# 這是本 repo 對「什麼是顯式 anchor id」的唯一定義。validate 與 backends.fake
+# 一律引用 ANCHOR_SUFFIX，不得再自己刻一份 —— 三份定義互相漂移、且沒有一份
+# 等於消費者，正是 2026-09-06 收斂前的狀態（lessons L15 / L23）。
+#
+# 上游的 regex 結尾是 `}$`（沒有 \s*），因為它拿到的 heading 文字已經被
+# markdown 解析器 trim 過。本模組在 helper 入口顯式 rstrip 來對齊這個前提，
+# 而不是在 regex 上加一個上游沒有的 \s* —— 那就又是第二份定義了。
+_ANCHOR = re.compile(r"\s*\{#((?:.(?!\{#|\}))*.)\}$")
+ANCHOR_SUFFIX = _ANCHOR  # 公開別名：validate / backends.fake 的唯一入口
 _INLINE_CODE = re.compile(r"`([^`]+)`")
 _LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 _FENCE_MARK = re.compile(r"^ {0,3}(`{3,}|~{3,})")
@@ -101,7 +114,7 @@ def fence_lines(body: str) -> int:
 
 
 def slugify(heading: str) -> str:
-    text = _ANCHOR.sub("", heading)
+    text = strip_anchor(heading)
     text = _LINK.sub(r"\1", text)
     text = _INLINE_CODE.sub(r"\1", text)
     text = text.strip().lower()
@@ -134,8 +147,15 @@ def slugify_all(
 
 
 def existing_anchor(heading: str) -> str | None:
-    m = _ANCHOR.search(heading)
-    return m.group(1) if m else None
+    m = _ANCHOR.search(heading.rstrip())
+    return m.group(1).strip() if m else None
+
+
+def strip_anchor(heading: str) -> str:
+    """剝掉尾端的 `{#id}`。不做前後 strip —— 由呼叫端決定，
+    因為 pipeline._repair_headings 與 validate.heading_suffix_error
+    對空白的處理時機不同。"""
+    return _ANCHOR.sub("", heading.rstrip())
 
 
 class HeadingMismatch(Exception):
@@ -329,7 +349,7 @@ def inject_report(
             out.append(line)
             continue
         idx, level, _, _ = at_line[i]
-        text = _ANCHOR.sub("", zh_h[idx][1])
+        text = strip_anchor(zh_h[idx][1])
         nl = _line_ending(line)
         out.append(f"{'#' * level} {text} {{#{wanted[idx]}}}{nl}")
     return "".join(out), notes
