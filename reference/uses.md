@@ -1,15 +1,42 @@
 ---
-title: 導入與別名 (Uses and Aliases) | 參考手冊
-description: 使用 Move 的 use 和別名參考手冊：匯入模組、建立別名、群組匯入、解決命名衝突。
+title: 使用 (Uses) 與別名 (Aliases) | 參考手冊
+description: Move use 宣告 (use) 與別名 (aliases) 參考：匯入模組 (modules)、建立別名、將匯入項目分組，並解析命名衝突 (naming conflicts)。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - uses
+  - aliases
+  - reference
+questions:
+  - How does Uses and Aliases work in Move?
+  - What is the syntax for Uses and Aliases in Move?
+  - What is Inside a module in Move?
+  - What is Inside an expression in Move?
+answer: 'Move use and aliases reference: import modules, create aliases, group imports, and resolve naming conflicts.'
+goal:
+  description: 'Reader understands move use and aliases reference: import modules, create aliases, group imports, and resolve naming conflicts'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 使用與別名 (Uses and Aliases)
+# 使用與別名 (Uses and Aliases) {#uses-and-aliases}
 
-`use` 語法可以用於為其他模組中的成員建立別名。`use` 可以用來建立持續整個模組或特定運算式區塊作用域的別名。
+`use` 語法可用於為其他模組中的成員建立別名。`use` 可用於建立持續於整個模組，或指定運算式區塊範圍內的別名。
 
-## 語法 (Syntax)
+## 語法 (Syntax) {#syntax}
 
-`use` 有幾種不同的語法情況。從最簡單的開始，我們有以下用於建立其他模組別名的語法：
+`use` 有數種不同的語法情況。從最簡單的開始，以下用於建立其他模組的別名：
 
 ```move
 use <address>::<module name>;
@@ -23,9 +50,9 @@ use std::vector;
 use std::option as o;
 ```
 
-`use std::vector;` 引入了 `std::vector` 的別名 `vector`。這意味著在任何你想使用模組名稱 `std::vector` 的地方（假設此 `use` 在作用域內），你都可以改用 `vector`。`use std::vector;` 等同於 `use std::vector as vector;`。
+`use std::vector;` 為 `std::vector` 引入別名 `vector`。這表示在任何原本要使用模組名稱 `std::vector` 的地方（假設此 `use` 位於作用域內），都可以改用 `vector`。`use std::vector;` 等同於 `use std::vector as vector;`
 
-同樣地，`use std::option as o;` 會讓你使用 `o` 而不是 `std::option`。
+同樣地，`use std::option as o;` 可讓你使用 `o` 取代 `std::option`。
 
 ```move
 use std::vector;
@@ -39,7 +66,7 @@ fun new_vec(): vector<o::Option<u8>> {
 }
 ```
 
-如果你想匯入特定的模組成員（如函式或結構體），可以使用以下語法：
+如果你想匯入特定模組成員（例如函式或結構體），可以使用以下語法。
 
 ```move
 use <address>::<module name>::<module member>;
@@ -53,7 +80,7 @@ use std::vector::push_back;
 use std::option::some as s;
 ```
 
-這會讓你直接使用函式 `std::vector::push_back` 而無需完整限定名。同樣地，對於 `std::option::some` 可以使用 `s`。相反地，你可以分別使用 `push_back` 和 `s`。再次強調，`use std::vector::push_back;` 等同於 `use std::vector::push_back as push_back;`。
+這可讓你不必使用完整限定名稱即可使用函式 `std::vector::push_back`。同樣地，`std::option::some` 可使用 `s`。你可以分別改用 `push_back` 與 `s`。同樣地，`use std::vector::push_back;` 等同於 `use std::vector::push_back as push_back;`
 
 ```move
 use std::vector::push_back;
@@ -67,9 +94,9 @@ fun new_vec(): vector<std::option::Option<u8>> {
 }
 ```
 
-### 多重別名 (Multiple Aliases)
+### 多個別名 (Multiple Aliases) {#multiple-aliases}
 
-如果你想一次性為多個模組成員新增別名，可以使用以下語法：
+如果你想一次為多個模組成員新增別名，可以使用以下語法：
 
 ```move
 use <address>::<module name>::{<module member>, <module member> as <member alias> ... };
@@ -89,15 +116,15 @@ fun new_vec(): vector<std::option::Option<u8>> {
 }
 ```
 
-### Self 別名 (Self aliases)
+### Self 別名 (Self aliases) {#self-aliases}
 
-如果你除了模組成員外，還需要為模組本身新增別名，可以在單個 `use` 中使用 `Self`。`Self` 是一種指向模組本身的特殊成員。
+如果除了模組成員外，還需要為模組本身新增別名，可以透過 `Self` 在單一 `use` 中完成。`Self` 是一種類似成員的項目，指向該模組。
 
 ```move
 use std::option::{Self, some, none};
 ```
 
-為了清晰起見，以下所有寫法都是等效的：
+為求清楚，以下所有寫法皆等同：
 
 ```move
 use std::option;
@@ -108,9 +135,9 @@ use std::option::{Self};
 use std::option::{Self as option};
 ```
 
-### 為同一定義設定多重別名 (Multiple Aliases for the Same Definition)
+### 相同定義的多個別名 (Multiple Aliases for the Same Definition) {#multiple-aliases-for-the-same-definition}
 
-如果需要，你可以為任何項目設定不限數量的別名：
+如有需要，你可以為任何項目建立任意數量的別名：
 
 ```move
 use std::vector::push_back;
@@ -124,9 +151,9 @@ fun new_vec(): vector<Option<u8>> {
 }
 ```
 
-### 巢狀匯入 (Nested imports)
+### 巢狀匯入 (Nested imports) {#nested-imports}
 
-在 Move 中，你也可以在同一個 `use` 宣告中匯入多個名稱。這會將所有提供的名稱引入作用域：
+在 Move 中，你也可以透過相同的 `use` 宣告匯入多個名稱。這會將所有提供的名稱帶入作用域：
 
 ```move
 use std::{
@@ -142,9 +169,9 @@ fun example(s: &mut String) {
 }
 ```
 
-## 在 `module` 內部 (Inside a `module`)
+## `module` 內部 (Inside a `module`) {#inside-a-module}
 
-在 `module` 內部，所有 `use` 宣告不論宣告順序如何均可使用。
+在 `module` 內部，所有 `use` 宣告都可使用，不受宣告順序影響。
 
 ```move
 module a::example;
@@ -161,13 +188,14 @@ fun new_vec(): vector<Option<u8>> {
 use std::option::{Option, some, none};
 ```
 
-在模組中透過 `use` 宣告的別名可於該模組內使用。
+由 `use` 在模組中宣告的別名可在該模組內使用。
 
-此外，引入的別名不能與其他模組成員衝突。詳情請參見[唯一性](#唯一性-uniqueness)。
+此外，導入的別名不得與其他模組成員衝突。如需更多詳細資訊，請參閱
+[唯一性](#uniqueness)。
 
-## 在運算式內部 (Inside an expression)
+## 運算式內部 (Inside an expression) {#inside-an-expression}
 
-你可以將 `use` 宣告新增到任何運算式區塊的開頭：
+你可以在任何運算式區塊的開頭加入 `use` 宣告。
 
 ```move
 module a::example;
@@ -183,7 +211,7 @@ fun new_vec(): vector<Option<u8>> {
 }
 ```
 
-與 `let` 一樣，在運算式區塊中由 `use` 引入的別名會在該區塊結束時移除。
+與 `let` 相同，`use` 在運算式區塊中引入的別名會在該區塊結束時移除。
 
 ```move
 module a::example;
@@ -202,7 +230,7 @@ fun new_vec(): vector<Option<u8>> {
 }
 ```
 
-嘗試在區塊結束後使用別名將導致錯誤：
+在區塊結束後嘗試使用該別名會產生錯誤。
 
 ```move
 fun new_vec(): vector<Option<u8>> {
@@ -220,7 +248,7 @@ fun new_vec(): vector<Option<u8>> {
 }
 ```
 
-任何 `use` 必須是區塊中的首個項目。如果 `use` 出現在任何運算式或 `let` 之後，將導致解析錯誤：
+任何 `use` 都必須是區塊中的第一個項目。若 `use` 位於任何運算式或 `let` 之後，將產生剖析錯誤。
 
 ```move
 {
@@ -229,11 +257,11 @@ fun new_vec(): vector<Option<u8>> {
 }
 ```
 
-這讓你在許多情況下可以縮短匯入區塊。請注意，這些匯入與之前的匯入一樣，都受後續章節描述的命名和唯一性規則約束。
+這可讓你在許多情況下縮短匯入區塊。請注意，這些匯入與前述匯入相同，皆須遵守後續章節所述的命名與唯一性規則。
 
-## 命名規則 (Naming rules)
+## 命名規則 (Naming rules) {#naming-rules}
 
-別名必須遵循與其他模組成員相同的規則。這意味著結構體（和常數）的別名必須以 `A` 到 `Z` 開頭。
+別名必須遵循與其他模組成員相同的規則。這表示，結構（以及常數）的別名必須以 `A` 到 `Z` 開頭。
 
 ```move
 module a::data {
@@ -251,11 +279,11 @@ module a::example {
 }
 ```
 
-## 唯一性 (Uniqueness)
+## 唯一性 (Uniqueness) {#uniqueness}
 
-在給定的作用域內，所有由 `use` 宣告引入的別名必須是唯一的。
+在指定範圍內，所有由 `use` 宣告引入的別名都必須是唯一的。
 
-對於模組而言，這意味著由 `use` 引入的別名不能重疊：
+對於模組而言，這表示由 `use` 引入的別名不可重疊：
 
 ```move
 module a::example;
@@ -269,7 +297,7 @@ use std::option::some as bar; // 錯誤！
 //                       ^^^ 重複的 'bar'
 ```
 
-而且，它們不能與模組的其他成員重疊：
+而且它們不得與模組的任何其他成員重疊：
 
 ```move
 module a::data {
@@ -284,11 +312,12 @@ module example {
 }
 ```
 
-在運算式區塊內部，它們不能相互重疊，但可以[遮蔽](#shadowing)來自外部作用域的其他別名或名稱。
+在運算式區塊內，它們不得彼此重疊，但可以
+[遮蔽](#shadowing) 外層範圍中的其他別名或名稱。
 
-## 遮蔽 (Shadowing) {#shadowing}
+## 名稱遮蔽 (Shadowing) {#shadowing}
 
-運算式區塊內部的 `use` 別名可以遮蔽來自外部作用域的名稱（模組成員或別名）。與區域變數的遮蔽一樣，遮蔽在運算式區塊結束時終止。
+運算式區塊內的 `use` 別名可以遮蔽外層作用域中的名稱（模組成員或別名）。如同區域變數的名稱遮蔽，遮蔽會在運算式區塊結束時結束；
 
 ```move
 module a::example;
@@ -330,9 +359,9 @@ fun example2(): WrappedVector {
 }
 ```
 
-## 未使用的 Use 或別名 (Unused Use or Alias)
+## 未使用的 Use 或別名 (Unused Use or Alias) {#unused-use-or-alias}
 
-未使用的 `use` 將導致警告：
+未使用的 `use` 會產生警告
 
 ```move
 module a::example;
