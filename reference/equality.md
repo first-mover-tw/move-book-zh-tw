@@ -1,22 +1,48 @@
 ---
-title: 等式 (Equality) | Reference
-description: Move 相等運算 (Move Equality Operations) 參考手冊：== 與 != 運算子、型別限制，以及數值與參考的比較規則。
+title: 相等性 (Equality) | 參考手冊
+description: Move 相等性操作 (Move equality operations) 參考手冊：`==` 和 `!=` 運算子、型別限制，以及值與參考的比較規則。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - equality
+  - reference
+questions:
+  - How does Equality work in Move?
+  - What is the syntax for Equality in Move?
+  - What is Operations in Move?
+  - What is Restrictions in Move?
+answer: 'Move equality operations reference: == and != operators, type restrictions, and comparison rules for values and references.'
+goal:
+  description: 'Reader understands move equality operations reference: == and != operators, type restrictions, and comparison rules for values and references'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 相等性 (Equality)
+# 相等性 (Equality) {#equality}
 
-Move 支援兩種相等性運算：`==` 和 `!=`
+Move 支援兩種相等性運算 `==` 與 `!=`
 
-## 運算 (Operations)
+## 運算 (Operations) {#operations}
 
-| 語法 | 運算               | 描述                                                    |
-| ---- | ------------------ | ------------------------------------------------------- |
-| `==` | 等於 (equal)       | 如果兩個運算元的值相同，則傳回 `true`，否則傳回 `false` |
-| `!=` | 不等於 (not equal) | 如果兩個運算元的值不同，則傳回 `true`，否則傳回 `false` |
+| 語法 | 運算   | 說明                                                    |
+| ---- | ------ | ------------------------------------------------------- |
+| `==` | 相等   | 若兩個運算元具有相同值，則回傳 `true`；否則回傳 `false` |
+| `!=` | 不相等 | 若兩個運算元具有不同值，則回傳 `true`；否則回傳 `false` |
 
-### 型別檢查 (Typing)
+### 型別檢查 (Typing) {#typing}
 
-等於 (`==`) 和不等於 (`!=`) 運算只有在兩個運算元型別相同時才能運作。
+相等（`==`）與不相等（`!=`）運算都僅在兩個運算元為相同型別時才能運作。
 
 ```move
 0 == 0; // `true`
@@ -24,7 +50,7 @@ Move 支援兩種相等性運算：`==` 和 `!=`
 b"hello" != x"00"; // `true`
 ```
 
-相等性和不相等性也適用於 _所有_ 使用者定義的型別！
+相等與不相等運算也適用於*所有*使用者自訂型別！
 
 ```move
 module 0::example;
@@ -42,18 +68,18 @@ fun always_false(): bool {
 }
 ```
 
-如果運算元的型別不同，則會出現型別檢查錯誤：
+若運算元具有不同型別，會發生型別檢查錯誤。
 
 ```move
 1u8 == 1u128; // 錯誤！
-//     ^^^^^ 預期型別為 'u8' 的參數
+//     ^^^^^ 預期型別為 'u8' 的引數
 b"" != 0; // 錯誤！
-//     ^ 預期型別為 'vector<u8>' 的參數
+//     ^ 預期型別為 'vector<u8>' 的引數
 ```
 
-### 參考的型別檢查 (Typing with references)
+### 使用參考進行型別檢查 (Typing with references) {#typing-with-references}
 
-在比較 [參考](./primitive-types/references) 時，參考的型別（不可變或可變）並不重要。這意味著你可以將同一個底層型別的不可變 `&` 參考與可變 `&mut` 參考進行比較。
+比較[參考](./primitive-types/references)時，參考的型別（不可變或可變）並不重要。這表示你可以將不可變的 `&` 參考與具有相同底層型別的可變 `&mut` 參考比較。
 
 ```move
 let i = &0;
@@ -65,7 +91,7 @@ m == m; // `true`
 i == i; // `true`
 ```
 
-上述程式碼等同於在需要的地方對每個可變參考套用顯式的凍結（freeze）：
+上述內容等同於在需要的位置，對每個可變參考明確套用 freeze。
 
 ```move
 let i = &0;
@@ -77,35 +103,35 @@ m == m; // `true`
 i == i; // `true`
 ```
 
-但同樣地，底層型別必須是相同的型別：
+但同樣地，底層型別必須相同。
 
 ```move
 let i = &0;
 let s = &b"";
 
 i == s; // 錯誤！
-//   ^ 預期型別為 '&u64' 的參數
+//   ^ 預期型別為 '&u64' 的引數
 ```
 
-### 自動借用 (Automatic Borrowing)
+### 自動借用 (Automatic Borrowing) {#automatic-borrowing}
 
-從 Move 2024 版本開始，如果其中一個運算元是參考而另一個不是，`==` 和 `!=` 運算子會自動借用該運算元。這意味著以下程式碼可以正常運作且不會報錯：
+從 Move 2024 版本開始，若其中一個運算元是參考、另一個不是，`==` 與 `!=` 運算子會自動借用其運算元。這表示下列程式碼可在沒有任何錯誤的情況下運作：
 
 ```move
 let r = &0;
 
-// 在所有情況下，`0` 都會被自動借用為 `&0`
+// 在所有情況中，`0` 都會自動借用為 `&0`
 r == 0; // `true`
 0 == r; // `true`
 r != 0; // `false`
 0 != r; // `false`
 ```
 
-這種自動借用始終是不可變借用。
+此自動借用一律為不可變借用。
 
-## 限制 (Restrictions)
+## 限制 (Restrictions) {#restrictions}
 
-`==` 和 `!=` 在比較時都會消耗值。因此，型別系統要求該型別必須具備 [`drop`](./abilities) 能力。請回想一下，如果不具備 [`drop` 能力](./abilities)，所有權必須在函式結束前轉移，且此類值只能在定義它們的模組內部被顯式銷毀。如果直接將這些值用於相等性 `==` 或不相等性 `!=` 比較，該值將被銷毀，這會違反 [`drop` 能力](./abilities) 的安全保證！
+`==` 與 `!=` 在比較值時都會消耗該值。因此，型別系統會強制要求型別必須具有 [`drop`](./abilities)。請回想，若沒有 [`drop` ability](./abilities)，所有權必須在函式結束前轉移，而此類值只能在其宣告模組內明確銷毀。若直接以此類值搭配相等 `==` 或不相等 `!=` 運算，該值將遭銷毀，進而破壞 [`drop` ability](./abilities) 的安全保證！
 
 ```move
 module 0::example;
@@ -113,25 +139,25 @@ module 0::example;
 public struct Coin has store { value: u64 }
 fun invalid(c1: Coin, c2: Coin) {
     c1 == c2 // 錯誤！
-//  ^^    ^^ 這些資產會被銷毀！
+//  ^^    ^^ 這些資產將被銷毀！
 }
 ```
 
-但是，程式設計師 _總是_ 可以先借用該值而不是直接比較值，且參考型別具備 [`drop` 能力](./abilities)。例如：
+不過，程式設計師*一律*可以先借用值，而非直接比較該值；且參考型別具有 [`drop` ability](./abilities)。例如：
 
 ```move
 module 0::example;
 
 public struct Coin has store { value: u64 }
 fun swap_if_equal(c1: Coin, c2: Coin): (Coin, Coin) {
-    let are_equal = &c1 == c2; // 有效，注意 `c2` 會被自動借用
+    let are_equal = &c1 == c2; // 有效，注意 `c2` 會自動借用
     if (are_equal) (c2, c1) else (c1, c2)
 }
 ```
 
-## 避免額外的複製 (Avoid Extra Copies)
+## 避免額外複製 (Avoid Extra Copies) {#avoid-extra-copies}
 
-雖然程式設計師 _可以_ 比較任何具備 [`drop`](./abilities) 能力的型別的任何值，但通常應該透過參考進行比較，以避免代價高昂的複製。
+雖然程式設計師*可以*比較任何型別具有 [`drop`](./abilities) 的值，但通常應透過參考比較，以避免成本高昂的複製。
 
 ```move
 let v1: vector<u8> = function_that_returns_vector();
@@ -147,7 +173,7 @@ assert!(copy s1 == copy s2, 42);
 use_two_foos(s1, s2);
 ```
 
-這段程式碼是完全可以接受的（假設 `Foo` 具備 [`drop`](./abilities) 能力），只是效率不高。標註的複製可以被移除並替換為借用：
+此程式碼完全可接受（假設 `Foo` 具有 [`drop`](./abilities)），但效率不佳。可移除突顯的複製，並改以借用取代：
 
 ```move
 let v1: vector<u8> = function_that_returns_vector();
@@ -163,4 +189,4 @@ assert!(&s1 == &s2, 42);
 use_two_foos(s1, s2);
 ```
 
-`==` 本身的效率保持不變，但移除了 `copy`，因此程式效率更高。
+`==` 本身的效率維持不變，但移除了 `copy`，因此程式會更有效率。

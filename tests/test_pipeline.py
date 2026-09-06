@@ -289,11 +289,13 @@ def test_translate_body_enforces_glossary_on_values():
     assert meta["description"] == "迴圈"
 
 
-# english-main 上「reference/constants.md 與其中文譯本結構一致」的最後一個
-# commit（2026-07-08）。tier() 比對的是 en_ref 上的結構，所以這個測試必須釘
-# 固定 commit —— 用活的 english-main 會在上游前進的那一刻永久轉紅（lessons
-# L3；本測試 2026-09-04 就是這樣紅的，tier 從 A 變 B）。
-_A_TIER_EN_REF = "c206591aa00e7c9cd7952a1c4e0eb7f82271945e"
+# 釘固定 commit 是為了不讓上游前進就把測試弄紅（lessons L3；本測試 2026-09-04
+# 這樣紅過一次）。**釘的規則**：這個 sha 必須是「manifest 記錄的 constants.md
+# blob 所在的那個 english-main commit」—— tier() 的 old_sha 讀活 manifest、
+# new_sha 讀 en_ref，兩者對不上就直接降 B。所以每次 constants.md 被重新排乾
+# （manifest entry 前進），這裡就要跟著往前釘一次，不是拿掉這個 pin。
+# 2026-09-06 第二次重釘：constants.md 進了 batch1，manifest 前進到 a7a0f97。
+_A_TIER_EN_REF = "29e332267ecbebb7682b5e8df186e1059664cf3d"
 
 
 def test_run_a_tier_file_with_legacy_body_defects_succeeds():

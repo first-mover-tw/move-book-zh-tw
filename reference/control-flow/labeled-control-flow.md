@@ -1,22 +1,50 @@
 ---
-title: 帶標籤的控制流 (Labeled Control Flow) | 參考手冊
-description: Move 具名控制流程參考手冊：named loops and blocks（具名迴圈與區塊）、帶標籤的 break、從具名區塊 return。
+title: 具標籤的控制流程 (Labeled Control Flow) | 參考手冊
+description: Move 標籤控制流程參考手冊：具名迴圈與區塊、使用標籤中斷，以及從具名區塊回傳。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - labeled
+  - control
+  - flow
+  - reference
+questions:
+  - How does Labeled Control Flow work in Move?
+  - What is the syntax for Labeled Control Flow in Move?
+  - What is Loops in Move?
+  - What is Labeled Blocks in Move?
+answer: 'Move labeled control flow reference: named loops and blocks, break with labels, and return from named blocks.'
+goal:
+  description: 'Reader understands move labeled control flow reference: named loops and blocks, break with labels, and return from named blocks'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 帶標籤的控制流 (Labeled Control Flow)
+# 標籤式控制流程 (Labeled Control Flow) {#labeled-control-flow}
 
-Move 在編寫迴圈和程式碼區塊時支援帶標籤的控制流，允許你對迴圈執行 `break` 和 `continue`，以及從區塊中 `return`（這在存在巨集的情況下特別有用）。
+Move 在撰寫迴圈與程式碼區塊時支援標籤式控制流程，讓你可以對迴圈使用 `break` 和 `continue`，並從區塊中 `return`（這在使用巨集時尤其有幫助）。
 
-## 迴圈 (Loops)
+## 迴圈 (Loops) {#loops}
 
-迴圈標籤允許你定義並將控制權轉移到函式中的特定標籤。例如，我們可以巢狀兩個迴圈，並在這些標籤上使用 `break` 和 `continue` 來精確指定控制流。你可以在任何 `loop` 或 `while` 形式前加上 `'label:` 形式，以便直接在那裡進行中斷或繼續。
+迴圈可讓你在函式中定義並將控制權轉移至特定標籤。例如，我們可以巢狀使用兩個迴圈，並搭配這些標籤使用 `break` 和 `continue`，以精確指定控制流程。你可以在任何 `loop` 或 `while` 形式前加上 `'label:` 形式，以便直接在該處中斷或繼續迴圈。
 
-為了演示這種行為，考慮一個函式，它接受數字的巢狀向量（即 `vector<vector<u64>>`），以便針對某個閾值進行加總，其行為如下：
+為了示範此行為，請考慮一個接受巢狀數字向量（即 `vector<vector<u64>>`）並針對某個閾值加總的函式，其行為如下：
 
-- 如果所有數字的總和低於閾值，則回傳該總和。
-- 如果將數字加到當前總和會超過閾值，則回傳當前總和。
+- 若所有數字的總和低於閾值，則回傳該總和。
+- 若將一個數字加到目前總和會超過閾值，則回傳目前總和。
 
-我們可以透過將向量的向量作為巢狀迴圈進行迭代並標記外部迴圈來編寫此功能。如果內部迴圈中的任何一次加法會使我們超過閾值，我們可以使用帶有外部標籤的 `break` 來同時逃離兩個迴圈：
+我們可以透過巢狀迴圈走訪向量的向量，並為外層迴圈加上標籤來撰寫此函式。若內層迴圈中的任何加法會使總和超過閾值，我們可以搭配外層標籤使用 `break`，一次跳出兩個迴圈：
 
 ```move
 fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
@@ -25,7 +53,7 @@ fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
     let input_size = input.length();
 
     'outer: loop {
-        // 中斷至 outer 標籤，因為它是最近的封閉迴圈
+        // 中斷至 outer，因為它是最近的外層迴圈
         if (i >= input_size) break sum;
 
         let vec = &input[i];
@@ -37,8 +65,8 @@ fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
             if (sum + v_entry < threshold) {
                 sum = sum + v_entry;
             } else {
-                // 我們看到的下一個元素會突破閾值，
-                // 因此我們回傳當前總和
+                // 下一個遇到的元素會超過閾值，
+                // 因此我們回傳目前的總和
                 break 'outer sum
             };
             j = j + 1;
@@ -48,7 +76,7 @@ fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
 }
 ```
 
-這類標籤也可以用於巢狀迴圈形式，在較大的程式碼主體中提供精確控制。例如，如果我們正在處理一個大型表格，其中每個項目都需要可能看到我們繼續內部或外部迴圈的迭代，我們可以使用標籤來表達：
+這類標籤也可以搭配巢狀迴圈形式使用，為較大的程式碼主體提供精確控制。例如，若我們正在處理大型資料表，其中每個項目都需要迭代，且可能需要繼續內層或外層迴圈，我們可以使用標籤來表達該程式碼：
 
 ```move
 let x = 'outer: loop {
@@ -65,8 +93,8 @@ let x = 'outer: loop {
 };
 ```
 
-> 使用巨集 (Macros) 而非迴圈 (Loops) 是一種更好的方式，同樣地，使用 `return` 來控制流程。
-> 就像上面的函式 `sum_until_threshold`，可以使用 `macro` 重寫：
+> 相較於迴圈，這是使用巨集的更好方式；同樣地，可使用 `return` 控制流程。
+> 如同上方的 `sum_until_threshold` 函式，可使用 `macro` 改寫它：
 
 ```move
 fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
@@ -78,9 +106,9 @@ fun sum_until_threshold(input: &vector<vector<u64>>, threshold: u64): u64 {
 }
 ```
 
-## 命名區塊 (Labeled Blocks)
+## 標籤式區塊 (Labeled Blocks) {#labeled-blocks}
 
-帶標籤的區塊允許你編寫包含函式內非局部 (non-local) 控制流的 Move 程式，包括在巨集 lambda 內部以及回傳數值：
+標籤式區塊可讓你撰寫包含函式內非區域控制流程的 Move 程式，包括在巨集 lambda 內部以及回傳值：
 
 ```move
 fun named_return(n: u64): vector<u8> {
@@ -94,9 +122,9 @@ fun named_return(n: u64): vector<u8> {
 }
 ```
 
-在這個簡單的範例中，程式檢查輸入 `n` 是否為偶數。如果是，程式將帶著數值 `b"even"` 離開標記為 `'a:` 的區塊。如果不是，程式碼將繼續，並以數值 `b"odd"` 結束標記為 `'a:` 的區塊。最後，我們將 `x` 設定為該數值並回傳。
+在這個簡單範例中，程式會檢查輸入的 `n` 是否為偶數。若是，程式會以值 `b"even"` 離開標記為 `'a:` 的區塊。若否，程式碼會繼續執行，並以值 `b"odd"` 結束標記為 `'a:` 的區塊。最後，我們將該值設定給 `x`，然後回傳它。
 
-這種控制流功能也跨越巨集主體。例如，假設我們想編寫一個函式來尋找向量中第一個偶數，且我們有一個 `for_ref` 巨集可以在迴圈中迭代向量元素：
+此控制流程功能也可跨越巨集主體運作。例如，假設我們想撰寫一個函式來尋找向量中的第一個偶數，且我們有一個會在迴圈中走訪向量元素的巨集 `for_ref`：
 
 ```move
 macro fun for_ref<$T>($vs: &vector<$T>, $f: |&$T|) {
@@ -110,7 +138,7 @@ macro fun for_ref<$T>($vs: &vector<$T>, $f: |&$T|) {
 }
 ```
 
-利用 `for_ref` 和標籤，我們可以編寫一個傳遞給 `for_ref` 的 lambda 運算式，該運算式將逃離迴圈，並回傳它找到的第一個偶數：
+使用 `for_ref` 和標籤，我們可以撰寫一個 lambda 運算式並傳遞給 `for_ref`，使其跳出迴圈並回傳找到的第一個偶數：
 
 ```move
 fun find_first_even(vs: vector<u64>): Option<u64> {
@@ -121,26 +149,26 @@ fun find_first_even(vs: vector<u64>): Option<u64> {
 }
 ```
 
-此函式將迭代 `vs` 直到找到偶數，並回傳該數值（如果不存在偶數則回傳 `option::none()`）。這使得命名標籤成為與控制流巨集（如 `for!`）互動的強大工具，允許你在這些上下文中自訂迭代行為。
+此函式會走訪 `vs`，直到找到偶數並回傳該值（若不存在偶數則回傳 `option::none()`）。這使具名標籤成為與 `for!` 等控制流程巨集互動的強大工具，讓你可以在這些情境中自訂迭代行為。
 
-## 限制
+## 限制 (Restrictions) {#restrictions}
 
-為了釐清程式行為，你只能在迴圈標籤中使用 `break` 和 `continue`，而 `return` 僅適用於區塊標籤。為此，以下程式會產生錯誤：
+為了明確程式行為，你只能將 `break` 和 `continue` 用於迴圈標籤，而 `return` 僅能搭配區塊標籤使用。因此，下列程式會產生錯誤：
 
 ```move
 fun bad_loop() {
     'name: loop {
         return 'name 5
-            // ^^^^^ 在迴圈區塊標籤中無效地使用了 'return'
+            // ^^^^^ 將 'return' 用於迴圈區塊標籤的用法無效
     }
 }
 
 fun bad_block() {
     'name: {
         continue 'name;
-              // ^^^^^ 在區塊標籤中無效地使用了 'continue'
+              // ^^^^^ 將 'break' 用於迴圈區塊標籤的用法無效
         break 'name;
-           // ^^^^^ 在區塊標籤中無效地使用了 'break'
+           // ^^^^^ 將 'break' 用於迴圈區塊標籤的用法無效
     }
 }
 ```

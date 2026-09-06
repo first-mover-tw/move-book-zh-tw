@@ -1,36 +1,64 @@
 ---
-title: 布林值 (Bool) | 參考手冊
-description: 布林值型別參考 (bool)：true 與 false 字面值、邏輯運算子 (and, or, not)，以及布林運算式語意。
+title: 布林 (Bool) | 參考手冊
+description: Move 布林 (bool) 型別參考：`true` 與 `false` 常值、邏輯運算子（and、or、not），以及布林運算式語意。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - bool
+  - reference
+questions:
+  - How does Bool work in Move?
+  - What is the syntax for Bool in Move?
+  - What is Literals in Move?
+  - What is Operations in Move?
+answer: 'Move bool type reference: true and false literals, logical operators (and, or, not), and boolean expression semantics.'
+goal:
+  description: 'Reader understands move bool type reference: true and false literals, logical operators (and, or, not), and boolean expression semantics'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 布林值 (Bool)
+# 真偽值 (Bool) {#bool}
 
-`bool` 是 Move 的布林值原生型別，包含 `true` 和 `false` 數值。
+`bool` 是 Move 用於布林 `true` 與 `false` 值的基本型別。
 
-## 常值 (Literals)
+## 常值 (Literals) {#literals}
 
 `bool` 的常值為 `true` 或 `false`。
 
-## 操作
+## 運算 (Operations) {#operations}
 
-### 邏輯運算
+### 邏輯運算 (Logical) {#logical}
 
-`bool` 支援三種邏輯操作：
+`bool` 支援三種邏輯運算：
 
-| 語法                      | 描述                      | 等效運算式                                                |
-| ------------------------- | ------------------------- | --------------------------------------------------------- |
-| `&&`                      | 短路邏輯與 (logical and)  | `p && q` 等同於 `if (p) q else false`                     |
-| <code>&vert;&vert;</code> | 短路邏輯或 (logical or)   | <code>p &vert;&vert; q</code> 等同於 `if (p) true else q` |
-| `!`                       | 邏輯非 (logical negation) | `!p` 等同於 `if (p) false else true`                      |
+| 語法                      | 說明         | 等價運算式                                                |
+| ------------------------- | ------------ | --------------------------------------------------------- |
+| `&&`                      | 短路邏輯 AND | `p && q` 等價於 `if (p) q else false`                     |
+| <code>&vert;&vert;</code> | 短路邏輯 OR  | <code>p &vert;&vert; q</code> 等價於 `if (p) true else q` |
+| `!`                       | 邏輯否定     | `!p` 等價於 `if (p) false else true`                      |
 
-### 控制流
+### 控制流程 (Control Flow) {#control-flow}
 
-`bool` 數值用於多個 Move 的控制流結構：
+`bool` 值可用於數種 Move 的控制流程建構：
 
 - [`if (bool) { ... }`](./../control-flow/conditionals)
 - [`while (bool) { .. }`](./../control-flow/loops)
 - [`assert!(bool, u64)`](./../abort-and-assert)
 
-## 所有權 (Ownership)
+## 所有權 (Ownership) {#ownership}
 
-與語言中內建的其他純量值 (scalar values) 一樣，布林值是隱式可複製的，這意味著它們可以在沒有明確指令（如 [`copy`](.././variables#move-and-copy)）的情況下被複製。
+與語言內建的其他純量值相同，真偽值可隱含複製，
+也就是可以在不使用明確指令（例如
+[`copy`](.././variables#move-and-copy)）的情況下複製。
