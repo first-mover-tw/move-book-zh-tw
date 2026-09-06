@@ -1,19 +1,46 @@
 ---
-title: 已棄用：友元 (Friends) | Reference
-description: Move 好友參考手冊 (已淘汰)：被 Move 2024 中 public(package) 可見性取代的舊版 friend 語法。
+title: 朋友 (Friends) | 參考手冊
+description: Move 朋友 (friends) 參考手冊（已淘汰）：舊版朋友語法已由 Move 2024 中的 `public(package)` 可見性取代。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - friends
+  - reference
+questions:
+  - How does Friends work in Move?
+  - What is the syntax for Friends in Move?
+  - What is Friend declaration in Move?
+answer: 'Move friends reference (deprecated): the legacy friend syntax replaced by public(package) visibility in Move 2024.'
+goal:
+  description: 'Reader understands move friends reference (deprecated): the legacy friend syntax replaced by public(package) visibility in Move 2024'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 【已棄用】：友元 (DEPRECATED: Friends)
+# 已淘汰：友元 (DEPRECATED: Friends) {#deprecated-friends}
 
-注意：此功能已被 [`public(package)`](./functions#visibility) 取代。
+注意：此功能已由 [`public(package)`](./functions#visibility) 取代。
 
-`friend` 語法曾用於宣告被當前模組信任的其他模組。受信任的模組允許呼叫當前模組中定義的任何具有 `public(friend)` 能見度的函式。有關函式能見度的詳細資訊，請參見 [函式](./functions) 中的 _能見度（Visibility）_ 章節。
+`friend` 語法用於宣告目前模組所信任的模組。受信任的模組可以呼叫目前模組中任何具有 `public(friend)`
+可見性的函式。如需函式可見性的詳細資訊，請參閱
+[函式](./functions)中的 _可見性_ 章節。
 
-## 友元宣告 (Friend declaration)
+## 友元宣告 (Friend declaration) {#friend-declaration}
 
 模組可以透過友元宣告陳述式將其他模組宣告為友元，格式如下：
 
-- `friend <address::name>` —— 使用完整限定的模組名稱進行友元宣告，如下例所示：
+- `friend <address::name>` — 使用完整限定模組名稱的友元宣告，如以下範例所示；或
 
   ```move
   module 0x42::a {
@@ -21,7 +48,7 @@ description: Move 好友參考手冊 (已淘汰)：被 Move 2024 中 public(pack
   }
   ```
 
-- `friend <module-name-alias>` —— 使用模組名稱別名進行友元宣告，其中的模組別名是透過 `use` 陳述式引入的。
+- `friend <module-name-alias>` — 使用模組名稱別名的友元宣告，其中模組別名是透過 `use` 陳述式引入。
 
   ```move
   module 0x42::a {
@@ -30,7 +57,8 @@ description: Move 好友參考手冊 (已淘汰)：被 Move 2024 中 public(pack
   }
   ```
 
-一個模組可以有多個友元宣告，所有友元模組的聯集形成友元清單。在下例中，`0x42::B` 和 `0x42::C` 都被視為 `0x42::A` 的友元。
+一個模組可以有多個友元宣告，所有友元模組的聯集會形成友元清單。在以下範例中，`0x42::B` 和 `0x42::C`
+都被視為 `0x42::A` 的友元。
 
 ```move
 module 0x42::a;
@@ -39,23 +67,25 @@ friend 0x42::b;
 friend 0x42::c;
 ```
 
-與 `use` 陳述式不同，`friend` 只能在模組作用域中宣告，而不能在運算式區塊作用域中宣告。`friend` 宣告可以位於任何允許頂層結構（如 `use`、`function`、`struct` 等）的地方。然而，為了可讀性，建議將友元宣告放置在模組定義的開頭附近。
+不同於 `use` 陳述式，`friend` 只能在模組範圍內宣告，不能在運算式區塊範圍內宣告。`friend`
+宣告可以位於任何允許頂層建構（例如 `use`、`function`、`struct` 等）的位置。不過，為了可讀性，建議將友元
+宣告放在模組定義的開頭附近。
 
-### 友元宣告規則 (Friend declaration rules)
+### 友元宣告規則 (Friend declaration rules) {#friend-declaration-rules}
 
-友元宣告須遵循以下規則：
+友元宣告須遵守下列規則：
 
-- 模組不能將自己宣告為友元。
+- 模組不能將自身宣告為友元。
 
   ```move
   module 0x42::m { friend Self; // 錯誤！ }
-  //                      ^^^^ 不能將模組本身宣告為友元
+  //                      ^^^^ 不能將模組自身宣告為友元
 
   module 0x43::m { friend 0x43::M; // 錯誤！ }
-  //                      ^^^^^^^ 不能將模組本身宣告為友元
+  //                      ^^^^^^^ 不能將模組自身宣告為友元
   ```
 
-- 友元模組必須能被編譯器識別。
+- 編譯器必須知道友元模組。
 
   ```move
   module 0x42::m { friend 0x42::nonexistent; // 錯誤！ }
@@ -68,12 +98,15 @@ friend 0x42::c;
   module 0x42::m {}
 
   module 0x42::n { friend 0x42::m; // 錯誤！ }
-  //                      ^^^^^^^ 不能將當前地址以外的模組宣告為友元
+  //                      ^^^^^^^ 不能將目前地址以外的模組宣告為友元
   ```
 
-- 友元關係不能建立環狀 (cyclic) 模組依賴。
+- 友元關係不能建立迴圈模組依賴項。
 
-  友元關係中不允許環狀關係，例如不允許 `0x2::a` 友元 `0x2::b` 友元 `0x2::c` 友元 `0x2::a` 這樣的關係。更廣義地說，宣告一個友元模組會為該友元模組新增一個對當前模組的依賴（因為目的是讓友元能呼叫當前模組中的函式）。如果該友元模組已被直接或間接使用，則會建立環狀依賴。
+  友元關係不允許迴圈，例如，`0x2::a` 將 `0x2::b` 視為友元，`0x2::b` 將 `0x2::c` 視為友元，
+  `0x2::c` 又將 `0x2::a` 視為友元的關係不被允許。更一般地說，宣告友元模組會將目前模組的依賴項加入
+  至友元模組（因為其目的是讓友元呼叫目前模組中的函式）。若該友元模組已被直接或間接使用，便會建立
+  迴圈依賴項。
 
   ```move
   module 0x2::a {
@@ -87,7 +120,7 @@ friend 0x42::c;
 
   module 0x2::b {
       friend 0x2::c; // 錯誤！
-  //         ^^^^^^ 此友元關係建立了環狀依賴：'0x2::b' 是 '0x2::a' 的友元，後者使用了 '0x2::c'，而 '0x2::c' 是 '0x2::b' 的友元
+  //         ^^^^^^ 此友元關係建立了依賴項循環：'0x2::b' 是 '0x2::a' 的友元，後者使用 '0x2::c'，而 '0x2::c' 是 '0x2::b' 的友元
   }
 
   module 0x2::c {
@@ -95,7 +128,7 @@ friend 0x42::c;
   }
   ```
 
-- 模組的友元清單不能包含重複項。
+- 模組的友元清單不能包含重複項目。
 
   ```move
   module 0x42::a {}
@@ -104,6 +137,6 @@ friend 0x42::c;
       use 0x42::a as aliased_a;
       friend 0x42::A;
       friend aliased_a; // 錯誤！
-  //         ^^^^^^^^^ 重複的友元宣告 '0x42::a'。模組中的友元宣告必須唯一
+  //         ^^^^^^^^^ 重複的友元宣告 '0x42::a'。模組中的友元宣告必須是唯一的
   }
   ```

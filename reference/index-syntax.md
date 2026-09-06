@@ -1,18 +1,44 @@
 ---
-title: 索引語法 (Index Syntax) | 參考
-description: 'Move 索引語法參考 (Move Index Syntax Reference)：對自訂型別使用 bracket notation，搭配
-  #[syntax(index)] attribute 以達成直覺的存取模式。'
+title: 索引語法 (Index Syntax) | 參考手冊
+description: 'Move 索引語法 (index syntax) 參考資料：使用方括號標記法 (bracket notation)，針對具有 #[syntax(index)] 屬性的自訂型別 (custom types)，實現直覺的存取模式 (access patterns)。'
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - index
+  - syntax
+  - reference
+questions:
+  - How does Index Syntax work in Move?
+  - What is the syntax for Index Syntax in Move?
+  - What is Usage in Move?
+  - What is Defining Index Syntax Functions in Move?
+answer: 'Move index syntax reference: use bracket notation for custom types with #[syntax(index)] attribute for intuitive access patterns.'
+goal:
+  description: 'Reader understands move index syntax reference: use bracket notation for custom types with #[syntax(index)] attribute for intuitive access patterns'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 索引語法 (Index Syntax)
+# 索引語法 (Index Syntax) {#index-syntax}
 
-Move 提供的語法屬性（syntax attributes）允許你定義看起來和感覺起來都像原生 Move 程式碼的操作，並將這些操作轉化為你提供的使用者定義。
+Move 提供語法屬性，讓你可以定義外觀與使用方式如同原生 Move 原始碼的操作，並將這些操作降低為你提供的定義。
 
-我們的第一個語法方法 `index` 允許你定義一組操作，這些操作可以作為你的資料型別的自訂索引存取器，例如透過對應的索引操作標註函式，將矩陣元素存取為 `m[i,j]`。此外，這些定義是針對特定型別的，並且隱式地開放給任何使用該型別的程式設計師。
+我們的第一個語法方法 `index`，讓你可以透過為應用於這些索引操作的函式加上註記，定義一組可作為資料型別自訂索引存取子的操作，例如以 `m[i,j]` 存取矩陣元素。此外，這些定義會針對各個型別量身訂做，且任何使用你型別的程式設計師都能隱含使用。
 
-## 概覽與總結 (Overview and Summary)
+## 概觀與總結 (Overview and Summary) {#overview-and-summary}
 
-首先，考慮一個使用向量的向量來表示其值的 `Matrix` 型別。你可以在 `borrow` 和 `borrow_mut` 函式上使用 `index` 語法標註來編寫一個小型庫，如下所示：
+首先，考慮一個使用向量的向量來表示其值的 `Matrix` 型別。你可以透過在 `borrow` 與 `borrow_mut` 函式上使用 `index` 語法註記，撰寫一個小型函式庫，如下所示：
 
 ```move
 module matrix::matrix;
@@ -34,14 +60,14 @@ public fun make_matrix<T>(v: vector<vector<T>>):  Matrix<T> {
 }
 ```
 
-現在，任何使用此 `Matrix` 型別的人都可以對其使用索引語法：
+現在，任何使用此 `Matrix` 型別的人都可使用其索引語法：
 
 ```move
 let mut m = matrix::make_matrix(vector[
     vector[1, 0, 0],
     vector[0, 1, 0],
     vector[0, 0, 1],
-]);
+]);x
 
 let mut i = 0;
 while (i < 3) {
@@ -59,31 +85,31 @@ while (i < 3) {
 }
 ```
 
-## 用法 (Usage)
+## 使用方式 (Usage) {#usage}
 
-正如範例所示，如果你定義了一個資料型別和相關的索引語法方法，任何人都可以透過在該型別的值上編寫索引語法來呼叫該方法：
+如範例所示，如果你定義資料型別及其關聯的索引語法方法，任何人都可以藉由在該型別的值上撰寫索引語法來呼叫該方法：
 
 ```move
 let mat = matrix::make_matrix(...);
 let m_0_0 = mat[0, 0];
 ```
 
-在編譯期間，編譯器會根據運算式的位置和可變用法，將這些轉換為適當的函式呼叫：
+在編譯期間，編譯器會根據運算式的位置與可變使用方式，將其轉譯為適當的函式呼叫：
 
 ```move
 let mut mat = matrix::make_matrix(...);
 
 let m_0_0 = mat[0, 0];
-// 轉換為 `copy matrix::borrow(&mat, 0, 0)`
+// 轉譯為 `copy matrix::borrow(&mat, 0, 0)`
 
 let m_0_0 = &mat[0, 0];
-// 轉換為 `matrix::borrow(&mat, 0, 0)`
+// 轉譯為 `matrix::borrow(&mat, 0, 0)`
 
 let m_0_0 = &mut mat[0, 0];
-// 轉換為 `matrix::borrow_mut(&mut mat, 0, 0)`
+// 轉譯為 `matrix::borrow_mut(&mut mat, 0, 0)`
 ```
 
-你也可以將索引運算式與欄位存取混合使用：
+你也可以將索引運算式與欄位存取交錯使用：
 
 ```move
 public struct V { v: vector<u64> }
@@ -92,13 +118,13 @@ public struct Vs { vs: vector<V> }
 
 fun borrow_first(input: &Vs): &u64 {
     &input.vs[0].v[0]
-    // 轉換為 `vector::borrow(&vector::borrow(&input.vs, 0).v, 0)`
+    // 轉譯為 `vector::borrow(&vector::borrow(&input.vs, 0).v, 0)`
 }
 ```
 
-### 索引函式接受靈活的參數 (Index Functions Take Flexible Arguments)
+### 索引函式可接受彈性的引數 (Index Functions Take Flexible Arguments) {#index-functions-take-flexible-arguments}
 
-請注意，除了本章其餘部分描述的定義和型別限制外，Move 對你的索引語法方法作為參數接受的值沒有任何限制。這允許你在定義索引語法時實作複雜的程式行為，例如一個在索引超出範圍時接受預設值的資料結構：
+請注意，除了本章其餘部分所述的定義與型別限制外，Move 對你的索引語法方法可接受作為參數的值沒有任何限制。這讓你能在定義索引語法時實作複雜的程式化行為，例如當索引超出範圍時使用預設值的資料結構：
 
 ```move
 #[syntax(index)]
@@ -116,7 +142,7 @@ public fun borrow_or_set<Key: copy, Value: drop>(
 }
 ```
 
-現在，當你索引進入 `MTable` 時，你也必須提供一個預設值：
+現在，當你索引 `MTable` 時，也必須提供預設值：
 
 ```move
 let string_key: String = ...;
@@ -124,53 +150,53 @@ let mut table: MTable<String, u64> = m_table::make_table();
 let entry: &mut u64 = &mut table[string_key, 0];
 ```
 
-這種可延伸的能力允許你為自己的型別編寫精確的索引介面，具體地強制執行自訂行為。
+這類可擴充的能力讓你能為型別撰寫精確的索引介面，明確強制實施量身打造的行為。
 
-## 定義索引語法函式 (Defining Index Syntax Functions)
+## 定義索引語法函式 (Defining Index Syntax Functions) {#defining-index-syntax-functions}
 
-這種強大的語法形式允許你的所有使用者定義資料型別都以這種方式運作，前提是你的定義遵循以下規則：
+這種強大的語法形式可讓所有你自訂的資料型別以此方式運作，前提是你的定義符合下列規則：
 
-1. `#[syntax(index)]` 屬性被新增到與主體型別定義在同一個模組中的指定函式上。
-1. 指定的函式具有 `public` 能見度。
-1. 函式接受一個參考型別作為其主體型別（其第一個參數），並傳回一個匹配的參考型別（如果主體是 `mut`，則傳回 `mut`）。
-1. 每個型別只有一個可變定義和一個不可變定義。
-1. 不可變和可變版本具有型別一致性：
-   - 主體型別匹配，僅在可變性上有所不同。
-   - 傳回型別與其主體型別的可變性匹配。
-   - 型別參數（如果存在）在兩個版本之間具有相同的約束。
-   - 除主體型別外的所有參數都相同。
+1. 在與目標型別相同的模組中，於指定函式加上 `#[syntax(index)]` 屬性。
+1. 指定函式具有 `public` 可見性。
+1. 函式以參考型別作為其目標型別（第一個引數），並回傳相符的參考型別（若目標為 `mut`，則回傳 `mut`）。
+1. 每個型別只能有一個可變定義與一個不可變定義。
+1. 不可變與可變版本必須在型別上相符：
+   - 目標型別相符，僅可變性不同。
+   - 回傳型別需符合其目標型別的可變性。
+   - 若有型別參數，兩個版本的約束必須完全相同。
+   - 除目標型別外的所有參數必須完全相同。
 
-以下內容和附加範例詳細描述了這些規則。
+以下內容與額外範例會更詳細地說明這些規則。
 
-### 宣告 (Declaration)
+### 宣告 (Declaration) {#declaration}
 
-要宣告一個索引語法方法，請在與主體型別定義相同的模組中，將 `#[syntax(index)]` 屬性新增到相關函式定義上方。這會向編譯器發出信號，表明該函式是指定型別的索引存取器。
+若要宣告索引語法方法，請在目標型別定義所在的相同模組中，於相關函式定義上方加入 `#[syntax(index)]` 屬性。這會向編譯器表示該函式是指定型別的索引存取子。
 
-#### 不可變存取器 (Immutable Accessor)
+#### 不可變存取子 (Immutable Accessor) {#immutable-accessor}
 
-不可變索引語法方法是為唯讀存取而定義的。它接受主體型別的不可變參考，並傳回元素型別的不可變參考。`std::vector` 中定義的 `borrow` 函式就是一個例子：
+不可變索引語法方法是為唯讀存取而定義。它接受目標型別的不可變參考，並回傳元素型別的不可變參考。`std::vector` 中定義的 `borrow` 函式即為範例：
 
 ```move
 #[syntax(index)]
 public native fun borrow<Element>(v: &vector<Element>, i: u64): &Element;
 ```
 
-#### 可變存取器 (Mutable Accessor)
+#### 可變存取子 (Mutable Accessor) {#mutable-accessor}
 
-可變索引語法方法與不可變方法成對，允許讀取和寫入操作。它接受主體型別的可變參考，並傳回元素型別的可變參考。`std::vector` 中定義的 `borrow_mut` 函式就是一個例子：
+可變索引語法方法是不可變版本的對應方法，可同時進行讀取與寫入操作。它接受目標型別的可變參考，並回傳元素型別的可變參考。`std::vector` 中定義的 `borrow_mut` 函式即為範例：
 
 ```move
 #[syntax(index)]
 public native fun borrow_mut<Element>(v: &mut vector<Element>, i: u64): &mut Element;
 ```
 
-#### 能見度 (Visibility)
+#### 可見性 (Visibility) {#visibility}
 
-為了確保索引函式在任何使用該型別的地方都可用，所有索引語法方法都必須具有公開（public）能見度。這確保了在 Move 的模組和套件中都能人體工學地使用索引。
+為確保可在型別使用的任何位置使用索引函式，所有索引語法方法都必須具有 public 可見性。這可確保在 Move 的模組與套件間以便利方式使用索引功能。
 
-#### 無重複 (No Duplicates)
+#### 不可重複 (No Duplicates) {#no-duplicates}
 
-除了上述要求外，我們限制每個主體基本型別只能定義一個不可變參考的索引語法方法和一個可變參考的索引語法方法。例如，你不能為多載（polymorphic）型別定義一個專門化版本：
+除了上述要求外，我們限制每個目標基礎型別只能為不可變參考定義一個索引語法方法，並為可變參考定義一個索引語法方法。例如，你無法為多型型別定義特化版本：
 
 ```move
 #[syntax(index)]
@@ -178,53 +204,54 @@ public fun borrow_matrix_u64(s: &Matrix<u64>, i: u64, j: u64): &u64 { ... }
 
 #[syntax(index)]
 public fun borrow_matrix<T>(s: &Matrix<T>, i: u64, j: u64): &T { ... }
-    // 錯誤！Matrix 已經有一個不可變索引語法方法的定義
+    // 錯誤！Matrix 已經定義了
+    // 其不可變索引語法方法
 ```
 
-這確保了你始終可以分辨出哪個方法被呼叫，而無需檢查型別實例化。
+這可確保你永遠能判斷呼叫的是哪個方法，而無須檢查型別具現化。
 
-### 型別約束 (Type Constraints)
+### 型別約束 (Type Constraints) {#type-constraints}
 
-預設情況下，索引語法方法具有以下型別約束：
+預設情況下，索引語法方法具有下列型別約束：
 
-**其主體型別（第一個參數）必須是對與標註函式定義在同一個模組中的單一型別的參考。** 這意味著你不能為元組、型別參數或值定義索引語法方法：
+**其目標型別（第一個引數）必須是對單一型別的參考，且該型別定義於與標記函式相同的模組中。** 這表示你無法為 tuple、型別參數或值定義索引語法方法：
 
 ```move
 #[syntax(index)]
 public fun borrow_fst(x: &(u64, u64), ...): &u64 { ... }
-    // 錯誤，因為主體型別是元組
+    // 因為目標型別是 tuple，所以發生錯誤
 
 #[syntax(index)]
 public fun borrow_tyarg<T>(x: &T, ...): &T { ... }
-    // 錯誤，因為主體型別是型別參數
+    // 因為目標型別是型別參數，所以發生錯誤
 
 #[syntax(index)]
 public fun borrow_value(x: Matrix<u64>, ...): &u64 { ... }
-    // 錯誤，因為 x 不是參考
+    // 因為 x 不是參考，所以發生錯誤
 ```
 
-**主體型別必須與傳回型別的可變性匹配。** 此限制允許你釐清將索引運算式借用為 `&vec[i]` 與 `&mut vec[i]` 時的預期行為。Move 編譯器使用可變性標記來確定呼叫哪個借用形式以產生適當可變性的參考。因此，我們不允許主體和傳回可變性不同的索引語法方法：
+**目標型別必須與回傳型別具有相同的可變性。** 此限制可讓你在將已索引運算式借用為 `&vec[i]` 或 `&mut vec[i]` 時，明確表達預期行為。Move 編譯器會使用可變性標記來決定要呼叫哪種借用形式，以產生具有適當可變性的參考。因此，我們不允許目標與回傳可變性不同的索引語法方法：
 
 ```move
 #[syntax(index)]
 public fun borrow_imm(x: &mut Matrix<u64>, ...): &u64 { ... }
     // 錯誤！可變性不相容
-    // 預期傳回型別為可變參考 '&mut'
+    // 預期回傳可變參考型別 '&mut'
 ```
 
-### 型別相容性 (Type Compatibility)
+### 型別相容性 (Type Compatibility) {#type-compatibility}
 
-在定義不可變和可變索引語法方法對時，它們受多個相容性約束限制：
+定義一組不可變與可變索引語法方法時，它們必須符合多項相容性約束：
 
-1. 它們必須接受相同數量的型別參數，且這些型別參數必須具有相同的約束。
-1. 型別參數必須 _按位置_（而非按名稱）以相同的方式使用。
-1. 它們的主體型別必須除可變性外完全匹配。
-1. 它們的傳回型別必須除可變性外完全匹配。
-1. 所有其他參數型別必須完全匹配。
+1. 必須接受相同數量的型別參數，且這些型別參數必須具有相同的約束。
+1. 型別參數必須依據其 _位置_ 而非名稱以相同方式使用。
+1. 除可變性外，其目標型別必須完全相符。
+1. 除可變性外，其回傳型別必須完全相符。
+1. 所有其他參數型別必須完全相符。
 
-這些約束是為了確保索引語法無論在可變還是不可變位置其行為都完全相同。
+這些約束旨在確保索引語法無論位於可變或不可變位置時，行為都完全一致。
 
-為了說明其中一些錯誤，回顧之前的 `Matrix` 定義：
+為說明其中一些錯誤，請回想先前的 `Matrix` 定義：
 
 ```move
 #[syntax(index)]
@@ -233,28 +260,28 @@ public fun borrow<T>(s: &Matrix<T>, i: u64, j: u64): &T {
 }
 ```
 
-以下所有可變版本的定義都是型別不相容的：
+下列所有定義都與可變版本的型別不相容：
 
 ```move
 #[syntax(index)]
 public fun borrow_mut<T: drop>(s: &mut Matrix<T>, i: u64, j: u64): &mut T { ... }
-    // 錯誤！此處 `T` 具有 `drop` 約束，但在不可變版本中沒有
+    // 錯誤！此處的 `T` 具有 `drop`，但不可變版本中沒有
 
 #[syntax(index)]
 public fun borrow_mut(s: &mut Matrix<u64>, i: u64, j: u64): &mut u64 { ... }
-    // 錯誤！此處接受的型別參數數量不同
+    // 錯誤！這接受不同數量的型別參數
 
 #[syntax(index)]
 public fun borrow_mut<T, U>(s: &mut Matrix<U>, i: u64, j: u64): &mut U { ... }
-    // 錯誤！此處接受的型別參數數量不同
+    // 錯誤！這接受不同數量的型別參數
 
 #[syntax(index)]
 public fun borrow_mut<U>(s: &mut Matrix<U>, i_j: (u64, u64)): &mut U { ... }
-    // 錯誤！此處接受的參數數量不同
+    // 錯誤！這接受不同數量的引數
 
 #[syntax(index)]
 public fun borrow_mut<U>(s: &mut Matrix<U>, i: u64, j: u32): &mut U { ... }
     // 錯誤！`j` 是不同的型別
 ```
 
-同樣地，這裡的目標是使不可變和可變版本的使用保持一致。這允許索引語法方法在運作時無需根據可變與不可變用法改變行為或約束，最終確保一致的編程介面。
+再次強調，此處的目標是讓不可變與可變版本的使用方式保持一致。這讓索引語法方法可在不依據可變或不可變使用方式改變行為或約束的情況下運作，最終確保可供程式設計使用的一致介面。
