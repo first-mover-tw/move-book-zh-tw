@@ -1,25 +1,59 @@
 ---
 title: 巨集函式 (Macro Functions) | 參考手冊
-description: Move 巨集函式參考手冊 (Move macro functions reference)：編譯時期展開、Lambda 參數、型別參數與巨集的方法語法。
+description: Move 巨集函式 (macro functions) 參考手冊：編譯時期展開 (compile-time expansion)、Lambda 參數 (lambda parameters)、型別參數 (type parameters) 與巨集 (macros) 的方法語法 (method syntax)。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - macro
+  - functions
+  - reference
+questions:
+  - How does Macro Functions work in Move?
+  - What is the syntax for Macro Functions in Move?
+  - What is Lambdas in Move?
+  - What is Typing in Move?
+answer: 'Move macro functions reference: compile-time expansion, lambda parameters, type parameters, and method syntax for macros.'
+goal:
+  description: 'Reader understands move macro functions reference: compile-time expansion, lambda parameters, type parameters, and method syntax for macros'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 巨集函式 (Macro Functions)
+# 巨集函式 (Macro Functions) {#macro-functions}
 
-巨集 (Macro) 函式是定義函式的一種方式，這些函式在編譯時會在每個呼叫點進行展開。巨集的引數不像普通函式那樣被提早求值 (evaluated eagerly)，而是透過運算式進行替換。此外，呼叫者可以透過 [Lambdas](#lambdas) 向巨集提供程式碼。
+巨集函式是一種定義函式的方法，會在每個呼叫位置於編譯期間展開。巨集的引數不會像一般函式一樣立即求值，而是以運算式取代。此外，呼叫端可以透過
+[lambda](#lambdas) 向巨集提供程式碼。
 
-這種運算式替換機制使得 `macro` 函式類似於[在其他程式語言中發現的巨集](<https://en.wikipedia.org/wiki/Macro_(computer_science)>)；然而，在 Move 中它們受到的限制比你可能從其他語言預期的更多。`macro` 函式的參數和回傳值仍然是具備型別的 —— 儘管這可以透過 [`_` 型別](./../generics#_-型別) 來部分放寬。不過，這種限制的好處在於 `macro` 函式可以在任何普通函式可以使用的中央使用，這在 [方法語法 (Method Syntax)](./../method-syntax) 中特別有用。
+這些運算式取代機制使 `macro` 函式類似於
+[其他程式語言中的巨集](<https://en.wikipedia.org/wiki/Macro_(computer_science)>)；
+不過，Move 中的限制比你可能從其他語言預期的更多。`macro` 函式的
+參數和回傳值仍具有型別——但可透過 [`_` 型別](./../generics#_-type) 部分放寬此限制。然而，這項限制的優點是
+`macro` 函式可在一般函式可使用的任何地方使用，這在使用
+[方法語法](./../method-syntax) 時特別有幫助。
 
-未來可能會推出更廣泛的[語法巨集系統](<https://en.wikipedia.org/wiki/Macro_(computer_science)#Syntactic_macros>)。
+未來可能會提供更完整的
+[語法巨集](<https://en.wikipedia.org/wiki/Macro_(computer_science)#Syntactic_macros>) 系統。
 
-## 語法
+## 語法 (Syntax) {#syntax}
 
-`macro` 函式的語法與普通函式類似。但是，所有型別參數名稱和所有參數名稱必須以 `$` 開頭。請注意，`_` 仍然可以單獨使用，但不能作為前綴，必須改用 `$_`。
+`macro` 函式的語法與一般函式相似。不過，所有型別參數名稱和所有參數名稱都必須以 `$` 開頭。請注意，`_` 仍可單獨使用，但不可作為前綴；必須改用 `$_`。
 
 ```text
-<可見性>? macro fun <識別碼><[$型別參數: 約束],*>([$參數名稱: 型別],*): <回傳型別> <函式主體>
+<visibility>? macro fun <identifier><[$type_parameters: constraint],*>([$identifier: type],*): <return_type> <function_body>
 ```
 
-例如，以下 `macro` 函式接受一個向量和一個 lambda，並將 lambda 應用於向量的每個元素以建構一個新的向量。
+例如，下列 `macro` 函式接受一個向量和一個 lambda，並將 lambda 套用至向量中的每個元素，以建立新的向量。
 
 ```move
 macro fun map<$T, $U>($v: vector<$T>, $f: |$T| -> $U): vector<$U> {
@@ -35,43 +69,43 @@ macro fun map<$T, $U>($v: vector<$T>, $f: |$T| -> $U): vector<$U> {
 }
 ```
 
-這裡的 `$` 是用來指示參數（包括型別參數和數值參數）的行為不像它們非巨集的對應部分。對於型別參數，它們可以用任何型別實例化（甚至是參考型別 `&` 或 `&mut`），並且它們會滿足任何約束。同樣對於參數，它們不會被提早求值，相反，引數運算式將在每次使用時被替換。
+`$` 的用途是表示這些參數（包含型別參數和值參數）的行為不同於一般的非巨集對應項目。對於型別參數，它們可使用任何型別（甚至是參考型別 `&` 或 `&mut`）具現化，且會滿足任何約束。參數也是如此：它們不會被及早求值，而是會在每次使用時代入引數運算式。
 
-## Lambdas
+## Lambda 運算式 (Lambdas) {#lambdas}
 
-Lambdas 是一種新型運算式，只能與 `macro` 一起使用。它們用於將程式碼從呼叫者傳遞到 `macro` 的主體中。雖然替換是在編譯時完成的，但它們的使用方式類似於其他語言中的[匿名函式 (Anonymous functions)](https://en.wikipedia.org/wiki/Anonymous_function)、[lambdas](https://en.wikipedia.org/wiki/Lambda_calculus) 或 [閉包 (Closures)](<https://en.wikipedia.org/wiki/Closure_(computer_programming)>)。
+Lambda 運算式是一種只能搭配 `macro` 使用的新型運算式。它們用於將程式碼從呼叫端傳入 `macro` 的主體中。雖然替換作業是在編譯時期完成，但其使用方式與其他語言中的[匿名函式](https://en.wikipedia.org/wiki/Anonymous_function)、[lambda 運算式](https://en.wikipedia.org/wiki/Lambda_calculus)或[閉包](<https://en.wikipedia.org/wiki/Closure_(computer_programming)>)類似。
 
-如上例所示 (`$f: |$T| -> $U`)，lambda 型別的定義語法為：
+如上例所示（`$f: |$T| -> $U`），lambda 型別以下列語法定義：
 
 ```text
-|<型別>,*| (-> <型別>)?
+|<type>,*| (-> <type>)?
 ```
 
-幾個例子：
+幾個範例：
 
 ```move
-|u64, u64| -> u128 // 一個接受兩個 u64 並回傳一個 u128 的 lambda
-|&mut vector<u8>| -> &mut u8 // 一個接受 &mut vector<u8> 並回傳一個 &mut u8 的 lambda
+|u64, u64| -> u128 // 接受兩個 u64 並回傳 u128 的 lambda 運算式
+|&mut vector<u8>| -> &mut u8 // 接受 &mut vector<u8> 並回傳 &mut u8 的 lambda 運算式
 ```
 
-如果回傳型別未標註，則預設為單元型別 `()`。
+若未標註回傳型別，預設為單元 `()`。
 
 ```move
-// 以下兩者是等價的
+// 以下兩者等價
 |&mut vector<u8>, u64|
 |&mut vector<u8>, u64| -> ()
 ```
 
-Lambda 運算式隨後在 `macro` 的呼叫點使用以下語法定義：
+接著，在 `macro` 的呼叫位置以下列語法定義 lambda 運算式：
 
 ```text
-|(<識別碼> (: <型別>)?),*| <運算式>
-|(<識別碼> (: <型別>)?),*| -> <型別> { <運算式> }
+|(<identifier> (: <type>)?),*| <expression>
+|(<identifier> (: <type>)?),*| -> <type> { <expression> }
 ```
 
-請注意，如果標註了回傳型別，lambda 的主體必須封裝在 `{}` 中。
+請注意，若標註回傳型別，lambda 運算式的主體必須以 `{}` 包住。
 
-使用上面定義的 `map` 巨集：
+使用上方定義的 `map` macro：
 
 ```move
 let v = vector[1, 2, 3];
@@ -79,39 +113,41 @@ let doubled: vector<u64> = map!(v, |x| 2 * x);
 let bytes: vector<vector<u8>> = map!(v, |x| std::bcs::to_bytes(&x));
 ```
 
-帶有型別標註：
+搭配型別標註：
 
 ```move
-let doubled: vector<u64> = map!(v, |x: u64| 2 * x); // 回傳型別標註可選
+let doubled: vector<u64> = map!(v, |x: u64| 2 * x); // 回傳型別標註為選用
 let bytes: vector<vector<u8>> = map!(v, |x: u64| -> vector<u8> { std::bcs::to_bytes(&x) });
 ```
 
-### 捕捉 (Capturing)
+### 擷取 (Capturing) {#capturing}
 
-Lambda 運算式還可以參考定義 lambda 的範圍內的變數。這有時被稱為「捕捉」。
+Lambda 運算式也可以參考定義該 lambda 運算式之作用域內的變數。這有時稱為「擷取」。
 
 ```move
 let res = foo();
 let incremented = map!(vector[1, 2, 3], |x| x + res);
 ```
 
-任何變數都可以被捕捉，包括可變和不可變參考。
+任何變數都可以被擷取，包括可變與不可變參考。
 
-有關更複雜的使用方式，請參閱[範例](#iterating-over-a-vector)章節。
+如需更複雜的用法，請參閱[範例](#iterating-over-a-vector)章節。
 
-### 限制
+### 限制 (Limitations) {#limitations}
 
-目前，lambdas 只能直接在 `macro` 函式的呼叫中使用。它們不能綁定到變數。例如，以下程式碼將產生錯誤：
+目前，lambda 運算式只能直接用於 `macro` 函式的呼叫中。它們無法繫結至變數。例如，下列程式碼會產生錯誤：
 
 ```move
 let f = |x| 2 * x;
-//      ^^^^^^^^^ 錯誤！Lambdas 必須直接在 'macro' 呼叫中使用
+//      ^^^^^^^^^ 錯誤！Lambda 運算式必須直接用於 'macro' 呼叫中
 let doubled: vector<u64> = map!(vector[1, 2, 3], f);
 ```
 
-## 型別系統 (Typing)
+## 型別標註 (Typing) {#typing}
 
-與普通函式一樣，`macro` 函式是具備型別的 —— 參數和回傳值的型別必須經過標註。但是，函式的主體在巨集展開之前不會進行型別檢查。這意味著並非給定巨集的所有用法都是有效的。例如：
+如同一般函式，`macro` 函式具有型別——參數與回傳值的型別
+必須加上標註。不過，函式主體要等到巨集展開後才會進行型別檢查。
+這表示特定巨集的所有使用方式不一定都有效。例如：
 
 ```move
 macro fun add_one<$T>($x: $T): $T {
@@ -119,9 +155,9 @@ macro fun add_one<$T>($x: $T): $T {
 }
 ```
 
-如果 `$T` 不是原始整數型別，上述巨集的型別檢查將不會通過。
+若 `$T` 不是基本整數型別，上述巨集將無法通過型別檢查。
 
-這在與 [方法語法 (Method Syntax)](./../method-syntax) 結合使用時特別有用，其中函式直到巨集展開後才會被解析。
+這在搭配[方法語法](./../method-syntax)時特別有用，因為該函式要等到巨集展開後才會解析。
 
 ```move
 macro fun call_foo<$T, $U>($x: $T): &$U {
@@ -129,13 +165,15 @@ macro fun call_foo<$T, $U>($x: $T): &$U {
 }
 ```
 
-只有當 `$T` 具備一個回傳參考 `&$U` 的 `foo` 方法時，此巨集才能成功展開。如[衛生 (Hygiene)](#hygiene)章節所述，`foo` 將根據 `call_foo` 被定義的範圍來解析，而不是它被展開的範圍。
+只有當 `$T` 具有回傳參考 `&$U` 的 `foo` 方法時，此巨集才能成功展開。
+如同[衛生性](#hygiene)章節所述，`foo` 會依據定義 `call_foo` 的作用域解析——而非其展開的位置。
 
-### 型別參數
+### 型別參數 (Type Parameters) {#type-parameters}
 
-型別參數可以用任何型別實例化，包括參考型別 `&` 和 `&mut`。它們也可以用[元組型別](./../primitive-types/tuples)實例化，儘管目前這類操作的效用有限，因為元組無法綁定到變數。
+型別參數可使用任何型別進行具現化，包括參考型別 `&` 與 `&mut`。它們
+也可以使用[元組型別](./../primitive-types/tuples)進行具現化，但目前其用途有限，因為元組無法繫結至變數。
 
-這種放寬限制迫使型別參數的約束在呼叫點以一種通常不會發生的方式被滿足。然而，通常還是建議為型別參數加上所有必要的約束。例如：
+此放寬規則會迫使型別參數的約束條件在呼叫位置以一般不會發生的方式獲得滿足。不過，通常仍建議為型別參數新增所有必要的約束條件。例如：
 
 ```move
 public struct NoAbilities()
@@ -145,14 +183,14 @@ macro fun make_box<$T>($x: $T): CopyBox<$T> {
 }
 ```
 
-只有當 `$T` 用具備 `copy` 能力的型別實例化時，此巨集才能展開。
+只有在以具有 `copy` 能力的型別具現化 `$T` 時，此巨集才會展開。
 
 ```move
 make_box!(1); // 有效！
-make_box!(NoAbilities()); // 錯誤！'NoAbilities' 不具備 copy 能力
+make_box!(NoAbilities()); // 錯誤！'NoAbilities' 不具有 copy 能力
 ```
 
-對 `make_box` 的建議宣告是將 `copy` 約束加到型別參數中。這樣就能告知呼叫者該型別必須具備 `copy` 能力。
+建議的 `make_box` 宣告方式是將 `copy` 約束新增至型別參數。這會向呼叫端表達該型別必須具有 `copy` 能力。
 
 ```move
 macro fun make_box<$T: copy>($x: $T): CopyBox<$T> {
@@ -160,7 +198,7 @@ macro fun make_box<$T: copy>($x: $T): CopyBox<$T> {
 }
 ```
 
-那麼你可能會問，如果建議是不使用這種放寬，為什麼還要具備這種放寬呢？原因是型別參數上的約束在所有情況下都無法被強制執行，因為主體在展開之前是不會檢查的。在以下範例中，簽名中對 `$T` 的 `copy` 約束不是必需的，但在主體中卻是必需的。
+那麼，如果建議不要使用這項放寬規則，為何還要提供它？由於主體在展開前不會經過檢查，因此在所有情況下都無法強制執行型別參數的約束條件。在下列範例中，簽章不需要 `$T` 的 `copy` 約束，但主體需要。
 
 ```move
 macro fun read_ref<$T>($r: &$T): $T {
@@ -168,13 +206,14 @@ macro fun read_ref<$T>($r: &$T): $T {
 }
 ```
 
-然而，如果你想擁有一個極其寬鬆的型別簽名，建議改用 [`_` 型別](#_-型別)。
+不過，若你想要使用極為寬鬆的型別簽章，建議改用[`_` 型別](#_-type)。
 
-### `_` 型別
+### `_` 型別 (`_` Type) {#_-type}
 
-通常，[`_` 佔位符型別](./../generics#_-型別) 用於運算式中，以允許對型別引數進行部分標註。然而，在 `macro` 函式中，`_` 型別可以用來代替型別參數，以便為任何型別放寬簽名。這應該能增加宣告「泛型」`macro` 函式的便利性。
+通常，[`_` 佔位符型別](./../generics#_-type)會在運算式中使用，以允許對型別引數進行
+部分註記。不過，對於 `macro` 函式，`_` 型別可取代型別參數使用，以放寬任何型別的簽章。這應能提升宣告「泛型」`macro` 函式的人體工學。
 
-例如，我們可以接受整數的任何組合並將它們相加。
+例如，我們可以接受任何整數組合並將其相加。
 
 ```move
 macro fun add($x: _, $y: _, $z: _): u256 {
@@ -182,7 +221,7 @@ macro fun add($x: _, $y: _, $z: _): u256 {
 }
 ```
 
-此外，`_` 型別可以用不同型別實例化 _多次_。例如：
+此外，`_` 型別可使用不同型別具現化 _多次_。例如：
 
 ```move
 public struct Box<T> has copy, drop, store { value: T }
@@ -191,32 +230,36 @@ macro fun create_two($f: |_| -> Box<_>): (Box<u8>, Box<u16>) {
 }
 ```
 
-如果我們改用型別參數來宣告該函式，則型別必須統一為共同的型別，這在這種情況下是不可能的。
+若我們改為使用型別參數宣告函式，這些型別就必須統一為共同型別，
+但在此情況下無法做到。
 
 ```move
 macro fun create_two<$T>($f: |$T| -> Box<$T>): (Box<u8>, Box<u16>) {
     ($f(0u8), $f(0u16))
-    //           ^^^^ 錯誤！預期為 `u8` 但找到了 `u16`
+    //           ^^^^ 錯誤！預期為 `u8`，但找到 `u16`
 }
 ...
 let (a, b) = create_two!(|value| Box { value });
 ```
 
-在這種情況下，`$T` 必須實例化為單一型別，但推斷發現 `$T` 必須同時綁定到 `u8` 和 `u16`。
+在此情況下，`$T` 必須以單一型別具現化，但型別推斷發現 `$T` 必須
+同時繫結至 `u8` 與 `u16`。
 
-不過這其中也存在權衡，因為 `_` 型別對於呼叫者而言傳達的意義和意圖較少。考慮將上面宣告的 `map` 巨集改用 `_` 代替 `$T` 和 `$U`。
+然而，這存在取捨，因為 `_` 型別向呼叫端傳達的意義與意圖較少。
+考慮將上方的 `map` macro 重新宣告，以 `_` 取代 `$T` 與 `$U`。
 
 ```move
 macro fun map($v: vector<_>, $f: |_| -> _): vector<_> {
 ```
 
-在型別層級上不再有任何關於 `$f` 行為的指示。呼叫者必須從註解或巨集主體中獲得理解。
+型別層級不再有任何 `$f` 行為的指示。呼叫端必須從註解或 macro 的主體
+理解其行為。
 
-## 展開與替換 (Expansion and Substitution)
+## 展開與替換 (Expansion and Substitution) {#expansion-and-substitution}
 
-`macro` 的主體在編譯時被替換到呼叫點。每個參數都被其引數的 _運算式_ 而非「數值」所替換。對於 lambdas，可以在 `macro` 主體的上下文中綁定額外的本地變數數值。
+`macro` 的主體會在建置時期替換至呼叫位置。每個參數都會以其引數的*運算式*取代，而非其值。對於 lambda，可在 `macro` 主體的內容中為額外的區域變數繫結值。
 
-舉一個非常簡單的例子：
+以一個非常簡單的範例來說
 
 ```move
 macro fun apply($f: |u64| -> u64, $x: u64): u64 {
@@ -224,13 +267,13 @@ macro fun apply($f: |u64| -> u64, $x: u64): u64 {
 }
 ```
 
-在呼叫點：
+使用以下呼叫位置
 
 ```move
 let incremented = apply!(|x| x + 1, 5);
 ```
 
-這大約會被展開為：
+大致會展開為
 
 ```move
 let incremented = {
@@ -239,7 +282,7 @@ let incremented = {
 };
 ```
 
-再次強調，替換的不是 `x` 的值，而是運算式 `5`。這可能意味著一個引數會被求值多次，或者根本不求值，具體取決於 `macro` 的主體。
+再次強調，替換的不是 `x` 的值，而是運算式 `5`。這可能表示某個引數會被評估多次，或完全不被評估，取決於 `macro` 的主體。
 
 ```move
 macro fun dup($f: |u64, u64| -> u64, $x: u64): u64 {
@@ -251,7 +294,7 @@ macro fun dup($f: |u64, u64| -> u64, $x: u64): u64 {
 let sum = dup!(|x, y| x + y, foo());
 ```
 
-會展開為：
+會展開為
 
 ```move
 let sum = {
@@ -261,9 +304,9 @@ let sum = {
 };
 ```
 
-請注意，`foo()` 將被呼叫兩次。如果 `dup` 是普通函式，則不會發生這種情況。
+請注意，`foo()` 會被呼叫兩次。如果 `dup` 是一般函式，便不會發生這種情況。
 
-通常建議透過將引數綁定到本地變數來建立可預測的求值行為。
+通常建議藉由將引數繫結至區域變數，建立可預測的評估行為。
 
 ```move
 macro fun dup($f: |u64, u64| -> u64, $x: u64): u64 {
@@ -272,7 +315,7 @@ macro fun dup($f: |u64, u64| -> u64, $x: u64): u64 {
 }
 ```
 
-現在同一個呼叫點將展開為：
+現在相同的呼叫位置會展開為
 
 ```move
 let sum = {
@@ -285,24 +328,28 @@ let sum = {
 };
 ```
 
-### 衛生 (Hygiene) {#hygiene}
+### 衛生性 (Hygiene) {#hygiene}
 
-在上面的範例中，`dup` 巨集有一個本地變數 `a`，用於綁定引數 `$x`。你可能會問，如果變數被命名為 `x` 會發生什麼？這會與 lambda 中的 `x` 產生衝突嗎？
+在上述範例中，`dup` 巨集有一個區域變數 `a`，用來繫結引數
+`$x`。你可能會問，如果該變數改名為 `x`，會發生什麼事？它會與 lambda 中的 `x` 衝突嗎？
 
-簡短的回答是，不會。`macro` 函式是具備[衛生 (Hygienic)](https://en.wikipedia.org/wiki/Hygienic_macro)性的，這意味著 `macro`s 和 lambdas 的展開不會意外捕捉到來自另一個範圍的變數。
+簡短的答案是：不會。`macro` 函式具有
+[衛生性](https://en.wikipedia.org/wiki/Hygienic_macro)，這表示 `macro` 與
+lambda 的展開不會意外擷取來自其他範圍的變數。
 
-編譯器透過為每個範圍關聯一個唯一數字來實現這一點。當 `macro` 展開時，巨集主體會獲得它自己的範圍。此外，引數在每次使用時都會被重新劃分範圍 (re-scoped)。
+編譯器會透過為每個範圍關聯一個唯一編號來達成此事。當 `macro` 展開時，
+巨集主體會取得自己的範圍。此外，引數會在每次使用時重新設定範圍。
 
-修改 `dup` 巨集以使用 `x` 代替 `a`：
+將 `dup` 巨集修改為使用 `x` 而非 `a`
 
 ```move
 macro fun dup($f: |u64, u64| -> u64, $x: u64): u64 {
-    let x = $x;
-    $f(x, x)
+    let a = $x;
+    $f(a, a)
 }
 ```
 
-呼叫點的展開：
+呼叫位置的展開結果
 
 ```move
 // let sum = dup!(|x, y| x + y, foo());
@@ -316,9 +363,9 @@ let sum = {
 };
 ```
 
-這是編譯器內部表示的近似值，為了簡化範例，省略了一些細節。
+這是編譯器內部表示法的近似結果；為了讓此範例保持簡潔，省略了一些細節。
 
-並且引數的每次使用都會重新劃分範圍，以便不同的用法不會衝突。
+而且，每次使用引數時都會重新設定範圍，讓不同的使用方式不會產生衝突。
 
 ```move
 macro fun apply_twice($f: |u64| -> u64, $x: u64): u64 {
@@ -330,7 +377,7 @@ macro fun apply_twice($f: |u64| -> u64, $x: u64): u64 {
 let result = apply_twice!(|x| x + 1, { let x = 5; x });
 ```
 
-展開為：
+展開為
 
 ```move
 let result = {
@@ -346,7 +393,8 @@ let result = {
 };
 ```
 
-與變數衛生類似，[方法解析 (Method Resolution)](./../method-syntax) 的範圍也侷限於巨集定義。例如：
+與變數衛生性類似，[方法解析](./../method-syntax)也會限定在巨集
+定義的範圍內。例如：
 
 ```move
 public struct S { f: u64, g: u64 }
@@ -365,7 +413,8 @@ macro fun call_foo($s: &S): u64 {
 }
 ```
 
-在這種情況下，方法呼叫 `foo` 始終會解析為函式 `f`，即使 `call_foo` 被用於 `foo` 綁定到不同函式（例如 `g`）的範圍內也一樣。
+在此情況下，方法呼叫 `foo` 一律會解析為函式 `f`，即使 `call_foo`
+在 `foo` 繫結至不同函式（例如 `g`）的範圍中使用也是如此。
 
 ```move
 fun example(s: &S): u64 {
@@ -374,11 +423,11 @@ fun example(s: &S): u64 {
 }
 ```
 
-不過正因為如此，在帶有 `macro` 函式的模組中，未使用的 `use fun` 宣告可能不會收到警告。
+因此，在具有 `macro` 函式的模組中，未使用的 `use fun` 宣告可能不會產生警告。
 
-### 控制流 (Control Flow)
+### 控制流程 (Control Flow) {#control-flow}
 
-與變數衛生類似，控制流結構始終侷限於它們被定義的地方，而不是它們被展開的地方。
+與變數衛生性類似，控制流程建構也一律限定於其定義的位置，而不是其展開的位置。
 
 ```move
 macro fun maybe_div($x: u64, $y: u64): u64 {
@@ -389,13 +438,13 @@ macro fun maybe_div($x: u64, $y: u64): u64 {
 }
 ```
 
-在呼叫點，`return` 始終會從 `macro` 主體回傳，而不是從呼叫者回傳。
+在呼叫位置，`return` 一律會從 `macro` 主體回傳，而不是從呼叫端回傳。
 
 ```move
 let result: vector<u64> = vector[maybe_div!(10, 0)];
 ```
 
-將展開為：
+將展開為
 
 ```move
 let result: vector<u64> = vector['a: {
@@ -406,9 +455,9 @@ let result: vector<u64> = vector['a: {
 }];
 ```
 
-其中 `return 'a 0` 將回傳到區塊 `'a: { ... }`，而不會回傳到呼叫者的主體。詳情請參閱[帶標籤的控制流 (Labeled Control Flow)](./../control-flow/labeled-control-flow)章節。
+其中，`return 'a 0` 會回傳至區塊 `'a: { ... }`，而不是呼叫端的主體。更多詳細資訊請參閱[帶標籤的控制流程](./../control-flow/labeled-control-flow)章節。
 
-同樣地，lambda 中的 `return` 將從 lambda 回傳，而不是從 `macro` 主體回傳，也不會從外部函式回傳。
+同樣地，lambda 中的 `return` 會從 lambda 回傳，而不是從 `macro` 主體或外層函式回傳。
 
 ```move
 macro fun apply($f: |u64| -> u64, $x: u64): u64 {
@@ -416,13 +465,13 @@ macro fun apply($f: |u64| -> u64, $x: u64): u64 {
 }
 ```
 
-並且：
+以及
 
 ```move
 let result = apply!(|x| { if (x == 0) return 0; x + 1 }, 100);
 ```
 
-將展開為：
+將展開為
 
 ```move
 let result = {
@@ -434,7 +483,7 @@ let result = {
 };
 ```
 
-除了從 lambda 回傳外，還可以使用標籤回傳到外部函式。在 `vector::any` 巨集 中，帶有標籤的 `return` 用於提前從整個 `macro` 回傳：
+除了從 lambda 回傳之外，也可以使用標籤回傳至外層函式。在 `vector::any` 巨集中，會使用帶有標籤的 `return` 提早從整個 `macro` 回傳。
 
 ```move
 public macro fun any<$T>($v: &vector<$T>, $f: |&$T| -> bool): bool {
@@ -446,11 +495,11 @@ public macro fun any<$T>($v: &vector<$T>, $f: |&$T| -> bool): bool {
 }
 ```
 
-當滿足條件時，`return 'any true` 會提前退出「迴圈」。否則，該巨集將「回傳」`false`。
+當條件成立時，`return 'any true` 會提早離開「迴圈」。否則，巨集會「回傳」`false`。
 
-### 方法語法 (Method Syntax)
+### 方法語法 (Method Syntax) {#method-syntax}
 
-在適用的情況下，可以使用 [方法語法 (Method Syntax)](./../method-syntax) 呼叫 `macro` 函式。使用方法語法時，引數的求值方式會發生變化，即第一個引數（方法的「接收者」）將在巨集展開之外進行求值。這個範例雖然是刻意構造的，但能簡明地演示這一行為。
+在適用的情況下，可以使用[方法語法](./../method-syntax)呼叫 `macro` 函式。使用方法語法時，引數的求值方式會改變：第一個引數（方法的「接收者」）會在巨集展開之外進行求值。這個範例雖然是刻意設計的，但能簡潔地展示此行為。
 
 ```move
 public struct S() has copy, drop;
@@ -461,40 +510,41 @@ public macro fun maybe_s($s: S, $cond: bool): S {
 }
 ```
 
-即使 `foo()` 會中止，其回傳型別仍可用於啟動方法呼叫。
+即使 `foo()` 會中止，其回傳型別仍可用於開始方法呼叫。
 
-如果 `$cond` 為 `false`，則不會對 `$s` 進行求值，在正規的非方法呼叫下，`foo()` 的引數不會被求值，因此也不會中止。以下範例示範了當 `$cond` 為 `false` 時，不對 `foo()` 進行求值。
+若 `$cond` 為 `false`，則不會對 `$s` 求值；在一般的非方法呼叫下，`foo()` 的引數也不會被求值，因此不會中止。以下範例展示了使用 `foo()` 作為引數時，`$s` 不會被求值。
 
 ```move
 maybe_s!(foo(), false) // 不會中止
 ```
 
-查看展開形式就會變得很清晰：
+查看展開後的形式，即可更清楚了解它為何不會中止：
 
 ```move
 if (false) foo()
 else S()
 ```
 
-但是，當使用方法語法時，第一個引數會在巨集展開之前被求值。因此，同樣作為 `$s` 引數的 `foo()` 現在將被求值並導致中止。
+然而，使用方法語法時，第一個引數會在巨集展開前求值。因此，作為 `$s` 的同一個 `foo()` 引數現在會被求值，並且會中止。
 
 ```move
 foo().maybe_s!(false) // 會中止
 ```
 
-查看展開形式可以更清楚地看到：
+查看展開後的形式，可以更清楚地看到這一點：
 
 ```move
-let tmp = foo(); // 中止
+let tmp = foo(); // 會中止
 if (false) tmp
 else S()
 ```
 
-從概念上講，方法呼叫的接收者在巨集展開之前會被綁定到一個暫存變數中，這強制執行了求值並進而導致中止。
+從概念上來說，方法呼叫的接收者會在巨集展開前繫結至暫存變數，這會強制進行求值，因而導致中止。
 
-### 參數限制
+### 參數限制 (Parameter Limitations) {#parameter-limitations}
 
-`macro` 函式的參數必須始終作為運算式使用。它們不能用於引數可能被重新解釋的情況。例如，以下情況是不允許的：
+`macro` 函式的參數必須一律作為運算式使用。它們不能用於引數可能被重新解讀的
+情況。例如，下列寫法不被允許：
 
 ```move
 macro fun no($x: _): _ {
@@ -502,7 +552,8 @@ macro fun no($x: _): _ {
 }
 ```
 
-原因在於，如果引數 `$x` 不是參考，它會被先借用，這可能會重新解釋該引數。要繞過這項限制，你應該將引數綁定到本地變數。
+原因是若引數 `$x` 不是參考，會先對它進行借用，這可能會重新解讀該引數。若要避開
+此限制，你應將引數繫結至區域變數。
 
 ```move
 macro fun yes($x: _): _ {
@@ -511,9 +562,9 @@ macro fun yes($x: _): _ {
 }
 ```
 
-## 範例
+## 範例 (Examples) {#examples}
 
-### 延遲引數 (Lazy arguments)：assert_eq
+### 惰性引數：assert_eq (Lazy arguments: assert_eq) {#lazy-arguments-assert_eq}
 
 ```move
 macro fun assert_eq<$T>($left: $T, $right: $T, $code: u64) {
@@ -529,19 +580,22 @@ macro fun assert_eq<$T>($left: $T, $right: $T, $code: u64) {
 }
 ```
 
-在此案例中，除非斷言失敗，否則不會對 `$code` 引數求值。
+在此情況下，除非斷言失敗，否則不會評估傳遞給 `$code` 的引數。
 
 ```move
-assert_eq!(vector[true, false], vector[true, false], 1 / 0); // 除以零不會被求值
+assert_eq!(vector[true, false], vector[true, false], 1 / 0); // 不會評估除以零
 ```
 
-### 任意整數平方根
+### 任意整數的平方根 (Any integer square root) {#any-integer-square-root}
 
-此巨集計算除 `u256` 以外的任何整數型別的整數平方根。
+此巨集會計算除 `u256` 以外任何整數型別的整數平方根。
 
-`$T` 是輸入的型別，`$bitsize` 是該型別中的位元數，例如 `u8` 有 8 位元。`$U` 應設定為下一個較大的整數型別，例如 `u8` 對應 `u16`。
+`$T` 是輸入的型別，而 `$bitsize` 是該型別中的位元數；例如，`u8`
+有 8 個位元。`$U` 應設定為下一個較大的整數型別，例如 `u8` 對應的 `u16`。
 
-在此 `macro` 中，整數常值 `1` 和 `0` 的型別經過了標註，例如 `(1: $U)`，這允許常值的型別隨每次呼叫而不同。同樣地，`as` 可以與型別參數 `$T` 和 `$U` 一起使用。只有當 `$T` 和 `$U` 使用整數型別實例化時，此巨集才能成功展開。
+在此 `macro` 中，整數字面值 `1` 和 `0` 的型別會加上註記，例如 `(1: $U)`，
+以便每次呼叫時字面值的型別可以不同。同樣地，`as` 也可以搭配型別參數 `$T` 和 `$U` 使用。此巨集只有在 `$T` 和 `$U`
+以整數型別具現化時，才能成功展開。
 
 ```move
 macro fun num_sqrt<$T, $U>($x: $T, $bitsize: u8): $T {
@@ -566,7 +620,7 @@ macro fun num_sqrt<$T, $U>($x: $T, $bitsize: u8): $T {
 
 ### 走訪向量 (Iterating over a vector) {#iterating-over-a-vector}
 
-這兩個 `macro` 分別對向量進行不可變和可變走訪。
+這兩個 `macro` 分別以不可變與可變方式走訪向量。
 
 ```move
 macro fun for_imm<$T>($v: &vector<$T>, $f: |&$T|) {
@@ -590,27 +644,27 @@ macro fun for_mut<$T>($v: &mut vector<$T>, $f: |&mut $T|) {
 }
 ```
 
-幾個使用範例：
+一些使用範例
 
 ```move
 fun imm_examples(v: &vector<u64>) {
-    // 列印所有元素
+    // 印出所有元素
     for_imm!(v, |x| std::debug::print(x));
 
-    // 加總所有元素
+    // 將所有元素加總
     let mut sum = 0;
     for_imm!(v, |x| sum = sum + x);
 
-    // 尋找最大元素
+    // 找出最大元素
     let mut max = 0;
     for_imm!(v, |x| if (x > max) max = x);
 }
 
 fun mut_examples(v: &mut vector<u64>) {
-    // 遞增每個元素
+    // 將每個元素遞增
     for_mut!(v, |x| *x = *x + 1);
 
-    // 將每個元素設定為前一個值，第一個元素設定為最後一個值
+    // 將每個元素設為前一個值，並將第一個元素設為最後一個值
     let mut prev = v[v.length() - 1];
     for_mut!(v, |x| {
         let tmp = *x;
@@ -618,16 +672,16 @@ fun mut_examples(v: &mut vector<u64>) {
         prev = tmp;
     });
 
-    // 將最大元素設定為 0
+    // 將最大元素設為 0
     let mut max = &mut 0;
     for_mut!(v, |x| if (*x > *max) max = x);
     *max = 0;
 }
 ```
 
-### 非迴圈 lambda 用法
+### 非迴圈 lambda 用法 (Non-loop lambda usage) {#non-loop-lambda-usage}
 
-Lambda 不一定非得在迴圈中使用，它們在條件式應用程式碼時通常非常有用。
+Lambda 不需要在迴圈中使用，且通常適合用來有條件地套用程式碼。
 
 ```move
 macro fun inspect<$T>($opt: &Option<$T>, $f: |&$T|) {
@@ -652,14 +706,14 @@ macro fun map<$T, $U>($opt: Option<$T>, $f: |$T| -> $U): Option<$U> {
 }
 ```
 
-以及一些使用範例：
+以下是一些使用範例
 
 ```move
 fun examples(opt: Option<u64>) {
-    // 如果數值存在則列印
+    // 若值存在，則印出該值
     inspect!(&opt, |x| std::debug::print(x));
 
-    // 檢查數值是否為 0
+    // 檢查值是否為 0
     let is_zero = is_some_and!(&opt, |x| *x == 0);
 
     // 將 u64 向上轉型為 u256

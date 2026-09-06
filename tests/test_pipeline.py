@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -289,26 +290,125 @@ def test_translate_body_enforces_glossary_on_values():
     assert meta["description"] == "迴圈"
 
 
-# 釘固定 commit 是為了不讓上游前進就把測試弄紅（lessons L3；本測試 2026-09-04
-# 這樣紅過一次）。**釘的規則**：這個 sha 必須是「manifest 記錄的 constants.md
-# blob 所在的那個 english-main commit」—— tier() 的 old_sha 讀活 manifest、
-# new_sha 讀 en_ref，兩者對不上就直接降 B。所以每次 constants.md 被重新排乾
-# （manifest entry 前進），這裡就要跟著往前釘一次，不是拿掉這個 pin。
-# 2026-09-06 第二次重釘：constants.md 進了 batch1，manifest 前進到 a7a0f97。
-_A_TIER_EN_REF = "29e332267ecbebb7682b5e8df186e1059664cf3d"
+# --- A 路徑組合層：合成 git fixture，不讀活語料（lessons L3） ---
+#
+# 前一版拿 `reference/constants.md` + 釘死的 en_ref 當素材。兩個問題：
+# (1) 每次 constants.md 被重新排乾就要跟著重釘一次 sha（2026-09-04、09-06
+#     各釘過一次）；(2) 更糟的是**測試腐化**——它名字說「body 帶 legacy
+#     缺陷」，但語料裡的「循環」早就被排乾清成 0，於是它只剩「A 路徑跑得完」
+#     這一半語意，宣稱保護的性質（legacy 缺陷不當寫檔否決）已經沒有素材可驗。
+# 合成 fixture 把缺陷做進素材裡：它不隨語料漂移，也不必再釘任何 sha。
+
+_EN_OLD = '---\ndescription: "Constants."\n---\n\n# Constants\n\nA cycle of text.\n'
+# 只改 frontmatter：delta 必須 <= FRONTMATTER_ONLY_DELTA，否則 tier 降 B。
+_EN_NEW = '---\ndescription: "Constants, revised."\n---\n\n# Constants\n\nA cycle of text.\n'
+# body 帶 glossary 違禁詞「循環」——這就是 legacy 缺陷，A 路徑不得因此否決。
+_ZH_LEGACY = (
+    '---\ndescription: "常數。"\n---\n\n# 常數 (Constants) {#constants}\n\n這段有循環。\n'
+)
 
 
-def test_run_a_tier_file_with_legacy_body_defects_succeeds():
-    """組合層驗證（lessons L7）：constants.md 結構一致、body 帶「循環」，
-    整條 A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。
-
-    en_ref 釘固定 commit：這條測的是**A 路徑這段組合邏輯**，不是「constants.md
-    今天是不是還在 A 層」。後者是語料狀態，會隨上游漂移，不該讓它決定測試死活。
+def _git(cwd, *args):
+    """關掉會從使用者全域設定漏進來的兩件事：`commit.gpgsign`（沒有簽章金鑰的
+    環境會直接失敗）與 `core.hooksPath`（會把使用者的 pre-commit hook 拉進這個
+    temp repo 跑）。失敗時把 stderr 帶進例外 —— `check=True` + `capture_output`
+    的預設行為是把它整個吞掉，只留一個看不出原因的 CalledProcessError。
     """
-    assert pipeline.tier("reference/constants.md", _A_TIER_EN_REF) == "A"  # 釘住走 A 路徑
-    ok, failed = pipeline.run(["reference/constants.md"], "fake", _A_TIER_EN_REF)
+    r = subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    if r.returncode:
+        raise AssertionError(f"git {' '.join(args)} 失敗: {r.stderr.strip()}")
+
+
+def _a_tier_repo(tmp_path, monkeypatch, path="reference/constants.md"):
+    """造一個最小 repo：base commit（英文舊版）→ en 分支（只改 frontmatter），
+    HEAD 是帶 legacy 缺陷的中文譯文。回傳 (en_ref, path)。"""
+    _git(tmp_path, "init", "-q", "-b", "zh")
+    _git(tmp_path, "config", "user.email", "t@example.com")
+    _git(tmp_path, "config", "user.name", "t")
+
+    f = tmp_path / path
+    f.parent.mkdir(parents=True, exist_ok=True)
+
+    f.write_text(_EN_OLD, encoding="utf-8")
+    _git(tmp_path, "add", path)
+    _git(tmp_path, "commit", "-qm", "en old")
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
+    ).stdout.strip()
+    en_blob = subprocess.run(
+        ["git", "rev-parse", "HEAD:" + path], cwd=tmp_path, capture_output=True, text=True
+    ).stdout.strip()
+
+    _git(tmp_path, "checkout", "-q", "-b", "en")
+    f.write_text(_EN_NEW, encoding="utf-8")
+    _git(tmp_path, "commit", "-qam", "en new")
+
+    _git(tmp_path, "checkout", "-q", "zh")
+    f.write_text(_ZH_LEGACY, encoding="utf-8")
+    _git(tmp_path, "commit", "-qam", "zh")
+
+    m = tmp_path / "m.json"
+    m.write_text(json.dumps({path: en_blob}, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(manifest, "MANIFEST_PATH", m)
+    monkeypatch.setattr(manifest, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(pipeline, "MERGE_BASE", base)
+    return "en", path
+
+
+def test_run_a_tier_file_with_legacy_body_defects_succeeds(tmp_path, monkeypatch):
+    """組合層驗證（lessons L7）：結構一致、body 帶違禁詞的 A 層檔，整條
+    A 路徑（tier → rebuild → gate）必須產出成功，不是 failed。
+
+    A 層 body 是 legacy 舊譯文、不重譯，拿它的既有違禁詞當寫檔否決會讓這種
+    檔 hard-fail 且無自動修復路徑（tier 也不會降級）——就是死鎖。
+    """
+    from scripts.zh_tw import glossary
+
+    en_ref, path = _a_tier_repo(tmp_path, monkeypatch)
+
+    # 前提斷言（防 vacuous，也是前一版腐化掉的那一半）：素材真的帶 legacy 缺陷，
+    # 而且是「產品自己的判定」說它是缺陷，不是我肉眼認定。
+    _, zh_body = frontmatter.split(_ZH_LEGACY)
+    assert glossary.scan(zh_body), "fixture 必須帶 glossary 違禁詞，否則本測試是空的"
+
+    assert pipeline.tier(path, en_ref) == "A"
+    ok, failed = pipeline.run([path], "fake", en_ref)
     assert failed == {}
     assert ok == 1
+
+
+def test_b_tier_body_defect_is_not_carried(tmp_path, monkeypatch):
+    """對照組：A 層那條豁免是**路徑限定**的。同一份 legacy 缺陷改走 B 路徑
+    （內文重譯）時不得原封不動流出去 —— enforce 與 gate 同進退。
+
+    必須經過 `run()` 的分層 routing、而且要看**實際落盤的內容**：直接呼叫
+    `assemble` 的話，把 `run()` 的 `tier(...) == "A"` 條件拿掉（等於所有檔都
+    吃 A 層豁免、豁免不再路徑限定）這個變異會存活 —— 外部 review 2026-09-06
+    實測過。測「哪條路被選中」的唯一辦法是讓 routing 真的跑一次。
+    """
+    en_ref, path = _a_tier_repo(tmp_path, monkeypatch)
+    # 抹掉 provenance 強制降 B：tier 沒有 old_sha 可比就不會走 A。
+    manifest.MANIFEST_PATH.write_text("{}", encoding="utf-8")
+    assert pipeline.tier(path, en_ref) == "B"
+
+    class LegacyBodyBackend:
+        def translate(self, text, *, kind="markdown"):
+            if kind == "text":
+                return "常數。"
+            return "# 常數 (Constants)\n\n這段有循環。\n"
+
+    monkeypatch.setattr(pipeline.base, "get", lambda name: LegacyBodyBackend())
+    ok, failed = pipeline.run([path], "fake", en_ref, apply=True)
+    assert (ok, failed) == (1, {})
+
+    _, body = frontmatter.split((tmp_path / path).read_text(encoding="utf-8"))
+    assert "循環" not in body
+    assert "迴圈" in body
 
 
 # --- A 層 frontmatter 沿用優先於重算（與 anchor carry-forward 同原則） ---
@@ -567,6 +667,74 @@ def test_translate_chunk_retries_on_fence_mismatch():
     out = pipeline._translate_chunk(en, FenceDroppingBackend())
     assert calls["n"] == 2
     assert anchors.fence_lines(out) == anchors.fence_lines(en)
+
+
+def test_translate_chunk_retries_on_emphasis_mismatch():
+    """2026-09-06 的 8 個排不乾檔：backend 把 `*em*` 譯成粗體或引號，gate 10
+    的「可疑位置」是空的 —— 不是 `_中文_` 渲染不出來（那有修復 pass），是譯文
+    根本沒有那個強調。判定與修復不是同一個資訊量（L16），所以走 chunk 級重試，
+    不寫修復 pass。
+    """
+    calls = {"n": 0}
+
+    class EmphasisDroppingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "這段是**粗體**而不是斜體。\n"  # em 被譯成 strong
+            if calls["n"] == 2:
+                return "這段是「引號」而不是斜體。\n"  # 強調整個消失
+            return "這段是 *斜體* 沒錯。\n"
+
+    en = "This is *emphasis* not bold.\n"
+    out = pipeline._translate_chunk(en, EmphasisDroppingBackend())
+    assert calls["n"] == 3
+    assert validate.check_cjk_emphasis(out, en) == []
+
+
+def test_translate_chunk_does_not_retry_repairable_emphasis():
+    """chunk 判定必須跟整檔 gate 看同一份文字 —— 也就是**修復之後**的。
+
+    `- **所有權：**每項資產` 這個形式（收尾 `**` 前是全形冒號、後接 CJK，
+    CommonMark 判定不是 right-flanking）渲染不出 `<strong>`，但
+    `_repair_flanking_punctuation` 修得掉，整檔層級根本不算缺陷。若 chunk
+    這裡驗修復前的文字，它就會觸發重試 —— 而 codex 對這個形式是**一律**這樣
+    譯（`_repair_flanking_punctuation` 的 docstring 有實測記錄），重試三次全
+    不合格，keep-last 反而可能換到「強調整個消失、資訊已不存在」的那種輸出。
+    外部 review 2026-09-06 端到端重現過：1 次呼叫本來會過 → 3 次呼叫 RAISED。
+    """
+    calls = {"n": 0}
+
+    class FlankingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "- **所有權：**每項資產都有擁有者。\n"  # 可決定性修復
+            return "- 所有權：每項資產都有擁有者。\n"  # 強調整個不見，不可修復
+
+    en = "- **Ownership:** Every asset has an owner.\n"
+    out = pipeline._translate_chunk(en, FlankingBackend())
+    assert calls["n"] == 1, "可修復的輸出不該觸發重試"
+    # 回傳的是**原始**輸出，實際修復留給 assemble，不在這裡重複套用。
+    assert out == "- **所有權：**每項資產都有擁有者。\n"
+    assert validate.check_cjk_emphasis(pipeline._emphasis_repairs(out), en) == []
+
+
+def test_translate_chunk_does_not_retry_on_heading_only_emphasis():
+    """反向前提：gate 10 排除標題（「中文譯文 (英文原文)」慣例會讓標題裡的
+    強調算兩次）。chunk 級檢查沿用同一個 gate 函式，所以不能因為標題裡的
+    強調數量對不上而白重試三次 —— 那會讓每個含強調標題的 chunk 都吃滿重試。
+    """
+    calls = {"n": 0}
+
+    class Backend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            return "# 任意 (*any*) 條件 (Trick #1 - *any* Condition)\n\n內文。\n"
+
+    en = "# Trick #1 - *any* Condition\n\nbody\n"
+    pipeline._translate_chunk(en, Backend())
+    assert calls["n"] == 1
 
 
 # --- fence 註解修復 pass：批次翻譯 code 內的英文散文註解 ---

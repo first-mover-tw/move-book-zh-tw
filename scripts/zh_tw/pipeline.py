@@ -80,14 +80,35 @@ def tier(path: str, en_ref: str = "english-main") -> str:
 CHUNK_RETRIES = 3
 
 
+def _emphasis_repairs(zh_body: str) -> str:
+    """gate 10 的決定性修復序列。
+
+    只有一份、被 `assemble`（真的修）與 `_translate_chunk`（只拿來判定要不要
+    重試）共用。兩邊各寫一份的話，chunk 的判定母體就會比整檔大，重試會對
+    「整檔層級根本不算缺陷」的輸出開火（L15：同一個不變式兩份實作必漂移）。
+    """
+    zh_body = _repair_cjk_emphasis(zh_body)
+    zh_body = _repair_flanking_punctuation(zh_body)
+    return _repair_cjk_wrapped_ascii_emphasis(zh_body)
+
+
 def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
     """單一 chunk 翻譯，標題層級序列不符就地重試（PR 3 診斷：sonnet 對長檔
     穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
     定位到小範圍）。重試耗盡仍不符 → 保留最後一次輸出交給 gate 1 整檔擋，
     fail-closed 不變 —— 這裡是自動修復路徑，不是放寬。"""
-    # 驗 gate 1+2 兩個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
+    # 驗 gate 1+2+10 三個維度：只驗標題會漏「掉收尾 ``` 的 chunk」——它自身
     # 標題照過，join 後卻把下一個 chunk 的標題吞進未閉合 fence（L7 實錄：
     # variables.md 21→19，單獨翻每個 chunk 都正常）。
+    #
+    # gate 10（強調型別序列）也在這裡驗：2026-09-06 那 8 個排不乾的檔，失效
+    # 形式一律是 backend 把 `*em*` 譯成粗體/引號/直接不譯，而 gate 10 的
+    # 「可疑位置」提示是空的 —— 代表不是 `_中文_` 渲染不出來（那有決定性修復
+    # pass），是譯文根本沒有那個強調。這種缺陷的判定與修復不是同一個資訊量
+    # （L16：修復要知道「原文哪一段被強調」，那個資訊在譯文裡已經不存在），
+    # 所以不寫修復 pass，改用與標題同一套的 chunk 級重試把失效定位到小範圍。
+    # **判定權沒有第二份實作**：直接呼叫 gate 本人（L15），chunk 沒有
+    # frontmatter，`check_cjk_emphasis` 對裸 body 一樣成立。
     want = [lv for lv, _ in anchors.headings(chunk_text)]
     want_fences = anchors.fence_lines(chunk_text)
     out = ""
@@ -97,6 +118,15 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
             ok = (
                 [lv for lv, _ in anchors.headings(out)] == want
                 and anchors.fence_lines(out) == want_fences
+                # 問 gate 之前先套修復 pass：整檔 gate 10 驗的是「修復後」的
+                # 文字（assemble 的順序），chunk 這裡若驗「修復前」，就等於
+                # 對同一支 gate 用了兩套判定母體（L15）——而多出來的那一塊
+                # 恰好是**有決定性修復路徑**的那一類（`- **X：**後接中文`），
+                # 於是重試會把「第 1 次：可修復」丟掉、換成「第 3 次：強調
+                # 整個不見、資訊已不存在」。實測 1 次呼叫本來會過的檔，加上
+                # 重試之後反而 hard-fail。修復只用於**判定**，回傳的仍是原始
+                # 輸出，實際修復留給 assemble 那一段，不重複套用。
+                and not validate.check_cjk_emphasis(_emphasis_repairs(out), chunk_text)
             )
         except anchors.FrontmatterPassedIn:
             # backend 幻覺出 YAML frontmatter —— 正是重試該吸收的垃圾輸出，
@@ -144,9 +174,7 @@ def assemble(
     zh_body = _repair_headings(zh_body, en_body, backend)
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
-    zh_body = _repair_cjk_emphasis(zh_body)
-    zh_body = _repair_flanking_punctuation(zh_body)
-    zh_body = _repair_cjk_wrapped_ascii_emphasis(zh_body)
+    zh_body = _emphasis_repairs(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
