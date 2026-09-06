@@ -1,48 +1,75 @@
 ---
 title: 元組與單元 (Tuples and Unit) | 參考手冊
-description: Move 元組與單位型別參考手冊（Move tuples and unit type Reference）：多重回傳值、解構、單位運算式，以及類元組語法。
+description: Move 元組 (tuples) 與單位型別 (unit type) 參考手冊：多個回傳值、解構、單位運算式，以及類似元組的語法。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - tuples
+  - unit
+  - reference
+questions:
+  - How does Tuples and Unit work in Move?
+  - What is the syntax for Tuples and Unit in Move?
+  - What is Literals in Move?
+  - What is Operations in Move?
+answer: 'Move tuples and unit type reference: multiple return values, destructuring, unit expressions, and tuple-like syntax.'
+goal:
+  description: 'Reader understands move tuples and unit type reference: multiple return values, destructuring, unit expressions, and tuple-like syntax'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 元組與單元 (Tuples and Unit)
+# 元組與單位 (Tuples and Unit) {#tuples-and-unit}
 
-Move 並未完全支援元組 (tuples)，不像其他將元組視為 [一等公民 (first-class value)](https://en.wikipedia.org/wiki/First-class_citizen) 的語言那樣。然而，為了支援多重回傳值，Move 具有類元組 (tuple-like) 的運算式。這些運算式在執行階段不會產生具體的數值（位元組碼中沒有元組），因此它們非常受限：
+Move 並未如同其他將元組視為[一級值](https://en.wikipedia.org/wiki/First-class_citizen)的語言一般，完整支援元組。不過，為了支援多個回傳值，Move 提供了類似元組的運算式。這些運算式不會在執行階段產生具體值（位元組碼中沒有元組），因此其限制相當多：
 
 - 它們只能出現在運算式中（通常位於函式的回傳位置）。
-- 它們不能綁定到區域變數。
-- 它們不能儲存在結構體中。
-- 元組型別不能用於實例化泛型。
+- 無法繫結至區域變數。
+- 無法儲存在結構中。
+- 元組型別無法用來具現化泛型。
 
-同樣地，[單元 (unit) `()`](https://en.wikipedia.org/wiki/Unit_type) 是 Move 原始語言為了基於運算式而建立的一種型別。單元數值 `()` 不會產生任何執行階段數值。我們可以將單元 `()` 視為空元組，任何適用於元組的限制也適用於單元。
+同樣地，[單位 `()`](https://en.wikipedia.org/wiki/Unit_type)是 Move 原始碼語言為了採用運算式導向而建立的型別。單位值 `()` 不會產生任何執行階段值。我們可以將單位`()`視為空元組，而套用至元組的所有限制也同樣套用至單位。
 
-考慮到這些限制，在語言中擁有元組可能感覺很奇怪。但在其他語言中，元組最常見的用途之一是允許函式回傳多個數值。有些語言透過強制使用者編寫包含多重回傳值的結構體來解決這個問題。然而在 Move 中，你不能將參考放在 [結構體 (structs)](./../structs) 內部。這要求 Move 必須支援多重回傳值。這些多重回傳值在位元組碼層級都會被推入堆疊 (stack)。在原始碼層級，這些多重回傳值使用元組來表示。
+在有這些限制的情況下，語言中仍包含元組或許令人感到奇怪。不過，在其他語言中，元組最常見的使用案例之一，是讓函式能夠回傳多個值。有些語言會要求使用者撰寫包含多個回傳值的結構來迴避此問題。然而，在 Move 中，你無法將參考放入[結構](./../structs)中。因此，Move 必須支援多個回傳值。這些多個回傳值都會在位元組碼層級推入堆疊。在原始碼層級，這些多個回傳值會以元組表示。
 
-## 常值 (Literals)
+## 字面值 (Literals) {#literals}
 
-元組是透過括號內以逗號分隔的運算式清單來建立的。
+元組是由括號內以逗號分隔的運算式清單建立。
 
-| 語法            | 型別                                                                      | 描述                                               |
-| --------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
-| `()`            | `(): ()`                                                                  | 單元 (Unit)、空元組或元數 (arity) 為 0 的元組      |
-| `(e1, ..., en)` | `(e1, ..., en): (T1, ..., Tn)`，其中 `e_i: Ti` 且 `0 < i <= n` 且 `n > 0` | `n` 元組、元數為 `n` 的元組、具有 `n` 個元素的元組 |
+| 語法            | 型別                                                                         | 說明                                                     |
+| --------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `()`            | `(): ()`                                                                     | 單位、空元組，或是元素數量為 0 的元組                    |
+| `(e1, ..., en)` | `(e1, ..., en): (T1, ..., Tn)` where `e_i: Ti` s.t. `0 < i <= n` and `n > 0` | `n` 元組、元素數量為 `n` 的元組，或具有 `n` 個元素的元組 |
 
-請注意，`(e)` 的型別並非 `(e): (t)`，換句話說，不存在只有一個元素的元組。如果括號內只有一個元素，則括號僅用於消除歧義，不帶有任何其他特殊含義。
+請注意，`(e)` 的型別不是 `(e): (t)`；換句話說，不存在只有一個元素的元組。若括號內只有單一元素，括號僅用於消除歧義，並不帶有其他特殊意義。
 
-有時，具有兩個元素的元組稱為「對 (pairs)」，具有三個元素的元組稱為「三元組 (triples)」。
+有時候，具有兩個元素的元組稱為「配對」，具有三個元素的元組稱為「三元組」。
 
-### 範例
+### 範例 (Examples) {#examples}
 
 ```move
 module 0::example;
 
-// 這 3 個函式都是等價的
+// 這 3 個函式全都等效
 
-// 當未提供回傳型別時，會預設推斷為 `()`
+// 未提供回傳型別時，會假定為 `()`
 fun returns_unit_1() { }
 
-// 空運算式區塊中存在隱式的 () 數值
+// 空的運算式區塊中隱含一個 () 值
 fun returns_unit_2(): () { }
 
-// `returns_unit_1` 和 `returns_unit_2` 的明確版本
+// `returns_unit_1` 與 `returns_unit_2` 的明確版本
 fun returns_unit_3(): () { () }
 
 
@@ -54,20 +81,20 @@ fun returns_4_values(x: &u64): (&u64, u8, u128, vector<u8>) {
 }
 ```
 
-## 操作
+## 操作 (Operations) {#operations}
 
-目前對元組唯一能做的操作是解構 (destructuring)。
+目前唯一能對元組執行的操作是解構。
 
-### 解構 (Destructuring)
+### 解構 (Destructuring) {#destructuring}
 
-任何大小的元組都可以在 `let` 綁定或賦值中被解構。
+任何大小的元組都可以在 `let` 繫結或指派中解構。
 
 例如：
 
 ```move
 module 0x42::example;
 
-// 這 3 個函式是等價的
+// 這 3 個函式全都等效
 fun returns_unit() {}
 fun returns_2_values(): (bool, bool) { (true, false) }
 fun returns_4_values(x: &u64): (&u64, u8, u128, vector<u8>) { (x, 0, 1, b"foobar") }
@@ -93,11 +120,11 @@ fun examples_with_function_calls() {
 }
 ```
 
-更多詳細資訊請參見 [Move 變數](./../variables)。
+如需更多詳細資訊，請參閱 [Move 變數](./../variables)。
 
-## 子型別 (Subtyping)
+## 子型別 (Subtyping) {#subtyping}
 
-與參考一樣，元組是 Move 中唯一具有 [子型別 (subtyping)](https://en.wikipedia.org/wiki/Subtyping) 的型別。元組僅在與參考（以共變的方式）相關的意義上具有子型別。
+除了參考以外，元組是 Move 中唯一具有[子型別](https://en.wikipedia.org/wiki/Subtyping)的型別。元組僅在其包含參考的子型別關係中具有子型別性質（以協變方式）。
 
 例如：
 
@@ -114,12 +141,12 @@ let (a, b): (&u64, &u64) = (x, y);
 let (c, d): (&u64, &u64) = (y, y);
 
 // highlight-error-start
-// 錯誤！ (&u64, &mut u64) 不是 (&mut u64, &mut u64) 的子型別
-// 因為 &u64 不是 &mut u64 的子型別
+// 錯誤！(&u64, &mut u64) 並非 (&mut u64, &mut u64) 的子型別
+// 因為 &u64 並非 &mut u64 的子型別
 let (e, f): (&mut u64, &mut u64) = (x, y);
 // highlight-error-end
 ```
 
-## 所有權 (Ownership)
+## 所有權 (Ownership) {#ownership}
 
-如上所述，元組數值在執行階段並不真正存在。因此，目前它們不能儲存到區域變數中（但此功能很可能會在未來某個時間點推出）。因此，元組目前只能被移動 (moved)，因為複製它們需要先將它們放入區域變數中。
+如上所述，元組值實際上並不存在於執行階段。由於這個原因，目前它們無法儲存至區域變數中（但這項功能很可能會在未來某個時間點推出）。因此，目前元組只能被移動，因為複製元組會要求先將其放入區域變數中。
