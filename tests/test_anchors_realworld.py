@@ -67,6 +67,12 @@ ANCHOR_CENSUS_SHA = "5759c28ec0ef5c7b9e638093659baccd6f5f196f"
 ANCHOR_CENSUS_HEADINGS = 1102
 ANCHOR_CENSUS_WITH_ID = 1102
 
+# english-main 在收斂 {#id} 判準當下的 tip。釘固定 sha，不用可移動的分支名 ——
+# 這是回歸基線，不是上游追蹤器。
+EN_CENSUS_SHA = "29e332267ecbebb7682b5e8df186e1059664cf3d"
+EN_CENSUS_FILES = 156
+EN_CENSUS_HEADINGS = 1164
+
 
 def _files_at(ref: str, *roots: str) -> list[str]:
     r = subprocess.run(
@@ -99,21 +105,33 @@ def test_widened_anchor_pattern_is_a_noop_on_the_real_corpus():
     assert with_id == total  # 全語料每個標題都已帶顯式 anchor
 
 
-def test_widened_anchor_pattern_is_a_noop_on_the_english_source():
-    """english-main 的英文原檔顯式 id 數為 0；slugify 的輸入端不因放寬而改變。"""
-    narrow = re.compile(r"\s*\{#([A-Za-z0-9_-]+)\}\s*$")
-    seen = 0
-    for path in _files_at("english-main"):
-        text = _show("english-main", path)
+def test_english_source_has_no_explicit_anchor_ids():
+    """`slugify()` 的輸入端不會被放寬判準影響 —— 因為英文原檔一個顯式 {#id} 都沒有。
+
+    這條刻意**不**寫成「新舊 regex 判定全等」的對拍：英文語料裡沒有任何標題含
+    字面 `{#`，那種對拍在這個語料上恆為 None == None，把 _ANCHOR 換成任何東西
+    它都會綠（review 實測）。守衛要觀測它真正宣稱的性質（lessons L2），所以這裡
+    直接數「含字面 `{#` 的標題有幾個」與「解析得出 id 的標題有幾個」，兩者都必須是 0。
+    數字一變，代表英文上游開始使用顯式 anchor —— 那時 slugify 的輸入端假設就變了，
+    要有人回來看一眼。
+    """
+    files = _files_at(EN_CENSUS_SHA)
+    scanned = headings = literal_brace = explicit_ids = 0
+    for path in files:
+        text = _show(EN_CENSUS_SHA, path)
         if not text:
             continue
-        try:
-            _, body = frontmatter.split(text)
-            hs = anchors.headings(body)
-        except Exception:
-            continue  # 結構殘缺檔由 validate 負責，不是本測試的對象
+        _, body = frontmatter.split(text)
+        hs = anchors.headings(body)   # 不吞例外：解析失敗就是要紅
+        scanned += 1
         for _, t in hs:
-            seen += 1
-            m = narrow.search(t)
-            assert anchors.existing_anchor(t) == (m.group(1) if m else None), (path, t)
-    assert seen > 1000  # 防止「一個檔都沒掃到卻綠燈」的空轉
+            headings += 1
+            if "{#" in t:
+                literal_brace += 1
+            if anchors.existing_anchor(t) is not None:
+                explicit_ids += 1
+
+    assert scanned == EN_CENSUS_FILES
+    assert headings == EN_CENSUS_HEADINGS
+    assert literal_brace == 0
+    assert explicit_ids == 0
