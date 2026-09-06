@@ -13,7 +13,7 @@ glossary/簡體殘留字則是彙總全語料的違規數）。
 import sys
 from pathlib import Path
 
-from . import frontmatter, glossary, validate
+from . import anchors, frontmatter, glossary, validate
 
 
 def collect() -> dict[str, str]:
@@ -24,6 +24,28 @@ def collect() -> dict[str, str]:
         for p in Path(root).rglob("*.md"):
             files[str(p)] = p.read_text(encoding="utf-8")
     return files
+
+
+def cjk_anchor_hits(files: dict[str, str]) -> list[tuple[str, str]]:
+    """含 CJK 的顯式 anchor id。回傳 (路徑, id)，路徑排序。
+
+    管線的衍生路徑（tier 3）由英文標題 slugify，結構上產不出 CJK id；
+    所以這裡的命中一定是人手動寫進語料的。那不是錯誤——docusaurus 吃得下，
+    沿用它也是正確的 tier 1 行為——但它會產出 CJK URL，值得有人看一眼。
+    比照 scan-only：只提醒，不計入 exit code。
+    """
+    hits: list[tuple[str, str]] = []
+    for path, text in sorted(files.items()):
+        _, body = frontmatter.split(text)
+        try:
+            hs = anchors.headings(body)
+        except Exception:
+            continue  # 結構問題由 check_links / check_file 負責報
+        for _, t in hs:
+            aid = anchors.existing_anchor(t)
+            if aid and validate.CJK.search(aid):
+                hits.append((path, aid))
+    return hits
 
 
 def main() -> int:
@@ -69,6 +91,10 @@ def main() -> int:
         _, body = frontmatter.split(text)
         for bad, n in sorted(glossary.scan_only_hits(body).items()):
             print(f"{path}: ⚠️  待人工判讀 {bad} x{n}", file=sys.stderr)
+
+    # CJK anchor 統計：不計入 exit code（見 cjk_anchor_hits 的 docstring）。
+    for path, aid in cjk_anchor_hits(files):
+        print(f"{path}: ⚠️  CJK anchor id {{#{aid}}}", file=sys.stderr)
 
     # gate 11（有序列表序號重複寫進內文）掛在這裡：它只看中文側，不需要
     # 中英配對，所以 gate 10 那個「需要英文原文」的排除理由不適用。

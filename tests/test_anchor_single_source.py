@@ -47,3 +47,36 @@ def test_gate_and_inject_agree_on_a_cjk_anchor():
     out = anchors.inject(zh, en)
     assert out.count("{#") == 2  # 兩個標題各一個，不是三個
     assert "{#終止與斷言-abort-and-assert}" in out
+
+
+from scripts.zh_tw import check_repo
+
+
+def test_pipeline_never_derives_a_cjk_anchor():
+    """tier 3（衍生）一律由英文標題 slugify 而來，結構上不可能是 CJK。
+    放寬判準只開啟「沿用人工寫進語料的 CJK id」，不開啟「自己產生」。"""
+    zh = "# 中止與斷言 (Abort and Assert)\n\n## 斷言 (Assert)\n"
+    en = "# Abort and Assert\n\n## Assert\n"
+    out = anchors.inject(zh, en)
+    ids = [anchors.existing_anchor(t) for _, t in anchors.headings(out)]
+    assert ids == ["abort-and-assert", "assert"]
+
+
+def test_existing_cjk_anchor_is_carried_forward_verbatim():
+    """tier 1：已寫進語料的 id 是已發佈契約，原封不動。"""
+    zh = "# 中止 {#中止}\n"
+    en = "# Abort\n"
+    out = anchors.inject(zh, en)
+    assert anchors.existing_anchor(anchors.headings(out)[0][1]) == "中止"
+
+
+def test_cjk_anchor_hits_reports_nothing_on_the_current_corpus():
+    """baseline 0。數字一變就要有人看一眼是誰手動寫了 CJK anchor
+    （比照 glossary scan-only 的 baseline 做法：沒有 baseline 的警告
+    等於沒人看的噪音）。"""
+    assert check_repo.cjk_anchor_hits(check_repo.collect()) == []
+
+
+def test_cjk_anchor_hits_finds_a_planted_one():
+    files = {"book/x.md": "# 中止 {#中止}\n"}
+    assert check_repo.cjk_anchor_hits(files) == [("book/x.md", "中止")]
