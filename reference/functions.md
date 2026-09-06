@@ -1,20 +1,45 @@
 ---
 title: 函式 (Functions) | 參考手冊
-description:
-  Move 函式參考手冊 (Move Functions Reference)：宣告、可見性修飾詞 (Visibility Modifiers)、entry
-  函式、回傳值與呼叫慣例。
+description: Move 函式 (functions) 參考：宣告 (declaration)、可見性修飾詞 (visibility modifiers)、入口函式 (entry functions)、回傳值 (return values) 與呼叫慣例 (calling conventions)。
+keywords:
+  - Move
+  - Sui
+  - Move reference
+  - functions
+  - reference
+questions:
+  - How does Functions work in Move?
+  - What is the syntax for Functions in Move?
+  - What is Declaration in Move?
+  - What is Calling in Move?
+answer: 'Move functions reference: declaration, visibility modifiers, entry functions, return values, and calling conventions.'
+goal:
+  description: 'Reader understands move functions reference: declaration, visibility modifiers, entry functions, return values, and calling conventions'
+  requires:
+    - has_frontmatter:
+        - title
+        - description
+        - keywords
+      label: Has required frontmatter fields
+    - min_words: 50
+      label: Needs content depth
+    - has_questions: true
+      label: Needs questions for AI search visibility
+    - has_answer: true
+      label: Needs answer summary for AI citation
 ---
 
-# 函式 (Functions)
+# 函式 (Functions) {#functions}
 
-函式定義在模組 (Modules) 內部，並定義了該模組的邏輯與行為。函式可以被重複使用，既可以從其他函式中呼叫，也可以作為執行的進入點。
+函式會在模組內宣告，並定義模組的邏輯與行為。函式可重複使用，可由其他函式呼叫，或作為執行的入口點。
 
-## 宣告
+## 宣告 (Declaration) {#declaration}
 
-函式使用 `fun` 關鍵字進行宣告，後跟函式名稱、型別參數、參數、回傳型別，最後是函式主體。
+函式會使用 `fun` 關鍵字宣告，後接函式名稱、型別參數、
+參數、回傳型別，以及最後的函式主體。
 
 ```text
-<可見性>? <entry>? <macro>? fun <識別碼><[型別參數: 約束],*>([識別碼: 型別],*): <回傳型別> <函式主體>
+<visibility>? <entry>? <macro>? fun <identifier><[type_parameters: constraint],*>([identifier: type],*): <return_type> <function_body>
 ```
 
 例如：
@@ -25,7 +50,7 @@ fun foo<T1, T2>(x: u64, y: T1, z: T2): (T2, T1, u64) { (z, y, x) }
 
 ### 可見性 (Visibility) {#visibility}
 
-預設情況下，模組函式只能在同一個模組內被呼叫。這些內部（有時稱為私有）函式不能從其他模組呼叫，也不能作為執行的進入點。
+預設情況下，模組函式只能在同一個模組內呼叫。這些內部（有時稱為私有）函式無法從其他模組或作為入口函式呼叫。
 
 ```move
 module a::m {
@@ -36,20 +61,22 @@ module a::m {
 module b::other {
     fun calls_m_foo(): u64 {
         a::m::foo() // 錯誤！
-//      ^^^^^^^^^^^ 'foo' 對 'a::m' 是內部的
+//      ^^^^^^^^^^^ 'foo' 是 'a::m' 的內部函式
     }
 }
 ```
 
-若要允許從其他模組存取，函式必須宣告為 `public` 或 `public(package)`。與可見性切線相關的是，[`entry`](#entry-modifier) 函式可以被呼叫作為執行的進入點。
+若要允許其他模組存取，函式必須宣告為 `public` 或 `public(package)`。
+與可見性相關的是，[`entry`](#entry-modifier) 函式可作為執行的入口函式呼叫。
 
-#### `public` 可見性
+#### `public` 可見性 (`public` visibility) {#public-visibility}
 
-`public` 函式可以被定義在 _任何_ 模組中的 _任何_ 函式呼叫。如下例所示，`public` 函式可以被以下來源呼叫：
+`public` 函式可由定義於*任何*模組中的*任何*函式呼叫。如以下範例所示，
+`public` 函式可由下列方式呼叫：
 
-- 定義在同一個模組中的其他函式，
-- 定義在另一個模組中的函式，或
-- 作為執行的進入點。
+- 定義於同一模組中的其他函式，
+- 定義於另一個模組中的函式，或
+- 作為執行的入口函式。
 
 ```move
 module a::m {
@@ -64,14 +91,14 @@ module b::other {
 }
 ```
 
-有關執行進入點的更多細節，請參閱[下方章節](#entry-modifier)。
+如需執行入口函式的更多詳細資訊，請參閱[下方章節](#entry-modifier)。
 
-#### `public(package)` 可見性
+#### `public(package)` 可見性 (`public(package)` visibility) {#publicpackage-visibility}
 
-`public(package)` 可見性修飾符是 `public` 修飾符的一種更受限形式，旨在對函式的使用位置提供更多控制。`public(package)` 函式可以被以下來源呼叫：
+`public(package)` 可見性修飾詞是 `public` 修飾詞較受限制的形式，可更精確地控制函式可在何處使用。`public(package)` 函式可由下列方式呼叫：
 
-- 定義在同一個模組中的其他函式，或
-- 定義在同一個套件 (Package)（相同的地址）中的其他函式。
+- 定義於同一模組中的其他函式，或
+- 定義於同一套件（相同地址）中的其他函式
 
 ```move
 module a::m {
@@ -81,29 +108,29 @@ module a::m {
 
 module a::n {
     fun calls_m_foo(): u64 {
-        a::m::foo() // 有效，同樣在 `a` 中
+        a::m::foo() // 有效，也位於 `a` 中
     }
 }
 
 module b::other {
     fun calls_m_foo(): u64 {
         a::m::foo() // 錯誤！
-//      ^^^^^^^^^^^ 'foo' 只能從 `a` 中的模組呼叫
+//      ^^^^^^^^^^^ 只能從 `a` 中的模組呼叫 'foo'
     }
 }
 ```
 
-#### 已棄用：`public(friend)` 可見性
+#### 已棄用的 `public(friend)` 可見性 (DEPRECATED `public(friend)` visibility) {#deprecated-publicfriend-visibility}
 
-在引入 `public(package)` 之前，`public(friend)` 被用於允許同一個套件中的函式進行有限的公開存取，但必須由被呼叫者的模組顯式列舉允許的模組清單。詳情請參閱 [朋友圈 (Friends)](./friends)。
+在新增 `public(package)` 之前，`public(friend)` 用於允許同一套件中的函式具有受限的公開存取權，但允許的模組清單必須由被呼叫函式的模組明確列舉。如需更多詳細資訊，請參閱[Friends](./friends)。
 
-### `entry` 修飾符 {#entry-modifier}
+### `entry` 修飾詞 (`entry` modifier) {#entry-modifier}
 
-除了 `public` 函式之外，你的模組中可能還有一些函式想要作為執行的進入點。`entry` 修飾符旨在允許模組函式啟動執行，而無需將功能暴露給其他模組。
+除了 `public` 函式之外，你的模組中可能還有一些函式想作為執行的進入點使用。`entry` 修飾詞旨在讓模組函式能夠啟動執行，而不必將功能公開給其他模組。
 
-從本質上講，`public` 和 `entry` 函式的組合定義了一個模組的「主 (main)」函式，它們指定了 Move 程式可以從何處開始執行。
+本質上，`public` 與 `entry` 函式的組合定義了模組的「主要」函式，並指定 Move 程式可從何處開始執行。
 
-不過請記住，`entry` 函式 _仍然_ 可以被其他 Move 函式呼叫。因此，雖然它們 _可以_ 作為 Move 程式的起點，但它們並不侷限於這種情況。
+但請記住，`entry` 函式*仍然可以*由其他 Move 函式呼叫。因此，雖然它們*可以*作為 Move 程式的起點，但並不僅限於該情況。
 
 例如：
 
@@ -116,16 +143,17 @@ module a::m {
 module a::n {
     fun calls_m_foo(): u64 {
         a::m::foo() // 錯誤！
-//      ^^^^^^^^^^^ 'foo' 對 'a::m' 是內部的
+//      ^^^^^^^^^^^ 'foo' 是 'a::m' 的內部函式
     }
 }
 ```
 
-`entry` 函式的參數和回傳型別可能會受到限制。不過，這些限制具體取決於 Move 的每個個別部署。
+`entry` 函式的參數與回傳型別可能會受到限制。不過，這些限制取決於 Move 的個別部署版本。
 
-[有關 Sui 上 `entry` 函式的文件可以在這裡找到。](https://docs.sui.io/concepts/sui-move-concepts/entry-functions)
+[你可以在此找到 Sui 上 `entry` 函式的文件。](https://docs.sui.io/concepts/sui-move-concepts#entry-functions)
 
-為了方便測試，可以從 [`#[test]` 和 `#[test_only]`](./unit-testing) 上下文中呼叫 `entry` 函式。
+為了讓測試更容易進行，可以從
+[`#[test]` 與 `#[test_only]`](./unit-testing) 情境中呼叫 `entry` 函式。
 
 ```move
 module a::m {
@@ -139,9 +167,9 @@ module a::m_test {
 }
 ```
 
-### `macro` 修飾符
+### `macro` 修飾詞 (`macro` modifier) {#macro-modifier}
 
-與普通函式不同，`macro` (巨集) 函式在執行階段並不存在。相反，這些函式在編譯期間會被內嵌 (inline) 替換到每個呼叫點。這些 `macro` 函式利用這種編譯過程提供超出標準函式的功能，例如接受高階的 _lambda_ 風格函式作為參數。這些 lambda 參數同樣在編譯期間展開，允許你將函式主體的部分內容作為參數傳遞給巨集。例如，考慮以下簡單的迴圈巨集，其中迴圈主體是以 lambda 形式提供的：
+不同於一般函式，`macro` 函式在執行階段並不存在。這些函式會在編譯期間，於每個呼叫位置以內嵌方式替換。這些 `macro` 函式利用此編譯程序提供超越標準函式的功能，例如接受高階的 _lambda_ 風格函式作為引數。這些 lambda 引數也會在編譯期間展開，讓你能將函式主體的部分內容作為引數傳遞給巨集。例如，請考慮以下簡單的迴圈巨集，其中迴圈主體會以 lambda 提供：
 
 ```move
 macro fun n_times($n: u64, $body: |u64| -> ()) {
@@ -159,11 +187,11 @@ fun example() {
 }
 ```
 
-欲瞭解更多資訊，請參閱 [巨集 (Macros)](./functions/macros) 章節。
+如需更多資訊，請參閱 [巨集](./functions/macros) 章節。
 
-### 名稱
+### 名稱 (Name) {#name}
 
-函式名稱可以以字母 `a` 到 `z` 開頭。第一個字元之後，函式名稱可以包含底線 `_`、字母 `a` 到 `z`、字母 `A` 到 `Z` 或數字 `0` 到 `9`。
+函式名稱可以以字母 `a` 到 `z` 開頭。第一個字元之後，函式名稱可以包含底線 `_`、字母 `a` 到 `z`、字母 `A` 到 `Z`，或數字 `0` 到 `9`。
 
 ```move
 fun fOO() {}
@@ -171,34 +199,34 @@ fun bar_42() {}
 fun bAZ_19() {}
 ```
 
-### 型別參數
+### 型別參數 (Type Parameters) {#type-parameters}
 
-在名稱之後，函式可以擁有型別參數：
+在名稱之後，函式可以具有型別參數。
 
 ```move
 fun id<T>(x: T): T { x }
 fun example<T1: copy, T2>(x: T1, y: T2): (T1, T1, T2) { (copy x, x, y) }
 ```
 
-欲瞭解更多細節，請參閱 [Move 泛型 (Generics)](./generics)。
+如需更多詳細資訊，請參閱 [Move 泛型](./generics)。
 
-### 參數
+### 參數 (Parameters) {#parameters}
 
-函式參數使用本地變數名稱後跟型別標註來宣告：
+函式參數會以區域變數名稱後接型別標註的方式宣告。
 
 ```move
 fun add(x: u64, y: u64): u64 { x + y }
 ```
 
-我們將其解讀為 `x` 的型別為 `u64`。
+我們將此解讀為 `x` 的型別是 `u64`。
 
-一個函式可以完全沒有任何參數。
+函式完全不一定要有任何參數。
 
 ```move
 fun useless() { }
 ```
 
-這在建立新的或空資料結構的函式中非常常見：
+這對於建立新的或空的資料結構的函式非常常見。
 
 ```move
 module a::example;
@@ -210,7 +238,7 @@ fun new_counter(): Counter {
 }
 ```
 
-### 回傳型別
+### 回傳型別 (Return type) {#return-type}
 
 在參數之後，函式會指定其回傳型別。
 
@@ -218,15 +246,16 @@ fun new_counter(): Counter {
 fun zero(): u64 { 0 }
 ```
 
-這裡的 `: u64` 表示該函式的回傳型別為 `u64`。
+此處的 `: u64` 表示函式的回傳型別為 `u64`。
 
-使用 [元組 (Tuples)](./primitive-types/tuples)，函式可以回傳多個數值：
+使用 [元組](./primitive-types/tuples)，函式可以回傳多個值：
 
 ```move
 fun one_two_three(): (u64, u64, u64) { (0, 1, 2) }
 ```
 
-如果未指定回傳型別，函式將具有隱式的單元型別 `()` 作為其回傳型別。以下函式是等價的：
+如果未指定回傳型別，函式會隱含地使用單位型別 `()` 作為回傳型別。下列
+函式彼此等價：
 
 ```move
 fun just_unit(): () { () }
@@ -234,11 +263,13 @@ fun just_unit() { () }
 fun just_unit() { }
 ```
 
-正如在 [元組 (Tuples) 章節](./primitive-types/tuples) 中提到的，這些元組「數值」並不作為執行階段數值存在。這意味著回傳單元型別 `()` 的函式在執行期間不會回傳任何數值。
+如同在[元組章節](./primitive-types/tuples)中提到，這些元組「值」不會作為
+執行階段值存在。這表示回傳單位型別 `()` 的函式在
+執行期間不會回傳任何值。
 
-### 函式主體
+### 函式主體 (Function body) {#function-body}
 
-函式主體是一個運算式區塊。函式的回傳值是序列中的最後一個值：
+函式的主體是運算式區塊。函式的回傳值是序列中的最後一個值。
 
 ```move
 fun example(): u64 {
@@ -248,17 +279,19 @@ fun example(): u64 {
 }
 ```
 
-有關回傳的更多資訊，請參閱[下方章節](#回傳數值)。
+請參閱[下方關於回傳值的章節](#returning-values)，以取得更多資訊。
 
-有關運算式區塊的更多資訊，請參閱 [Move 變數 (Variables)](./variables)。
+如需運算式區塊的更多資訊，請參閱 [Move 變數](./variables)。
 
 ### 原生函式 (Native Functions) {#native-functions}
 
-有些函式沒有指定主體，而是由虛擬機 (VM) 提供主體。這些函式被標記為 `native` (原生)。
+有些函式沒有指定函式本體，而是由 VM 提供函式本體。這些
+函式會標示為 `native`。
 
-在不修改 VM 源程式碼的情況下，程式設計師無法新增原生函式。此外，`native` 函式的設計初衷是用於標準程式庫程式碼或該 Move 環境所需的功能。
+在不修改 VM 原始碼的情況下，程式設計師無法新增原生函式。此外，
+`native` 函式的用途是提供標準函式庫原始碼，或提供特定 Move 環境所需的功能。
 
-你可能看到的大多數 `native` 函式都在標準程式庫程式碼中，例如 `vector`。
+你最常見到的 `native` 函式大多位於標準函式庫原始碼中，例如 `vector`
 
 ```move
 module std::vector {
@@ -267,9 +300,9 @@ module std::vector {
 }
 ```
 
-## 呼叫
+## 呼叫 (Calling) {#calling}
 
-在呼叫函式時，可以透過別名或完全限定名稱來指定函式名稱。
+呼叫函式時，可以透過別名或完整限定名稱指定名稱。
 
 ```move
 module a::example {
@@ -279,7 +312,7 @@ module a::example {
 module b::other {
     use a::example::{Self, zero};
     fun call_zero() {
-        // 有了上面的 `use` 陳述式，所有這些呼叫都是等價的
+        // 使用上述的 `use` 時，這些呼叫全都等效
         a::example::zero();
         example::zero();
         zero();
@@ -287,7 +320,7 @@ module b::other {
 }
 ```
 
-呼叫函式時，必須為每個參數提供一個實參 (argument)。
+呼叫函式時，必須為每個參數提供引數。
 
 ```move
 module a::example {
@@ -307,7 +340,7 @@ module b::other {
 }
 ```
 
-型別引數 (Type arguments) 可以被指定，也可以被推導。這兩種呼叫是等價的。
+型別引數可以明確指定或由系統推斷。兩種呼叫皆等效。
 
 ```move
 module a::example {
@@ -322,11 +355,11 @@ module b::other {
 }
 ```
 
-欲瞭解更多細節，請參閱 [Move 泛型 (Generics)](./generics)。
+如需更多詳細資料，請參閱 [Move 泛型](./generics)。
 
-## 回傳數值
+## 回傳值 (Returning values) {#returning-values}
 
-函式的結果（即其「回傳值」）是其函式主體的最終數值。例如：
+函式的結果，也就是其「回傳值」，是其函式主體的最終值。例如：
 
 ```move
 fun add(x: u64, y: u64): u64 {
@@ -334,9 +367,9 @@ fun add(x: u64, y: u64): u64 {
 }
 ```
 
-這裡的回傳值是 `x + y` 的結果。
+此處的回傳值是 `x + y` 的結果。
 
-[如前所述](#函式主體)，函式主體是一個 [運算式區塊](./variables)。運算式區塊可以包含各種陳述式的序列，而區塊中最終的運算式將成為該區塊的數值。
+[如上所述](#function-body)，函式主體是一個[運算式區塊](./variables)。運算式區塊可以依序執行各種陳述式，而區塊中的最終運算式將會是該區塊的值：
 
 ```move
 fun double_and_add(x: u64, y: u64): u64 {
@@ -346,18 +379,18 @@ fun double_and_add(x: u64, y: u64): u64 {
 }
 ```
 
-這裡的回傳值是 `double_x + double_y` 的結果。
+此處的回傳值是 `double_x + double_y` 的結果。
 
-### `return` 運算式 {#return-expression}
+### `return` 運算式 (`return` expression) {#return-expression}
 
-函式會隱式地回傳其主體求得的數值。不過，函式也可以使用顯式的 `return` 運算式：
+函式會隱含地回傳其主體所評估的值。不過，函式也可以使用明確的 `return` 運算式：
 
 ```move
 fun f1(): u64 { return 0 }
 fun f2(): u64 { 0 }
 ```
 
-這兩個函式是等價的。在這個稍微複雜一點的例子中，函式減去兩個 `u64` 數值，但如果第二個數值太大則提前回傳 `0`：
+這兩個函式等效。在這個稍微複雜的範例中，函式會將兩個 `u64` 值相減；但若第二個值過大，則會提早回傳 `0`：
 
 ```move
 fun safe_sub(x: u64, y: u64): u64 {
@@ -366,9 +399,9 @@ fun safe_sub(x: u64, y: u64): u64 {
 }
 ```
 
-注意，這個函式的主體也可以寫成 `if (y > x) 0 else x - y`。
+請注意，此函式的主體也可以寫成 `if (y > x) 0 else x - y`。
 
-不過，`return` 的真正亮點在於從深層巢狀的其他控制流結構中退出。在這個範例中，函式走訪向量以尋找給定數值的索引：
+不過，`return` 在離開其他控制流程結構的深層位置時特別有用。在此範例中，函式會走訪向量，以尋找指定值的索引：
 
 ```move
 fun index_of<T>(v: &vector<T>, target: &T): Option<u64> {
@@ -383,7 +416,7 @@ fun index_of<T>(v: &vector<T>, target: &T): Option<u64> {
 }
 ```
 
-使用不帶參數的 `return` 是 `return ()` 的簡寫。也就是說，以下兩個函式是等價的：
+不帶引數使用 `return` 是 `return ()` 的簡寫。也就是說，下列兩個函式等效：
 
 ```move
 fun foo() { return }

@@ -510,11 +510,16 @@ def test_scan_only_warnings_have_a_known_baseline():
     誤用會混在固定幾行 ⚠️ 裡看不出來（外部 review 2026-09-04）。
 
     釘住預期筆數 —— 數字一變就得有人看一眼是新誤用還是清掉了舊的。
-    目前的 1 處是**正確**的「終止」（英文原文就是 terminate）。
-    2026-09-06 兩次下修，都逐檔比對過英文原文，確認是改譯不是漏譯：
+    目前是 0 處。2026-09-06 三次下修，都逐檔比對過英文原文，確認是改譯不是漏譯：
     5 → 3 `primitive-types/references.md` 兩處改用「中止」（scan-only 表對
     「終止」開的建議詞）；3 → 1 `enums.md`「terminated with a semicolon」改譯
-    「以分號結尾」、`uses.md`「shadowing ends」改譯「結束」。
+    「以分號結尾」、`uses.md`「shadowing ends」改譯「結束」；1 → 0
+    `generics.md` 排乾後「will technically terminate」改譯「中止」（同上，
+    走的是 scan-only 表自己的建議詞）。
+
+    **0 不是「這條測試沒事做了」**：它現在釘的是「語料裡一個 scan-only 命中
+    都不該有」，新誤用進來就是 1 != 0 直接紅。真要放寬也是改這個數字並在此
+    留一行理由，不是把測試刪掉。
 
     範圍限 .md —— check_repo.collect() 也只收 .md。`reference/sidebar.yml`
     的側邊欄標籤不在任何 gate 的視野內，改術語時要人工同步（2026-09-04
@@ -525,7 +530,7 @@ def test_scan_only_warnings_have_a_known_baseline():
     for path in files:
         body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
         hits.update(glossary.scan_only_hits(body))
-    assert dict(hits) == {"終止": 1}, dict(hits)
+    assert dict(hits) == {}, dict(hits)
 
 
 def test_substitution_mask_covers_link_destinations_and_urls():
