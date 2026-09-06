@@ -510,16 +510,21 @@ def test_scan_only_warnings_have_a_known_baseline():
     誤用會混在固定幾行 ⚠️ 裡看不出來（外部 review 2026-09-04）。
 
     釘住預期筆數 —— 數字一變就得有人看一眼是新誤用還是清掉了舊的。
-    目前是 0 處。2026-09-06 三次下修，都逐檔比對過英文原文，確認是改譯不是漏譯：
+    目前的 1 處是**正確**的「終止」（`generics.md` 的
+    "will technically terminate for any given input"，講的是遞迴會收斂／停機，
+    與 Move 的 `abort` 無關）。
+    2026-09-06 兩次下修，都逐檔比對過英文原文，確認是改譯不是漏譯：
     5 → 3 `primitive-types/references.md` 兩處改用「中止」（scan-only 表對
     「終止」開的建議詞）；3 → 1 `enums.md`「terminated with a semicolon」改譯
-    「以分號結尾」、`uses.md`「shadowing ends」改譯「結束」；1 → 0
-    `generics.md` 排乾後「will technically terminate」改譯「中止」（同上，
-    走的是 scan-only 表自己的建議詞）。
+    「以分號結尾」、`uses.md`「shadowing ends」改譯「結束」。
 
-    **0 不是「這條測試沒事做了」**：它現在釘的是「語料裡一個 scan-only 命中
-    都不該有」，新誤用進來就是 1 != 0 直接紅。真要放寬也是改這個數字並在此
-    留一行理由，不是把測試刪掉。
+    **這個數字一度變成 0，是錯的**（2026-09-06 verifier C1）：排乾 `generics.md`
+    時 backend 把那處「終止」換成了「中止」，而全書「中止」= `abort`，語意從
+    「函式對任何輸入都會正常終止」變成「函式會 abort」。根因是 L9 的復發：
+    scan-only 表雖然 `enforce` 不碰，但 `glossary.prompt_rules()` 會把它教給
+    backend，所以在 backend 端它其實是 enforce。prompt 自己寫了但書「若它在
+    句中是動詞，請改寫句子而不是換詞」，terminate 正是動詞，模型照樣換了詞。
+    這處已改回「終止」。**不要因為排乾又把它換掉就順手把基線調成 0。**
 
     範圍限 .md —— check_repo.collect() 也只收 .md。`reference/sidebar.yml`
     的側邊欄標籤不在任何 gate 的視野內，改術語時要人工同步（2026-09-04
@@ -530,7 +535,7 @@ def test_scan_only_warnings_have_a_known_baseline():
     for path in files:
         body = frontmatter.split(path.read_text(encoding="utf-8"))[1]
         hits.update(glossary.scan_only_hits(body))
-    assert dict(hits) == {}, dict(hits)
+    assert dict(hits) == {"終止": 1}, dict(hits)
 
 
 def test_substitution_mask_covers_link_destinations_and_urls():

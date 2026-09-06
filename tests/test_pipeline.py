@@ -309,7 +309,17 @@ _ZH_LEGACY = (
 
 
 def _git(cwd, *args):
-    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+    """關掉會從使用者全域設定漏進來的兩件事：`commit.gpgsign`（沒有簽章金鑰的
+    環境會直接失敗）與 `core.hooksPath`（會把使用者的 pre-commit hook 拉進這個
+    temp repo 跑）。失敗時把 stderr 帶進例外 —— `check=True` + `capture_output`
+    的預設行為是把它整個吞掉，只留一個看不出原因的 CalledProcessError。
+    """
+    r = subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    if r.returncode:
+        raise AssertionError(f"git {' '.join(args)} 失敗: {r.stderr.strip()}")
 
 
 def _a_tier_repo(tmp_path, monkeypatch, path="reference/constants.md"):
@@ -373,12 +383,18 @@ def test_run_a_tier_file_with_legacy_body_defects_succeeds(tmp_path, monkeypatch
 
 
 def test_b_tier_body_defect_is_not_carried(tmp_path, monkeypatch):
-    """對照組：A 層那條豁免是**路徑限定**的。同一份 legacy 缺陷走 B 路徑
-    （內文重譯）時不得原封不動流出去——enforce 與 gate 同進退（notes 設計
-    不變式）。沒有這條對照，把 glossary.enforce 從 B 路徑整個拿掉也不會有
-    任何測試轉紅（L5：守衛要對它命名的缺陷紅過一次）。
+    """對照組：A 層那條豁免是**路徑限定**的。同一份 legacy 缺陷改走 B 路徑
+    （內文重譯）時不得原封不動流出去 —— enforce 與 gate 同進退。
+
+    必須經過 `run()` 的分層 routing、而且要看**實際落盤的內容**：直接呼叫
+    `assemble` 的話，把 `run()` 的 `tier(...) == "A"` 條件拿掉（等於所有檔都
+    吃 A 層豁免、豁免不再路徑限定）這個變異會存活 —— 外部 review 2026-09-06
+    實測過。測「哪條路被選中」的唯一辦法是讓 routing 真的跑一次。
     """
     en_ref, path = _a_tier_repo(tmp_path, monkeypatch)
+    # 抹掉 provenance 強制降 B：tier 沒有 old_sha 可比就不會走 A。
+    manifest.MANIFEST_PATH.write_text("{}", encoding="utf-8")
+    assert pipeline.tier(path, en_ref) == "B"
 
     class LegacyBodyBackend:
         def translate(self, text, *, kind="markdown"):
@@ -386,8 +402,11 @@ def test_b_tier_body_defect_is_not_carried(tmp_path, monkeypatch):
                 return "常數。"
             return "# 常數 (Constants)\n\n這段有循環。\n"
 
-    out = pipeline.assemble(_EN_NEW, _ZH_LEGACY, _EN_OLD, LegacyBodyBackend())
-    _, body = frontmatter.split(out)
+    monkeypatch.setattr(pipeline.base, "get", lambda name: LegacyBodyBackend())
+    ok, failed = pipeline.run([path], "fake", en_ref, apply=True)
+    assert (ok, failed) == (1, {})
+
+    _, body = frontmatter.split((tmp_path / path).read_text(encoding="utf-8"))
     assert "循環" not in body
     assert "迴圈" in body
 
@@ -671,6 +690,34 @@ def test_translate_chunk_retries_on_emphasis_mismatch():
     out = pipeline._translate_chunk(en, EmphasisDroppingBackend())
     assert calls["n"] == 3
     assert validate.check_cjk_emphasis(out, en) == []
+
+
+def test_translate_chunk_does_not_retry_repairable_emphasis():
+    """chunk 判定必須跟整檔 gate 看同一份文字 —— 也就是**修復之後**的。
+
+    `- **所有權：**每項資產` 這個形式（收尾 `**` 前是全形冒號、後接 CJK，
+    CommonMark 判定不是 right-flanking）渲染不出 `<strong>`，但
+    `_repair_flanking_punctuation` 修得掉，整檔層級根本不算缺陷。若 chunk
+    這裡驗修復前的文字，它就會觸發重試 —— 而 codex 對這個形式是**一律**這樣
+    譯（`_repair_flanking_punctuation` 的 docstring 有實測記錄），重試三次全
+    不合格，keep-last 反而可能換到「強調整個消失、資訊已不存在」的那種輸出。
+    外部 review 2026-09-06 端到端重現過：1 次呼叫本來會過 → 3 次呼叫 RAISED。
+    """
+    calls = {"n": 0}
+
+    class FlankingBackend:
+        def translate(self, text, *, kind="markdown"):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "- **所有權：**每項資產都有擁有者。\n"  # 可決定性修復
+            return "- 所有權：每項資產都有擁有者。\n"  # 強調整個不見，不可修復
+
+    en = "- **Ownership:** Every asset has an owner.\n"
+    out = pipeline._translate_chunk(en, FlankingBackend())
+    assert calls["n"] == 1, "可修復的輸出不該觸發重試"
+    # 回傳的是**原始**輸出，實際修復留給 assemble，不在這裡重複套用。
+    assert out == "- **所有權：**每項資產都有擁有者。\n"
+    assert validate.check_cjk_emphasis(pipeline._emphasis_repairs(out), en) == []
 
 
 def test_translate_chunk_does_not_retry_on_heading_only_emphasis():

@@ -80,6 +80,18 @@ def tier(path: str, en_ref: str = "english-main") -> str:
 CHUNK_RETRIES = 3
 
 
+def _emphasis_repairs(zh_body: str) -> str:
+    """gate 10 的決定性修復序列。
+
+    只有一份、被 `assemble`（真的修）與 `_translate_chunk`（只拿來判定要不要
+    重試）共用。兩邊各寫一份的話，chunk 的判定母體就會比整檔大，重試會對
+    「整檔層級根本不算缺陷」的輸出開火（L15：同一個不變式兩份實作必漂移）。
+    """
+    zh_body = _repair_cjk_emphasis(zh_body)
+    zh_body = _repair_flanking_punctuation(zh_body)
+    return _repair_cjk_wrapped_ascii_emphasis(zh_body)
+
+
 def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
     """單一 chunk 翻譯，標題層級序列不符就地重試（PR 3 診斷：sonnet 對長檔
     穩定吞小節標題，變更 chunk 尺寸與整檔重跑都救不了；chunk 級重試把失效
@@ -106,7 +118,15 @@ def _translate_chunk(chunk_text: str, backend: base.Backend) -> str:
             ok = (
                 [lv for lv, _ in anchors.headings(out)] == want
                 and anchors.fence_lines(out) == want_fences
-                and not validate.check_cjk_emphasis(out, chunk_text)
+                # 問 gate 之前先套修復 pass：整檔 gate 10 驗的是「修復後」的
+                # 文字（assemble 的順序），chunk 這裡若驗「修復前」，就等於
+                # 對同一支 gate 用了兩套判定母體（L15）——而多出來的那一塊
+                # 恰好是**有決定性修復路徑**的那一類（`- **X：**後接中文`），
+                # 於是重試會把「第 1 次：可修復」丟掉、換成「第 3 次：強調
+                # 整個不見、資訊已不存在」。實測 1 次呼叫本來會過的檔，加上
+                # 重試之後反而 hard-fail。修復只用於**判定**，回傳的仍是原始
+                # 輸出，實際修復留給 assemble 那一段，不重複套用。
+                and not validate.check_cjk_emphasis(_emphasis_repairs(out), chunk_text)
             )
         except anchors.FrontmatterPassedIn:
             # backend 幻覺出 YAML frontmatter —— 正是重試該吸收的垃圾輸出，
@@ -154,9 +174,7 @@ def assemble(
     zh_body = _repair_headings(zh_body, en_body, backend)
     zh_body = _repair_fence_comments(zh_body, backend)
     zh_body = _repair_inpage_links(zh_body, en_body)
-    zh_body = _repair_cjk_emphasis(zh_body)
-    zh_body = _repair_flanking_punctuation(zh_body)
-    zh_body = _repair_cjk_wrapped_ascii_emphasis(zh_body)
+    zh_body = _emphasis_repairs(zh_body)
     # 拼接完成後才注入 anchor：切段後每段的標題序列只是全域序列的子區間。
     zh_body, notes = anchors.inject_report(zh_body, en_body, prev_zh_body, prev_en_body)
     zh_body = glossary.enforce(zh_body)
