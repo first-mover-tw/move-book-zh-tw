@@ -489,8 +489,10 @@ def _anchor_ids(text: str) -> set[str]:
     return ids
 
 
-_ANCHOR_SUFFIX = re.compile(r"\s*\{#[\w-]+\}\s*$")
-ANCHOR_SUFFIX = _ANCHOR_SUFFIX  # 公開別名：pipeline._repair_headings 與判定同一前處理
+# 「什麼是顯式 {#id}」的定義在 anchors.py，這裡只轉出。曾經這裡有自己的
+# 一份（`[\w-]+`），與 anchors 的 `[A-Za-z0-9_-]+` 對 CJK id 判定相反 ——
+# gate 剝得掉、inject 認不得，同一份輸入兩套判定母體（lessons L15）。
+ANCHOR_SUFFIX = anchors.ANCHOR_SUFFIX  # 公開別名：pipeline._repair_headings 在用
 # 標題內的 inline code span。單行標題文字用簡單配對即可，不需要
 # glossary.protected_mask 的跨行/巢狀 backtick 處理。
 _HEADING_CODE_SPAN = re.compile(r"`[^`]*`")
@@ -566,8 +568,8 @@ def heading_suffix_error(zh_t: str, en_t: str) -> str | None:
     """gate 9 的單標題判定。check_heading_suffix 的迴圈與
     pipeline._repair_headings（修復 pass）共用這一份 —— 判定與修復若各自
     實作，前提漂移就會重演 gate 6/inject 那次的死鎖家族。回 None = 合格。"""
-    zh_t = _ANCHOR_SUFFIX.sub("", zh_t).strip()
-    en_t = _ANCHOR_SUFFIX.sub("", en_t).strip()
+    zh_t = anchors.strip_anchor(zh_t).strip()
+    en_t = anchors.strip_anchor(en_t).strip()
     if zh_t == en_t:
         if not re.search(r"[a-z]", _HEADING_CODE_SPAN.sub("", en_t)):
             return None

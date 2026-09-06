@@ -17,7 +17,7 @@ backend，不必為了遷就它而放寬 production 的 guard（Task 14 的教�
 
 import re
 
-from .. import glossary
+from .. import anchors, glossary
 
 _NUMBERED_LINE = re.compile(r"^\s*(\d+)[.)]\s+(.+?)\s*$")
 
@@ -46,7 +46,9 @@ class FakeBackend:
     # 被 SYSTEM_PROMPT 要求產出這個格式，所以 fake 也要 —— 不是放寬守衛去
     # 遷就 fake（Task 14 / lessons L5 的教訓）。
     _HEADING = re.compile(r"^(#+)\s+(.*?)\s*$")
-    _EXPLICIT_ANCHOR = re.compile(r"\s*(\{#[\w-]+\})\s*$")
+    # 判準與產品共用，不另刻一份（lessons L5：fake 要模擬真實 backend，
+    # 不是讓守衛遷就 fake）。group(0) 含前導空白，取 {#id} 要 .strip()。
+    _EXPLICIT_ANCHOR = anchors.ANCHOR_SUFFIX
 
     def _substitute(self, text: str) -> str:
         mask = glossary.protected_mask(text)
@@ -58,8 +60,8 @@ class FakeBackend:
             m = None if protected else self._HEADING.match(line.rstrip("\n"))
             if m:
                 hashes, title = m.group(1), m.group(2)
-                am = self._EXPLICIT_ANCHOR.search(title)
-                anchor = f" {am.group(1)}" if am else ""
+                am = self._EXPLICIT_ANCHOR.search(title.rstrip())
+                anchor = f" {am.group(0).strip()}" if am else ""
                 if am:
                     title = title[: am.start()].rstrip()
                 nl = "\n" if line.endswith("\n") else ""
