@@ -1,0 +1,33 @@
+name: Keepalive scheduled workflows
+
+# GitHub 會在 repo 60 天沒有活動時自動停用所有 schedule workflow
+# （2026-11 實際發生：upstream-sync / translate 被標成 disabled_inactivity，
+# 停了一週才發現）。翻譯語料排乾後 repo 本來就會長期沒有 commit，
+# 所以這是常態而不是意外。
+#
+# 做法：每週對自己與兩條排程 workflow 呼叫 enable API（與
+# gautamkrishnar/keepalive-workflow 的 API mode 同一機制），不製造 dummy commit。
+# 包含自己：若本 workflow 也被停用，就沒有東西能救其他兩條。
+
+permissions:
+  actions: write
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 每週一 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-enable scheduled workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for wf in keepalive.yml upstream-sync.yml translate-zh-tw.yml; do
+            gh workflow enable "$wf"
+            echo "enabled: $wf"
+          done
