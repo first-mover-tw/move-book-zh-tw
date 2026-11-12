@@ -8,6 +8,6 @@ use std::string::String;
 
 /// 回傳 "Hello World!" 作為 `String`。
 public fun hello_world(): String {
-    b"Hello, World!".to_string()
+    "Hello, World!"
 }
 // ANCHOR_END: source
