@@ -1,5 +1,5 @@
 ---
-description: Move 中的熱馬鈴薯模式 (Hot Potato pattern)：不具任何能力 (abilities) 且必須在同一筆交易 (transaction) 中消耗的結構 (struct)，用以強制完成工作流程 (workflow)。
+description: Move 中的燙手山芋模式 (Hot Potato pattern)：不具任何能力 (abilities) 且必須在同一筆交易 (transaction) 中消耗的結構 (struct)，用以強制完成工作流程 (workflow)。
 title: 模式：燙手山芋 (Hot Potato)
 keywords:
   - Move
