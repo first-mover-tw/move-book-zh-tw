@@ -245,6 +245,9 @@ def check_file(
     # 11. 有序列表序號被重複寫進內文（見 check_ordered_list_numbering）
     errs += check_ordered_list_numbering(zh_text)
 
+    # 12. 顯式 {#id} 被 inline parser 吃掉（見 check_heading_anchor_intact）
+    errs += check_heading_anchor_intact(zh_text)
+
     return errs
 
 
@@ -427,6 +430,18 @@ def _ol_items(html: str) -> list[tuple[int, str]]:
 # 沒有自動修復路徑（見下），誤報一次就是該檔永久寫不出來、每輪重翻重擋；
 # 漏報則只是回到人工審 PR 抓的狀態。fail-closed 的守衛要對誤報格外保守。
 _LEADING_NUM = re.compile(r"^\s*(\d+)\s*[.)](?=\s|$)")
+
+
+def check_heading_anchor_intact(zh_text: str) -> list[str]:
+    """gate 12：標題尾端的顯式 `{#id}` 必須以字面文字存活到 parse 之後。
+
+    2026-11-12 pnpm build 實證兩處頁面露出字面 `{#`：中文標題的裸 `_` 與
+    id 的 `_` 配成強調，或 id 本身含 `_any_`。連結檢查、check_repo 全綠，因為
+    它們用 regex 讀源碼，看不到 parser 會怎麼切。判準交給 parser（見
+    anchors.eaten_anchors）。沒有自動修復路徑：改中文標題用詞還是改 id 是
+    語意判斷，擋下交給人。"""
+    body = frontmatter.split(zh_text)[1]
+    return [f"標題的顯式 anchor 被強調語法吃掉：{h}" for h in anchors.eaten_anchors(body)]
 
 
 def check_ordered_list_numbering(zh_text: str) -> list[str]:

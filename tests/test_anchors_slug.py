@@ -299,3 +299,20 @@ def test_empty_id_is_not_an_anchor():
 
 def test_double_closing_brace_is_not_an_anchor():
     assert anchors.existing_anchor("Foo {#a}}") is None
+
+
+def test_slugify_drops_emphasis_markers():
+    """docusaurus 對 mdast toString() 的純文字算 slug，強調標記已不存在。
+
+    2026-11-12 線上實證：英文 `### Trick #1 - _any_ Condition` 舊版算出
+    `trick-1---_any_-condition`，注入成中文標題的顯式 `{#id}` 後，id 內的
+    `_any_` 被 parser 當強調吃掉，頁面上露出字面 `{#…}`。"""
+    assert anchors.slugify("Trick #1 - _any_ Condition") == "trick-1---any-condition"
+    assert anchors.slugify("A *b* and **c**") == "a-b-and-c"
+
+
+def test_slugify_keeps_underscores_that_are_not_emphasis():
+    """`_` 不成對、或在 inline code 裡，都是字面文字，必須保留。"""
+    assert anchors.slugify("`_` Type") == "_-type"
+    assert anchors.slugify("Getters Named After Field + `_mut`") == "getters-named-after-field-_mut"
+    assert anchors.slugify("snake_case names") == "snake_case-names"

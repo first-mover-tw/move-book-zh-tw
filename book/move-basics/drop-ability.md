@@ -49,7 +49,7 @@ goal:
 
 設定值、中繼資料、計算的中間結果——這些都不值得保護，強迫程式設計者明確銷毀每一個值只會徒增儀式感。為這類型別賦予 `drop` 能力可讓程式碼保持簡潔。集合型別是很好的範例：由於 `vector` 具有 `drop`（當其內容也具有時），不再需要的數字向量可以直接被遺忘。
 
-另一方面，缺少 `drop` 是 Move 型別系統的定義性特徵之一。硬幣、票券、收據、償還義務——這類值絕不可靜默消失，而不具備 `drop` 的型別可在編譯器層級提供此保證：持有該值的人會被 _強制_ 對其進行有意義的處理。由編譯器強制處理值，是[熱馬鈴薯模式 (Hot Potato pattern)](./../programmability/hot-potato-pattern) 的基礎；該模式已在[前一節 (previous section)](./abilities-introduction#no-abilities) 提及，而我們會在[所有權與作用域 (Ownership and Scope)](./ownership-and-scope) 章節中探討值如何在作用域之間移動的完整規則。
+另一方面，缺少 `drop` 是 Move 型別系統的定義性特徵之一。硬幣、票券、收據、償還義務——這類值絕不可靜默消失，而不具備 `drop` 的型別可在編譯器層級提供此保證：持有該值的人會被 _強制_ 對其進行有意義的處理。由編譯器強制處理值，是[燙手山芋模式 (Hot Potato pattern)](./../programmability/hot-potato-pattern) 的基礎；該模式已在[前一節 (previous section)](./abilities-introduction#no-abilities) 提及，而我們會在[所有權與作用域 (Ownership and Scope)](./ownership-and-scope) 章節中探討值如何在作用域之間移動的完整規則。
 
 > 僅具有 `drop` 一種能力的結構稱為 _Witness_。我們會在[見證與抽象實作 (Witness and Abstract Implementation)](./../programmability/witness-pattern) 章節中說明 _Witness_ 的概念。
 

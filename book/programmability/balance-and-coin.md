@@ -145,7 +145,7 @@ public struct Currency<phantom T> has key {
 
 `new_currency_with_otw` 呼叫會回傳兩個值：
 
-- `CurrencyInitializer`——用於在發佈前設定貨幣的暫時值。它無法儲存或丟棄，因此在透過 `finalize` 呼叫消耗它之前，交易無法成功（這項技術會在 [Hot Potato Pattern](./hot-potato-pattern) 章節中探討）；
+- `CurrencyInitializer`——用於在發佈前設定貨幣的暫時值。它無法儲存或丟棄，因此在透過 `finalize` 呼叫消耗它之前，交易無法成功（這項技術會在 [燙手山芋模式 (Hot Potato Pattern)](./hot-potato-pattern) 章節中探討）；
 - `TreasuryCap<T>`——控制鑄造與銷毀的[能力](./capability)，會在下方的[供應量與 TreasuryCap](#supply-and-treasurycap)章節中探討。
 
 `finalize` 呼叫還會回傳另一項能力——控制貨幣中繼資料更新的 `MetadataCap<T>`。不過，在 OTW 流程中，`finalize` 並不會完成註冊。由於 `init` 在發佈期間執行，此時尚無法將 `CoinRegistry` 作為引數傳入，因此 `Currency<GOLD>` 物件會繞行一段路：`finalize` 會將它轉移至 registry 的地址，在那裡等待第二個收尾步驟——`finalize_registration`：
