@@ -5,22 +5,35 @@ name: Keepalive scheduled workflows
 # 停了一週才發現）。翻譯語料排乾後 repo 本來就會長期沒有 commit，
 # 所以這是常態而不是意外。
 #
-# 做法：每週對自己與兩條排程 workflow 呼叫 enable API（與
-# gautamkrishnar/keepalive-workflow 的 API mode 同一機制），不製造 dummy commit。
-# 包含自己：若本 workflow 也被停用，就沒有東西能救其他兩條。
+# 兩層：
+# 1. enable API：把已被停用的 workflow 救回來。但 GitHub 文件沒說它算
+#    「repository activity」，**不能**當成計時器重置（2026-11-13 查證未果）。
+# 2. idle 達 IDLE_DAYS 天就推 empty commit：commit 是唯一確定會重置計時器
+#    的活動。45 < 60，留兩次週跑的容錯。
+# 本 workflow 自己也是 schedule，也會被停用；第 2 層保證它在那之前就重置了計時器。
 
 permissions:
   actions: write
+  contents: write
 
 on:
   schedule:
     - cron: '0 0 * * 1' # 每週一 00:00 UTC
   workflow_dispatch:
 
+env:
+  IDLE_DAYS: 45
+
 jobs:
   keepalive:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout zh-tw-main
+        uses: actions/checkout@v4
+        with:
+          ref: zh-tw-main
+          fetch-depth: 1
+
       - name: Re-enable scheduled workflows
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,3 +44,17 @@ jobs:
             gh workflow enable "$wf"
             echo "enabled: $wf"
           done
+
+      - name: Empty commit if idle
+        run: |
+          set -euo pipefail
+          last=$(git log -1 --format=%ct)
+          age=$(( ($(date +%s) - last) / 86400 ))
+          echo "zh-tw-main 最後 commit 距今 ${age} 天（門檻 ${IDLE_DAYS}）"
+          if [ "$age" -lt "$IDLE_DAYS" ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive（${age} 天無 commit，防排程被停用）"
+          git push origin HEAD:zh-tw-main
