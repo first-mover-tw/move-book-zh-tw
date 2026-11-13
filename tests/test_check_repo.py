@@ -106,3 +106,13 @@ def test_main_reports_ordered_list_numbering(tmp_path, monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "序號重複" in err
     assert rc == 1
+
+
+def test_main_reports_heading_anchor_eaten(monkeypatch, capsys):
+    """gate 12 必須掛進 check_repo 並計入 exit code（同 gate 11 的理由）。"""
+    bad = '---\ndescription: "d"\n---\n\n### 「_」型別 (`_` Type) {#_-type}\n'
+    monkeypatch.setattr(check_repo, "collect", lambda: {"reference/x.md": bad})
+    rc = check_repo.main()
+    err = capsys.readouterr().err
+    assert "anchor" in err
+    assert rc == 1

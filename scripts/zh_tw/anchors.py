@@ -38,11 +38,13 @@ _MD = MarkdownIt("commonmark")
 # 或 `## Foo \{#bar\}` 這類標題，兩邊的判定可能不同：本模組看到的原始字元
 # 序列與 docusaurus 看到的純文字不是同一份輸入。
 # 這個分歧不是本次改動造成的 —— 舊的窄版 regex 一樣有同樣的分歧，
-# 不是新引入的迴歸。語料實測目前是 0 命中（沒有任何標題落在這個分歧區）。
+# 不是新引入的迴歸。
+# 【2026-11-12 已實證】分歧真的會發生：`{#id}` 前後的 `_` 被 parser 配成
+# 強調，id 被拆進 <em>，頁面露出字面 `{#`（語料 2 處，pnpm build 對照）。
+# 守衛是 `eaten_anchors()`（validate gate 12）：它問 parser 本人 `{#id}` 有沒有
+# 以字面文字存活，而不是在 regex 這端補例外。
 _ANCHOR = re.compile(r"\s*\{#((?:.(?!\{#|\}))*.)\}$")
 ANCHOR_SUFFIX = _ANCHOR  # 公開別名：validate / backends.fake 的唯一入口
-_INLINE_CODE = re.compile(r"`([^`]+)`")
-_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 _FENCE_MARK = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
 _OPAQUE = ("fence", "code_block", "html_block")
@@ -124,10 +126,25 @@ def fence_lines(body: str) -> int:
     )
 
 
+def _plain_text(heading: str) -> str:
+    """標題 inline 源碼 → 純文字，對應 docusaurus 對 mdast `toString()` 的輸入。
+
+    交給 markdown-it 決定哪些字元是語法（強調、inline code、link），不用 regex
+    自己認（lessons L15）。舊版只剝 link 與反引號，`_any_` 的強調標記被當成
+    字面底線留進 slug；2026-11-12 線上實證它注入成顯式 `{#id}` 後又被 parser
+    當強調吃掉。html_inline 保留原文，維持與舊版相同的行為。"""
+    out: list[str] = []
+    for tok in _MD.parseInline(heading):
+        for c in tok.children or []:
+            if c.type in ("text", "code_inline", "html_inline"):
+                out.append(c.content)
+            elif c.type in ("softbreak", "hardbreak"):
+                out.append(" ")
+    return "".join(out)
+
+
 def slugify(heading: str) -> str:
-    text = strip_anchor(heading)
-    text = _LINK.sub(r"\1", text)
-    text = _INLINE_CODE.sub(r"\1", text)
+    text = _plain_text(strip_anchor(heading))
     text = text.strip().lower()
     text = re.sub(r"[^\w\s-]", "", text)
     return re.sub(r"\s+", "-", text).strip("-")
@@ -154,6 +171,29 @@ def slugify_all(
             n += 1
         used.add(candidate)
         out.append(candidate)
+    return out
+
+
+def eaten_anchors(body: str) -> list[str]:
+    """回傳「源碼有尾端 `{#id}`、parse 後卻沒以字面文字存活」的標題原文。
+
+    `{#id}` 要被 docusaurus 認出，它必須是標題純文字的尾端；若 inline parser
+    把其中的 `_`/`*` 配成強調，id 就被拆進 <em>，頁面露出字面 `{#…}`、
+    id 也變了。判準＝最後一個 inline child 是 text 且以源碼的 `{#…}` 結尾。"""
+    _require_body(body)
+    toks = _tokens(body)
+    out = []
+    for i, t in enumerate(toks):
+        if t.type != "heading_open":
+            continue
+        inl = toks[i + 1]
+        m = _ANCHOR.search(inl.content.rstrip())
+        if not m:
+            continue
+        suffix = m.group(0).strip()
+        last = (inl.children or [None])[-1]
+        if not (last is not None and last.type == "text" and last.content.rstrip().endswith(suffix)):
+            out.append(inl.content)
     return out
 
 

@@ -904,3 +904,36 @@ def test_gate5_still_flags_dangling_anchors_outside_comments():
     errs = validate.check_links(files)
     assert len(errs) == 1, errs
     assert "nope-in-body" in errs[0] and "nope-in-comment" not in errs[0], errs
+
+
+# --- gate 12：顯式 {#id} 必須以字面文字存活到 parse 之後 ---
+
+
+def test_heading_anchor_intact_flags_id_eaten_by_emphasis():
+    """2026-11-12 線上實證兩種形態（pnpm build 頁面露出字面 `{#`）：
+    - 中文標題的裸 `_` 與 id 開頭的 `_` 配成強調（reference/generics.md）
+    - id 本身含 `_any_` 被當強調（book/move-basics/enum-and-match.md）"""
+    a = _FM + "### 「_」型別 (`_` Type) {#_-type}\n"
+    b = _FM + "### 技巧 #1 - _任意_ 條件 (Trick #1 - _any_ Condition) {#trick-1---_any_-condition}\n"
+    for bad in (a, b):
+        errs = validate.check_heading_anchor_intact(bad)
+        assert len(errs) == 1, (bad, errs)
+        assert "anchor" in errs[0]
+
+
+def test_heading_anchor_intact_silent_on_legit_headings():
+    ok = [
+        "### `_` 型別 (`_` Type) {#_-type}\n",
+        "### 技巧 #1 - _任意_ 條件 (Trick #1 - _any_ Condition) {#trick-1---any-condition}\n",
+        "## 一般常數採用 `ALL_CAPS` (Regular Constants Are `ALL_CAPS`) {#regular-constants-are-all_caps}\n",
+        "## 沒有顯式 anchor 的標題\n",
+        "```\n## 程式碼裡的 _假_ {#_x}\n```\n",
+    ]
+    for body in ok:
+        assert validate.check_heading_anchor_intact(_FM + body) == [], body
+
+
+def test_check_file_runs_gate_12():
+    en = _FM + "### `_` Type\n"
+    zh = _FM + "### 「_」型別 (`_` Type) {#_-type}\n"
+    assert any("anchor" in e for e in validate.check_file(zh, en))
